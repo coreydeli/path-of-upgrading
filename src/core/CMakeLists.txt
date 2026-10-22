@@ -20,6 +20,7 @@ add_library(pou_core STATIC
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
+    seenstats.cpp seenstats.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
