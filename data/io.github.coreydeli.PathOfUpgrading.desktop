@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Path of Upgrading
+GenericName=Item Upgrade Overlay
+Comment=Check Path of Exile 2 items against your build
+Exec=path-of-upgrading
+Icon=io.github.coreydeli.PathOfUpgrading
+Terminal=false
+Categories=Game;
+Keywords=PoE2;Path of Exile;Path of Building;trade;overlay;
+StartupNotify=false
+SingleMainWindow=true

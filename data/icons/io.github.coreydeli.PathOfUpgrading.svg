@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Path of Upgrading</title>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#232629"/>
+  <path d="M17 52 C17 41 39 42 39 31 L39 19" fill="none" stroke="#d4a94e" stroke-width="6"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M29 26 L39 15 L49 26" fill="none" stroke="#d4a94e" stroke-width="6"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
