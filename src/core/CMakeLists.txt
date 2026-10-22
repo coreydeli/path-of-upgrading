@@ -9,6 +9,7 @@ add_library(pou_core STATIC
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
+    statsources.cpp statsources.h
     verdict.h
     weights.cpp weights.h
 )
