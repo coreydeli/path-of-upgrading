@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/seenstats.h"
 #include "core/tradedata.h"
 
 #include <QHash>
@@ -9,10 +10,6 @@
 #include <QStringList>
 
 namespace pou {
-
-// How many of the items you've copied had each stat, by item class:
-// "Gloves" -> "# to maximum Life" -> 3.
-using SeenStats = QHash<QString, QHash<QString, int>>;
 
 // One stat in the stat picker, merged from every version the trade site has
 // of it: the explicit mod, the pseudo total, the rune... StatIndex::match()

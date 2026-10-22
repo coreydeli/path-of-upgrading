@@ -6,9 +6,11 @@ add_library(pou_core STATIC
     buildprofiles.cpp buildprofiles.h
     catalog.cpp catalog.h
     character.cpp character.h
+    characterstore.cpp characterstore.h
     gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
+    datafiles.cpp datafiles.h
     league.cpp league.h
     listing.cpp listing.h
     numbers.cpp numbers.h
@@ -18,6 +20,8 @@ add_library(pou_core STATIC
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
+    seenstats.cpp seenstats.h
+    settings.cpp settings.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h

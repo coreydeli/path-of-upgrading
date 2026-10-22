@@ -22,6 +22,8 @@ struct Budget
     Currency currency = Currency::Divine;
     // Exalted Orbs to a Divine Orb at today's market rate, 0 when unknown.
     double divineRate = 0;
+
+    friend bool operator==(const Budget &, const Budget &) = default;
 };
 
 // The search's price filter, {min, max, option}. Empty when there's no limit.
