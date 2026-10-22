@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -123,6 +124,33 @@ double judgeResists(const PobStats &before, const PobStats &after, const PobVerd
     return gain;
 }
 
+void judgeRequirements(const PobStats &before, const PobStats &after, const PobPriorities &priorities,
+                       PobVerdict &v)
+{
+    const std::optional<double> spiritFrom = stat(before, u"SpiritUnreserved"_s);
+    const std::optional<double> spiritTo = stat(after, u"SpiritUnreserved"_s);
+    if (priorities.spirit && spiritFrom && spiritTo && *spiritTo < 0 && *spiritTo < *spiritFrom)
+        v.breaks << u"Not enough Spirit for your minions and auras (%1 short)"_s.arg(whole(-*spiritTo));
+
+    if (!priorities.attributes)
+        return;
+    static const QList<std::pair<QString, QString>> attributes = {
+        {u"Str"_s, u"Strength"_s},
+        {u"Dex"_s, u"Dexterity"_s},
+        {u"Int"_s, u"Intelligence"_s},
+    };
+    for (const auto &[attribute, label] : attributes) {
+        const std::optional<double> had = stat(before, attribute);
+        const std::optional<double> needed = stat(before, u"Req"_s + attribute);
+        const std::optional<double> have = stat(after, attribute);
+        const std::optional<double> need = stat(after, u"Req"_s + attribute);
+        // gear you couldn't wear before isn't the item's fault
+        const bool hadEnough = !had || !needed || *had >= *needed;
+        if (have && need && *have < *need && hadEnough)
+            v.breaks << u"Not enough %1 to use your gear (%2 of %3)"_s.arg(label, whole(*have), whole(*need));
+    }
+}
+
 } // namespace
 
 QString pobDamageStat(const PobStats &stats)
@@ -166,6 +194,7 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
         v.breaks << u"%1 drops %2%"_s.arg(damageStat == u"MinionDPS" ? u"Minion damage"_s : u"Damage"_s,
                                           formatNumber(std::abs(v.damage.percent.value_or(0))));
     }
+    judgeRequirements(before, after, priorities, v);
 
     if (score >= upgradeAt)
         v.verdict = Verdict::Upgrade;
@@ -173,6 +202,8 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
         v.verdict = Verdict::Small;
     else if (score <= downgradeAt)
         v.verdict = Verdict::Downgrade;
+    if (!v.breaks.isEmpty())
+        v.verdict = score > 0 ? Verdict::Risky : Verdict::Downgrade;
 
     const bool losesResist =
         std::any_of(v.resists.cbegin(), v.resists.cend(), [](const PobResistChange &r) { return r.lost; });

@@ -30,6 +30,15 @@ const PobStats shortOfLightning = with(base, {
                                                  {u"MissingLightningResist"_s, 37},
                                              });
 
+// The same build with Spirit to spare and the attributes for its gear.
+const PobStats geared = with(base, {
+                                       {u"SpiritUnreserved"_s, 50},
+                                       {u"Str"_s, 77},
+                                       {u"ReqStr"_s, 75},
+                                       {u"Int"_s, 300},
+                                       {u"ReqInt"_s, 160},
+                                   });
+
 PobVerdict judged(const PobStats &before, const PobStats &after, const PobPriorities &priorities = {})
 {
     PobVerdictOptions options;
@@ -282,6 +291,45 @@ private Q_SLOTS:
         QVERIFY(v.resists.isEmpty());
         // without it, the capped chaos resistance counts
         QCOMPARE(judgeWithPob(ci, after).verdict, Verdict::ResistLoss);
+    }
+
+    void spiritAndAttributes()
+    {
+        const PobVerdict spirit =
+            judgeWithPob(geared, with(geared, {{u"MinionDPS"_s, 120000}, {u"SpiritUnreserved"_s, -10}}));
+        QCOMPARE(spirit.breaks, QStringList{u"Not enough Spirit for your minions and auras (10 short)"_s});
+        QCOMPARE(spirit.verdict, Verdict::Risky);
+
+        const PobVerdict strength =
+            judgeWithPob(geared, with(geared, {{u"MinionDPS"_s, 120000}, {u"Str"_s, 60}}));
+        QCOMPARE(strength.breaks, QStringList{u"Not enough Strength to use your gear (60 of 75)"_s});
+        QCOMPARE(strength.verdict, Verdict::Risky);
+
+        // and with nothing better about it, a downgrade
+        QCOMPARE(judgeWithPob(geared, with(geared, {{u"Str"_s, 60}})).verdict, Verdict::Downgrade);
+    }
+
+    void shortfallsYouHadAlready()
+    {
+        // already short of Spirit, and the item doesn't make it worse
+        const PobStats overReserved = with(geared, {{u"SpiritUnreserved"_s, -10}});
+        QVERIFY(judgeWithPob(overReserved, overReserved).breaks.isEmpty());
+        QCOMPARE(judgeWithPob(overReserved, with(geared, {{u"SpiritUnreserved"_s, -20}})).breaks.size(), 1);
+
+        const PobStats weak = with(geared, {{u"Str"_s, 60}});
+        QVERIFY(judgeWithPob(weak, with(weak, {{u"Str"_s, 55}})).breaks.isEmpty());
+    }
+
+    void switchingChecksOff()
+    {
+        PobPriorities relaxed;
+        relaxed.spirit = false;
+        relaxed.attributes = false;
+        const PobStats after =
+            with(geared, {{u"MinionDPS"_s, 120000}, {u"SpiritUnreserved"_s, -10}, {u"Str"_s, 60}});
+        const PobVerdict v = judged(geared, after, relaxed);
+        QVERIFY(v.breaks.isEmpty());
+        QCOMPARE(v.verdict, Verdict::Upgrade);
     }
 
     void damageLoss()

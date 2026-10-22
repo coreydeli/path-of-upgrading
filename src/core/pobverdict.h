@@ -14,8 +14,9 @@ namespace pou {
 
 // Judging an item by what Path of Building calculates for your build when it
 // takes the place of what you wear. More damage and more effective HP make it
-// better, and it mustn't break the build: a resistance dropping off its cap
-// makes it a risk at best.
+// better, and it mustn't break the build: a resistance dropping off its cap,
+// running out of Spirit or not having the attributes for your gear make it a
+// risk at best.
 
 // Numbers Path of Building calculated for a build, by its own names for them:
 // "FullDPS", "TotalEHP", "FireResist", "MissingFireResist"... The minions'
@@ -31,6 +32,8 @@ struct PobPriorities
     bool resistsFirst = true;
     bool chaos = false;     // chaos resistance counts like the others
     bool keepDamage = true; // an item that costs a good part of your damage is never an upgrade
+    bool spirit = true;     // running out of Spirit for your minions and auras breaks the build
+    bool attributes = true; // and so does not having the attributes for your gear
 };
 
 struct PobVerdictOptions
