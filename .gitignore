@@ -1,0 +1,16 @@
+# build trees
+/build/
+/build-*/
+/out/
+
+# Path of Building checkout fetched by scripts/get-pob.sh
+/vendor/
+
+# editors and tooling
+CMakeLists.txt.user*
+compile_commands.json
+.cache/
+.vscode/
+.idea/
+*.swp
+*~
