@@ -1,3 +1,5 @@
+add_subdirectory(core)
+
 qt_add_executable(path-of-upgrading
     main.cpp
 )
@@ -14,6 +16,7 @@ target_compile_definitions(path-of-upgrading PRIVATE
 )
 
 target_link_libraries(path-of-upgrading PRIVATE
+    pou_core
     Qt6::Widgets
     Qt6::Qml
     Qt6::Quick

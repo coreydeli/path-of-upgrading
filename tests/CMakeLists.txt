@@ -1,0 +1,13 @@
+find_package(Qt6 REQUIRED COMPONENTS Test)
+
+function(pou_add_test name)
+    qt_add_executable(${name} ${name}.cpp ${ARGN})
+    target_link_libraries(${name} PRIVATE pou_core Qt6::Test)
+    add_test(NAME ${name} COMMAND ${name})
+endfunction()
+
+pou_add_test(tst_slots)
+pou_add_test(tst_statnorm)
+pou_add_test(tst_numbers)
+pou_add_test(tst_statmap)
+pou_add_test(tst_parser itemtexts.h)
