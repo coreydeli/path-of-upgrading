@@ -244,6 +244,19 @@ QString weaponClass(const QString &baseType)
     return {};
 }
 
+// Weapons of these classes attack, so they have damage of their own.
+// "Weapons" is a base we don't know, which might.
+bool hasDamage(const QString &itemClass)
+{
+    static const QSet<QString> classes = {
+        u"Bows"_s,           u"Crossbows"_s,       u"Quarterstaves"_s,   u"Spears"_s,
+        u"Flails"_s,         u"Claws"_s,           u"Daggers"_s,         u"Talismans"_s,
+        u"One Hand Axes"_s,  u"One Hand Maces"_s,  u"One Hand Swords"_s, u"Two Hand Axes"_s,
+        u"Two Hand Maces"_s, u"Two Hand Swords"_s, u"Fishing Rods"_s,    u"Weapons"_s,
+    };
+    return classes.contains(itemClass);
+}
+
 // Our slot for one of Path of Building's, empty for those we don't keep,
 // like "Ring 3". It names its weapon sets "Weapon 1" and "Weapon 1 Swap";
 // ours are the set in use and the other one.
@@ -534,7 +547,8 @@ PobItemText convertPobItem(const QString &raw, const QString &slot)
 
     const QString name = names.value(0, u"Unknown"_s);
     const QString base = names.value(1, name);
-    QStringList header = {u"Item Class: "_s + pobItemClass(slot, base), u"Rarity: "_s + rarity, name};
+    const QString itemClass = pobItemClass(slot, base);
+    QStringList header = {u"Item Class: "_s + itemClass, u"Rarity: "_s + rarity, name};
     if (base != name)
         header << base;
 
@@ -551,7 +565,7 @@ PobItemText convertPobItem(const QString &raw, const QString &slot)
     }
     if (corrupted)
         blocks << u"Corrupted"_s;
-    return {blocks.join(u"\n--------\n"_s), !properties.isEmpty()};
+    return {blocks.join(u"\n--------\n"_s), hasDamage(itemClass)};
 }
 
 std::optional<PobBuild> parsePobBuild(const QString &xml)

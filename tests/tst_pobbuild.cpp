@@ -144,7 +144,7 @@ private Q_SLOTS:
                                 u"+33 to maximum Life (crafted)"_s,
                                 u"75% increased Energy Shield"_s,
                             }));
-        QVERIFY(item.hasBase);
+        QVERIFY(!item.missingDamage);
         QVERIFY(parseItem(item.text));
     }
 
@@ -192,7 +192,7 @@ private Q_SLOTS:
                                 separator,
                                 u"Corrupted"_s,
                             }));
-        QVERIFY(!item.hasBase);
+        QVERIFY(!item.missingDamage);
     }
 
     void variants()
@@ -288,7 +288,26 @@ private Q_SLOTS:
                                 separator,
                                 u"+30 to maximum Life"_s,
                             }));
-        QVERIFY(item.hasBase);
+        // a sceptre has spirit rather than damage
+        QVERIFY(!item.missingDamage);
+    }
+
+    void weaponDamage()
+    {
+        const auto missing = [](const QString &slot, const QString &baseType) {
+            return convertPobItem(joined({u"Rarity: NORMAL"_s, baseType}), slot).missingDamage;
+        };
+        QVERIFY(missing(u"Weapon"_s, u"Wrapped Quarterstaff"_s));
+        QVERIFY(missing(u"Weapon 2"_s, u"Heavy Bow"_s));
+        QVERIFY(missing(u"Offhand"_s, u"Glass Shank"_s));
+        // a base we don't know might attack
+        QVERIFY(missing(u"Weapon"_s, u"Something New"_s));
+
+        QVERIFY(!missing(u"Weapon"_s, u"Ashen Staff"_s));
+        QVERIFY(!missing(u"Weapon"_s, u"Runic Fork"_s));
+        QVERIFY(!missing(u"Offhand"_s, u"Broadhead Quiver"_s));
+        QVERIFY(!missing(u"Offhand"_s, u"Leather Buckler"_s));
+        QVERIFY(!missing(u"Gloves"_s, u"Sorcerer Gloves"_s));
     }
 
     void itemClasses_data()

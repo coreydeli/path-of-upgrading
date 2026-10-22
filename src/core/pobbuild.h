@@ -20,9 +20,9 @@ std::optional<QString> decodeBuildCode(const QString &code);
 struct PobItemText
 {
     QString text;
-    // It came with its base numbers: armour, evasion, energy shield or
-    // spirit. Path of Building never writes weapon damage.
-    bool hasBase = false;
+    // It's a weapon that attacks. Path of Building doesn't save weapon
+    // damage, so the text can't say what it deals; copying it in game does.
+    bool missingDamage = false;
 };
 
 // raw is the item's text in the build and slot one of ours: "Weapon",
