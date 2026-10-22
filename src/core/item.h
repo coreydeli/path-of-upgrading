@@ -3,6 +3,7 @@
 
 #include "core/statmap.h"
 
+#include <QHash>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -58,5 +59,8 @@ struct Item
     Affixes affixes;
     std::optional<Legacies> legacies;
 };
+
+// What's saved as worn, by slot: "Helmet", "Ring 1", "Jewel 3"...
+using Equipped = QHash<QString, Item>;
 
 } // namespace pou
