@@ -17,6 +17,7 @@ add_library(pou_core STATIC
     parser.cpp parser.h
     pobbuild.cpp pobbuild.h
     pobverdict.cpp pobverdict.h
+    ratelimit.cpp ratelimit.h
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
