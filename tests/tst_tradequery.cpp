@@ -85,6 +85,22 @@ QJsonObject firstValue(const TradeQuery &q)
     return filters.at(0).toObject().value(u"value").toObject();
 }
 
+int filterCount(const TradeQuery &q)
+{
+    int n = 0;
+    for (const QJsonValue &group : statGroups(q))
+        n += int(group.toObject().value(u"filters").toArray().size());
+    return n;
+}
+
+Item jewel()
+{
+    return parseItem(u"Item Class: Jewels\nRarity: Rare\nHonour Stone\nSapphire\n--------\nItem Level: 80\n"
+                     "--------\n12% increased maximum Energy Shield\nMinions deal 14% increased Damage\n"
+                     "+8 to Intelligence"_s)
+        .value();
+}
+
 StatPick pick(const QString &key, double min)
 {
     StatPick p;
@@ -446,6 +462,154 @@ private Q_SLOTS:
         const CraftBaseSearch plain = craftBaseSearch(boots, keyStats, tradeData());
         QVERIFY(!plain.emptyAffixFilter);
         QCOMPARE(statGroups(plain).size(), 1);
+    }
+
+    void gearSearchForTheBuild()
+    {
+        using namespace tradefixtures;
+        const TradeData data{
+            StatIndex::fromJson(response({
+                group(
+                    u"explicit"_s,
+                    {
+                        stat(u"explicit.minion_dmg"_s, u"Minions deal #% increased Damage"_s, u"explicit"_s),
+                        stat(u"explicit.minion_crit"_s, u"Minions have #% increased Critical Hit Chance"_s,
+                             u"explicit"_s),
+                        stat(u"explicit.ally_crit"_s,
+                             u"Allies in your Presence have #% increased Critical Hit Chance"_s,
+                             u"explicit"_s),
+                        stat(u"explicit.mana"_s, u"+# to maximum Mana"_s, u"explicit"_s),
+                        stat(u"explicit.int"_s, u"+# to Intelligence"_s, u"explicit"_s),
+                        stat(u"explicit.phys"_s, u"Adds # to # Physical Damage to Attacks"_s, u"explicit"_s),
+                    }),
+                group(u"implicit"_s, {stat(u"implicit.mana"_s, u"+# to maximum Mana"_s, u"implicit"_s)}),
+                group(u"pseudo"_s,
+                      {stat(u"pseudo.pseudo_total_mana"_s, u"+# total maximum Mana"_s, u"pseudo"_s)}),
+            })),
+            {}};
+        const Item ring = parseItem(u"Item Class: Rings\nRarity: Rare\nPlague Circle\nIron Ring\n--------\n"
+                                    "Item Level: 80\n--------\n+175 to maximum Mana\n"
+                                    "Minions deal 27% increased Damage\n"
+                                    "Minions have 44% increased Critical Hit Chance\n+20 to Intelligence"_s)
+                              .value();
+        const QList<SearchWeight> weights = searchWeights(u"Ring"_s, {.build = u"minion-es"_s});
+        const GearSearch q = gearSearch(ring, weights, data);
+        const QJsonObject group = statGroups(q).at(0).toObject();
+        QCOMPARE(group.value(u"type").toString(), u"weight"_s);
+        // heaviest first; implicit and explicit mana both count, pseudo mana would count it twice
+        QCOMPARE(filterIds(group),
+                 QStringList({u"explicit.minion_dmg"_s, u"explicit.minion_crit"_s, u"explicit.ally_crit"_s,
+                              u"explicit.int"_s, u"explicit.mana"_s, u"implicit.mana"_s}));
+        QCOMPARE(valueOf(group, u"explicit.minion_dmg"_s), weight(28));
+        // 27 * 28 + 44 * 12.5 + 175 * 2 + 20 * 8.57
+        QCOMPARE(q.current, 1827.4);
+        QCOMPARE(q.groupMin, 1828.0);
+        QCOMPARE(group.value(u"value").toObject(), minimum(1828));
+        QCOMPARE(q.parts, QStringList({u"Minion damage"_s, u"Minion crit"_s, u"Mana"_s, u"Intelligence"_s}));
+        QCOMPARE(q.filters, 6);
+        QCOMPARE(q.dropped, 0);
+        QCOMPARE(q.body.value(u"sort").toObject(), QJsonObject({{u"statgroup.0"_s, u"desc"_s}}));
+
+        GearSearchOptions close;
+        close.share = 0.9;
+        QVERIFY(gearSearch(ring, weights, data, close).groupMin < q.current);
+
+        const Item gloves = parseItem(u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSirenscale Gloves\n"
+                                      "--------\nEnergy Shield: 280\n--------\nItem Level: 80\n--------\n"
+                                      "+33 to maximum Life"_s)
+                                .value();
+        GearSearchOptions options;
+        options.baseShare = 0.85;
+        const GearSearch g =
+            gearSearch(gloves, searchWeights(u"Gloves"_s, {.build = u"minion-es"_s}), data, options);
+        QCOMPARE(filterOf(g, u"equipment_filters", u"es"), minimum(238));
+        QCOMPARE(g.parts.first(), u"Energy Shield at least 238"_s);
+    }
+
+    void gearSearchKeepsEveryBaseDefence()
+    {
+        // "Armour / Evasion" covers both, so a hybrid base keeps both
+        const Item coat =
+            withStats(u"Body Armours"_s, {{u"[Base] Armour"_s, 500}, {u"[Base] Evasion Rating"_s, 400}});
+        const GearSearch q = gearSearch(coat, searchWeights(u"Body Armour"_s), tradeData());
+        QCOMPARE(filterOf(q, u"equipment_filters", u"ar"), minimum(400));
+        QCOMPARE(filterOf(q, u"equipment_filters", u"ev"), minimum(320));
+        QVERIFY(q.parts.contains(u"Evasion Rating at least 320"_s));
+    }
+
+    void gearSearchNeedsKeyStats()
+    {
+        using namespace tradefixtures;
+        const TradeData data{
+            StatIndex::fromJson(response({group(
+                u"explicit"_s,
+                {
+                    stat(u"explicit.es_pct"_s, u"#% increased maximum Energy Shield"_s, u"explicit"_s),
+                    stat(u"explicit.minion_dmg"_s, u"Minions deal #% increased Damage"_s, u"explicit"_s),
+                    stat(u"explicit.minion_dmg_hit"_s,
+                         u"Minions deal #% increased Damage if you've Hit Recently"_s, u"explicit"_s),
+                    stat(u"explicit.minion_speed"_s, u"Minions have #% increased Attack Speed"_s,
+                         u"explicit"_s),
+                    stat(u"explicit.int"_s, u"+# to Intelligence"_s, u"explicit"_s),
+                })})),
+            {}};
+        const GearSearch q = gearSearch(jewel(), searchWeights(u"Jewel"_s, {.build = u"minion-es"_s}), data);
+        const QJsonObject count = statGroups(q).at(1).toObject();
+        QCOMPARE(count.value(u"type").toString(), u"count"_s);
+        // as many as the jewel has, up to two
+        QCOMPARE(count.value(u"value").toObject(), minimum(2));
+        QCOMPARE(q.needKeyStats, 2);
+        // the conditional version doesn't count as the key stat
+        QCOMPARE(filterIds(count), QStringList({u"explicit.minion_dmg"_s, u"explicit.es_pct"_s}));
+        QCOMPARE(valueOf(count, u"explicit.minion_dmg"_s), minimum(6));
+        QCOMPARE(q.keyStats, QStringList({u"Minion damage"_s, u"% Energy Shield"_s}));
+        // but it weighs less
+        const QJsonObject weighted = statGroups(q).at(0).toObject();
+        QVERIFY(valueOf(weighted, u"explicit.minion_dmg_hit"_s).value(u"weight").toDouble() <
+                valueOf(weighted, u"explicit.minion_dmg"_s).value(u"weight").toDouble());
+    }
+
+    void gearSearchShrinks()
+    {
+        using namespace tradefixtures;
+        const TradeData data{
+            StatIndex::fromJson(response({group(
+                u"explicit"_s,
+                {
+                    stat(u"explicit.es_pct"_s, u"#% increased maximum Energy Shield"_s, u"explicit"_s),
+                    stat(u"implicit.es_pct"_s, u"#% increased maximum Energy Shield"_s, u"implicit"_s),
+                    stat(u"explicit.minion_dmg"_s, u"Minions deal #% increased Damage"_s, u"explicit"_s),
+                    stat(u"explicit.minion_dmg_hit"_s,
+                         u"Minions deal #% increased Damage if you've Hit Recently"_s, u"explicit"_s),
+                    stat(u"explicit.minion_speed"_s, u"Minions have #% increased Attack Speed"_s,
+                         u"explicit"_s),
+                    stat(u"explicit.int"_s, u"+# to Intelligence"_s, u"explicit"_s),
+                })})),
+            {}};
+        const QList<SearchWeight> weights = searchWeights(u"Jewel"_s, {.build = u"minion-es"_s});
+        const GearSearch big = gearSearch(jewel(), weights, data);
+        QCOMPARE(filterCount(big), 9);
+
+        GearSearchOptions smaller;
+        smaller.explicitOnly = true;
+        smaller.maxFilters = 3;
+        smaller.keyStatShare = 0;
+        const GearSearch mid = gearSearch(jewel(), weights, data, smaller);
+        QCOMPARE(filterCount(mid), 3);
+        QCOMPARE(mid.dropped, 2);
+        QVERIFY(!filterIds(statGroups(mid).at(0).toObject()).contains(u"implicit.es_pct"_s));
+
+        GearSearchOptions smallest;
+        smallest.explicitOnly = true;
+        smallest.countOnly = true;
+        const GearSearch small = gearSearch(jewel(), weights, data, smallest);
+        QVERIFY(small.countOnly);
+        QCOMPARE(statGroups(small).size(), 1);
+        const QJsonObject count = statGroups(small).at(0).toObject();
+        QCOMPARE(count.value(u"type").toString(), u"count"_s);
+        QCOMPARE(filterIds(count), QStringList({u"explicit.minion_dmg"_s, u"explicit.es_pct"_s}));
+        QCOMPARE(count.value(u"value").toObject(), minimum(2));
+        QCOMPARE(small.body.value(u"sort").toObject(), QJsonObject({{u"price"_s, u"asc"_s}}));
     }
 };
 

@@ -2,9 +2,11 @@
 #include "core/tradequery.h"
 
 #include "core/numbers.h"
+#include "core/statnorm.h"
 
 #include <QJsonArray>
 #include <QRegularExpression>
+#include <QSet>
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -117,6 +119,24 @@ const std::array<Looseness, 4> looseness = {{
     {0.8, [](int n) { return std::max(n >= 2 ? 1 : 0, (n + 2) / 3); }, u"80% of your values"},
     {0.65, [](int n) { return std::max(n >= 2 ? 1 : 0, (n + 1) / 2); }, u"65% of your values"},
 }};
+
+// A trade stat's text as one of our stat keys.
+QString keyForm(const QString &text)
+{
+    static const QRegularExpression local(uR"(\s*\(local\)\s*$)"_s,
+                                          QRegularExpression::CaseInsensitiveOption);
+    QString key = text;
+    if (key.startsWith(u'+'))
+        key.remove(0, 1);
+    return key.remove(local).trimmed();
+}
+
+// "[Base] Energy Shield" -> "Energy Shield"
+QString propertyName(const QString &key)
+{
+    const qsizetype end = key.indexOf(u"] ");
+    return end < 0 ? key : key.mid(end + 2);
+}
 
 void appendOnce(QStringList &list, const QString &value)
 {
@@ -418,6 +438,169 @@ CraftBaseSearch craftBaseSearch(const Item &item, const QList<KeyStat> &keyStats
     query.insert(u"filters"_s, filters);
     result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
     result.body = searchBody(query, u"price"_s, u"asc"_s);
+    return result;
+}
+
+GearSearch gearSearch(const Item &item, const QList<SearchWeight> &weights, const TradeData &data,
+                      const GearSearchOptions &options)
+{
+    // Key stats need their plain version; the conditional ones only count for less.
+    static const QRegularExpression conditional(uR"(\b(if you've|while|when|recently)\b)"_s,
+                                                QRegularExpression::CaseInsensitiveOption);
+    const double baseShare = options.baseShare > 0 ? options.baseShare : 0.8;
+    const qsizetype maxFilters = options.maxFilters > 0 ? options.maxFilters : 40;
+    // trade weights are easier to read as whole numbers
+    constexpr double scale = 100;
+
+    struct Weighted
+    {
+        QString id;
+        double weight = 0;
+    };
+    struct Key
+    {
+        const SearchWeight *weight = nullptr;
+        QList<const TradeStat *> ids;
+    };
+
+    GearSearch result;
+    const QList<StatSource> sources = statSources(item);
+    QList<Weighted> weighted;
+    QSet<QString> used;
+    QList<Key> core;
+    QJsonObject equipment;
+    for (const SearchWeight &w : weights) {
+        // [Base] and [Weapon] stats aren't mods: yours become a minimum
+        bool isProperty = w.pattern.pattern().startsWith(u"^\\[");
+        for (const QString &key : equipmentKeys()) {
+            if (!w.pattern.match(key).hasMatch())
+                continue;
+            isProperty = true;
+            double own = 0;
+            for (const StatSource &x : sources) {
+                if (x.key == key)
+                    own += x.value;
+            }
+            if (own <= 0)
+                continue;
+            const double min = std::floor(baseWithoutSockets(key, own, sources) * baseShare);
+            equipment.insert(equipmentFilter(key), QJsonObject{{u"min"_s, min}});
+            result.parts << propertyName(key) + u" at least "_s + formatNumber(min);
+        }
+        if (isProperty)
+            continue;
+
+        // every trade stat the weight covers, as minion crit has several
+        QList<const TradeStat *> ids;
+        for (const TradeStat &e : data.stats.all()) {
+            const bool wantedType = e.type == u"explicit" || (!options.explicitOnly && e.type == u"implicit");
+            if (wantedType && w.pattern.match(keyForm(e.text)).hasMatch())
+                ids << &e;
+        }
+        if (ids.isEmpty())
+            continue;
+        const double ww = roundTo(w.weight * scale, 2);
+        for (const TradeStat *e : std::as_const(ids)) {
+            if (used.contains(e->id))
+                continue;
+            used.insert(e->id);
+            // conditional mods count for less in the gear score, so here too
+            weighted.append({e->id, roundTo(ww * (isConditionalStat(e->text) ? 0.6 : 1), 2)});
+        }
+        if (w.importance >= 4 && !w.key.isEmpty()) {
+            Key k{&w, {}};
+            for (const TradeStat *e : std::as_const(ids)) {
+                if (!conditional.match(e->text).hasMatch())
+                    k.ids << e;
+            }
+            core << k;
+        }
+
+        // what your item scores on it, leaving your runes out like the other searches
+        double own = 0;
+        for (const StatSource &x : sources) {
+            if (x.origin != StatOrigin::Socket && w.pattern.match(x.key).hasMatch())
+                own += x.value * (isConditionalStat(x.key) ? 0.6 : 1);
+        }
+        if (w.resist && w.need)
+            own = std::min(own, std::max(0.0, *w.need));
+        result.current += own * ww;
+        if (own > 0)
+            result.parts << w.label;
+    }
+
+    // the trade site limits how many filters a group can have, so keep the heaviest
+    std::stable_sort(weighted.begin(), weighted.end(),
+                     [](const Weighted &a, const Weighted &b) { return a.weight > b.weight; });
+    const QList<Weighted> kept = weighted.mid(0, maxFilters);
+    result.filters = int(kept.size());
+    result.dropped = int(weighted.size() - kept.size());
+
+    QJsonObject filters;
+    addCategory(filters, data, options.itemClass.isEmpty() ? item.itemClass : options.itemClass);
+    if (!equipment.isEmpty())
+        filters.insert(u"equipment_filters"_s, filterGroup(equipment));
+
+    result.groupMin =
+        std::max(1.0, std::floor(result.current * options.share) + (options.share >= 1 ? 1 : 0));
+    QJsonArray stats;
+    if (!kept.isEmpty()) {
+        QJsonArray group;
+        for (const Weighted &w : kept)
+            group.append(statFilter(w.id, {{u"weight"_s, w.weight}}));
+        stats.append(statGroup(u"weight"_s, group, {{u"min"_s, result.groupMin}}));
+    }
+
+    // the slot's key stats: a listing has to have as many as your item does, up to two
+    std::stable_sort(core.begin(), core.end(),
+                     [](const Key &a, const Key &b) { return a.weight->importance > b.weight->importance; });
+    QList<Key> keys;
+    for (const Key &k : core.mid(0, 5)) {
+        if (!k.ids.isEmpty())
+            keys << k;
+    }
+    int ownKeys = 0;
+    for (const Key &k : std::as_const(keys)) {
+        result.keyStats << k.weight->label;
+        const bool has = std::any_of(sources.cbegin(), sources.cend(), [&k](const StatSource &x) {
+            return x.origin != StatOrigin::Socket && x.value > 0 && k.weight->pattern.match(x.key).hasMatch();
+        });
+        ownKeys += has ? 1 : 0;
+    }
+    result.needKeyStats = std::min(2, ownKeys);
+    if (!kept.isEmpty() && result.needKeyStats > 0 && options.keyStatShare > 0) {
+        QJsonArray group;
+        for (const Key &k : std::as_const(keys)) {
+            const double min = std::max(1.0, std::floor(k.weight->cap * options.keyStatShare));
+            for (const TradeStat *e : k.ids)
+                group.append(statFilter(e->id, {{u"min"_s, min}}));
+        }
+        stats.append(statGroup(u"count"_s, group, {{u"min"_s, result.needKeyStats}}));
+    }
+
+    // The smallest form: "has some of your key stats at a decent roll". The
+    // results window still rates each listing with your gear score.
+    result.countOnly = options.countOnly && !keys.isEmpty();
+    if (result.countOnly) {
+        QJsonArray group;
+        for (const Key &k : std::as_const(keys)) {
+            const auto e = std::find_if(k.ids.cbegin(), k.ids.cend(),
+                                        [](const TradeStat *s) { return s->type == u"explicit"; });
+            const TradeStat *id = e != k.ids.cend() ? *e : k.ids.first();
+            group.append(statFilter(id->id, {{u"min"_s, std::max(1.0, std::floor(k.weight->cap * 0.5))}}));
+        }
+        const int need = std::max(1, std::min({3, ownKeys > 0 ? ownKeys : 2, int(group.size())}));
+        stats = {statGroup(u"count"_s, group, {{u"min"_s, need}})};
+    }
+
+    QJsonObject query = newQuery(options.status);
+    query.insert(u"stats"_s, stats);
+    query.insert(u"filters"_s, filters);
+    if (!options.countOnly)
+        result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
+    // best for your build first; the results window can sort by price
+    result.body = result.countOnly ? searchBody(query, u"price"_s, u"asc"_s)
+                                   : searchBody(query, u"statgroup.0"_s, u"desc"_s);
     return result;
 }
 

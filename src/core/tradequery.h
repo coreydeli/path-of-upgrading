@@ -130,4 +130,40 @@ struct CraftBaseSearch : TradeQuery
 CraftBaseSearch craftBaseSearch(const Item &item, const QList<KeyStat> &keyStats, const TradeData &data,
                                 const SearchOptions &options = {});
 
+struct GearSearchOptions : SearchOptions
+{
+    QString itemClass; // the item's own when empty
+    // Of your item's sum a listing has to reach: 1 beats it, 0.9 is within 10%.
+    double share = 1;
+    double baseShare = 0.8; // of your base defences
+    // A decent roll of a key stat, against an excellent one. 0 leaves out
+    // asking for the slot's key stats.
+    double keyStatShare = 0.4;
+
+    // Smaller searches, for when the trade site says one is too complex.
+    bool explicitOnly = false;
+    int maxFilters = 40;
+    bool countOnly = false; // only "has some of the key stats", for the results to score
+};
+
+struct GearSearch : TradeQuery
+{
+    bool countOnly = false;
+    double current = 0;  // your item's sum
+    double groupMin = 0; // what a listing's sum has to reach
+    int filters = 0;     // weighted stats searched for
+    int dropped = 0;     // and left out for the site's limit
+    QStringList parts;   // what the search looks at, for its summary
+    QStringList keyStats;
+    int needKeyStats = 0; // how many of them a listing has to have
+};
+
+// "Better for my build": the trade site's weighted sum with the gear score's
+// weights, so it finds items that would score higher in the slot even with a
+// different mix of stats. Implicit and explicit versions of a stat both count,
+// and listings need some of the slot's key stats at a decent roll, so one big
+// roll of a minor stat can't carry a poor item.
+GearSearch gearSearch(const Item &item, const QList<SearchWeight> &weights, const TradeData &data,
+                      const GearSearchOptions &options = {});
+
 } // namespace pou
