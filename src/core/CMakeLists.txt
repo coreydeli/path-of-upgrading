@@ -1,4 +1,5 @@
 add_library(pou_core STATIC
+    buildprofiles.cpp buildprofiles.h
     character.cpp character.h
     ignore.cpp ignore.h
     item.h
