@@ -32,5 +32,12 @@ if(QT_KNOWN_POLICY_QTP0004)
     qt_policy(SET QTP0004 NEW)
 endif()
 
+option(BUILD_TESTING "Build the unit tests" ON)
+
 add_subdirectory(src)
 add_subdirectory(data)
+
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
