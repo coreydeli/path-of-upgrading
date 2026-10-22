@@ -2,6 +2,7 @@ add_library(pou_core STATIC
     autoweights.cpp autoweights.h
     budget.cpp budget.h
     buildprofiles.cpp buildprofiles.h
+    catalog.cpp catalog.h
     character.cpp character.h
     gearscore.cpp gearscore.h
     ignore.cpp ignore.h
