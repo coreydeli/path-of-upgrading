@@ -20,3 +20,4 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControl
 qt_standard_project_setup(REQUIRES 6.5)
 
 add_subdirectory(src)
+add_subdirectory(data)
