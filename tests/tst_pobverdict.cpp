@@ -398,6 +398,18 @@ private Q_SLOTS:
             judgeWithPob({{u"SpiritUnreserved"_s, -10}}, {{u"SpiritUnreserved"_s, 15}});
         QVERIFY(!reserved.changes.first().percent);
     }
+
+    void bestOfSeveral()
+    {
+        const PobVerdict breaksSpirit =
+            judgeWithPob(geared, with(geared, {{u"MinionDPS"_s, 130000}, {u"SpiritUnreserved"_s, -5}}));
+        const PobVerdict clean = judgeWithPob(geared, with(geared, {{u"MinionDPS"_s, 104000}}));
+        const PobVerdict better = judgeWithPob(geared, with(geared, {{u"MinionDPS"_s, 108000}}));
+        QCOMPARE(bestVerdict({breaksSpirit, clean}), 1);
+        QCOMPARE(bestVerdict({breaksSpirit, clean, better}), 2);
+        QCOMPARE(bestVerdict({better, better}), 0);
+        QCOMPARE(bestVerdict({}), -1);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestPobVerdict)

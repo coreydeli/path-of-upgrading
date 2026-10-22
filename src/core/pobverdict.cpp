@@ -235,4 +235,15 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
     return v;
 }
 
+qsizetype bestVerdict(const QList<PobVerdict> &verdicts)
+{
+    const auto best =
+        std::min_element(verdicts.cbegin(), verdicts.cend(), [](const PobVerdict &a, const PobVerdict &b) {
+            if (a.breaks.size() != b.breaks.size())
+                return a.breaks.size() < b.breaks.size();
+            return a.score > b.score;
+        });
+    return best == verdicts.cend() ? -1 : best - verdicts.cbegin();
+}
+
 } // namespace pou

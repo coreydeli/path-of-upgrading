@@ -107,4 +107,9 @@ QString pobDamageStat(const PobStats &stats);
 // before is the build as it is, after the build with the item.
 PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const PobVerdictOptions &options = {});
 
+// Of an item tried in several places, like a ring in either ring slot, the
+// one to show: it breaks the least and of those scores best. -1 when there
+// are none.
+qsizetype bestVerdict(const QList<PobVerdict> &verdicts);
+
 } // namespace pou
