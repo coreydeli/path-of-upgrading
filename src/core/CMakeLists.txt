@@ -10,6 +10,7 @@ add_library(pou_core STATIC
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
     statsources.cpp statsources.h
+    tradedata.cpp tradedata.h
     verdict.h
     weights.cpp weights.h
 )
