@@ -21,6 +21,7 @@ add_library(pou_core STATIC
     resists.cpp resists.h
     scorer.cpp scorer.h
     seenstats.cpp seenstats.h
+    settings.cpp settings.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
