@@ -34,6 +34,8 @@ struct PobPriorities
     bool keepDamage = true; // an item that costs a good part of your damage is never an upgrade
     bool spirit = true;     // running out of Spirit for your minions and auras breaks the build
     bool attributes = true; // and so does not having the attributes for your gear
+
+    friend bool operator==(const PobPriorities &, const PobPriorities &) = default;
 };
 
 struct PobVerdictOptions
