@@ -21,4 +21,12 @@ QString normalizeStat(const QString &text)
     return s.trimmed();
 }
 
+bool isConditionalStat(const QString &text)
+{
+    static const QRegularExpression conditional(
+        uR"(\b(if you've|if you have|while|when|recently)\b|\bper (?!second))"_s,
+        QRegularExpression::CaseInsensitiveOption);
+    return conditional.match(text).hasMatch();
+}
+
 } // namespace pou
