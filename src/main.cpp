@@ -12,7 +12,8 @@ namespace {
 bool styleInstalled(const QString &uri)
 {
     const QString relative = QString(uri).replace(QLatin1Char('.'), QLatin1Char('/'));
-    QStringList dirs = qEnvironmentVariable("QML_IMPORT_PATH").split(QDir::listSeparator(), Qt::SkipEmptyParts);
+    QStringList dirs =
+        qEnvironmentVariable("QML_IMPORT_PATH").split(QDir::listSeparator(), Qt::SkipEmptyParts);
     dirs << QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
     for (const QString &dir : std::as_const(dirs)) {
         if (QFileInfo::exists(dir + QLatin1Char('/') + relative + QLatin1String("/qmldir")))
@@ -44,8 +45,9 @@ int main(int argc, char *argv[])
     pickControlsStyle();
 
     QQmlApplicationEngine engine;
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
-                     [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
+    QObject::connect(
+        &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
+        Qt::QueuedConnection);
     engine.loadFromModule("PathOfUpgrading", "Main");
 
     return app.exec();
