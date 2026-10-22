@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/resists.h"
+
+#include <QHash>
+#include <QList>
 #include <QString>
 #include <optional>
 
@@ -30,5 +34,31 @@ PobItemText convertPobItem(const QString &raw, const QString &slot);
 // slot, for weapons and off-hands the class of its base type ("Omen Sceptre"
 // is a Sceptre). "Weapons" or "Off-hands" when the base is one it doesn't know.
 QString pobItemClass(const QString &slot, const QString &baseType);
+
+// What a build wears: the item set it has active and the jewels in its
+// passive tree.
+struct PobBuild
+{
+    int level = 0;
+    QString className;  // "Sorceress"
+    QString ascendancy; // "Stormweaver", empty before it has one
+
+    // By slot: "Weapon", "Ring 1", "Life Flask", "Charm 2"... The weapon set
+    // in use is "Weapon" and "Offhand", the other one "Weapon 2" and "Offhand 2".
+    QHash<QString, PobItemText> gear;
+    // In the order of the nodes they're socketed in.
+    QList<PobItemText> jewels;
+
+    // As Path of Building shows them plus however far over the maximum they
+    // go. Unknown when the build doesn't say.
+    PerElement<std::optional<double>> resists;
+};
+
+// Empty when the XML isn't a Path of Building 2 build.
+std::optional<PobBuild> parsePobBuild(const QString &xml);
+
+// The XML is a build for the first game, which the first Path of Building
+// shares in codes just like these.
+bool isPoe1Build(const QString &xml);
 
 } // namespace pou

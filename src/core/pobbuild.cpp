@@ -5,11 +5,14 @@
 
 #include <QByteArray>
 #include <QHash>
+#include <QMap>
 #include <QRegularExpression>
 #include <QSet>
 #include <QStringList>
+#include <QXmlStreamReader>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <zlib.h>
 
 using namespace Qt::Literals::StringLiterals;
@@ -241,6 +244,106 @@ QString weaponClass(const QString &baseType)
     return {};
 }
 
+// Our slot for one of Path of Building's, empty for those we don't keep,
+// like "Ring 3". It names its weapon sets "Weapon 1" and "Weapon 1 Swap";
+// ours are the set in use and the other one.
+QString gearSlot(const QString &pobSlot, bool swapInUse)
+{
+    static const QHash<QString, QString> slots = {
+        {u"Weapon 1"_s, u"Weapon"_s},
+        {u"Weapon 2"_s, u"Offhand"_s},
+        {u"Weapon 1 Swap"_s, u"Weapon 2"_s},
+        {u"Weapon 2 Swap"_s, u"Offhand 2"_s},
+        {u"Helmet"_s, u"Helmet"_s},
+        {u"Body Armour"_s, u"Body Armour"_s},
+        {u"Gloves"_s, u"Gloves"_s},
+        {u"Boots"_s, u"Boots"_s},
+        {u"Belt"_s, u"Belt"_s},
+        {u"Amulet"_s, u"Amulet"_s},
+        {u"Ring 1"_s, u"Ring 1"_s},
+        {u"Ring 2"_s, u"Ring 2"_s},
+        {u"Flask 1"_s, u"Life Flask"_s},
+        {u"Flask 2"_s, u"Mana Flask"_s},
+        {u"Charm 1"_s, u"Charm 1"_s},
+        {u"Charm 2"_s, u"Charm 2"_s},
+        {u"Charm 3"_s, u"Charm 3"_s},
+    };
+    static const QHash<QString, QString> otherSet = {
+        {u"Weapon"_s, u"Weapon 2"_s},
+        {u"Offhand"_s, u"Offhand 2"_s},
+        {u"Weapon 2"_s, u"Weapon"_s},
+        {u"Offhand 2"_s, u"Offhand"_s},
+    };
+    const QString slot = slots.value(pobSlot);
+    return swapInUse ? otherSet.value(slot, slot) : slot;
+}
+
+struct ItemSet
+{
+    int id = 0;
+    bool swapInUse = false;               // its second weapon set is the one in use
+    QList<std::pair<QString, int>> slots; // Path of Building's slot, the item's id
+};
+
+ItemSet readItemSet(QXmlStreamReader &reader)
+{
+    const QXmlStreamAttributes attributes = reader.attributes();
+    ItemSet set;
+    set.id = attributes.value(u"id").toInt();
+    set.swapInUse = attributes.value(u"useSecondWeaponSet") == u"true";
+    while (reader.readNextStartElement()) {
+        if (reader.name() == u"Slot") {
+            const QXmlStreamAttributes slot = reader.attributes();
+            set.slots.append({slot.value(u"name").toString(), slot.value(u"itemId").toInt()});
+        }
+        reader.skipCurrentElement();
+    }
+    return set;
+}
+
+// The ids of the jewels in one of the build's passive trees, in the order
+// of their nodes. A jewel stays put when you take back the socket's point,
+// but then it doesn't count.
+QList<int> readSpec(QXmlStreamReader &reader)
+{
+    const QXmlStreamAttributes attributes = reader.attributes();
+    QSet<int> allocated;
+    for (const QStringView node : attributes.value(u"nodes").split(u','))
+        allocated.insert(node.toInt());
+
+    QMap<int, int> jewels;
+    while (reader.readNextStartElement()) {
+        if (reader.name() != u"Sockets") {
+            reader.skipCurrentElement();
+            continue;
+        }
+        while (reader.readNextStartElement()) {
+            const QXmlStreamAttributes socket = reader.attributes();
+            if (const int node = socket.value(u"nodeId").toInt();
+                reader.name() == u"Socket" && allocated.contains(node))
+                jewels.insert(node, socket.value(u"itemId").toInt());
+            reader.skipCurrentElement();
+        }
+    }
+    return jewels.values();
+}
+
+// The numbers the build saved for its sidebar, by name: "Life", "FireResist"...
+QHash<QString, double> readPlayerStats(QXmlStreamReader &reader)
+{
+    QHash<QString, double> stats;
+    while (reader.readNextStartElement()) {
+        if (reader.name() == u"PlayerStat") {
+            const QXmlStreamAttributes stat = reader.attributes();
+            bool ok = false;
+            if (const double value = stat.value(u"value").toDouble(&ok); ok && std::isfinite(value))
+                stats.insert(stat.value(u"stat").toString(), value);
+        }
+        reader.skipCurrentElement();
+    }
+    return stats;
+}
+
 } // namespace
 
 std::optional<QString> decodeBuildCode(const QString &code)
@@ -449,6 +552,88 @@ PobItemText convertPobItem(const QString &raw, const QString &slot)
     if (corrupted)
         blocks << u"Corrupted"_s;
     return {blocks.join(u"\n--------\n"_s), !properties.isEmpty()};
+}
+
+std::optional<PobBuild> parsePobBuild(const QString &xml)
+{
+    QXmlStreamReader reader(xml);
+    if (!reader.readNextStartElement() || reader.name() != u"PathOfBuilding2")
+        return std::nullopt;
+
+    PobBuild build;
+    QHash<QString, double> stats;
+    QHash<int, QString> items;
+    QList<ItemSet> itemSets;
+    int activeItemSet = 0;
+    QList<QList<int>> trees;
+    int activeTree = 0;
+    while (reader.readNextStartElement()) {
+        const QXmlStreamAttributes attributes = reader.attributes();
+        if (reader.name() == u"Build") {
+            build.level = attributes.value(u"level").toInt();
+            build.className = attributes.value(u"className").toString();
+            if (const QStringView ascendancy = attributes.value(u"ascendClassName"); ascendancy != u"None")
+                build.ascendancy = ascendancy.toString();
+            stats = readPlayerStats(reader);
+        } else if (reader.name() == u"Tree") {
+            activeTree = attributes.value(u"activeSpec").toInt();
+            while (reader.readNextStartElement()) {
+                if (reader.name() == u"Spec")
+                    trees << readSpec(reader);
+                else
+                    reader.skipCurrentElement();
+            }
+        } else if (reader.name() == u"Items") {
+            activeItemSet = attributes.value(u"activeItemSet").toInt();
+            while (reader.readNextStartElement()) {
+                if (reader.name() == u"Item") {
+                    const int id = reader.attributes().value(u"id").toInt();
+                    // without the <ModRange> elements after the text
+                    items.insert(id, reader.readElementText(QXmlStreamReader::SkipChildElements));
+                } else if (reader.name() == u"ItemSet") {
+                    itemSets << readItemSet(reader);
+                } else {
+                    reader.skipCurrentElement();
+                }
+            }
+        } else {
+            reader.skipCurrentElement();
+        }
+    }
+    if (reader.hasError())
+        return std::nullopt;
+
+    // Path of Building falls back to the first item set, and to the last tree
+    if (!itemSets.isEmpty()) {
+        auto set = std::find_if(itemSets.cbegin(), itemSets.cend(),
+                                [&](const ItemSet &s) { return s.id == activeItemSet; });
+        if (set == itemSets.cend())
+            set = itemSets.cbegin();
+        for (const auto &[pobSlot, id] : set->slots) {
+            const QString slot = gearSlot(pobSlot, set->swapInUse);
+            if (const auto item = items.constFind(id); !slot.isEmpty() && item != items.cend())
+                build.gear.insert(slot, convertPobItem(*item, slot));
+        }
+    }
+    if (!trees.isEmpty()) {
+        for (const int id : trees.at(std::clamp<qsizetype>(activeTree, 1, trees.size()) - 1)) {
+            if (const auto item = items.constFind(id); item != items.cend())
+                build.jewels << convertPobItem(*item, u"Jewel"_s);
+        }
+    }
+
+    for (Element e : allElements) {
+        const QString stat = elementName(e) + u"Resist"_s;
+        if (const auto value = stats.constFind(stat); value != stats.cend())
+            build.resists[e] = *value + stats.value(stat + u"OverCap"_s);
+    }
+    return build;
+}
+
+bool isPoe1Build(const QString &xml)
+{
+    QXmlStreamReader reader(xml);
+    return reader.readNextStartElement() && reader.name() == u"PathOfBuilding";
 }
 
 } // namespace pou

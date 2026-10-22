@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/parser.h"
 #include "core/pobbuild.h"
+#include "pobfixtures.h"
 
 #include <QTest>
 
@@ -36,6 +37,32 @@ const QString separator = u"--------"_s;
 QString joined(const QStringList &lines)
 {
     return lines.join(u'\n');
+}
+
+QStringList sortedSlots(const PobBuild &build)
+{
+    QStringList keys = build.gear.keys();
+    keys.sort();
+    return keys;
+}
+
+QString nameOf(const PobItemText &item)
+{
+    const auto parsed = parseItem(item.text);
+    return parsed ? parsed->name : u"(no item)"_s;
+}
+
+QString nameIn(const PobBuild &build, const QString &slot)
+{
+    return nameOf(build.gear.value(slot));
+}
+
+QStringList jewelNames(const PobBuild &build)
+{
+    QStringList out;
+    for (const PobItemText &jewel : build.jewels)
+        out << nameOf(jewel);
+    return out;
 }
 
 } // namespace
@@ -308,6 +335,116 @@ private Q_SLOTS:
         QFETCH(QString, baseType);
         QFETCH(QString, itemClass);
         QCOMPARE(pobItemClass(slot, baseType), itemClass);
+    }
+
+    void readsABuild()
+    {
+        const auto build = parsePobBuild(decoded(codeFor(zlibData(pobfixtures::build))));
+        QVERIFY(build);
+        QCOMPARE(build->level, 92);
+        QCOMPARE(build->className, u"Sorceress"_s);
+        QCOMPARE(build->ascendancy, u"Stormweaver"_s);
+        // what's shown, plus how far over the maximum
+        QCOMPARE(build->resists[Element::Fire].value(), 93.0);
+        QCOMPARE(build->resists[Element::Cold].value(), 62.0);
+        QCOMPARE(build->resists[Element::Lightning].value(), 79.0);
+        QCOMPARE(build->resists[Element::Chaos].value(), -10.0);
+    }
+
+    void gearOfTheActiveSet()
+    {
+        const auto build = parsePobBuild(pobfixtures::build);
+        QVERIFY(build);
+        // not the empty helmet slot, an item that isn't there or a third ring
+        QCOMPARE(sortedSlots(*build), (QStringList{u"Belt"_s, u"Gloves"_s, u"Life Flask"_s, u"Offhand"_s,
+                                                   u"Weapon"_s, u"Weapon 2"_s}));
+        // its second weapon set is the one in use
+        QCOMPARE(nameIn(*build, u"Weapon"_s), u"Victory Star"_s);
+        QCOMPARE(nameIn(*build, u"Offhand"_s), u"Rapture Ward"_s);
+        QCOMPARE(nameIn(*build, u"Weapon 2"_s), u"Corpse Song"_s);
+
+        const auto weapon = parseItem(build->gear.value(u"Weapon"_s).text);
+        QVERIFY(weapon);
+        QCOMPARE(weapon->itemClass, u"Sceptres"_s);
+        QCOMPARE(weapon->stats.value(u"# to Level of all Minion Skills"), 4.0);
+
+        const QString gloves = build->gear.value(u"Gloves"_s).text;
+        QVERIFY(gloves.contains(u"\n+33 to maximum Life (crafted)\n"_s));
+        QVERIFY(!gloves.contains(u"ModRange"_s));
+        QCOMPARE(parseItem(gloves)->stats.value(u"# to maximum Life"), 33.0);
+    }
+
+    void jewelsOfTheActiveTree()
+    {
+        const auto build = parsePobBuild(pobfixtures::build);
+        QVERIFY(build);
+        // in node order, and not the one in a socket it took the point back from
+        QCOMPARE(jewelNames(*build), (QStringList{u"Rift Eye"_s, u"Grim Hope"_s}));
+        QVERIFY(build->jewels.first().text.startsWith(u"Item Class: Jewels\n"_s));
+    }
+
+    void firstWeaponSet()
+    {
+        const QString xml = QString(pobfixtures::build)
+                                .replace(u"useSecondWeaponSet=\"true\""_s, u"useSecondWeaponSet=\"false\""_s);
+        const auto build = parsePobBuild(xml);
+        QVERIFY(build);
+        QCOMPARE(nameIn(*build, u"Weapon"_s), u"Corpse Song"_s);
+        QCOMPARE(nameIn(*build, u"Weapon 2"_s), u"Victory Star"_s);
+        QCOMPARE(nameIn(*build, u"Offhand 2"_s), u"Rapture Ward"_s);
+        QVERIFY(!build->gear.contains(u"Offhand"_s));
+    }
+
+    void otherSetsAndTrees()
+    {
+        const QString first =
+            QString(pobfixtures::build).replace(u"activeSpec=\"2\""_s, u"activeSpec=\"1\""_s);
+        QCOMPARE(jewelNames(parsePobBuild(first).value()), (QStringList{u"Woe Spark"_s}));
+
+        // ones it doesn't have: Path of Building takes the first item set and the last tree
+        const QString missing = QString(pobfixtures::build)
+                                    .replace(u"activeItemSet=\"2\""_s, u"activeItemSet=\"7\""_s)
+                                    .replace(u"activeSpec=\"2\""_s, u"activeSpec=\"7\""_s);
+        const auto build = parsePobBuild(missing);
+        QVERIFY(build);
+        QCOMPARE(sortedSlots(*build), (QStringList{u"Belt"_s, u"Helmet"_s}));
+        QCOMPARE(jewelNames(*build), (QStringList{u"Rift Eye"_s, u"Grim Hope"_s}));
+    }
+
+    void littleToGoOn()
+    {
+        const auto build = parsePobBuild(joined({
+            u"<PathOfBuilding2>"_s,
+            u"<Build level=\"3\" className=\"Monk\" ascendClassName=\"None\">"_s,
+            u"<PlayerStat stat=\"FireResist\" value=\"12\"/>"_s,
+            u"<PlayerStat stat=\"ColdResist\" value=\"nan\"/>"_s,
+            u"</Build>"_s,
+            u"</PathOfBuilding2>"_s,
+        }));
+        QVERIFY(build);
+        QCOMPARE(build->level, 3);
+        QCOMPARE(build->className, u"Monk"_s);
+        QVERIFY(build->ascendancy.isEmpty());
+        QCOMPARE(build->resists[Element::Fire].value(), 12.0);
+        QVERIFY(!build->resists[Element::Cold]);
+        QVERIFY(!build->resists[Element::Chaos]);
+        QVERIFY(build->gear.isEmpty());
+        QVERIFY(build->jewels.isEmpty());
+    }
+
+    void notABuild()
+    {
+        const QString poe1 = joined({
+            u"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"_s,
+            u"<PathOfBuilding>"_s,
+            u"<Build level=\"90\" className=\"Witch\" ascendClassName=\"Elementalist\"/>"_s,
+            u"</PathOfBuilding>"_s,
+        });
+        QVERIFY(!parsePobBuild(poe1));
+        QVERIFY(isPoe1Build(poe1));
+        QVERIFY(!isPoe1Build(pobfixtures::build));
+        QVERIFY(!parsePobBuild(u"Rarity: RARE"_s));
+        QVERIFY(!parsePobBuild(pobfixtures::build.first(pobfixtures::build.size() / 2)));
     }
 };
 
