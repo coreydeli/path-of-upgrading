@@ -3,6 +3,7 @@ add_library(pou_core STATIC
     item.h
     numbers.cpp numbers.h
     parser.cpp parser.h
+    resists.cpp resists.h
     scorer.cpp scorer.h
     slots.cpp slots.h
     statmap.cpp statmap.h
