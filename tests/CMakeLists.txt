@@ -7,3 +7,4 @@ function(pou_add_test name)
 endfunction()
 
 pou_add_test(tst_slots)
+pou_add_test(tst_statnorm)

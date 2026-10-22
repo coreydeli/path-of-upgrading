@@ -1,5 +1,6 @@
 add_library(pou_core STATIC
     slots.cpp slots.h
+    statnorm.cpp statnorm.h
 )
 
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
