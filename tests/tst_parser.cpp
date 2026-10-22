@@ -131,6 +131,28 @@ private Q_SLOTS:
         QCOMPARE(lineWith(*it, u"Mana").tag, u"explicit"_s);
     }
 
+    void weaponDps()
+    {
+        const auto mace = parseItem(itemtexts::twoHandMace);
+        QCOMPARE(mace->slot, u"Weapon"_s);
+        QVERIFY(mace->twoHanded);
+        QCOMPARE(mace->stats.value(u"[Weapon] Physical DPS"), 143.0);
+        QCOMPARE(mace->stats.value(u"[Weapon] Elemental DPS"), 33.0);
+        QCOMPARE(mace->stats.value(u"[Weapon] Total DPS"), 176.0);
+        QCOMPARE(mace->stats.value(u"[Weapon] Critical Hit Chance"), 5.0);
+        QCOMPARE(mace->stats.value(u"[Weapon] Attacks per Second"), 1.1);
+        QVERIFY(!mace->stats.contains(u"[Weapon] Chaos DPS"));
+        QCOMPARE(mace->stats.value(u"Adds # to # Fire Damage"), 30.0);
+
+        const auto dagger = parseItem(u"Item Class: Daggers\nRarity: Magic\nVile Dagger\n--------\n"
+                                      "Physical Damage: 10-20\nChaos Damage: 5-9 (augmented), 1-3\n"
+                                      "Attacks per Second: 1.55"_s);
+        QVERIFY(!dagger->twoHanded);
+        QCOMPARE(dagger->stats.value(u"[Weapon] Chaos DPS"), 14.0); // 13.95 rounds up
+        QCOMPARE(dagger->stats.value(u"[Weapon] Total DPS"), 37.2);
+        QVERIFY(!dagger->stats.contains(u"[Weapon] Critical Hit Chance"));
+    }
+
     void expandsPairedStats()
     {
         QCOMPARE(

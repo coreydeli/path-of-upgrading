@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/parser.h"
 
+#include "core/numbers.h"
 #include "core/slots.h"
 
 #include <QHash>
@@ -41,6 +42,16 @@ QList<double> numbersIn(const QString &text)
 QString capitalized(const QString &word)
 {
     return word.left(1).toUpper() + word.mid(1).toLower();
+}
+
+// "20-38 (augmented), 5-9" -> the sum of each range's average
+double averageOfRanges(const QString &text)
+{
+    static const QRegularExpression range(uR"((\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?))"_s);
+    double total = 0;
+    for (const QRegularExpressionMatch &m : range.globalMatch(text))
+        total += (m.captured(1).toDouble() + m.captured(2).toDouble()) / 2;
+    return total;
 }
 
 // Base properties shown at the top of armour, weapons and shields.
@@ -179,6 +190,7 @@ std::optional<Item> parseItem(const QString &input)
     static const QRegularExpression unidentifiedLine(uR"(^Unidentified$)"_s, CaseInsensitive);
     static const QRegularExpression propertyLine(uR"(^([A-Za-z ]+):\s*(.+)$)"_s);
     static const QRegularExpression rollRange(uR"(\((-?\d+(?:\.\d+)?)[-–](-?\d+(?:\.\d+)?)\))"_s);
+    static const QRegularExpression elementDamage(uR"(^(fire|cold|lightning) damage$)"_s);
     static const QRegularExpression unscalable(uR"(\s+[—–-]+\s*Unscalable Value\s*$)"_s, CaseInsensitive);
 
     const QList<QStringList> blocks = splitBlocks(text);
@@ -218,6 +230,13 @@ std::optional<Item> parseItem(const QString &input)
     bool sawHeaders = false;
     int prefixes = 0;
     int suffixes = 0;
+
+    // weapon damage from the property block, averaged per hit
+    double physical = 0;
+    double elemental = 0;
+    double chaos = 0;
+    double attacksPerSecond = 0;
+    double critChance = 0;
 
     for (qsizetype b = 1; b < blocks.size(); ++b) {
         const QStringList &block = blocks.at(b);
@@ -268,6 +287,26 @@ std::optional<Item> parseItem(const QString &input)
                     }
                     continue;
                 }
+                if (name == u"physical damage") {
+                    physical += averageOfRanges(value);
+                    continue;
+                }
+                if (name == u"elemental damage" || elementDamage.match(name).hasMatch()) {
+                    elemental += averageOfRanges(value);
+                    continue;
+                }
+                if (name == u"chaos damage") {
+                    chaos += averageOfRanges(value);
+                    continue;
+                }
+                if (name == u"attacks per second") {
+                    attacksPerSecond = numbersIn(value).value(0);
+                    continue;
+                }
+                if (name == u"critical hit chance" || name == u"critical strike chance") {
+                    critChance = numbersIn(value).value(0);
+                    continue;
+                }
                 // Other "X: Y" lines (Grants Skill, Reload Time...) are shown but not scored.
                 item.lines << ItemLine{line, {}, 0, u"info"_s};
                 continue;
@@ -300,6 +339,18 @@ std::optional<Item> parseItem(const QString &input)
         item.affixes.suffixes = suffixes;
         item.affixes.openPrefix = item.corrupted ? 0 : std::max(0, max - prefixes);
         item.affixes.openSuffix = item.corrupted ? 0 : std::max(0, max - suffixes);
+    }
+
+    if (attacksPerSecond > 0) {
+        item.stats.set(u"[Weapon] Physical DPS"_s, roundTo(physical * attacksPerSecond, 1));
+        item.stats.set(u"[Weapon] Elemental DPS"_s, roundTo(elemental * attacksPerSecond, 1));
+        if (chaos != 0)
+            item.stats.set(u"[Weapon] Chaos DPS"_s, roundTo(chaos * attacksPerSecond, 1));
+        item.stats.set(u"[Weapon] Total DPS"_s,
+                       roundTo((physical + elemental + chaos) * attacksPerSecond, 1));
+        if (critChance != 0)
+            item.stats.set(u"[Weapon] Critical Hit Chance"_s, critChance);
+        item.stats.set(u"[Weapon] Attacks per Second"_s, attacksPerSecond);
     }
 
     return item;
