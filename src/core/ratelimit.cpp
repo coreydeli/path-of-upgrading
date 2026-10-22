@@ -47,7 +47,7 @@ RateLimiter::RateLimiter()
 
 std::chrono::milliseconds RateLimiter::wait(Clock::time_point now) const
 {
-    Clock::duration wait{};
+    Clock::duration wait = std::max(m_blockedUntil, now) - now;
     for (const RateWindow &limit : m_limits) {
         const qsizetype room = std::max(1, limit.hits - 1);
         if (sentWithin(now, limit.seconds) < room)
@@ -65,9 +65,50 @@ void RateLimiter::sent(Clock::time_point now)
     forgetOld(now);
 }
 
+void RateLimiter::learn(const RateHeaders &headers, Clock::time_point now)
+{
+    if (const QList<RateWindow> limits = rateWindows(headers.ip) + rateWindows(headers.account);
+        !limits.isEmpty())
+        m_limits = limits;
+    // apart, as your account's requests can come from elsewhere and your
+    // address's from other accounts
+    takeCounts(rateWindows(headers.ipState), now);
+    takeCounts(rateWindows(headers.accountState), now);
+
+    bool ok = false;
+    if (const int seconds = headers.retryAfter.toInt(&ok); ok && seconds > 0)
+        m_blockedUntil = std::max(m_blockedUntil, now + std::chrono::seconds(seconds));
+    forgetOld(now);
+}
+
 void RateLimiter::note(Clock::time_point at)
 {
     m_sent.insert(std::upper_bound(m_sent.cbegin(), m_sent.cend(), at), at);
+}
+
+// Adds the requests the site counted in a -state header that aren't in the
+// log already.
+void RateLimiter::takeCounts(QList<RateWindow> counted, Clock::time_point now)
+{
+    std::sort(counted.begin(), counted.end(),
+              [](const RateWindow &a, const RateWindow &b) { return a.seconds < b.seconds; });
+    // More than any limit allows makes no difference to the wait, and a
+    // header that says millions would fill the memory.
+    int most = 0;
+    for (const RateWindow &limit : std::as_const(m_limits))
+        most = std::max(most, limit.hits);
+
+    // The site doesn't say when they went, only in which windows. The ones
+    // that aren't in a shorter window went before it, and taking them as
+    // going just then waits as long as they could need.
+    Clock::time_point at = now;
+    for (const RateWindow &window : std::as_const(counted)) {
+        for (qsizetype n = sentWithin(now, window.seconds); n < std::min(window.hits, most); ++n)
+            note(at);
+        at = now - countedFor(window.seconds);
+        if (window.ban > 0)
+            m_blockedUntil = std::max(m_blockedUntil, now + std::chrono::seconds(window.ban));
+    }
 }
 
 qsizetype RateLimiter::sentWithin(Clock::time_point now, int seconds) const

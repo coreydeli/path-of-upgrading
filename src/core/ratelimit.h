@@ -26,6 +26,16 @@ struct RateWindow
 // The windows in a header, "5:10:60,15:60:300", leaving out any it can't read.
 QList<RateWindow> rateWindows(QStringView header);
 
+// What an answer's headers said about the limits.
+struct RateHeaders
+{
+    QString ip;           // x-rate-limit-ip
+    QString ipState;      // x-rate-limit-ip-state
+    QString account;      // x-rate-limit-account
+    QString accountState; // x-rate-limit-account-state
+    QString retryAfter;   // Retry-After, in seconds
+};
+
 // Spaces requests out to stay under the limits with one to spare in each, as
 // going over gets you banned for minutes.
 class RateLimiter
@@ -40,15 +50,23 @@ public:
     std::chrono::milliseconds wait(Clock::time_point now) const;
     void sent(Clock::time_point now);
 
+    // Takes up the limits an answer gave and what the site counted, which
+    // includes requests from elsewhere, like the trade site open in your
+    // browser. A Retry-After, or a ban in the counts, holds every request
+    // until it's over.
+    void learn(const RateHeaders &headers, Clock::time_point now);
+
     QList<RateWindow> limits() const { return m_limits; }
 
 private:
     void note(Clock::time_point at);
+    void takeCounts(QList<RateWindow> counted, Clock::time_point now);
     qsizetype sentWithin(Clock::time_point now, int seconds) const;
     void forgetOld(Clock::time_point now);
 
     QList<RateWindow> m_limits;
     QList<Clock::time_point> m_sent; // oldest first
+    Clock::time_point m_blockedUntil;
 };
 
 } // namespace pou
