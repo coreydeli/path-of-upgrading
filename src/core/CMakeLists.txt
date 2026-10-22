@@ -14,6 +14,7 @@ add_library(pou_core STATIC
     numbers.cpp numbers.h
     parser.cpp parser.h
     pobbuild.cpp pobbuild.h
+    pobverdict.cpp pobverdict.h
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
