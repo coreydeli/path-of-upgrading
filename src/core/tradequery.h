@@ -92,4 +92,30 @@ struct WeightedSearch : TradeQuery
 WeightedSearch weightedSearch(const Item &item, const Weights &weights, const TradeData &data,
                               const WeightedSearchOptions &options = {});
 
+struct SimilarSearchOptions : SearchOptions
+{
+    // How loose the search is, from 0 (your values or higher) up to
+    // similarSearchLevels() - 1. A search that finds nothing is retried looser.
+    int level = 0;
+};
+
+struct SimilarSearch : TradeQuery
+{
+    QStringList skipped; // rune and enchant bonuses, which you can add yourself
+    QStringList ignored;
+    int need = 0;  // how many of the stats a listing has to have
+    int total = 0; // how many stats were searched for
+    int level = 0;
+    QString levelLabel; // "90% of your values"
+    bool unique = false;
+};
+
+int similarSearchLevels();
+
+// "Same stats or better": each mod on your item at your value, in a count
+// group so a listing may be without some of them. Base defences become a
+// minimum, without your rune bonus. Uniques are searched by name.
+SimilarSearch similarSearch(const Item &item, const TradeData &data,
+                            const SimilarSearchOptions &options = {});
+
 } // namespace pou

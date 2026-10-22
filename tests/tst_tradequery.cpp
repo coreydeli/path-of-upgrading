@@ -69,6 +69,22 @@ QStringList filterIds(const QJsonObject &group)
     return ids;
 }
 
+// What the group's filter for the stat asks for.
+QJsonObject valueOf(const QJsonObject &group, const QString &id)
+{
+    for (const QJsonValue &f : group.value(u"filters").toArray()) {
+        if (f.toObject().value(u"id").toString() == id)
+            return f.toObject().value(u"value").toObject();
+    }
+    return {};
+}
+
+QJsonObject firstValue(const TradeQuery &q)
+{
+    const QJsonArray filters = statGroups(q).at(0).toObject().value(u"filters").toArray();
+    return filters.at(0).toObject().value(u"value").toObject();
+}
+
 StatPick pick(const QString &key, double min)
 {
     StatPick p;
@@ -253,6 +269,137 @@ private Q_SLOTS:
         // not in the trade site's list, and your item has it
         QCOMPARE(q.unmatched, QStringList{u"# to Spirit"_s});
         QCOMPARE(q.excluded, 0);
+    }
+
+    void similarItems()
+    {
+        const Item helmet = withStats(u"Helmets"_s, {{u"# to maximum Life"_s, 50},
+                                                     {u"#% to Fire Resistance"_s, 20},
+                                                     {u"#% increased Movement Speed"_s, 10},
+                                                     {u"#% increased Armour"_s, 40},
+                                                     {u"[Base] Armour"_s, 300},
+                                                     {u"mystery #"_s, 3}});
+        SimilarSearchOptions options;
+        options.preferLocal = true;
+        const SimilarSearch q = similarSearch(helmet, tradeData(), options);
+        const QJsonObject group = statGroups(q).at(0).toObject();
+        QCOMPARE(group.value(u"type").toString(), u"count"_s);
+        QCOMPARE(filterIds(group),
+                 QStringList({u"explicit.stat_ms"_s, u"explicit.stat_armour_local"_s,
+                              u"pseudo.pseudo_total_life"_s, u"pseudo.pseudo_total_fire_resistance"_s}));
+        // a listing may be without one of four
+        QCOMPARE(group.value(u"value").toObject(), minimum(3));
+        QCOMPARE(q.need, 3);
+        QCOMPARE(q.total, 4);
+        QCOMPARE(valueOf(group, u"pseudo.pseudo_total_life"_s), minimum(50));
+        QCOMPARE(valueOf(group, u"explicit.stat_armour_local"_s), minimum(40));
+        QCOMPARE(filterOf(q, u"equipment_filters", u"ar"), minimum(270));
+        QCOMPARE(q.unmatched, QStringList{u"mystery #"_s});
+        QCOMPARE(q.body.value(u"sort").toObject(), QJsonObject({{u"price"_s, u"asc"_s}}));
+        QCOMPARE(q.levelLabel, u"your values or higher"_s);
+
+        const SimilarSearch small =
+            similarSearch(withStats(u"Helmets"_s, {{u"# to maximum Life"_s, 50}}), tradeData());
+        QCOMPARE(statGroups(small).at(0).toObject().value(u"value").toObject(), minimum(1));
+    }
+
+    void similarLeavesRunesOut()
+    {
+        const Item helmet = parseItem(u"Item Class: Helmets\nRarity: Rare\nA\nB\n--------\nArmour: 300\n"
+                                      "--------\n+12% to Fire Resistance (rune)\n--------\n"
+                                      "+50 to maximum Life\n+20% to Fire Resistance\n"
+                                      "10% increased Armour (rune)\n20% increased Armour"_s)
+                                .value();
+        SimilarSearchOptions options;
+        options.preferLocal = true;
+        const SimilarSearch q = similarSearch(helmet, tradeData(), options);
+        const QJsonObject group = statGroups(q).at(0).toObject();
+        QCOMPARE(valueOf(group, u"explicit.stat_armour_local"_s), minimum(20));
+        QCOMPARE(valueOf(group, u"pseudo.pseudo_total_fire_resistance"_s), minimum(20));
+        QCOMPARE(q.skipped, QStringList({u"#% to Fire Resistance"_s, u"#% increased Armour"_s}));
+    }
+
+    void similarRelaxes()
+    {
+        const Item gloves =
+            parseItem(u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSorcerer Gloves\n--------\n"
+                      "Energy Shield: 280 (augmented)\n--------\n"
+                      "18% increased Armour, Evasion and Energy Shield (rune)\n--------\n"
+                      "113% increased Energy Shield\n+33 to maximum Life\n"
+                      "+39% to Lightning Resistance\n+45% to Cold Resistance"_s)
+                .value();
+        SimilarSearchOptions options;
+        options.preferLocal = true;
+        const SimilarSearch exact = similarSearch(gloves, tradeData(), options);
+        // 280 * (100 + 113) / (100 + 113 + 18) = 258.18 without the rune, and 90% of that
+        QCOMPARE(filterOf(exact, u"equipment_filters", u"es"), minimum(232));
+        QCOMPARE(queryOf(exact).value(u"status").toObject().value(u"option").toString(), u"available"_s);
+        QCOMPARE(valueOf(statGroups(exact).at(0).toObject(), u"pseudo.pseudo_total_life"_s), minimum(33));
+
+        options.level = 2;
+        const SimilarSearch looser = similarSearch(gloves, tradeData(), options);
+        QCOMPARE(valueOf(statGroups(looser).at(0).toObject(), u"pseudo.pseudo_total_life"_s), minimum(26));
+        QCOMPARE(filterOf(looser, u"equipment_filters", u"es"), minimum(185));
+        QVERIFY(looser.need <= exact.need);
+        QCOMPARE(looser.level, 2);
+        QCOMPARE(looser.levelLabel, u"80% of your values"_s);
+
+        options.level = 99;
+        QCOMPARE(similarSearch(gloves, tradeData(), options).level, similarSearchLevels() - 1);
+
+        // small values never round down to nothing
+        SimilarSearchOptions loosest;
+        loosest.level = 3;
+        const SimilarSearch tiny =
+            similarSearch(withStats(u"Helmets"_s, {{u"# to maximum Life"_s, 1}}), tradeData(), loosest);
+        QCOMPARE(firstValue(tiny), minimum(1));
+
+        // a negative value is a maximum
+        const SimilarSearch reduced = similarSearch(
+            withStats(u"Boots"_s, {{u"#% increased Movement Speed"_s, -10}}), tradeData(), loosest);
+        QCOMPARE(firstValue(reduced), QJsonObject({{u"max"_s, -6.5}}));
+    }
+
+    void similarUniques()
+    {
+        const Item belt =
+            parseItem(
+                u"Item Class: Belts\nRarity: Unique\nMageblood\nHeavy Belt\n--------\n+50 to maximum Life"_s)
+                .value();
+        const SimilarSearch q = similarSearch(belt, tradeData());
+        QVERIFY(q.unique);
+        QCOMPARE(queryOf(q).value(u"name").toString(), u"Mageblood"_s);
+        QCOMPARE(queryOf(q).value(u"type").toString(), u"Heavy Belt"_s);
+        QVERIFY(!queryOf(q).value(u"filters").toObject().contains(u"type_filters"));
+        QCOMPARE(statGroups(q).size(), 1);
+
+        SimilarSearchOptions last;
+        last.level = similarSearchLevels() - 1;
+        const SimilarSearch nameOnly = similarSearch(belt, tradeData(), last);
+        QCOMPARE(nameOnly.need, 0);
+        QCOMPARE(statGroups(nameOnly), QJsonArray());
+    }
+
+    void similarSkipsIgnoredStats()
+    {
+        const Item helmet = withStats(
+            u"Helmets"_s, {{u"# to maximum Life"_s, 50},
+                           {u"#% to Fire Resistance"_s, 30},
+                           {u"#% to Cold Resistance"_s, 20},
+                           {u"Allies in your Presence have #% to all Elemental Resistances"_s, 10}});
+        SimilarSearchOptions options;
+        options.ignoreRules = {{u"res"_s, {}, IgnoreRule::Mode::Ignore}};
+        const SimilarSearch q = similarSearch(helmet, tradeData(), options);
+        QCOMPARE(q.ignored, QStringList({u"#% to Fire Resistance"_s, u"#% to Cold Resistance"_s}));
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()), QStringList{u"pseudo.pseudo_total_life"_s});
+        // plain ignore rules don't add a group
+        QCOMPARE(statGroups(q).size(), 1);
+
+        options.ignoreRules = {{u"res"_s, {}, IgnoreRule::Mode::Exclude}};
+        const SimilarSearch excluding = similarSearch(helmet, tradeData(), options);
+        QCOMPARE(statGroups(excluding).at(1).toObject().value(u"type").toString(), u"not"_s);
+        QCOMPARE(filterIds(statGroups(excluding).at(1).toObject()),
+                 QStringList{u"pseudo.pseudo_total_fire_resistance"_s});
     }
 };
 

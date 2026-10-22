@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 #include "core/tradequery.h"
 
+#include "core/numbers.h"
+
 #include <QJsonArray>
+#include <QRegularExpression>
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 using namespace Qt::Literals::StringLiterals;
@@ -96,6 +100,28 @@ QString modTypeFor(StatOrigin origin)
         break;
     }
     return u"explicit"_s;
+}
+
+struct Looseness
+{
+    double share;          // of your values a listing needs
+    int (*mayMiss)(int n); // how many of your n stats a listing may be without
+    const char16_t *label;
+};
+
+const std::array<Looseness, 4> looseness = {{
+    {1.0, [](int n) { return n >= 4 ? 1 : 0; }, u"your values or higher"},
+    {0.9, [](int n) { return n >= 4   ? 2
+                             : n >= 2 ? 1
+                                      : 0; }, u"90% of your values"},
+    {0.8, [](int n) { return std::max(n >= 2 ? 1 : 0, (n + 2) / 3); }, u"80% of your values"},
+    {0.65, [](int n) { return std::max(n >= 2 ? 1 : 0, (n + 1) / 2); }, u"65% of your values"},
+}};
+
+void appendOnce(QStringList &list, const QString &value)
+{
+    if (!list.contains(value))
+        list << value;
 }
 
 } // namespace
@@ -225,6 +251,117 @@ WeightedSearch weightedSearch(const Item &item, const Weights &weights, const Tr
     query.insert(u"filters"_s, filters);
     result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
     result.body = searchBody(query, u"statgroup.0"_s, u"desc"_s);
+    return result;
+}
+
+int similarSearchLevels()
+{
+    return int(looseness.size());
+}
+
+SimilarSearch similarSearch(const Item &item, const TradeData &data, const SimilarSearchOptions &options)
+{
+    // Weapon properties other than total DPS say too little on their own, and
+    // ward and block come with the base type.
+    static const QRegularExpression skippedProperties(
+        u"Attacks per Second|Critical Hit Chance|Physical DPS|Elemental DPS|Chaos DPS|Runic Ward|Block"_s);
+
+    SimilarSearch result;
+    result.level = std::clamp(options.level, 0, similarSearchLevels() - 1);
+    const Looseness &loose = looseness[result.level];
+    result.levelLabel = QString::fromUtf16(loose.label);
+    result.unique = item.rarity.contains(u"unique", Qt::CaseInsensitive);
+
+    struct Wanted
+    {
+        QString id;
+        double value = 0;
+    };
+    QList<Wanted> wanted;
+    QList<Wanted> pseudoTotals; // pseudo stats add up implicit and explicit mods, so they come last
+    const auto addTo = [](QList<Wanted> &list, const QString &id, double value) {
+        const auto it = std::find_if(list.begin(), list.end(), [&id](const Wanted &w) { return w.id == id; });
+        if (it == list.end())
+            list.append({id, value});
+        else
+            it->value += value;
+    };
+
+    QJsonObject equipment;
+    const QList<StatSource> sources = statSources(item);
+    for (const StatSource &x : sources) {
+        if (isIgnored(options.ignoreRules, x.key)) {
+            appendOnce(result.ignored, x.key);
+            continue;
+        }
+        if (x.origin == StatOrigin::Base) {
+            const QString filter = equipmentFilter(x.key);
+            if (filter.isEmpty() || result.unique || skippedProperties.match(x.key).hasMatch())
+                continue;
+            if (const double v = baseWithoutSockets(x.key, x.value, sources); v > 0)
+                equipment.insert(filter, QJsonObject{{u"min"_s, std::floor(v * 0.9 * loose.share)}});
+            continue;
+        }
+        if (x.origin == StatOrigin::Socket) {
+            result.skipped << x.key;
+            continue;
+        }
+        const auto m = data.stats.match(x.key, {.preferLocal = options.preferLocal});
+        if (!m) {
+            appendOnce(result.unmatched, x.key);
+            continue;
+        }
+        if (m->type == u"pseudo") {
+            addTo(pseudoTotals, m->id, x.value);
+            continue;
+        }
+        const QString type = x.origin == StatOrigin::Implicit ? u"implicit"_s : u"explicit"_s;
+        const auto typed = data.stats.match(x.key, {.preferLocal = options.preferLocal, .type = type});
+        addTo(wanted, typed ? typed->id : m->id, x.value);
+    }
+    wanted << pseudoTotals;
+
+    QJsonArray statFilters;
+    for (const Wanted &w : std::as_const(wanted)) {
+        QJsonObject value;
+        if (w.value > 0) {
+            double min = roundTo(w.value >= 3 ? std::floor(w.value * loose.share) : w.value * loose.share, 2);
+            // "+1 to Level of all Skills" mustn't round down to nothing
+            if (w.value >= 1 && min < 1)
+                min = 1;
+            value.insert(u"min"_s, min);
+        } else if (w.value < 0) {
+            value.insert(u"max"_s, roundTo(w.value * loose.share, 2));
+        }
+        statFilters.append(statFilter(w.id, value));
+    }
+
+    result.total = int(statFilters.size());
+    result.need = std::max(1, result.total - loose.mayMiss(result.total));
+    // the last try for a unique is just its name
+    if (result.unique && result.level == similarSearchLevels() - 1)
+        result.need = 0;
+
+    QJsonObject filters;
+    if (!result.unique)
+        addCategory(filters, data, item.itemClass);
+    if (!equipment.isEmpty())
+        filters.insert(u"equipment_filters"_s, filterGroup(equipment));
+
+    QJsonObject query = newQuery(options.status);
+    QJsonArray stats;
+    if (result.total > 0 && result.need > 0)
+        stats.append(statGroup(u"count"_s, statFilters, {{u"min"_s, result.need}}));
+    query.insert(u"stats"_s, stats);
+    query.insert(u"filters"_s, filters);
+    if (result.unique) {
+        if (!item.name.isEmpty())
+            query.insert(u"name"_s, item.name);
+        if (!item.baseType.isEmpty() && item.baseType != item.name)
+            query.insert(u"type"_s, item.baseType);
+    }
+    result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
+    result.body = searchBody(query, u"price"_s, u"asc"_s);
     return result;
 }
 
