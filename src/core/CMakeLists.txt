@@ -9,6 +9,7 @@ add_library(pou_core STATIC
     gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
+    jsonfile.cpp jsonfile.h
     league.cpp league.h
     listing.cpp listing.h
     numbers.cpp numbers.h
