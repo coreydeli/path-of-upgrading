@@ -23,6 +23,7 @@ add_compile_definitions(
     QT_NO_URL_CAST_FROM_STRING
     QT_USE_QSTRINGBUILDER
     QT_NO_FOREACH
+    QT_NO_KEYWORDS
 )
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2)

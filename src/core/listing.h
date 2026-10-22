@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: MIT
+#pragma once
+
+#include "core/item.h"
+#include "core/rates.h"
+
+#include <QDateTime>
+#include <QJsonObject>
+#include <QList>
+#include <QString>
+#include <optional>
+
+namespace pou {
+
+// Listings from the trade site's /api/trade2/fetch, read into the same items
+// as copied ones, so each can be scored against what you wear and handed to
+// Path of Building.
+
+// The site marks up its text for tooltips: "+39% to [Resistances|Lightning
+// Resistance]" is "+39% to Lightning Resistance".
+QString cleanListingText(const QString &text);
+
+// The listed item, written out the way the game copies items and read with
+// parseItem(). Listings don't say the item class, so it's the one searched for.
+Item listingToItem(const QJsonObject &result, const QString &itemClass);
+
+struct ListingPrice
+{
+    double amount = 0;
+    QString currency; // as the site names it: "divine", "exalted", "chaos"
+};
+
+// What a price comes to in Exalted Orbs at rates from
+// currencyRatesInExalts(). Empty for a currency without a rate.
+std::optional<double> priceInExalts(const ListingPrice &price, const CurrencyRates &rates);
+
+// "3 div", "50 ex", "2 chaos", or "no price".
+QString formatPrice(const std::optional<ListingPrice> &price);
+
+struct Listing
+{
+    QString id;
+    Item item;
+    std::optional<ListingPrice> price;
+    std::optional<double> exalts; // the price in Exalted Orbs, when there's a rate for it
+    QString seller;               // the character they last played, or else the account
+    QString account;              // "name#1234"
+    bool online = false;
+    // Listed in a merchant tab, bought from the seller's hideout without
+    // asking them first. Those have no whisper.
+    bool instantBuyout = false;
+    QString whisper;      // what to send the seller in game, empty without one
+    QString hideoutToken; // lets the site take you to an instant buyout seller's hideout
+    QDateTime indexed;    // when the site last saw it listed
+};
+
+// One element of a fetch answer's "result".
+Listing readListing(const QJsonObject &result, const QString &itemClass, const CurrencyRates &rates);
+
+// All of a fetch answer's listings, in its order. Those sold or taken down
+// since the search come back as null and are left out.
+QList<Listing> listingsFromJson(const QJsonObject &response, const QString &itemClass,
+                                const CurrencyRates &rates);
+
+} // namespace pou

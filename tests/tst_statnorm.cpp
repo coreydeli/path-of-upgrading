@@ -30,6 +30,17 @@ private Q_SLOTS:
         QCOMPARE(pou::normalizeStat(u"#% increased Totem Life"_s), u"#% increased totem life"_s);
         QCOMPARE(pou::normalizeStat(u"#% to Stop"_s), u"#% stop"_s);
     }
+
+    void conditionalMods()
+    {
+        QVERIFY(pou::isConditionalStat(u"Minions deal #% increased Damage if you've Hit Recently"_s));
+        QVERIFY(pou::isConditionalStat(u"#% increased Damage while on Low Life"_s));
+        QVERIFY(pou::isConditionalStat(u"#% increased Attack Speed per Frenzy Charge"_s));
+        QVERIFY(!pou::isConditionalStat(u"# Life Regeneration per second"_s));
+        QVERIFY(!pou::isConditionalStat(u"# to maximum Life"_s));
+        // whole words only
+        QVERIFY(!pou::isConditionalStat(u"#% increased Damage with Whips"_s));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestStatNorm)

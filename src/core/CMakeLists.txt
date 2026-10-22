@@ -1,14 +1,24 @@
 add_library(pou_core STATIC
+    budget.cpp budget.h
+    buildprofiles.cpp buildprofiles.h
     character.cpp character.h
+    gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
+    league.cpp league.h
+    listing.cpp listing.h
     numbers.cpp numbers.h
     parser.cpp parser.h
+    rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
+    statsources.cpp statsources.h
+    tradedata.cpp tradedata.h
+    tradequery.cpp tradequery.h
+    tradesite.cpp tradesite.h
     verdict.h
     weights.cpp weights.h
 )
