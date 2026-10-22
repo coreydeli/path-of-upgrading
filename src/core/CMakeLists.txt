@@ -1,4 +1,5 @@
 add_library(pou_core STATIC
+    ignore.cpp ignore.h
     item.h
     numbers.cpp numbers.h
     parser.cpp parser.h
