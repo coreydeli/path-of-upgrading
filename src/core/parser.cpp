@@ -5,6 +5,7 @@
 
 #include <QHash>
 #include <QRegularExpression>
+#include <algorithm>
 #include <cmath>
 
 using namespace Qt::Literals::StringLiterals;
@@ -95,6 +96,26 @@ std::optional<StatMap::Entry> modToStat(const QString &text)
     return StatMap::Entry{key, value};
 }
 
+// What kind of mod an advanced-copy header like
+// { Prefix Modifier "Hale" (Tier: 3) } announces.
+QString headerTag(const QString &header)
+{
+    const auto has = [&header](QStringView word) {
+        return header.contains(word, Qt::CaseInsensitive);
+    };
+    if (has(u"Implicit Modifier"))
+        return u"implicit"_s;
+    if (has(u"Enchant"))
+        return u"enchant"_s;
+    if (has(u"Rune Modifier") || has(u"Augment"))
+        return u"rune"_s;
+    if (has(u"Fractured"))
+        return u"fractured"_s;
+    if (has(u"Desecrated"))
+        return u"desecrated"_s;
+    return u"explicit"_s;
+}
+
 QList<QStringList> splitBlocks(const QString &text)
 {
     static const QRegularExpression separator(uR"(^-{4,}\s*$)"_s);
@@ -157,6 +178,8 @@ std::optional<Item> parseItem(const QString &input)
     static const QRegularExpression corruptedLine(uR"(^Corrupted$)"_s, CaseInsensitive);
     static const QRegularExpression unidentifiedLine(uR"(^Unidentified$)"_s, CaseInsensitive);
     static const QRegularExpression propertyLine(uR"(^([A-Za-z ]+):\s*(.+)$)"_s);
+    static const QRegularExpression rollRange(uR"(\((-?\d+(?:\.\d+)?)[-–](-?\d+(?:\.\d+)?)\))"_s);
+    static const QRegularExpression unscalable(uR"(\s+[—–-]+\s*Unscalable Value\s*$)"_s, CaseInsensitive);
 
     const QList<QStringList> blocks = splitBlocks(text);
 
@@ -190,10 +213,27 @@ std::optional<Item> parseItem(const QString &input)
             item.stats.add(k, v);
     };
 
+    // Advanced copies (Ctrl+Alt+C) put a header above each mod, which tells
+    // how many affixes are used and what kind of mod the next line is.
+    bool sawHeaders = false;
+    int prefixes = 0;
+    int suffixes = 0;
+
     for (qsizetype b = 1; b < blocks.size(); ++b) {
         const QStringList &block = blocks.at(b);
+        QString blockTag;
         for (const QString &line : block) {
-            const QString &clean = line;
+            if (line.startsWith(u'{')) {
+                sawHeaders = true;
+                if (line.contains(u"Prefix Modifier", Qt::CaseInsensitive))
+                    ++prefixes;
+                else if (line.contains(u"Suffix Modifier", Qt::CaseInsensitive))
+                    ++suffixes;
+                blockTag = headerTag(line);
+                continue;
+            }
+            // advanced text also shows the roll range: +89(80-99) to maximum Life
+            const QString clean = QString(line).replace(rollRange, QString()).replace(unscalable, QString());
 
             if (const auto m = itemLevelLine.match(clean); m.hasMatch()) {
                 item.itemLevel = m.captured(1).toInt();
@@ -234,7 +274,9 @@ std::optional<Item> parseItem(const QString &input)
             }
 
             const auto tagMatch = tagPattern().match(clean);
-            const QString tag = tagMatch.hasMatch() ? tagMatch.captured(1).toLower() : u"explicit"_s;
+            QString tag = tagMatch.hasMatch() ? tagMatch.captured(1).toLower() : blockTag;
+            if (tag.isEmpty())
+                tag = u"explicit"_s;
             const QString modText =
                 QString(clean).replace(tagPattern(), QString()).replace(tagPattern(), QString()).trimmed();
 
@@ -248,6 +290,16 @@ std::optional<Item> parseItem(const QString &input)
             add(stat->first, stat->second);
             item.lines << ItemLine{line, stat->first, stat->second, tag};
         }
+    }
+
+    if (sawHeaders && (rarity == u"rare" || rarity == u"magic")) {
+        // rare jewels have room for two of each
+        const int max = rarity == u"rare" ? (item.slot == u"Jewel" ? 2 : 3) : 1;
+        item.affixes.known = true;
+        item.affixes.prefixes = prefixes;
+        item.affixes.suffixes = suffixes;
+        item.affixes.openPrefix = item.corrupted ? 0 : std::max(0, max - prefixes);
+        item.affixes.openSuffix = item.corrupted ? 0 : std::max(0, max - suffixes);
     }
 
     return item;

@@ -6,6 +6,20 @@
 
 using namespace pou;
 
+namespace {
+
+// The first line of the item whose text contains `part`.
+ItemLine lineWith(const Item &item, QStringView part)
+{
+    for (const ItemLine &l : item.lines) {
+        if (l.text.contains(part))
+            return l;
+    }
+    return {};
+}
+
+} // namespace
+
 class TestParser : public QObject
 {
     Q_OBJECT
@@ -35,10 +49,9 @@ private Q_SLOTS:
         QVERIFY(!it->stats.contains(u"#% to all Elemental Resistances"));
         QCOMPARE(it->stats.value(u"#% increased Attribute Requirements"), -12.0);
 
-        const auto rune = std::find_if(it->lines.cbegin(), it->lines.cend(),
-                                       [](const ItemLine &l) { return l.text.contains(u"Cold"); });
-        QCOMPARE(rune->tag, u"rune"_s);
-        QCOMPARE(rune->key, u"#% to Cold Resistance"_s);
+        const ItemLine rune = lineWith(*it, u"Cold");
+        QCOMPARE(rune.tag, u"rune"_s);
+        QCOMPARE(rune.key, u"#% to Cold Resistance"_s);
         QCOMPARE(it->lines.first().tag, u"base"_s);
     }
 
@@ -49,6 +62,73 @@ private Q_SLOTS:
         QCOMPARE(it->name, u"Grim Crown"_s);
         QCOMPARE(it->stats.value(u"# to maximum Life"), 55.0);
         QVERIFY(!it->raw.contains(u'\r'));
+    }
+
+    void advancedCopy()
+    {
+        const auto ring = parseItem(itemtexts::advancedRing);
+        QCOMPARE(ring->slot, u"Ring"_s);
+        QCOMPARE(ring->stats.value(u"# to maximum Life"), 62.0);
+        QCOMPARE(ring->stats.value(u"#% to Cold Resistance"), 24.0);
+        QCOMPARE(ring->stats.value(u"#% to Lightning Resistance"), 30.0);
+        QCOMPARE(ring->stats.value(u"# to Strength"), 12.0);
+        QCOMPARE(ring->stats.value(u"# to Dexterity"), 12.0);
+        QCOMPARE(lineWith(*ring, u"Cold").tag, u"implicit"_s);
+        QCOMPARE(lineWith(*ring, u"Life").tag, u"explicit"_s);
+    }
+
+    void advancedCopyQuirks()
+    {
+        const auto it =
+            parseItem(u"Item Class: Boots\nRarity: Rare\nOblivion Trail\nSorcerer Boots\n--------\n"
+                      "Energy Shield: 414 (augmented)\nRunic Ward: 217 (augmented)\n--------\n"
+                      "+60(48-60) to maximum Energy Shield\n35% increased Movement Speed\n"
+                      "60% increased effect of Socketed Augment Items — Unscalable Value\n"
+                      "Fractured Item"_s);
+        QCOMPARE(it->stats.value(u"#% increased effect of Socketed Augment Items"), 60.0);
+        QCOMPARE(it->stats.value(u"[Base] Runic Ward"), 217.0);
+        QCOMPARE(it->stats.value(u"# to maximum Energy Shield"), 60.0);
+        for (const QString &key : it->stats.keys())
+            QVERIFY2(!key.contains(u"Fractured"), qPrintable(key));
+    }
+
+    void openAffixes()
+    {
+        const QString gloves =
+            u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSorcerer Gloves\n--------\n"
+            "Energy Shield: 280\n--------\n"
+            "{ Prefix Modifier \"Hale\" (Tier: 3) — Life }\n+33(33-41) to maximum Life\n"
+            "{ Prefix Modifier \"Shining\" (Tier: 2) — Defences, Energy Shield }\n"
+            "75(68-79)% increased Energy Shield\n+20(18-22) to maximum Energy Shield\n"
+            "{ Suffix Modifier \"of the Squall\" (Tier: 3) — Elemental, Lightning, Resistance }\n"
+            "+39(36-40)% to Lightning Resistance"_s;
+        const auto it = parseItem(gloves);
+        QVERIFY(it->affixes.known);
+        QCOMPARE(it->affixes.prefixes, 2);
+        QCOMPARE(it->affixes.suffixes, 1);
+        QCOMPARE(it->affixes.openPrefix, 1);
+        QCOMPARE(it->affixes.openSuffix, 2);
+        QCOMPARE(it->stats.value(u"# to maximum Energy Shield"), 20.0); // the hybrid mod's second line
+
+        const auto corrupted = parseItem(gloves + u"\n--------\nCorrupted"_s);
+        QVERIFY(corrupted->corrupted);
+        QCOMPARE(corrupted->affixes.openPrefix, 0);
+        QCOMPARE(corrupted->affixes.openSuffix, 0);
+
+        QVERIFY(!parseItem(itemtexts::helmetOld)->affixes.known);
+    }
+
+    void implicitHeader()
+    {
+        const auto it =
+            parseItem(u"Item Class: Rings\nRarity: Rare\nEmpyrean Gyre\nIron Ring\n--------\n"
+                      "Item Level: 81\n--------\n{ Implicit Modifier }\n"
+                      "Adds 1 to 4 Physical Damage to Attacks\n--------\n"
+                      "{ Prefix Modifier \"Sapphire\" (Tier: 2) — Mana }\n+56(55-64) to maximum Mana\n"
+                      "{ Suffix Modifier \"of the Sage\" (Tier: 1) — Attribute }\n"
+                      "+31(31-33) to Intelligence"_s);
+        QCOMPARE(lineWith(*it, u"Physical").tag, u"implicit"_s);
+        QCOMPARE(lineWith(*it, u"Mana").tag, u"explicit"_s);
     }
 
     void expandsPairedStats()
