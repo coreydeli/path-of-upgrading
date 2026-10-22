@@ -5,6 +5,7 @@ add_library(pou_core STATIC
     gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
+    league.cpp league.h
     numbers.cpp numbers.h
     parser.cpp parser.h
     resists.cpp resists.h
