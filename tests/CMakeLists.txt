@@ -8,3 +8,4 @@ endfunction()
 
 pou_add_test(tst_slots)
 pou_add_test(tst_statnorm)
+pou_add_test(tst_numbers)
