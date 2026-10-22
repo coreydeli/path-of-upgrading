@@ -2,6 +2,8 @@
 #include "core/tradequery.h"
 
 #include <QJsonArray>
+#include <algorithm>
+#include <cmath>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -44,6 +46,12 @@ QJsonObject filterGroup(const QJsonObject &filters)
 QJsonObject categoryFilter(const QString &category)
 {
     return filterGroup({{u"category"_s, option(category)}});
+}
+
+void addCategory(QJsonObject &filters, const TradeData &data, const QString &itemClass)
+{
+    if (const QString category = data.categories.categoryFor(itemClass); !category.isEmpty())
+        filters.insert(u"type_filters"_s, categoryFilter(category));
 }
 
 QJsonObject newQuery(ListingStatus status)
@@ -149,10 +157,8 @@ TradeQuery customSearch(const QList<StatPick> &picks, const TradeData &data,
     }
 
     QJsonObject filters;
-    if (!options.matchBase) {
-        if (const QString category = data.categories.categoryFor(options.itemClass); !category.isEmpty())
-            filters.insert(u"type_filters"_s, categoryFilter(category));
-    }
+    if (!options.matchBase)
+        addCategory(filters, data, options.itemClass);
     if (!equipment.isEmpty())
         filters.insert(u"equipment_filters"_s, filterGroup(equipment));
 
@@ -166,6 +172,59 @@ TradeQuery customSearch(const QList<StatPick> &picks, const TradeData &data,
         query.insert(u"type"_s, options.baseType);
     result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
     result.body = searchBody(query, u"price"_s, u"asc"_s);
+    return result;
+}
+
+WeightedSearch weightedSearch(const Item &item, const Weights &weights, const TradeData &data,
+                              const WeightedSearchOptions &options)
+{
+    // Listings mostly come without runes, so yours don't count towards the sum.
+    QHash<QString, double> natural;
+    for (const StatSource &x : statSources(item)) {
+        if (x.origin != StatOrigin::Socket)
+            natural[x.key] += x.value;
+    }
+
+    WeightedSearch result;
+    QJsonArray weighted;
+    QJsonObject equipment;
+    // sorted, so the same weights always make the same search
+    QStringList keys = weights.keys();
+    std::sort(keys.begin(), keys.end());
+    for (const QString &key : std::as_const(keys)) {
+        const double w = weights.value(key);
+        if (!std::isfinite(w) || w == 0 || isIgnored(options.ignoreRules, key))
+            continue;
+        if (const QString filter = equipmentFilter(key); !filter.isEmpty()) {
+            const double own = item.stats.value(key);
+            if (key.startsWith(u"[Weapon]") && own != 0 && w > 0)
+                equipment.insert(filter, QJsonObject{{u"min"_s, std::floor(own)}});
+            continue;
+        }
+        const auto m = data.stats.match(key, {.preferLocal = options.preferLocal});
+        if (!m) {
+            if (item.stats.value(key) != 0)
+                result.unmatched << key;
+            continue;
+        }
+        weighted.append(statFilter(m->id, {{u"weight"_s, w}}));
+        result.current += natural.value(key) * w;
+    }
+
+    QJsonObject filters;
+    addCategory(filters, data, options.itemClass.isEmpty() ? item.itemClass : options.itemClass);
+    if (!equipment.isEmpty())
+        filters.insert(u"equipment_filters"_s, filterGroup(equipment));
+
+    result.groupMin = std::floor(result.current * (1 + options.minGainPercent / 100)) + 1;
+    QJsonObject query = newQuery(options.status);
+    QJsonArray stats;
+    if (!weighted.isEmpty())
+        stats.append(statGroup(u"weight"_s, weighted, {{u"min"_s, result.groupMin}}));
+    query.insert(u"stats"_s, stats);
+    query.insert(u"filters"_s, filters);
+    result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
+    result.body = searchBody(query, u"statgroup.0"_s, u"desc"_s);
     return result;
 }
 

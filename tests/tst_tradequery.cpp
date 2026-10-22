@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#include "core/parser.h"
 #include "core/tradequery.h"
 #include "tradefixtures.h"
 
@@ -45,6 +46,27 @@ QJsonObject minimum(double min)
 QJsonObject wanted(const QString &id, const QJsonObject &value)
 {
     return {{u"id"_s, id}, {u"value"_s, value}, {u"disabled"_s, false}};
+}
+
+QJsonObject weight(double w)
+{
+    return {{u"weight"_s, w}};
+}
+
+Item withStats(const QString &itemClass, const StatMap &stats)
+{
+    Item item;
+    item.itemClass = itemClass;
+    item.stats = stats;
+    return item;
+}
+
+QStringList filterIds(const QJsonObject &group)
+{
+    QStringList ids;
+    for (const QJsonValue &f : group.value(u"filters").toArray())
+        ids << f.toObject().value(u"id").toString();
+    return ids;
 }
 
 StatPick pick(const QString &key, double min)
@@ -166,6 +188,71 @@ private Q_SLOTS:
         options.ignoreRules = {{u"res"_s, {}, IgnoreRule::Mode::Ignore}};
         QCOMPARE(statGroups(customSearch({pick(u"# to maximum Life"_s, 10)}, tradeData(), options)).size(),
                  1);
+    }
+
+    void weightedSum()
+    {
+        const Item helmet = withStats(
+            u"Helmets"_s,
+            {{u"# to maximum Life"_s, 50}, {u"#% to Fire Resistance"_s, 20}, {u"[Base] Armour"_s, 300}});
+        const Weights weights = {{u"# to maximum Life"_s, 1},
+                                 {u"#% to Fire Resistance"_s, 1.5},
+                                 {u"[Base] Armour"_s, 0.05},
+                                 {u"unknown stat #"_s, 2}};
+        const WeightedSearch q = weightedSearch(helmet, weights, tradeData());
+        QCOMPARE(q.current, 80.0);
+        QCOMPARE(q.groupMin, 81.0);
+        const QJsonObject group = statGroups(q).at(0).toObject();
+        QCOMPARE(group.value(u"type").toString(), u"weight"_s);
+        QCOMPARE(group.value(u"value").toObject(), minimum(81));
+        QCOMPARE(group.value(u"filters").toArray(),
+                 QJsonArray({wanted(u"pseudo.pseudo_total_life"_s, weight(1)),
+                             wanted(u"pseudo.pseudo_total_fire_resistance"_s, weight(1.5))}));
+        // base defences depend on the base type, so they're left to you
+        QVERIFY(!queryOf(q).value(u"filters").toObject().contains(u"equipment_filters"));
+        QCOMPARE(filterOf(q, u"type_filters", u"category").value(u"option").toString(), u"armour.helmet"_s);
+        QVERIFY(q.unmatched.isEmpty());
+        QCOMPARE(q.body.value(u"sort").toObject(), QJsonObject({{u"statgroup.0"_s, u"desc"_s}}));
+
+        WeightedSearchOptions better;
+        better.minGainPercent = 10;
+        QCOMPARE(weightedSearch(helmet, weights, tradeData(), better).groupMin, 89.0);
+    }
+
+    void weaponDpsAsMinimum()
+    {
+        const Item mace = withStats(u"Two Hand Maces"_s, {{u"[Weapon] Total DPS"_s, 176.4}});
+        const WeightedSearch q = weightedSearch(mace, {{u"[Weapon] Total DPS"_s, 1}}, tradeData());
+        QCOMPARE(filterOf(q, u"equipment_filters", u"dps"), minimum(176));
+        QCOMPARE(filterOf(q, u"type_filters", u"category").value(u"option").toString(), u"weapon.twomace"_s);
+        QCOMPARE(statGroups(q), QJsonArray());
+    }
+
+    void runesDontCount()
+    {
+        const Item helmet = parseItem(u"Item Class: Helmets\nRarity: Rare\nA\nB\n--------\n"
+                                      "+12% to Fire Resistance (rune)\n--------\n+20% to Fire Resistance"_s)
+                                .value();
+        const WeightedSearch q = weightedSearch(helmet, {{u"#% to Fire Resistance"_s, 1}}, tradeData());
+        QCOMPARE(q.current, 20.0);
+        QCOMPARE(q.groupMin, 21.0);
+    }
+
+    void weightedSearchSkipsIgnoredStats()
+    {
+        const Item helmet = withStats(
+            u"Helmets"_s,
+            {{u"# to maximum Life"_s, 50}, {u"#% to Fire Resistance"_s, 30}, {u"# to Spirit"_s, 20}});
+        WeightedSearchOptions options;
+        options.ignoreRules = {{u"res"_s, {}, IgnoreRule::Mode::Ignore}};
+        const WeightedSearch q = weightedSearch(
+            helmet, {{u"# to maximum Life"_s, 1}, {u"#% to Fire Resistance"_s, 2}, {u"# to Spirit"_s, 1}},
+            tradeData(), options);
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()), QStringList{u"pseudo.pseudo_total_life"_s});
+        QCOMPARE(q.current, 50.0);
+        // not in the trade site's list, and your item has it
+        QCOMPARE(q.unmatched, QStringList{u"# to Spirit"_s});
+        QCOMPARE(q.excluded, 0);
     }
 };
 

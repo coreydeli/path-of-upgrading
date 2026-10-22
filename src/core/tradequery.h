@@ -2,8 +2,10 @@
 #pragma once
 
 #include "core/ignore.h"
+#include "core/item.h"
 #include "core/statsources.h"
 #include "core/tradedata.h"
+#include "core/weights.h"
 
 #include <QJsonObject>
 #include <QList>
@@ -71,5 +73,23 @@ struct CustomSearchOptions : SearchOptions
 // Items with all of the picked stats, cheapest first.
 TradeQuery customSearch(const QList<StatPick> &picks, const TradeData &data,
                         const CustomSearchOptions &options);
+
+struct WeightedSearchOptions : SearchOptions
+{
+    QString itemClass;         // the item's own when empty
+    double minGainPercent = 0; // how far above your item's sum, in percent
+};
+
+struct WeightedSearch : TradeQuery
+{
+    double current = 0;  // your item's weighted sum, without rune and enchant bonuses
+    double groupMin = 0; // what a listing's sum has to reach
+};
+
+// Your stat weights as the trade site's weighted sum: items whose weighted
+// stats come to more than your item's, best first. Weapon DPS becomes a
+// minimum. Base defences are left out, as they depend on the base type.
+WeightedSearch weightedSearch(const Item &item, const Weights &weights, const TradeData &data,
+                              const WeightedSearchOptions &options = {});
 
 } // namespace pou
