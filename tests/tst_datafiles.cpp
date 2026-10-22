@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "core/jsonfile.h"
+#include "core/datafiles.h"
 
 #include <QDir>
 #include <QFile>
@@ -10,7 +10,7 @@
 using namespace Qt::Literals::StringLiterals;
 using namespace pou;
 
-class TestJsonFile : public QObject
+class TestDataFiles : public QObject
 {
     Q_OBJECT
 
@@ -28,6 +28,16 @@ private Q_SLOTS:
         QVERIFY(writeJsonFile(path, {{u"name"_s, u"Frost"_s}}));
         QCOMPARE(readJsonFile(path).value(), (QJsonObject{{u"name"_s, u"Frost"_s}}));
         QCOMPARE(QDir(dir.path()).entryList(QDir::Files), QStringList{u"character.json"_s});
+    }
+
+    void anyFile()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"build.xml"_s);
+        const QByteArray xml = "<PathOfBuilding2>\n</PathOfBuilding2>\n"_ba;
+        QVERIFY(writeFile(path, xml));
+        QCOMPARE(readFile(path).value(), xml);
+        QVERIFY(!readFile(dir.filePath(u"missing.xml"_s)));
     }
 
     void makesTheFolder()
@@ -80,5 +90,5 @@ private Q_SLOTS:
     }
 };
 
-QTEST_GUILESS_MAIN(TestJsonFile)
-#include "tst_jsonfile.moc"
+QTEST_GUILESS_MAIN(TestDataFiles)
+#include "tst_datafiles.moc"
