@@ -26,7 +26,7 @@ add_compile_definitions(
     QT_NO_KEYWORDS
 )
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Network Widgets Qml Quick QuickControls2)
 qt_standard_project_setup(REQUIRES 6.5)
 if(QT_KNOWN_POLICY_QTP0004)
     # QML files live in src/qml/, give that folder its own qmldir
