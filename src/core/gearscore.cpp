@@ -57,23 +57,6 @@ QString resistNote(Element e, double need, bool partly)
         return name + u"you only need "_s + more + u" more to reach the cap, so the rest doesn't count."_s;
     return name + u"you only need "_s + more + u" more to reach the cap, so it isn't counted."_s;
 }
-
-// Local defence and Spirit mods, which are already part of the [Base] value.
-bool isInBase(const Item &item, const QString &key)
-{
-    static const QRegularExpression localDefence(
-        uR"(^#% increased (Armour|Evasion Rating|Evasion|Energy Shield|Armour and Evasion|)"
-        uR"(Armour and Energy Shield|Evasion and Energy Shield|Armour, Evasion and Energy Shield)$|)"
-        uR"(^# to (maximum Energy Shield|Armour|Evasion Rating)$)"_s);
-
-    const StatMap &s = item.stats;
-    const bool hasBaseDefence = s.value(u"[Base] Armour") != 0 || s.value(u"[Base] Evasion Rating") != 0 ||
-                                s.value(u"[Base] Energy Shield") != 0;
-    if (hasBaseDefence && localDefence.match(key).hasMatch())
-        return true;
-    return s.value(u"[Base] Spirit") != 0 && key == u"#% increased Spirit";
-}
-
 } // namespace
 
 std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &options)

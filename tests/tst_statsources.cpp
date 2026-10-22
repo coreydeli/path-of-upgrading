@@ -79,6 +79,28 @@ private Q_SLOTS:
         QCOMPARE(baseWithoutSockets(u"[Weapon] Total DPS"_s, 150, s), 150.0);
         QCOMPARE(baseWithoutSockets(u"[Base] Energy Shield"_s, 280, {}), 280.0);
     }
+
+    void localModsAreInTheBase()
+    {
+        const Item gloves = parseItem(u"Item Class: Gloves\nRarity: Rare\nA\nSorcerer Gloves\n--------\n"
+                                      "Energy Shield: 280\n--------\n"
+                                      "113% increased Energy Shield\n+33 to maximum Energy Shield"_s)
+                                .value();
+        QVERIFY(isInBase(gloves, u"#% increased Energy Shield"_s));
+        QVERIFY(isInBase(gloves, u"# to maximum Energy Shield"_s));
+        QVERIFY(!isInBase(gloves, u"# to maximum Life"_s));
+
+        // jewellery has no base defence for them to raise
+        const Item ring = parseItem(u"Item Class: Rings\nRarity: Rare\nA\nSapphire Ring\n--------\n"
+                                    "+33 to maximum Energy Shield"_s)
+                              .value();
+        QVERIFY(!isInBase(ring, u"# to maximum Energy Shield"_s));
+
+        const Item sceptre = parseItem(u"Item Class: Sceptres\nRarity: Rare\nA\nRattling Sceptre\n--------\n"
+                                       "Spirit: 100\n--------\n30% increased Spirit"_s)
+                                 .value();
+        QVERIFY(isInBase(sceptre, u"#% increased Spirit"_s));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestStatSources)

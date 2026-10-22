@@ -31,4 +31,9 @@ QList<StatSource> statSources(const Item &item);
 // listed without them shows less.
 double baseWithoutSockets(const QString &key, double value, const QList<StatSource> &sources);
 
+// Local defence mods ("#% increased Armour", "+# to maximum Energy Shield") on
+// armour, and "#% increased Spirit" on a sceptre, only raise the item's own
+// base value, which its [Base] stat already counts.
+bool isInBase(const Item &item, const QString &key);
+
 } // namespace pou
