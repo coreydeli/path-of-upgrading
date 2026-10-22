@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/gearscore.h"
 #include "core/ignore.h"
 #include "core/item.h"
 #include "core/statsources.h"
@@ -117,5 +118,16 @@ int similarSearchLevels();
 // minimum, without your rune bonus. Uniques are searched by name.
 SimilarSearch similarSearch(const Item &item, const TradeData &data,
                             const SimilarSearchOptions &options = {});
+
+struct CraftBaseSearch : TradeQuery
+{
+    QStringList keyStats;          // labels of the stats asked for
+    bool emptyAffixFilter = false; // whether the site could be asked for an open affix
+};
+
+// Bases to craft on: rare, uncorrupted items of the same kind that already
+// have the slot's key stats at a decent roll, with an open prefix or suffix.
+CraftBaseSearch craftBaseSearch(const Item &item, const QList<KeyStat> &keyStats, const TradeData &data,
+                                const SearchOptions &options = {});
 
 } // namespace pou

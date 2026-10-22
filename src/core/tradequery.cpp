@@ -365,4 +365,60 @@ SimilarSearch similarSearch(const Item &item, const TradeData &data, const Simil
     return result;
 }
 
+CraftBaseSearch craftBaseSearch(const Item &item, const QList<KeyStat> &keyStats, const TradeData &data,
+                                const SearchOptions &options)
+{
+    CraftBaseSearch result;
+    QJsonArray wanted;
+    for (const KeyStat &k : keyStats) {
+        result.keyStats << k.label;
+        const auto m = data.stats.match(k.key, {.preferLocal = options.preferLocal});
+        if (!m || m->kind != StatMatch::Kind::Stat) {
+            result.unmatched << k.key;
+            continue;
+        }
+        const double min = k.cap >= 5 ? std::floor(k.cap * 0.55) : std::max(1.0, std::floor(k.cap * 0.5));
+        wanted.append(statFilter(m->id, {{u"min"_s, min}}));
+    }
+    QJsonArray openAffix;
+    for (const QString &key : {u"# Empty Prefix Modifiers"_s, u"# Empty Suffix Modifiers"_s}) {
+        if (const auto m = data.stats.match(key); m && m->kind == StatMatch::Kind::Stat)
+            openAffix.append(statFilter(m->id, {{u"min"_s, 1}}));
+    }
+    result.emptyAffixFilter = !openAffix.isEmpty();
+
+    QJsonObject typeFilters{{u"rarity"_s, option(u"rare"_s)}};
+    if (const QString category = data.categories.categoryFor(item.itemClass); !category.isEmpty())
+        typeFilters.insert(u"category"_s, option(category));
+    QJsonObject filters{
+        {u"type_filters"_s, filterGroup(typeFilters)},
+        {u"misc_filters"_s, filterGroup({{u"corrupted"_s, option(u"false"_s)}})},
+    };
+    // a base at least about as good as yours, without your runes
+    QJsonObject equipment;
+    const QList<StatSource> sources = statSources(item);
+    static const QRegularExpression notABase(u"Weapon|Runic|Block"_s);
+    for (const StatSource &x : sources) {
+        const QString filter = equipmentFilter(x.key);
+        if (x.origin != StatOrigin::Base || filter.isEmpty() || notABase.match(x.key).hasMatch())
+            continue;
+        if (const double v = baseWithoutSockets(x.key, x.value, sources); v > 0)
+            equipment.insert(filter, QJsonObject{{u"min"_s, std::floor(v * 0.9)}});
+    }
+    if (!equipment.isEmpty())
+        filters.insert(u"equipment_filters"_s, filterGroup(equipment));
+
+    QJsonObject query = newQuery(options.status);
+    QJsonArray stats;
+    if (!wanted.isEmpty())
+        stats.append(statGroup(u"and"_s, wanted));
+    if (!openAffix.isEmpty())
+        stats.append(statGroup(u"count"_s, openAffix, {{u"min"_s, 1}}));
+    query.insert(u"stats"_s, stats);
+    query.insert(u"filters"_s, filters);
+    result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
+    result.body = searchBody(query, u"price"_s, u"asc"_s);
+    return result;
+}
+
 } // namespace pou

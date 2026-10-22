@@ -401,6 +401,52 @@ private Q_SLOTS:
         QCOMPARE(filterIds(statGroups(excluding).at(1).toObject()),
                  QStringList{u"pseudo.pseudo_total_fire_resistance"_s});
     }
+
+    void craftBases()
+    {
+        using namespace tradefixtures;
+        const TradeData data{
+            StatIndex::fromJson(response({
+                group(u"pseudo"_s,
+                      {
+                          stat(u"pseudo.pseudo_number_of_empty_prefix_mods"_s, u"# Empty Prefix Modifiers"_s,
+                               u"pseudo"_s),
+                          stat(u"pseudo.pseudo_number_of_empty_suffix_mods"_s, u"# Empty Suffix Modifiers"_s,
+                               u"pseudo"_s),
+                          stat(u"pseudo.pseudo_total_life"_s, u"+# total maximum Life"_s, u"pseudo"_s),
+                      }),
+                group(u"explicit"_s,
+                      {stat(u"explicit.stat_ms"_s, u"#% increased Movement Speed"_s, u"explicit"_s)}),
+            })),
+            {}};
+        const Item boots = withStats(u"Boots"_s, {{u"[Base] Energy Shield"_s, 400}});
+        const QList<KeyStat> keyStats = {
+            {u"#% increased Movement Speed"_s, u"Movement speed"_s, 9, 35},
+            {u"# to maximum Life"_s, u"Life"_s, 8, 100},
+            {u"# to Spirit"_s, u"Spirit"_s, 5, 4},
+        };
+        const CraftBaseSearch q = craftBaseSearch(boots, keyStats, data);
+        QCOMPARE(filterOf(q, u"type_filters", u"rarity"), QJsonObject({{u"option"_s, u"rare"_s}}));
+        QCOMPARE(filterOf(q, u"type_filters", u"category").value(u"option").toString(), u"armour.boots"_s);
+        QCOMPARE(filterOf(q, u"misc_filters", u"corrupted"), QJsonObject({{u"option"_s, u"false"_s}}));
+        const QJsonObject wanted = statGroups(q).at(0).toObject();
+        QCOMPARE(wanted.value(u"type").toString(), u"and"_s);
+        QCOMPARE(filterIds(wanted), QStringList({u"explicit.stat_ms"_s, u"pseudo.pseudo_total_life"_s}));
+        QCOMPARE(valueOf(wanted, u"explicit.stat_ms"_s), minimum(19));
+        QCOMPARE(valueOf(wanted, u"pseudo.pseudo_total_life"_s), minimum(55));
+        const QJsonObject openAffix = statGroups(q).at(1).toObject();
+        QCOMPARE(openAffix.value(u"type").toString(), u"count"_s);
+        QCOMPARE(openAffix.value(u"filters").toArray().size(), 2);
+        QVERIFY(q.emptyAffixFilter);
+        QCOMPARE(filterOf(q, u"equipment_filters", u"es"), minimum(360));
+        QCOMPARE(q.keyStats, QStringList({u"Movement speed"_s, u"Life"_s, u"Spirit"_s}));
+        QCOMPARE(q.unmatched, QStringList{u"# to Spirit"_s});
+
+        // without the pseudo stats there's no asking for an open affix
+        const CraftBaseSearch plain = craftBaseSearch(boots, keyStats, tradeData());
+        QVERIFY(!plain.emptyAffixFilter);
+        QCOMPARE(statGroups(plain).size(), 1);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTradeQuery)
