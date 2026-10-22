@@ -8,6 +8,7 @@ add_library(pou_core STATIC
     league.cpp league.h
     numbers.cpp numbers.h
     parser.cpp parser.h
+    rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
     slots.cpp slots.h
