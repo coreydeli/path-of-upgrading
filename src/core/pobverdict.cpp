@@ -246,4 +246,12 @@ qsizetype bestVerdict(const QList<PobVerdict> &verdicts)
     return best == verdicts.cend() ? -1 : best - verdicts.cbegin();
 }
 
+bool hasChaosInoculation(const PobStats &stats)
+{
+    if (const std::optional<double> flag = stat(stats, u"ChaosInoculation"_s))
+        return *flag != 0;
+    const double life = stats.value(u"Life"_s);
+    return life > 0 && life <= 1;
+}
+
 } // namespace pou

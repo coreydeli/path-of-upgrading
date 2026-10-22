@@ -293,6 +293,17 @@ private Q_SLOTS:
         QCOMPARE(judgeWithPob(ci, after).verdict, Verdict::ResistLoss);
     }
 
+    void chaosInoculation()
+    {
+        // the flag when Path of Building gives it
+        QVERIFY(hasChaosInoculation({{u"ChaosInoculation"_s, 1}, {u"Life"_s, 1500}}));
+        QVERIFY(!hasChaosInoculation({{u"ChaosInoculation"_s, 0}, {u"Life"_s, 1}}));
+        // a saved build only has its Life to go by
+        QVERIFY(hasChaosInoculation({{u"Life"_s, 1}}));
+        QVERIFY(!hasChaosInoculation({{u"Life"_s, 1500}}));
+        QVERIFY(!hasChaosInoculation({}));
+    }
+
     void spiritAndAttributes()
     {
         const PobVerdict spirit =

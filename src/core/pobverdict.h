@@ -112,4 +112,8 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
 // are none.
 qsizetype bestVerdict(const QList<PobVerdict> &verdicts);
 
+// Path of Building flags Chaos Inoculation as "ChaosInoculation". The stats
+// saved in a build don't have the flag, but they show its maximum Life of 1.
+bool hasChaosInoculation(const PobStats &stats);
+
 } // namespace pou
