@@ -7,16 +7,18 @@
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 
+using namespace Qt::Literals::StringLiterals;
+
 namespace {
 
 bool styleInstalled(const QString &uri)
 {
-    const QString relative = QString(uri).replace(QLatin1Char('.'), QLatin1Char('/'));
+    const QString relative = QString(uri).replace(u'.', u'/');
     QStringList dirs =
         qEnvironmentVariable("QML_IMPORT_PATH").split(QDir::listSeparator(), Qt::SkipEmptyParts);
     dirs << QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
     for (const QString &dir : std::as_const(dirs)) {
-        if (QFileInfo::exists(dir + QLatin1Char('/') + relative + QLatin1String("/qmldir")))
+        if (QFileInfo::exists(dir + u'/' + relative + u"/qmldir"))
             return true;
     }
     return false;
@@ -28,8 +30,8 @@ void pickControlsStyle()
 {
     if (!QQuickStyle::name().isEmpty())
         return;
-    const QString desktop = QStringLiteral("org.kde.desktop");
-    QQuickStyle::setStyle(styleInstalled(desktop) ? desktop : QStringLiteral("Fusion"));
+    const QString desktop = u"org.kde.desktop"_s;
+    QQuickStyle::setStyle(styleInstalled(desktop) ? desktop : u"Fusion"_s);
 }
 
 } // namespace
@@ -37,8 +39,8 @@ void pickControlsStyle()
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("path-of-upgrading"));
-    QApplication::setApplicationDisplayName(QStringLiteral("Path of Upgrading"));
+    QApplication::setApplicationName(u"path-of-upgrading"_s);
+    QApplication::setApplicationDisplayName(u"Path of Upgrading"_s);
     QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
     QApplication::setDesktopFileName(QStringLiteral(APP_ID));
 
