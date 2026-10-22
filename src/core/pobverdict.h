@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/resists.h"
 #include "core/verdict.h"
 
 #include <QHash>
@@ -13,7 +14,8 @@ namespace pou {
 
 // Judging an item by what Path of Building calculates for your build when it
 // takes the place of what you wear. More damage and more effective HP make it
-// better.
+// better, and it mustn't break the build: a resistance dropping off its cap
+// makes it a risk at best.
 
 // Numbers Path of Building calculated for a build, by its own names for them:
 // "FullDPS", "TotalEHP", "FireResist", "MissingFireResist"... The minions'
@@ -24,6 +26,10 @@ using PobStats = QHash<QString, double>;
 // What matters to you besides damage and effective HP.
 struct PobPriorities
 {
+    // Each resistance point an item adds toward a cap you're short of counts
+    // on its score, and each it loses under one counts against it.
+    bool resistsFirst = true;
+    bool chaos = false;     // chaos resistance counts like the others
     bool keepDamage = true; // an item that costs a good part of your damage is never an upgrade
 };
 
@@ -32,6 +38,9 @@ struct PobVerdictOptions
     // How much of the score is damage, from 0 to 1. Effective HP is the rest.
     double damageWeight = 0.6;
     PobPriorities priorities;
+    // Chaos Inoculation makes you immune to chaos damage, so chaos resistance
+    // means nothing.
+    bool ignoreChaos = false;
 };
 
 // One of the numbers, before and after the swap.
@@ -43,6 +52,21 @@ struct PobChange
     // The change against from, rounded to a decimal. Unknown unless from is
     // above 0.
     std::optional<double> percent;
+};
+
+struct PobResistChange
+{
+    Element element = Element::Fire;
+    double from = 0;
+    double to = 0;
+    double max = 75; // the cap with the item
+    // Before the cap, when Path of Building says.
+    std::optional<double> totalFrom;
+    std::optional<double> totalTo;
+    bool wasCapped = false;
+    bool capped = false;
+    bool lost = false;       // drops below the cap or further under it
+    bool reachesCap = false; // you were short of the cap and the item fills it
 };
 
 struct PobVerdict
@@ -58,6 +82,14 @@ struct PobVerdict
     bool losesDamage = false;
     // Unknown when Path of Building didn't calculate it.
     std::optional<PobChange> ehp;
+
+    // The resistances that change, without chaos when it's ignored.
+    QList<PobResistChange> resists;
+    // Points toward the caps, negative when it loses some under them.
+    int resistGain = 0;
+    // For sorting by resistance: 2 caps one you're short of, 1 adds toward a
+    // cap, 0 changes none and -1 loses resistance or damage.
+    int resistRank = 0;
 
     // Of Life, Energy Shield, Mana, Spirit, unreserved Spirit and minion Life
     // those that change by a point or more.
