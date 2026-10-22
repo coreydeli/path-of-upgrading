@@ -383,6 +383,46 @@ std::optional<QString> decodeBuildCode(const QString &code)
     return QString::fromUtf8(*xml);
 }
 
+QUrl buildCodeUrl(const QString &link)
+{
+    struct Site
+    {
+        QString host;
+        QRegularExpression path; // with the build's id in the first group
+        QString code;
+    };
+    const auto site = [](const QString &host, const QString &path, const QString &code) {
+        return Site{host, QRegularExpression(u'^' + path + u"/?$"_s), code};
+    };
+    // Path of Building's list, also taking links to the code itself
+    static const QList<Site> sites = {
+        // pobb.in/AbC, or under its author: pobb.in/u/someone/AbC
+        site(u"pobb.in"_s, uR"(/(?:u/[^/]+/|pob/)?([\w-]+)(?:/raw)?)"_s, u"https://pobb.in/pob/%1"_s),
+        site(u"poe.ninja"_s, uR"(/(?:poe2/)?pob/(?:raw/)?([\w-]+))"_s,
+             u"https://poe.ninja/poe2/pob/raw/%1"_s),
+        site(u"poe2.ninja"_s, uR"(/pob/(?:raw/)?([\w-]+))"_s, u"https://poe.ninja/poe2/pob/raw/%1"_s),
+        site(u"maxroll.gg"_s, uR"(/poe2/(?:api/)?pob/([\w-]+))"_s, u"https://maxroll.gg/poe2/api/pob/%1"_s),
+        site(u"poe2db.tw"_s, uR"(/pob/([\w-]+)(?:/raw)?)"_s, u"https://poe2db.tw/pob/%1/raw"_s),
+        site(u"pastebin.com"_s, uR"(/(?:raw/)?(\w+))"_s, u"https://pastebin.com/raw/%1"_s),
+        site(u"pastebinp.com"_s, uR"(/(?:raw/)?(\w+))"_s, u"https://pastebinp.com/raw/%1"_s),
+        site(u"rentry.co"_s, uR"(/(\w+))"_s, u"https://rentry.co/paste/%1/raw"_s),
+    };
+
+    const QUrl url = QUrl::fromUserInput(link.trimmed());
+    if (url.scheme() != u"https" && url.scheme() != u"http")
+        return {};
+    QString host = url.host();
+    if (host.startsWith(u"www."))
+        host.remove(0, 4);
+    for (const Site &s : sites) {
+        if (s.host != host)
+            continue;
+        if (const auto m = s.path.match(url.path()); m.hasMatch())
+            return QUrl(s.code.arg(m.captured(1)));
+    }
+    return {};
+}
+
 QString pobItemClass(const QString &slot, const QString &baseType)
 {
     static const QHash<QString, QString> bySlot = {

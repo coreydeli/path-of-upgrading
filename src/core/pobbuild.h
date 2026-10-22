@@ -6,6 +6,7 @@
 #include <QHash>
 #include <QList>
 #include <QString>
+#include <QUrl>
 #include <optional>
 
 namespace pou {
@@ -14,6 +15,11 @@ namespace pou {
 // tab shares: the XML deflated and base64 encoded. XML pasted as it is
 // passes through. Empty when it isn't a code.
 std::optional<QString> decodeBuildCode(const QString &code);
+
+// Where the code behind a link to a shared build downloads from, for the
+// sites Path of Building shares builds on: pobb.in, poe.ninja, Maxroll and
+// the like. Empty when the link isn't to one of them.
+QUrl buildCodeUrl(const QString &link);
 
 // One item of a build, written out the way the game copies items so that
 // parseItem() reads it like any other.

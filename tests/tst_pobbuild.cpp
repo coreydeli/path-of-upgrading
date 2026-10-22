@@ -102,6 +102,41 @@ private Q_SLOTS:
         QVERIFY(!decodeBuildCode(code.first(code.size() / 2)));
     }
 
+    void shareLinks_data()
+    {
+        QTest::addColumn<QString>("link");
+        QTest::addColumn<QString>("codeUrl");
+
+        const auto row = [](const QString &link, const QString &codeUrl) {
+            QTest::addRow("%s", qPrintable(link)) << link << codeUrl;
+        };
+        row(u"https://pobb.in/AbC_12-x"_s, u"https://pobb.in/pob/AbC_12-x"_s);
+        row(u"https://pobb.in/u/someone/AbC"_s, u"https://pobb.in/pob/AbC"_s);
+        row(u"  pobb.in/AbC/  "_s, u"https://pobb.in/pob/AbC"_s);
+        row(u"https://www.pobb.in/AbC?utm_source=chat#notes"_s, u"https://pobb.in/pob/AbC"_s);
+        row(u"https://pobb.in/AbC/raw"_s, u"https://pobb.in/pob/AbC"_s);
+        row(u"https://poe.ninja/poe2/pob/1a2b"_s, u"https://poe.ninja/poe2/pob/raw/1a2b"_s);
+        row(u"https://poe2.ninja/pob/1a2b"_s, u"https://poe.ninja/poe2/pob/raw/1a2b"_s);
+        row(u"https://maxroll.gg/poe2/pob/xy12ab"_s, u"https://maxroll.gg/poe2/api/pob/xy12ab"_s);
+        row(u"https://poe2db.tw/pob/AbCd"_s, u"https://poe2db.tw/pob/AbCd/raw"_s);
+        row(u"https://pastebin.com/Ab12Cd34"_s, u"https://pastebin.com/raw/Ab12Cd34"_s);
+        row(u"https://pastebin.com/raw/Ab12Cd34"_s, u"https://pastebin.com/raw/Ab12Cd34"_s);
+        row(u"https://rentry.co/abc12"_s, u"https://rentry.co/paste/abc12/raw"_s);
+
+        row(u"eNrtxyz"_s, QString());
+        row(u"https://pobb.in/u/someone"_s, QString());
+        row(u"https://poe.ninja/poe2/builds"_s, QString());
+        row(u"https://example.com/AbC"_s, QString());
+        row(u"ftp://pobb.in/AbC"_s, QString());
+    }
+
+    void shareLinks()
+    {
+        QFETCH(QString, link);
+        QFETCH(QString, codeUrl);
+        QCOMPARE(buildCodeUrl(link).toString(), codeUrl);
+    }
+
     void rareItem()
     {
         // as Path of Building saves it, the first line indented like the XML
