@@ -1,6 +1,7 @@
 add_library(pou_core STATIC
     item.h
     numbers.cpp numbers.h
+    parser.cpp parser.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
