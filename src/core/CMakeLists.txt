@@ -1,4 +1,5 @@
 add_library(pou_core STATIC
+    budget.cpp budget.h
     buildprofiles.cpp buildprofiles.h
     character.cpp character.h
     gearscore.cpp gearscore.h
