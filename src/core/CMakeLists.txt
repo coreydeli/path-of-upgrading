@@ -1,6 +1,7 @@
 add_library(pou_core STATIC
     buildprofiles.cpp buildprofiles.h
     character.cpp character.h
+    gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
     numbers.cpp numbers.h
