@@ -1,3 +1,5 @@
+find_package(ZLIB REQUIRED) # Path of Building codes are deflated
+
 add_library(pou_core STATIC
     autoweights.cpp autoweights.h
     budget.cpp budget.h
@@ -11,6 +13,7 @@ add_library(pou_core STATIC
     listing.cpp listing.h
     numbers.cpp numbers.h
     parser.cpp parser.h
+    pobbuild.cpp pobbuild.h
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
@@ -26,4 +29,4 @@ add_library(pou_core STATIC
 )
 
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(pou_core PUBLIC Qt6::Core)
+target_link_libraries(pou_core PUBLIC Qt6::Core PRIVATE ZLIB::ZLIB)
