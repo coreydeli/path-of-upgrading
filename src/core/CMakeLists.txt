@@ -2,9 +2,11 @@ add_library(pou_core STATIC
     item.h
     numbers.cpp numbers.h
     parser.cpp parser.h
+    scorer.cpp scorer.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
+    verdict.h
     weights.cpp weights.h
 )
 
