@@ -107,6 +107,29 @@ std::optional<StatMap::Entry> modToStat(const QString &text)
     return StatMap::Entry{key, value};
 }
 
+// Mageblood's Mage's Legacies, each a fixed bonus named after an old flask.
+// The item text only names them, so the values come from the community wikis.
+const QHash<QString, QList<StatMap::Entry>> &mageLegacies()
+{
+    static const QHash<QString, QList<StatMap::Entry>> table = {
+        {u"amethyst"_s, {{u"#% to Chaos Resistance"_s, 45}}},
+        {u"basalt"_s, {{u"#% increased Armour"_s, 150}}},
+        {u"bismuth"_s, {{u"#% to all Elemental Resistances"_s, 45}}},
+        {u"diamond"_s, {{u"#% increased Critical Hit Chance"_s, 75}}},
+        {u"gold"_s, {{u"#% increased Rarity of Items found"_s, 45}}},
+        {u"granite"_s, {{u"# to Armour"_s, 2000}}},
+        {u"jade"_s, {{u"# to Evasion Rating"_s, 2000}}},
+        {u"quicksilver"_s, {{u"#% increased Movement Speed"_s, 30}}},
+        {u"ruby"_s, {{u"#% to Fire Resistance"_s, 60}, {u"#% to Maximum Fire Resistance"_s, 5}}},
+        {u"sapphire"_s, {{u"#% to Cold Resistance"_s, 60}, {u"#% to Maximum Cold Resistance"_s, 5}}},
+        {u"silver"_s, {{u"#% increased Skill Speed"_s, 30}}},
+        {u"stibnite"_s, {{u"#% increased Evasion Rating"_s, 150}}},
+        {u"sulphur"_s, {{u"#% increased Damage"_s, 60}}},
+        {u"topaz"_s, {{u"#% to Lightning Resistance"_s, 60}, {u"#% to Maximum Lightning Resistance"_s, 5}}},
+    };
+    return table;
+}
+
 // What kind of mod an advanced-copy header like
 // { Prefix Modifier "Hale" (Tier: 3) } announces.
 QString headerTag(const QString &header)
@@ -191,6 +214,7 @@ std::optional<Item> parseItem(const QString &input)
     static const QRegularExpression propertyLine(uR"(^([A-Za-z ]+):\s*(.+)$)"_s);
     static const QRegularExpression rollRange(uR"(\((-?\d+(?:\.\d+)?)[-–](-?\d+(?:\.\d+)?)\))"_s);
     static const QRegularExpression elementDamage(uR"(^(fire|cold|lightning) damage$)"_s);
+    static const QRegularExpression legacyLine(uR"(^Legacy of (\w+)$)"_s, CaseInsensitive);
     static const QRegularExpression unscalable(uR"(\s+[—–-]+\s*Unscalable Value\s*$)"_s, CaseInsensitive);
 
     const QList<QStringList> blocks = splitBlocks(text);
@@ -237,6 +261,8 @@ std::optional<Item> parseItem(const QString &input)
     double chaos = 0;
     double attacksPerSecond = 0;
     double critChance = 0;
+
+    QStringList legacyNames; // "Legacy of Bismuth" lines, see mageLegacies()
 
     for (qsizetype b = 1; b < blocks.size(); ++b) {
         const QStringList &block = blocks.at(b);
@@ -319,6 +345,13 @@ std::optional<Item> parseItem(const QString &input)
             const QString modText =
                 QString(clean).replace(tagPattern(), QString()).replace(tagPattern(), QString()).trimmed();
 
+            if (const auto m = legacyLine.match(modText);
+                m.hasMatch() && mageLegacies().contains(m.captured(1).toLower())) {
+                legacyNames << capitalized(m.captured(1));
+                item.lines << ItemLine{line, {}, 0, tag};
+                continue;
+            }
+
             const auto stat = modToStat(modText);
             if (!stat) {
                 // flavour text and keyword mods without numbers
@@ -329,6 +362,30 @@ std::optional<Item> parseItem(const QString &input)
             add(stat->first, stat->second);
             item.lines << ItemLine{line, stat->first, stat->second, tag};
         }
+    }
+
+    if (!legacyNames.isEmpty()) {
+        // A Legacy you have twice applies once, but every duplicate raises the
+        // effect of all of them by the belt's "per duplicate" roll.
+        double perDuplicate = 0;
+        for (const auto &[key, value] : item.stats) {
+            if (key.contains(u"increased effect per duplicate Mage's Legacy", Qt::CaseInsensitive)) {
+                perDuplicate = value;
+                break;
+            }
+        }
+        Legacies legacies;
+        for (const QString &name : std::as_const(legacyNames)) {
+            if (!legacies.names.contains(name))
+                legacies.names << name;
+        }
+        legacies.duplicates = int(legacyNames.size() - legacies.names.size());
+        legacies.effect = 1 + perDuplicate / 100 * legacies.duplicates;
+        for (const QString &name : std::as_const(legacies.names)) {
+            for (const auto &[key, value] : mageLegacies().value(name.toLower()))
+                add(key, roundTo(value * legacies.effect, 1));
+        }
+        item.legacies = legacies;
     }
 
     if (sawHeaders && (rarity == u"rare" || rarity == u"magic")) {

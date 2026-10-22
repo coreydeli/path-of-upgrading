@@ -153,6 +153,34 @@ private Q_SLOTS:
         QVERIFY(!dagger->stats.contains(u"[Weapon] Critical Hit Chance"));
     }
 
+    void mageLegaciesBecomeStats()
+    {
+        const QString belt =
+            u"Item Class: Belts\nRarity: Unique\nMageblood\nUtility Belt\n--------\n"
+            "Item Level: 80\n--------\n"
+            "Has 3 Charm Slots\n20% of Flask Recovery applied Instantly\n--------\n"
+            "Legacy of Bismuth\nLegacy of Sulphur\nLegacy of Quicksilver\nLegacy of Jade\n"
+            "All Mage's Legacies have 50% increased effect per duplicate Mage's Legacy you have\n"
+            "--------\nRivers of power coursed through their veins."_s;
+        const auto a = parseItem(belt);
+        QCOMPARE(a->stats.value(u"#% to Cold Resistance"), 45.0);
+        QCOMPARE(a->stats.value(u"#% increased Movement Speed"), 30.0);
+        QCOMPARE(lineWith(*a, u"Jade").text, u"Legacy of Jade"_s);
+        QCOMPARE(a->legacies->duplicates, 0);
+        QCOMPARE(a->legacies->effect, 1.0);
+
+        const auto b = parseItem(QString(belt)
+                                     .replace(u"Legacy of Jade"_s, u"Legacy of Ruby"_s)
+                                     .replace(u"Legacy of Sulphur"_s, u"Legacy of Ruby"_s));
+        QCOMPARE(b->legacies->names, QStringList({u"Bismuth"_s, u"Ruby"_s, u"Quicksilver"_s}));
+        QCOMPARE(b->legacies->duplicates, 1);
+        QCOMPARE(b->legacies->effect, 1.5);
+        QCOMPARE(b->stats.value(u"#% to Fire Resistance"), 45 * 1.5 + 60 * 1.5);
+        QCOMPARE(b->stats.value(u"#% to Maximum Fire Resistance"), 7.5);
+
+        QVERIFY(!parseItem(itemtexts::helmetNew)->legacies);
+    }
+
     void expandsPairedStats()
     {
         QCOMPARE(
