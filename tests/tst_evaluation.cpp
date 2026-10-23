@@ -97,7 +97,8 @@ private Q_SLOTS:
     {
         Character c;
         c.tweaks = {{u"Cold res"_s, 0.5}};
-        c.resists = resists({}, 60, 60, 80, 0);
+        // lightning is right on the cap
+        c.resists = resists({}, 60, 60, 75, 0);
 
         // those you're short of, unless you tuned them yourself
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks,
