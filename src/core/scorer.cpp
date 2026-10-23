@@ -162,10 +162,10 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
     } else {
         r = compareWith(item, {itemIn(equipped, item.slot)}, weights, item.slot, ignore);
     }
-    const Item *weapon = itemIn(equipped, u"Weapon"_s);
-    if (item.slot == u"Offhand" && weapon && weapon->twoHanded &&
-        !item.itemClass.contains(u"quiver", Qt::CaseInsensitive)) {
-        notes << u"Your weapon is two-handed, so you can't use this with it."_s;
+    if (item.slot == u"Offhand" && !item.itemClass.contains(u"quiver", Qt::CaseInsensitive)) {
+        const Item *weapon = itemIn(equipped, otherHand(r.targetSlot));
+        if (weapon && weapon->twoHanded)
+            notes << u"Your weapon is two-handed, so you can't use this with it."_s;
     }
 
     r.isEquipped = worn != slotNames.cend();

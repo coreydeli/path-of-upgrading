@@ -137,6 +137,11 @@ private Q_SLOTS:
         const Comparison offhand =
             compare(shield, {{u"Weapon"_s, item(itemtexts::twoHandMace)}}, defaultWeights());
         QVERIFY(offhand.notes.first().contains(u"two-handed"));
+        // the weapon of its own set
+        const Equipped swapMace = {{u"Weapon 2"_s, item(itemtexts::twoHandMace)}};
+        const QString cantUse = u"Your weapon is two-handed, so you can't use this with it."_s;
+        QVERIFY(compare(shield, swapMace, defaultWeights(), {}, u"Offhand 2"_s).notes.contains(cantUse));
+        QVERIFY(!compare(shield, swapMace, defaultWeights()).notes.contains(cantUse));
 
         // named, the weapon slot still means both
         const Comparison named =
