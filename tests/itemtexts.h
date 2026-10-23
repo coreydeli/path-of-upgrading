@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 using namespace Qt::Literals::StringLiterals;
 
