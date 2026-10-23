@@ -51,6 +51,9 @@ struct Evaluation
     // In words, what the score doesn't see that can make an upgrade a risk:
     // losing Spirit, minion skill levels or resistance you need.
     QStringList risks;
+    // Those of them that lose resistance you need, or with Path of Building
+    // your damage.
+    QStringList losses;
     // Resistances it leaves under the cap or further under it. Any of them
     // makes it a ResistLoss, whatever else it does.
     QList<ResistChange> resistLosses;
