@@ -4,6 +4,7 @@
 
 #include <QElapsedTimer>
 #include <QJsonArray>
+#include <QProcess>
 #include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -291,6 +292,54 @@ private Q_SLOTS:
         QCOMPARE_GE(since.elapsed(), 350);
         QTRY_COMPARE(pob.stops(), 1);
         QCOMPARE(pob.runs(), 1);
+    }
+
+    void lingers()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setTimeouts({.quit = 100ms});
+        engine.setInstall(pob.install({u"--linger"_s}));
+        engine.setBuild(build);
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+
+        // it's killed rather than waited for, so its process is soon gone
+        engine.stop();
+        QTRY_VERIFY(engine.findChildren<QProcess *>().isEmpty());
+        QCOMPARE(pob.stops(), 0);
+    }
+
+    void destroyed()
+    {
+        FakePob pob;
+        {
+            PobEngine engine;
+            engine.setInstall(pob.install());
+            engine.setBuild(build);
+            const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+            QVERIFY(finishes(reply.get()));
+        }
+        // the engine waited for it to stop on its own
+        QCOMPARE(pob.stops(), 1);
+    }
+
+    void destroyedWhileLingering()
+    {
+        FakePob pob;
+        QElapsedTimer destroying;
+        {
+            PobEngine engine;
+            engine.setTimeouts({.quit = 100ms});
+            engine.setInstall(pob.install({u"--linger"_s}));
+            engine.setBuild(build);
+            const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+            QVERIFY(finishes(reply.get()));
+            destroying.start();
+        }
+        // the engine killed it rather than waiting ten seconds
+        QCOMPARE_LT(destroying.elapsed(), 5000);
+        QCOMPARE(pob.stops(), 0);
     }
 
     void startFails()

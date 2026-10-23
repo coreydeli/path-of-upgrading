@@ -15,6 +15,7 @@
 //   --crash-on-eval  it stops when it's asked to judge items
 //   --garble         its answer to an eval isn't JSON
 //   --hang-on-eval   it doesn't answer one
+//   --linger         it takes ten seconds to stop once stdin is closed
 //   --once           only the first time it's run
 
 #include <QByteArrayList>
@@ -22,9 +23,11 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <thread>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -130,6 +133,8 @@ int main(int argc, char *argv[])
         }
         answer(r);
     }
+    if (flags.contains("--linger"))
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     count(u"stops"_s);
     return 0;
 }
