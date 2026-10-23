@@ -13,6 +13,7 @@ qt_add_qml_module(pou_app
 target_link_libraries(pou_app PUBLIC
     pou_core
     pou_platform
+    pou_services
     Qt6::Qml
     Qt6::Quick
 )
