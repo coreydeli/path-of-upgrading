@@ -98,6 +98,9 @@ public:
     // The build's numbers with each item, in the slot it names or each one it
     // can go in. See eval in pobbridge.lua for the answer.
     PobReply *evaluate(const QList<PobItem> &items);
+    // Stops it, failing what it hasn't answered. It starts again the next time
+    // it's asked something, even when it couldn't start before.
+    void stop();
 
     State state() const { return m_state; }
     // Why it couldn't start, when it's Failed.

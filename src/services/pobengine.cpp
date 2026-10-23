@@ -132,6 +132,17 @@ PobReply *PobEngine::evaluate(const QList<PobItem> &items)
     return reply;
 }
 
+void PobEngine::stop()
+{
+    if (m_process) {
+        qCInfo(lcPob, "Stopping Path of Building");
+        retire();
+        failAll(u"Path of Building was stopped before it answered."_s);
+    }
+    m_errorString.clear();
+    setState(State::Stopped);
+}
+
 void PobEngine::start()
 {
     qCInfo(lcPob, "Starting Path of Building in %s, with %s", qUtf8Printable(m_install->folder),

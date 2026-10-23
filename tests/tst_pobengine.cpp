@@ -30,9 +30,13 @@ struct FakePob
         return {.folder = folder.path(), .program = QStringLiteral(FAKEPOB), .arguments = flags};
     }
     // how many times it has been started
-    int runs() const
+    int runs() const { return count(u"runs"_s); }
+    // and has stopped on its own
+    int stops() const { return count(u"stops"_s); }
+
+    int count(const QString &name) const
     {
-        QFile file(folder.filePath(u"runs"_s));
+        QFile file(folder.filePath(name));
         return file.open(QIODevice::ReadOnly) ? file.readAll().toInt() : 0;
     }
 };
@@ -176,6 +180,30 @@ private Q_SLOTS:
         // it isn't started for nothing
         QCOMPARE(engine.state(), State::Stopped);
         QCOMPARE(pob.runs(), 0);
+    }
+
+    void stops()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+
+        // with something it hasn't answered
+        reply.reset(engine.evaluate({{.text = advancedRing}}));
+        engine.stop();
+        QCOMPARE(engine.state(), State::Stopped);
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building was stopped before it answered."_s);
+        QTRY_COMPARE(pob.stops(), 1);
+
+        // and it starts again when it's asked something
+        reply.reset(engine.evaluate({{.text = advancedRing}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(pob.runs(), 2);
     }
 
     void startFails()

@@ -4,8 +4,9 @@
 // testing the engine. It answers as the bridge does without working anything
 // out: an eval's answer has the items it was sent, the build and gear it has
 // and the commands it has had. A build that isn't for Path of Exile 2 doesn't
-// load. It counts how many times it's run in a file called runs in the
-// folder.
+// load. In the folder, it counts how many times it's run in a file called
+// runs, and how many times it has stopped once stdin was closed in one called
+// stops.
 //
 // Its own arguments come before LuaJIT's, for going wrong:
 //   --fail   it says it couldn't start
@@ -41,16 +42,16 @@ void answer(const QJsonObject &answer)
     out.flush();
 }
 
-// Returns how many times it has been run, with this one.
-int countRun()
+// Adds one to the number in the file, and returns it.
+int count(const QString &name)
 {
-    QFile file(u"runs"_s);
-    const int runs = (file.open(QIODevice::ReadOnly) ? file.readAll().toInt() : 0) + 1;
+    QFile file(name);
+    const int n = (file.open(QIODevice::ReadOnly) ? file.readAll().toInt() : 0) + 1;
     file.close();
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        quit("it can't count its runs");
-    file.write(QByteArray::number(runs));
-    return runs;
+        quit("it can't count");
+    file.write(QByteArray::number(n));
+    return n;
 }
 
 } // namespace
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
     if (script.size() != length || !script.startsWith("-- SPDX-License-Identifier: MIT\n--\n"
                                                       "-- Path of Upgrading's bridge to Path of Building."))
         quit("it wasn't sent the bridge");
-    const int runs = countRun();
+    const int runs = count(u"runs"_s);
     const bool goWrong = !flags.contains("--once") || runs == 1;
     std::fprintf(stderr, "Uniques loaded\n");
     if (goWrong && flags.contains("--crash"))
@@ -108,5 +109,6 @@ int main(int argc, char *argv[])
         }
         answer(r);
     }
+    count(u"stops"_s);
     return 0;
 }
