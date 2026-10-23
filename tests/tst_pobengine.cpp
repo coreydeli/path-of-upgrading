@@ -340,6 +340,28 @@ private Q_SLOTS:
         QCOMPARE(engine.state(), State::Failed);
     }
 
+    void crashes()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install({u"--crash-on-eval"_s, u"--once"_s}));
+        engine.setBuild(build);
+        QTest::ignoreMessage(
+            QtWarningMsg,
+            "Path of Building stopped unexpectedly. It printed:\nUniques loaded\nThe fake crashed");
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building stopped unexpectedly."_s);
+        QCOMPARE(engine.state(), State::Stopped);
+
+        // and it starts again when it's asked something
+        reply.reset(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(engine.state(), State::Ready);
+        QCOMPARE(pob.runs(), 2);
+    }
+
     void cantRun()
     {
         FakePob pob;

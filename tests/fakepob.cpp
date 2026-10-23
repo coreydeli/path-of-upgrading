@@ -9,9 +9,10 @@
 // stops.
 //
 // Its own arguments come before LuaJIT's, for going wrong:
-//   --fail   it says it couldn't start
-//   --crash  it stops before it has started
-//   --once   only the first time it's run
+//   --fail           it says it couldn't start
+//   --crash          it stops before it has started
+//   --crash-on-eval  it stops when it's asked to judge items
+//   --once           only the first time it's run
 
 #include <QByteArrayList>
 #include <QFile>
@@ -88,6 +89,10 @@ int main(int argc, char *argv[])
     for (QByteArray line = in.readLine(); !line.isEmpty(); line = in.readLine()) {
         const QJsonObject request = QJsonDocument::fromJson(line).object();
         const QString command = request.value(u"cmd").toString();
+        if (command == u"eval" && goWrong && flags.contains("--crash-on-eval")) {
+            std::fprintf(stderr, "The fake crashed\n");
+            return 4;
+        }
         seen.append(command);
         QJsonObject r{{u"id"_s, request.value(u"id")}, {u"ok"_s, true}};
         if (command == u"load") {

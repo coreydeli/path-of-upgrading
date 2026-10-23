@@ -131,6 +131,7 @@ private:
     void started(const QJsonObject &answer);
     void answered(const Sent &sent, const QJsonObject &answer);
     void halt();
+    void giveUp(const QString &why);
     void failStart(const QString &why);
     void failAll(const QString &why);
     void retire();

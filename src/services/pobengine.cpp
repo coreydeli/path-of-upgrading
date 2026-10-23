@@ -181,8 +181,11 @@ void PobEngine::start()
             failStart(u"Couldn't run Path of Building: %1"_s.arg(process->errorString()));
     });
     connect(process, &QProcess::finished, this, [this] {
+        // it only stops on its own when something has gone wrong
         if (m_state == State::Starting)
             failStart(u"Path of Building stopped while starting."_s);
+        else
+            giveUp(u"Path of Building stopped unexpectedly."_s);
     });
     setState(State::Starting);
     process->start();
@@ -268,6 +271,17 @@ void PobEngine::halt()
     qCInfo(lcPob, "Stopping Path of Building");
     retire();
     failAll(u"Path of Building was stopped before it answered."_s);
+}
+
+// Gives up on the one that's running when something has gone wrong, failing
+// what it hasn't answered with why. It starts again the next time it's asked
+// something.
+void PobEngine::giveUp(const QString &why)
+{
+    warn(why);
+    retire();
+    failAll(why);
+    setState(State::Stopped);
 }
 
 // Fails what it was asked with why it couldn't start, and leaves it a while
