@@ -4,6 +4,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-xfixes)
 
 add_library(pou_platform STATIC
+    copykeys.cpp copykeys.h
     gamewindow.cpp gamewindow.h
     xcb/xconnection.cpp xcb/xconnection.h
     xcb/xselectionwatcher.cpp xcb/xselectionwatcher.h
