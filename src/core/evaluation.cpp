@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "core/evaluation.h"
 
+#include "core/slots.h"
+
 #include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
@@ -34,6 +36,29 @@ QString profileLabel(Element e)
 double capOf(const LiveResists &resists, Element e)
 {
     return resists.caps[e] != 0 ? resists.caps[e] : resists.cap;
+}
+
+// Of your rings, charms or jewels, the one with the lowest gear score. One
+// without a gear score, like a unique, is never it. Empty when a slot is
+// free, as the item goes there first, or none of them has a gear score.
+std::optional<QString> weakestByGearScore(const Item &item, const Character &character,
+                                          const PobPriorities &priorities)
+{
+    std::optional<QString> weakest;
+    int lowest = 0;
+    for (const QString &member : slotGroup(item.slot)) {
+        const auto there = character.gear.constFind(member);
+        if (there == character.gear.cend())
+            return std::nullopt;
+        const std::optional<GearScore> g = gearScore(*there, gearScoreOptions(character, member, priorities));
+        if (!g || !g->isRated())
+            continue;
+        if (!weakest || g->score < lowest) {
+            weakest = member;
+            lowest = g->score;
+        }
+    }
+    return weakest;
 }
 
 } // namespace
@@ -88,6 +113,13 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         return gearScore(it, gearScoreOptions(character, s, priorities));
     };
     e.gear = gearIn(item, r.targetSlot);
+    if (e.gear && e.gear->isRated() && slot.isEmpty() && !r.isEquipped && comparesWithWeakest(item.slot)) {
+        const std::optional<QString> weakest = weakestByGearScore(item, character, priorities);
+        if (weakest && *weakest != r.targetSlot) {
+            r = compare(item, character.gear, character.weights, ignore, *weakest);
+            e.gear = gearIn(item, r.targetSlot);
+        }
+    }
     const auto yours = character.gear.constFind(r.targetSlot);
     if (!r.isEquipped && yours != character.gear.cend())
         e.gearEquipped = gearIn(*yours, r.targetSlot);

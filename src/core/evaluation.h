@@ -43,8 +43,9 @@ struct Evaluation
 };
 
 // By gear score when the item and what you wear both have one, else by your
-// weights. slot can say which of your rings, charms or jewels to compare it
-// with, or another slot it goes in, like the offhand for a one-handed weapon.
+// weights. A ring, charm or jewel is compared with your weakest one by gear
+// score, unless slot says which. slot can also be another slot the item
+// goes in, like the offhand for a one-handed weapon.
 Evaluation evaluate(const Item &item, const Character &character, const PobPriorities &priorities = {},
                     const QString &slot = {});
 

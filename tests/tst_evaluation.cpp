@@ -27,6 +27,11 @@ Item lifeAmulet(int life)
 const Item uniqueAmulet = item(
     u"Item Class: Amulets\nRarity: Unique\nHollow Promise\nGold Amulet\n--------\n+10 to maximum Life"_s);
 
+Item ring(const QString &name, const QString &mods)
+{
+    return item(u"Item Class: Rings\nRarity: Rare\n"_s + name + u"\nGold Ring\n--------\n"_s + mods);
+}
+
 Character wearing(const Equipped &gear)
 {
     Character c;
@@ -188,6 +193,74 @@ private Q_SLOTS:
         QVERIFY(!e.gear);
         QVERIFY(!e.gearEquipped);
         QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
+    }
+
+    void weakestRingByGearScore()
+    {
+        // your weights only want rarity, so they'd have it replace the first
+        Character c = wearing({
+            {u"Ring 1"_s, ring(u"Storm Loop"_s, u"+70 to maximum Life"_s)},
+            {u"Ring 2"_s, ring(u"Woe Band"_s, u"+10 to maximum Life\n20% increased Rarity of Items found"_s)},
+        });
+        c.weights = {{u"#% increased Rarity of Items found"_s, 10}};
+        const Item better = ring(u"Grim Grasp"_s, u"+80 to maximum Life"_s);
+        QCOMPARE(compare(better, c.gear, c.weights).targetSlot, u"Ring 1"_s);
+
+        const Evaluation e = evaluate(better, c);
+        QCOMPARE(e.comparison.targetSlot, u"Ring 2"_s);
+        QCOMPARE(e.comparison.replacing, QStringList{u"Woe Band"_s});
+        QCOMPARE(e.gearEquipped->score, 6);
+        QCOMPARE(e.gear->score, 20);
+        QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
+        // against the ring it replaces
+        QCOMPARE(e.comparison.rows.at(0).key, u"#% increased Rarity of Items found"_s);
+        QCOMPARE(e.comparison.rows.at(0).oldValue, 20.0);
+    }
+
+    void uniqueRingIsntTheWeakest()
+    {
+        const Character c = wearing({
+            {u"Ring 1"_s, item(u"Item Class: Rings\nRarity: Unique\nVenom Coil\nGold Ring\n--------\n"
+                               "+10 to maximum Life"_s)},
+            {u"Ring 2"_s, ring(u"Woe Band"_s, u"+20 to maximum Life"_s)},
+        });
+        const Evaluation e = evaluate(ring(u"Grim Grasp"_s, u"+40 to maximum Life"_s), c);
+        QCOMPARE(e.comparison.targetSlot, u"Ring 2"_s);
+        QCOMPARE(e.mode, ScoreMode::GearScores);
+        QCOMPARE(e.comparison.delta, 5.0);
+        QCOMPARE(e.comparison.verdict, Verdict::Small);
+    }
+
+    void freeRingSlotFirst()
+    {
+        const Character c = wearing({{u"Ring 1"_s, ring(u"Woe Band"_s, u"+10 to maximum Life"_s)}});
+        const Evaluation e = evaluate(ring(u"Grim Grasp"_s, u"+40 to maximum Life"_s), c);
+        QCOMPARE(e.comparison.targetSlot, u"Ring 2"_s);
+        QCOMPARE(e.comparison.verdict, Verdict::New);
+    }
+
+    void ringSlotYouName()
+    {
+        const Character c = wearing({
+            {u"Ring 1"_s, ring(u"Storm Loop"_s, u"+70 to maximum Life"_s)},
+            {u"Ring 2"_s, ring(u"Woe Band"_s, u"+10 to maximum Life"_s)},
+        });
+        const Evaluation e = evaluate(ring(u"Grim Grasp"_s, u"+80 to maximum Life"_s), c, {}, u"Ring 1"_s);
+        QCOMPARE(e.comparison.targetSlot, u"Ring 1"_s);
+        QCOMPARE(e.comparison.delta, 2.0);
+        QCOMPARE(e.comparison.verdict, Verdict::Same);
+    }
+
+    void ringYouWear()
+    {
+        // and not your weakest
+        const Character c = wearing({
+            {u"Ring 1"_s, ring(u"Woe Band"_s, u"+10 to maximum Life"_s)},
+            {u"Ring 2"_s, ring(u"Storm Loop"_s, u"+70 to maximum Life"_s)},
+        });
+        const Evaluation e = evaluate(c.gear.value(u"Ring 2"_s), c);
+        QCOMPARE(e.comparison.verdict, Verdict::Equipped);
+        QCOMPARE(e.comparison.targetSlot, u"Ring 2"_s);
     }
 
     void notGear()
