@@ -167,10 +167,32 @@ private Q_SLOTS:
         game.failRightAway = u"There's no X server."_s;
         ItemReader reader(&game);
         QSignalSpy failed(&reader, &ItemReader::failed);
+        QSignalSpy slow(&reader, &ItemReader::slow);
         reader.read();
         QCOMPARE(failed.size(), 1);
         QCOMPARE(failed.first().at(0).toString(), u"There's no X server."_s);
         QVERIFY(!reader.isReading());
+        QVERIFY(!slow.wait(400));
+    }
+
+    void slowGame()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        QSignalSpy slow(&reader, &ItemReader::slow);
+        reader.read();
+        QVERIFY(slow.wait(1000));
+        QVERIFY(reader.isReading());
+    }
+
+    void quickGame()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        QSignalSpy slow(&reader, &ItemReader::slow);
+        reader.read();
+        Q_EMIT game.itemCopied(itemtexts::helmetNew, std::nullopt);
+        QVERIFY(!slow.wait(400));
     }
 };
 

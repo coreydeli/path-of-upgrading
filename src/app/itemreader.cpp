@@ -4,9 +4,13 @@
 #include "core/parser.h"
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 
 namespace pou {
 namespace {
+
+// how long the game copies before you're told it's still at it
+constexpr auto slowAfter = 250ms;
 
 QString whyNothing(GameInput::Failure why, const QString &detail, const QString &hotkey)
 {
@@ -38,6 +42,9 @@ ItemReader::ItemReader(GameInput *input, QObject *parent)
     : QObject(parent)
     , m_input(input)
 {
+    m_slow.setSingleShot(true);
+    m_slow.setInterval(slowAfter);
+    connect(&m_slow, &QTimer::timeout, this, &ItemReader::slow);
     connect(input, &GameInput::itemCopied, this, &ItemReader::copied);
     connect(input, &GameInput::copyFailed, this, &ItemReader::notCopied);
 }
@@ -62,6 +69,7 @@ void ItemReader::read()
     if (m_paused || m_reading)
         return;
     m_reading = true;
+    m_slow.start();
     // which can fail before it returns
     m_input->copyItem(m_advanced);
 }
@@ -88,6 +96,7 @@ void ItemReader::notCopied(GameInput::Failure why, const QString &detail,
 void ItemReader::finish()
 {
     m_reading = false;
+    m_slow.stop();
 }
 
 QString ItemReader::hotkey() const

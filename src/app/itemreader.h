@@ -6,6 +6,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QTimer>
 #include <optional>
 
 namespace pou {
@@ -32,6 +33,8 @@ public:
     bool isReading() const { return m_reading; }
 
 Q_SIGNALS:
+    // The game is taking its time to copy.
+    void slow();
     // Whatever the hotkey read, gear or not.
     void itemRead(const Item &item, const std::optional<ScreenPoint> &mouse);
     // Why the hotkey read nothing, in words for you.
@@ -44,6 +47,7 @@ private:
     QString hotkey() const;
 
     GameInput *m_input;
+    QTimer m_slow;
     QString m_hotkey;
     bool m_advanced = false;
     bool m_paused = false;
