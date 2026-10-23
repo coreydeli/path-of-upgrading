@@ -15,6 +15,7 @@ add_library(pou_core STATIC
     listing.cpp listing.h
     numbers.cpp numbers.h
     parser.cpp parser.h
+    placement.cpp placement.h
     pobbuild.cpp pobbuild.h
     pobeval.cpp pobeval.h
     pobinstall.cpp pobinstall.h
