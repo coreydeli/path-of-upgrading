@@ -33,6 +33,8 @@ public:
     const TradeData &data() const { return m_data; }
     // The site's league ids, for resolveLeague().
     const QStringList &leagues() const { return m_leagues; }
+    // Why there are no stats, when there aren't.
+    QString errorString() const { return m_errorString; }
 
     // Reads the files the first time, then asks the site for what's missing
     // or a day old, or for all of it when forced.
@@ -56,6 +58,7 @@ private:
     QString path(const Source &source) const;
     bool take(const Source &source, const QJsonObject &answer);
     void answered(Source &source);
+    void finish();
 
     TradeClient *m_client;
     QString m_folder;
@@ -63,6 +66,7 @@ private:
     bool m_read = false; // whether the files have been
     TradeData m_data;
     QStringList m_leagues;
+    QString m_errorString;
 };
 
 } // namespace pou

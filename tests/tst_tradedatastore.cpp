@@ -108,6 +108,7 @@ private Q_SLOTS:
         QCOMPARE(store.data().stats.all().size(), 7);
         QCOMPARE(store.data().categories.categoryFor(u"Quarterstaves"_s), u"weapon.warstaff"_s);
         QCOMPARE(store.leagues(), (QStringList{u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s}));
+        QVERIFY(store.errorString().isEmpty());
 
         // and keeps it
         for (const QString &name : {u"stats"_s, u"filters"_s, u"leagues"_s})
@@ -221,7 +222,60 @@ private Q_SLOTS:
         QCOMPARE(store.data().stats.all().size(), 7);
         QVERIFY(!store.data().categories.isEmpty());
         QCOMPARE(store.leagues(), QStringList{u"Runes of Aldur"_s});
+        QVERIFY(store.errorString().isEmpty());
         QCOMPARE(readJsonFile(dir.filePath(u"stats.json"_s)).value_or(QJsonObject()), tradefixtures::stats());
+    }
+
+    void saysWhyThereAreNoStats_data()
+    {
+        QTest::addColumn<FakeAnswer>("answer");
+        QTest::addColumn<QString>("why");
+        QTest::newRow("unreachable") << FakeAnswer{.error = QNetworkReply::HostNotFoundError}
+                                     << u"Searches need the trade site's list of stats. Couldn't reach the "
+                                        u"trade site: Host www.pathofexile.com not found"_s;
+        QTest::newRow("empty")
+            << FakeAnswer{.body = json({{u"result"_s, QJsonArray()}})}
+            << u"Searches need the trade site's list of stats, and it sent an empty one."_s;
+    }
+
+    void saysWhyThereAreNoStats()
+    {
+        QFETCH(FakeAnswer, answer);
+        QFETCH(QString, why);
+        QTemporaryDir dir;
+        FakeNetwork network;
+        network.answers = {
+            answer, {.body = json(tradefixtures::filters())}, {.body = json(leagues({u"Standard"_s}))}};
+        TradeClient client(&network);
+        TradeDataStore store(&client, dir.path());
+
+        QVERIFY(refreshes(store));
+        QVERIFY(store.data().stats.isEmpty());
+        QCOMPARE(store.errorString(), why);
+        QVERIFY(!QFile::exists(dir.filePath(u"stats.json"_s)));
+        QCOMPARE(store.leagues(), QStringList{u"Standard"_s});
+
+        // until it has them
+        network.answers = {{.body = json(tradefixtures::stats())}};
+        QVERIFY(refreshes(store));
+        QCOMPARE(network.sent.size(), 4);
+        QVERIFY(!store.data().stats.isEmpty());
+        QVERIFY(store.errorString().isEmpty());
+    }
+
+    void blamesOnlyTheStats()
+    {
+        QTemporaryDir dir;
+        FakeNetwork network;
+        network.answers = {{.error = QNetworkReply::HostNotFoundError},
+                           {.body = json({{u"result"_s, QJsonArray()}})},
+                           {.status = 503}};
+        TradeClient client(&network);
+        TradeDataStore store(&client, dir.path());
+
+        QVERIFY(refreshes(store));
+        QCOMPARE(store.errorString(), u"Searches need the trade site's list of stats. Couldn't reach the "
+                                      u"trade site: Host www.pathofexile.com not found"_s);
     }
 
     void oneRefreshAtATime()

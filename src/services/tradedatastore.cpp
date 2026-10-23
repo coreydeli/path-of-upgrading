@@ -58,7 +58,7 @@ void TradeDataStore::refresh(bool force)
     }
     m_read = true;
     if (!isRefreshing())
-        QMetaObject::invokeMethod(this, &TradeDataStore::refreshed, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, &TradeDataStore::finish, Qt::QueuedConnection);
 }
 
 bool TradeDataStore::isRefreshing() const
@@ -101,11 +101,16 @@ void TradeDataStore::answered(Source &source)
     reply->deleteLater();
     source.reply.clear();
 
+    const bool stats = source.name == u"stats";
     if (reply->error() != TradeReply::Error::None) {
         qCWarning(lcTrade, "Couldn't get the trade site's %s: %s", qUtf8Printable(source.name),
                   qUtf8Printable(reply->errorString()));
+        if (stats)
+            m_errorString = u"Searches need the trade site's list of stats. %1"_s.arg(reply->errorString());
     } else if (!take(source, reply->answer())) {
         qCWarning(lcTrade, "The trade site's %s came back empty", qUtf8Printable(source.name));
+        if (stats)
+            m_errorString = u"Searches need the trade site's list of stats, and it sent an empty one."_s;
     } else {
         source.fetched = QDateTime::currentDateTimeUtc();
         const QString file = path(source);
@@ -115,7 +120,15 @@ void TradeDataStore::answered(Source &source)
                       qUtf8Printable(file), qUtf8Printable(error));
     }
     if (!isRefreshing())
-        Q_EMIT refreshed();
+        finish();
+}
+
+void TradeDataStore::finish()
+{
+    // what the files had does when the site doesn't answer
+    if (!m_data.stats.isEmpty())
+        m_errorString.clear();
+    Q_EMIT refreshed();
 }
 
 } // namespace pou
