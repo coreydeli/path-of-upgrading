@@ -81,6 +81,8 @@ struct PobVerdict
     double score = 0;
     // What it breaks, in words.
     QStringList breaks;
+    // Those of them that lose resistance under the cap or your damage.
+    QStringList losses;
 
     // The number the build's damage is judged by, see pobDamageStat().
     PobChange damage;
