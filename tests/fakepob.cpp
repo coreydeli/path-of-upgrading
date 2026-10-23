@@ -12,6 +12,7 @@
 //   --fail           it says it couldn't start
 //   --crash          it stops before it has started
 //   --crash-on-eval  it stops when it's asked to judge items
+//   --garble         its answer to an eval isn't JSON
 //   --once           only the first time it's run
 
 #include <QByteArrayList>
@@ -92,6 +93,11 @@ int main(int argc, char *argv[])
         if (command == u"eval" && goWrong && flags.contains("--crash-on-eval")) {
             std::fprintf(stderr, "The fake crashed\n");
             return 4;
+        }
+        if (command == u"eval" && goWrong && flags.contains("--garble")) {
+            out.write("@@{\"id\": " + QByteArray::number(request.value(u"id").toInt()) + ", \"ok\"\n");
+            out.flush();
+            continue;
         }
         seen.append(command);
         QJsonObject r{{u"id"_s, request.value(u"id")}, {u"ok"_s, true}};

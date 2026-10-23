@@ -225,10 +225,14 @@ void PobEngine::readAnswers()
         const QJsonObject answer = QJsonDocument::fromJson(line.sliced(2)).object();
         // the first says whether it has started, and the rest are in the order
         // they were asked
-        if (m_state == State::Starting)
+        if (m_state == State::Starting) {
             started(answer);
-        else if (!m_sent.isEmpty())
+        } else if (!m_sent.isEmpty() && answer.value(u"id").toInt() == m_sent.first().id) {
             answered(m_sent.takeFirst(), answer);
+        } else {
+            qCDebug(lcPob, "The answer that couldn't be read: %s", line.trimmed().constData());
+            giveUp(u"Path of Building's answer couldn't be read."_s);
+        }
     }
 }
 
@@ -246,7 +250,7 @@ void PobEngine::started(const QJsonObject &answer)
 void PobEngine::answered(const Sent &sent, const QJsonObject &answer)
 {
     const bool ok = answer.value(u"ok").toBool();
-    const QString error = answer.value(u"error").toString();
+    const QString error = answer.value(u"error").toString(u"Path of Building didn't say what went wrong."_s);
     if (!sent.reply) {
         if (!ok)
             qCWarning(lcPob, "Path of Building couldn't load the build: %s", qUtf8Printable(error));

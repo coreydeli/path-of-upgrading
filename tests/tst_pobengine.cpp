@@ -362,6 +362,26 @@ private Q_SLOTS:
         QCOMPARE(pob.runs(), 2);
     }
 
+    void garbled()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install({u"--garble"_s, u"--once"_s}));
+        engine.setBuild(build);
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(u"^Path of Building's answer couldn't be read\\."_s));
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building's answer couldn't be read."_s);
+        QCOMPARE(engine.state(), State::Stopped);
+        QTRY_COMPARE(pob.stops(), 1);
+
+        reply.reset(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(pob.runs(), 2);
+    }
+
     void cantRun()
     {
         FakePob pob;
