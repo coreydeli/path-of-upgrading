@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "core/pobinstall.h"
 
+#include "core/datafiles.h"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -37,11 +39,23 @@ bool hasFlatpak(const PobPlaces &places)
                        });
 }
 
+// Path of Building for Path of Exile 1 has the same files, but its manifest
+// updates it from that game's repository.
+bool isForPoe1(const QString &folder)
+{
+    const std::optional<QByteArray> manifest = readFile(folder + u"/manifest.xml"_s);
+    return manifest && !manifest->contains("PathOfBuilding-PoE2");
+}
+
 std::optional<PobInstall> pobIn(const PobPlaces &places, const QString &location, QString *why)
 {
     const QString folder = QDir::cleanPath(location);
     if (!hasPob(folder)) {
         setWhy(why, u"There's no Path of Building in %1."_s.arg(location));
+        return std::nullopt;
+    }
+    if (isForPoe1(folder)) {
+        setWhy(why, u"The Path of Building in %1 is for Path of Exile 1."_s.arg(location));
         return std::nullopt;
     }
     if (places.luajit.isEmpty()) {

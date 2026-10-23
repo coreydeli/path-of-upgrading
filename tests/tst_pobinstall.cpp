@@ -12,6 +12,16 @@ using namespace pou;
 
 namespace {
 
+// The part of a manifest that tells the games apart.
+QByteArray manifest(const QByteArray &repository)
+{
+    return "<PoBVersion><Source part=\"program\" "
+           "url=\"https://raw.githubusercontent.com/PathOfBuildingCommunity/" +
+           repository + "/{branch}/src/\"/></PoBVersion>";
+}
+
+const QByteArray poe1Manifest = manifest("PathOfBuilding");
+
 const QStringList flatpakArguments = {u"run"_s, u"--die-with-parent"_s, u"--unshare=network"_s,
                                       u"--command=luajit"_s, u"community.pathofbuilding.PathOfBuilding"_s};
 
@@ -43,10 +53,12 @@ struct Computer
     }
 };
 
-// Path of Building's files, as far as finding it goes.
-bool addPob(const QString &folder)
+// Path of Building's files, as far as finding it goes, with the manifest
+// when it's given.
+bool addPob(const QString &folder, const QByteArray &manifest = {})
 {
-    return writeFile(folder + u"/HeadlessWrapper.lua"_s, {});
+    return writeFile(folder + u"/HeadlessWrapper.lua"_s, {}) &&
+           (manifest.isEmpty() || writeFile(folder + u"/manifest.xml"_s, manifest));
 }
 
 } // namespace
@@ -205,6 +217,20 @@ private Q_SLOTS:
         QVERIFY(!findPob(computer.places, folder, &why));
         QCOMPARE(why,
                  u"Running the Path of Building in %1 needs LuaJIT, which isn't installed."_s.arg(folder));
+    }
+
+    void locationForPoe1()
+    {
+        Computer computer;
+        const QString folder = computer.dir.filePath(u"RustyPathOfBuilding1"_s);
+        QVERIFY(addPob(folder, poe1Manifest));
+        QString why;
+        QVERIFY(!findPob(computer.places, folder, &why));
+        QCOMPARE(why, u"The Path of Building in %1 is for Path of Exile 1."_s.arg(folder));
+
+        // which can't be told without its manifest
+        QVERIFY(QFile::remove(folder + u"/manifest.xml"_s));
+        QVERIFY(findPob(computer.places, folder));
     }
 };
 
