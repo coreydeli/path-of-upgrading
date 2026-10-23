@@ -16,6 +16,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(GNUInstallDirs)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(
+        -Wall -Wextra -Wpedantic
+        -Wcast-align -Wformat=2 -Wundef -Wvla
+        -Wnon-virtual-dtor -Woverloaded-virtual -Wsuggest-override
+        -Wzero-as-null-pointer-constant
+        -Werror=return-type
+        # designated initializers leave out what they don't set on purpose
+        -Wno-missing-field-initializers
+    )
+endif()
+
 add_compile_definitions(
     QT_NO_CAST_FROM_ASCII
     QT_NO_CAST_TO_ASCII
