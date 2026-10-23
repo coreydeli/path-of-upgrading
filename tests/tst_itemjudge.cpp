@@ -279,6 +279,22 @@ private Q_SLOTS:
         QCOMPARE(p.judge.current().evaluation.gear->score, score);
     }
 
+    void damageWeight()
+    {
+        const QJsonObject harder{{u"FullDPS"_s, 110}, {u"TotalEHP"_s, 1000}};
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(asItIs, {{u"Helmet"_s, {}, harder}})));
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(helmetNew);
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().evaluation.comparison.delta, 6);
+
+        p.judge.setDamageWeight(0);
+        p.judge.check(helmetNew);
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().evaluation.comparison.delta, 0);
+    }
+
     void cantTryItOn()
     {
         WithPob p;

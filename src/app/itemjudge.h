@@ -53,6 +53,8 @@ public:
     void setEngine(PobEngine *engine);
     // What matters to you, for the gear scores too.
     void setPriorities(const PobPriorities &priorities);
+    // How much of Path of Building's score is damage, from 0 to 1.
+    void setDamageWeight(double weight);
 
     // Judges the item in place of the one before. checked() has how it does
     // straight away, and again once Path of Building has answered.
@@ -69,7 +71,7 @@ private:
     Character m_character;
     std::optional<PobBuild> m_build;
     PobEngine *m_engine = nullptr;
-    PobPriorities m_priorities;
+    PobVerdictOptions m_options;
     ItemCheck m_check;
     QPointer<PobReply> m_reply; // for the item being checked
 };

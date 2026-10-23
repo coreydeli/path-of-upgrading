@@ -34,14 +34,19 @@ void ItemJudge::setEngine(PobEngine *engine)
 
 void ItemJudge::setPriorities(const PobPriorities &priorities)
 {
-    m_priorities = priorities;
+    m_options.priorities = priorities;
+}
+
+void ItemJudge::setDamageWeight(double weight)
+{
+    m_options.damageWeight = weight;
 }
 
 void ItemJudge::check(const Item &item)
 {
     // the answer for the item before isn't wanted any more
     delete m_reply;
-    m_check = {.item = item, .evaluation = evaluate(item, m_character, m_priorities)};
+    m_check = {.item = item, .evaluation = evaluate(item, m_character, m_options.priorities)};
     const Comparison &r = m_check.evaluation.comparison;
     if (r.ok && !r.isEquipped && m_engine && m_engine->state() != PobEngine::State::Unavailable) {
         if (m_build) {
@@ -67,8 +72,7 @@ void ItemJudge::answered()
 
     const PobEval eval = readPobEval(reply->answer());
     const PobItemEval tried = eval.items.value(0);
-    const std::optional<PobJudgement> best =
-        bestPlacement(eval.before, tried, m_check.item, {.priorities = m_priorities});
+    const std::optional<PobJudgement> best = bestPlacement(eval.before, tried, m_check.item, m_options);
     if (!best) {
         fail(tried.error.isEmpty() ? u"Path of Building didn't say how the item does."_s : tried.error);
         return;
@@ -76,7 +80,7 @@ void ItemJudge::answered()
     // compared with what you wear where it does best, which isn't always
     // where the gear score would put it
     const QString slot = gearSlot(best->placement.slot, m_build && m_build->swapInUse);
-    m_check.evaluation = withPob(evaluate(m_check.item, m_character, m_priorities, slot), *best);
+    m_check.evaluation = withPob(evaluate(m_check.item, m_character, m_options.priorities, slot), *best);
     m_check.pob = ItemCheck::Pob::Checked;
     Q_EMIT checked(m_check);
 }
