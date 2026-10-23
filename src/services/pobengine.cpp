@@ -217,27 +217,31 @@ void PobEngine::readAnswers()
     QProcess *process = m_process;
     while (m_process == process && process->canReadLine()) {
         const QByteArray line = process->readLine();
-        if (line.startsWith("@@"))
-            answered(QJsonDocument::fromJson(line.sliced(2)).object());
+        if (!line.startsWith("@@"))
+            continue;
+        const QJsonObject answer = QJsonDocument::fromJson(line.sliced(2)).object();
+        // the first says whether it has started, and the rest are in the order
+        // they were asked
+        if (m_state == State::Starting)
+            started(answer);
+        else if (!m_sent.isEmpty())
+            answered(m_sent.takeFirst(), answer);
     }
 }
 
-void PobEngine::answered(const QJsonObject &answer)
+void PobEngine::started(const QJsonObject &answer)
 {
-    // the first says whether it has started
-    if (m_state == State::Starting) {
-        if (!answer.value(u"ready").toBool()) {
-            failStart(answer.value(u"error").toString(u"Path of Building didn't start."_s));
-            return;
-        }
-        m_version = answer.value(u"version").toString();
-        qCInfo(lcPob, "Path of Building %s is ready", qUtf8Printable(m_version));
-        setState(State::Ready);
+    if (!answer.value(u"ready").toBool()) {
+        failStart(answer.value(u"error").toString(u"Path of Building didn't start."_s));
         return;
     }
-    if (m_sent.isEmpty())
-        return;
-    const Sent sent = m_sent.takeFirst();
+    m_version = answer.value(u"version").toString();
+    qCInfo(lcPob, "Path of Building %s is ready", qUtf8Printable(m_version));
+    setState(State::Ready);
+}
+
+void PobEngine::answered(const Sent &sent, const QJsonObject &answer)
+{
     const bool ok = answer.value(u"ok").toBool();
     const QString error = answer.value(u"error").toString();
     if (!sent.reply) {

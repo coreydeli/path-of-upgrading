@@ -128,7 +128,8 @@ private:
     void sendBuild();
     void send(QJsonObject request, PobReply *reply = nullptr);
     void readAnswers();
-    void answered(const QJsonObject &answer);
+    void started(const QJsonObject &answer);
+    void answered(const Sent &sent, const QJsonObject &answer);
     void halt();
     void failStart(const QString &why);
     void failAll(const QString &why);
