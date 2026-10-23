@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <chrono>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -22,8 +23,9 @@ class TradeReply : public QObject
 public:
     enum class Error {
         None,
-        Network,   // the site couldn't be reached
-        BadAnswer, // the site's answer couldn't be read
+        RateLimited, // too many requests, see retryAfter()
+        Network,     // the site couldn't be reached
+        BadAnswer,   // the site's answer couldn't be read
     };
     Q_ENUM(Error)
 
@@ -31,6 +33,8 @@ public:
     Error error() const { return m_error; }
     // What went wrong, for people.
     QString errorString() const { return m_errorString; }
+    // How long until the site takes requests again, when RateLimited.
+    std::chrono::seconds retryAfter() const { return m_retryAfter; }
     // The site's answer, when there's no error.
     QJsonObject answer() const { return m_answer; }
 
@@ -43,12 +47,13 @@ private:
 
     explicit TradeReply(QObject *parent);
     void succeed(const QJsonObject &answer);
-    void fail(Error error, const QString &why);
+    void fail(Error error, const QString &why, std::chrono::seconds retryAfter = {});
     void finish();
 
     bool m_finished = false;
     Error m_error = Error::None;
     QString m_errorString;
+    std::chrono::seconds m_retryAfter{};
     QJsonObject m_answer;
 };
 

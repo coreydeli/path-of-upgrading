@@ -10,6 +10,7 @@
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 
 namespace {
@@ -17,6 +18,12 @@ namespace {
 QByteArray json(const QJsonObject &object)
 {
     return QJsonDocument(object).toJson(QJsonDocument::Compact);
+}
+
+// What the site answers when it won't run a request.
+QByteArray siteError(const QString &message)
+{
+    return json({{u"error"_s, QJsonObject{{u"code"_s, 2}, {u"message"_s, message}}}});
 }
 
 bool finishes(TradeReply *reply)
@@ -73,6 +80,39 @@ private Q_SLOTS:
         QCOMPARE(network.sent[0].request.url(), tradeFetchUrl({u"x1"_s, u"x2"_s}, u"Ab3dE9"_s));
         QCOMPARE(network.sent[1].operation, QNetworkAccessManager::GetOperation);
         QCOMPARE(network.sent[1].request.url(), tradeDataUrl(u"leagues"_s));
+    }
+
+    void rateLimited()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.status = 429,
+                                      .body = siteError(u"Rate limit exceeded"_s),
+                                      .headers = {{"Retry-After", "30"}}}
+                        << FakeAnswer{.status = 400,
+                                      .body = siteError(u"Rate limit exceeded"_s),
+                                      .headers = {{"Retry-After", "1"}}}
+                        << FakeAnswer{.status = 429, .body = {}};
+        TradeClient client(&network);
+
+        TradeReply *reply = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(reply));
+        QCOMPARE(reply->error(), TradeReply::Error::RateLimited);
+        QCOMPARE(reply->retryAfter(), 30s);
+        QCOMPARE(reply->errorString(),
+                 u"The trade site has had too many requests from you. Try again in 30 seconds."_s);
+
+        // said only in the message
+        TradeReply *message = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(message));
+        QCOMPARE(message->error(), TradeReply::Error::RateLimited);
+        QCOMPARE(message->errorString(),
+                 u"The trade site has had too many requests from you. Try again in 1 second."_s);
+
+        // a minute when the site doesn't say how long
+        TradeReply *bare = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(bare));
+        QCOMPARE(bare->error(), TradeReply::Error::RateLimited);
+        QCOMPARE(bare->retryAfter(), 60s);
     }
 
     void unreachable()
