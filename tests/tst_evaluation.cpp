@@ -217,6 +217,28 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.rows.at(0).oldValue, 10.0);
     }
 
+    void scoredInTheSlotItTakes()
+    {
+        // Your weights only want rarity, so they'd have it replace the first
+        // ring. You're capped on fire thanks to the second, so a ring's fire
+        // resistance only counts in its place.
+        const Equipped gear = {
+            {u"Ring 1"_s, ring(u"Storm Loop"_s, u"+70 to maximum Life"_s)},
+            {u"Ring 2"_s, ring(u"Woe Band"_s, u"+10 to maximum Life\n+30% to Fire Resistance"_s)},
+        };
+        Character c = wearing(gear);
+        c.weights = {{u"#% increased Rarity of Items found"_s, 10}};
+        c.resists = resists(gear, 75, {}, {}, {});
+        const Item better = ring(u"Grim Grasp"_s, u"+40 to maximum Life\n+30% to Fire Resistance"_s);
+
+        const Evaluation e = evaluate(better, c);
+        QCOMPARE(e.comparison.targetSlot, u"Ring 2"_s);
+        QCOMPARE(e.gearEquipped->score, 14);
+        QCOMPARE(e.gear->score, 22);
+        QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
+        QCOMPARE(evaluate(better, c, {}, u"Ring 1"_s).gear->score, 11);
+    }
+
     void uniqueRingIsntTheWeakest()
     {
         const Character c = wearing({
