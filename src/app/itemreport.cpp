@@ -238,6 +238,18 @@ QList<ReportFigure> characterChanges(const CharacterChange &change)
     return changes;
 }
 
+QString openAffixesOf(const Affixes &affixes)
+{
+    QStringList open;
+    if (affixes.openPrefix > 0)
+        open << (affixes.openPrefix == 1 ? u"1 prefix"_s : u"%1 prefixes"_s.arg(affixes.openPrefix));
+    if (affixes.openSuffix > 0)
+        open << (affixes.openSuffix == 1 ? u"1 suffix"_s : u"%1 suffixes"_s.arg(affixes.openSuffix));
+    if (open.isEmpty())
+        return u"No open affixes"_s;
+    return u"Open affixes: "_s + open.join(u", "_s);
+}
+
 bool isUnique(const Item &item)
 {
     return item.rarity.compare(u"Unique", Qt::CaseInsensitive) == 0;
@@ -260,6 +272,8 @@ ItemReport reportOf(const ItemCheck &check)
         report.details << item.itemClass;
     if (item.itemLevel > 0)
         report.details << u"Item level %1"_s.arg(item.itemLevel);
+    if (item.affixes.known)
+        report.openAffixes = openAffixesOf(item.affixes);
     if (!r.ok) {
         report.notes << r.reason;
         return report;

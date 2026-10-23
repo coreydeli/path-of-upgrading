@@ -61,6 +61,7 @@ struct ItemReport
     Q_PROPERTY(QString name MEMBER name)
     Q_PROPERTY(QString rarity MEMBER rarity)
     Q_PROPERTY(QStringList details MEMBER details)
+    Q_PROPERTY(QString openAffixes MEMBER openAffixes)
     Q_PROPERTY(QString verdict MEMBER verdict)
     Q_PROPERTY(pou::Tone::Tone verdictTone MEMBER verdictTone)
     Q_PROPERTY(QString score MEMBER score)
@@ -83,7 +84,9 @@ public:
     QString name;
     QString rarity;      // as the game says it, "Rare"
     QStringList details; // its base type, item class and item level
-    QString verdict;     // "Upgrade", empty for an item that isn't gear
+    // "Open affixes: 1 prefix, 2 suffixes", when the copy said which are which
+    QString openAffixes;
+    QString verdict; // "Upgrade", empty for an item that isn't gear
     Tone::Tone verdictTone = Tone::Plain;
     // How much better it is, "+4%", and by what, "for your build". Empty when
     // there's nothing to compare it with.

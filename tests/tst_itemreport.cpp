@@ -79,6 +79,35 @@ private Q_SLOTS:
         QCOMPARE(report.details, QStringList{u"Rings"_s});
     }
 
+    void openAffixes_data()
+    {
+        QTest::addColumn<int>("prefixes");
+        QTest::addColumn<int>("suffixes");
+        QTest::addColumn<QString>("open");
+
+        QTest::newRow("both") << 1 << 2 << u"Open affixes: 1 prefix, 2 suffixes"_s;
+        QTest::newRow("prefixes") << 2 << 0 << u"Open affixes: 2 prefixes"_s;
+        QTest::newRow("a suffix") << 0 << 1 << u"Open affixes: 1 suffix"_s;
+        QTest::newRow("none") << 0 << 0 << u"No open affixes"_s;
+    }
+
+    void openAffixes()
+    {
+        QFETCH(int, prefixes);
+        QFETCH(int, suffixes);
+        QFETCH(QString, open);
+
+        Item it = helmetNew;
+        it.affixes = {.known = true, .openPrefix = prefixes, .openSuffix = suffixes};
+        QCOMPARE(reportOn(it).openAffixes, open);
+    }
+
+    void affixesUnknown()
+    {
+        // from a plain copy
+        QCOMPARE(reportOn(helmetNew).openAffixes, QString());
+    }
+
     void verdicts_data()
     {
         QTest::addColumn<Verdict>("verdict");
