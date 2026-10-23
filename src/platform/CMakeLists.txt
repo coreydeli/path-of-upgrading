@@ -5,7 +5,7 @@ pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-keysyms xcb-randr xcb-xfi
 
 add_library(pou_platform STATIC
     copykeys.cpp copykeys.h
-    gameinput.h
+    gameinput.cpp gameinput.h
     gamewindow.cpp gamewindow.h
     logging.cpp logging.h
     screenmap.cpp screenmap.h

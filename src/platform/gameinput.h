@@ -4,6 +4,7 @@
 #include "platform/screenmap.h"
 
 #include <QObject>
+#include <memory>
 #include <optional>
 
 namespace pou {
@@ -44,5 +45,8 @@ Q_SIGNALS:
     // Whatever else gets copied, by anything.
     void textCopied(const QString &text);
 };
+
+// The one for this desktop.
+std::unique_ptr<GameInput> createGameInput();
 
 } // namespace pou
