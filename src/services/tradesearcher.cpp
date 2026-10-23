@@ -22,6 +22,8 @@ TradeSearch::~TradeSearch()
 
 QUrl TradeSearch::url() const
 {
+    if (m_error == Error::Failed)
+        return tradePrefilledUrl(m_league, m_body);
     if (m_error == Error::None && m_finished)
         return tradeResultsUrl(m_league, m_id);
     return {};
@@ -84,6 +86,7 @@ TradeSearch *TradeSearcher::search(const QJsonObject &body)
 
 void TradeSearcher::send(TradeSearch *search, const QJsonObject &body)
 {
+    search->m_body = body;
     qCDebug(lcTrade, "Searching %s: %s", qUtf8Printable(search->m_league),
             QJsonDocument(body).toJson(QJsonDocument::Compact).constData());
     search->m_reply = m_client->search(search->m_league, body);

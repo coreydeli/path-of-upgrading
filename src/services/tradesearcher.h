@@ -28,7 +28,7 @@ public:
         Unavailable, // no trade searches, see TradeSearcher::unavailable()
         RateLimited, // too many requests, see retryAfter()
         TooComplex,  // more filters than the site takes, so it has to be smaller
-        Failed,      // see errorString()
+        Failed,      // see errorString(), and url() to try it in the browser
     };
     Q_ENUM(Error)
 
@@ -43,8 +43,9 @@ public:
 
     // The trade site's id for the league it searches: "HC Runes of Aldur".
     QString league() const { return m_league; }
-    // The listings it found on the site, to open in the browser. Empty until
-    // it has finished without an error.
+    // The search on the site, to open in the browser: the listings it found,
+    // or when it failed, the site's search page filled in with it, which may
+    // still work there. Empty before it has finished and for other errors.
     QUrl url() const;
 
     // What it found, once it has finished without an error: the search's id
@@ -71,6 +72,7 @@ private:
     QString m_errorString;
     std::chrono::seconds m_retryAfter{};
     QString m_league;
+    QJsonObject m_body; // as it was sent
     QString m_id;
     int m_total = 0;
     QStringList m_listingIds;

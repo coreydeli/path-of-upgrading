@@ -203,25 +203,27 @@ private Q_SLOTS:
         QTest::addColumn<FakeAnswer>("answer");
         QTest::addColumn<TradeSearch::Error>("error");
         QTest::addColumn<QString>("why");
+        QTest::addColumn<bool>("inTheBrowser"); // whether it's worth trying there
 
         QTest::newRow("rate limited")
             << FakeAnswer{.status = 429, .headers = {{"Retry-After", "30"}}}
             << TradeSearch::Error::RateLimited
-            << u"The trade site has had too many requests from you. Try again in 30 seconds."_s;
+            << u"The trade site has had too many requests from you. Try again in 30 seconds."_s << false;
         QTest::newRow("too complex") << siteError(u"Query is too complex."_s)
                                      << TradeSearch::Error::TooComplex
-                                     << u"The trade site says the search has too many filters."_s;
+                                     << u"The trade site says the search has too many filters."_s << false;
         QTest::newRow("turned down") << siteError(u"Invalid query"_s) << TradeSearch::Error::Failed
-                                     << u"The trade site says: Invalid query"_s;
-        QTest::newRow("unreachable")
-            << FakeAnswer{.error = QNetworkReply::HostNotFoundError} << TradeSearch::Error::Failed
-            << u"Couldn't reach the trade site: Host www.pathofexile.com not found"_s;
+                                     << u"The trade site says: Invalid query"_s << true;
+        QTest::newRow("unreachable") << FakeAnswer{.error = QNetworkReply::HostNotFoundError}
+                                     << TradeSearch::Error::Failed
+                                     << u"Couldn't reach the trade site: Host www.pathofexile.com not found"_s
+                                     << true;
         QTest::newRow("blocked") << FakeAnswer{.status = 403, .body = "<!DOCTYPE html>"}
                                  << TradeSearch::Error::Failed
-                                 << u"The trade site's answer couldn't be read (HTTP 403)."_s;
+                                 << u"The trade site's answer couldn't be read (HTTP 403)."_s << true;
         QTest::newRow("no search") << FakeAnswer{.body = json({{u"total"_s, 3}})}
                                    << TradeSearch::Error::Failed
-                                   << u"The trade site's answer couldn't be read."_s;
+                                   << u"The trade site's answer couldn't be read."_s << true;
     }
 
     void fails()
@@ -229,6 +231,7 @@ private Q_SLOTS:
         QFETCH(FakeAnswer, answer);
         QFETCH(TradeSearch::Error, error);
         QFETCH(QString, why);
+        QFETCH(bool, inTheBrowser);
         FakeNetwork network;
         network.answers = {answer};
         TradeClient client(&network);
@@ -239,7 +242,7 @@ private Q_SLOTS:
         QCOMPARE(search->error(), error);
         QCOMPARE(search->errorString(), why);
         QCOMPARE(search->retryAfter(), error == TradeSearch::Error::RateLimited ? 30s : 0s);
-        QVERIFY(search->url().isEmpty());
+        QCOMPARE(search->url(), inTheBrowser ? tradePrefilledUrl(u"Standard"_s, searchBody()) : QUrl());
         QVERIFY(search->listingIds().isEmpty());
         QCOMPARE(network.sent.size(), 1);
     }
