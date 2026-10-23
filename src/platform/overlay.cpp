@@ -6,8 +6,6 @@
 #include <QScreen>
 #include <QWindow>
 
-using namespace Qt::Literals::StringLiterals;
-
 namespace pou {
 namespace {
 
@@ -15,7 +13,7 @@ using Layer = LayerShellQt::Window;
 
 bool isWayland()
 {
-    return QGuiApplication::platformName().startsWith(u"wayland"_s);
+    return QGuiApplication::platformName().startsWith(u"wayland");
 }
 
 } // namespace
