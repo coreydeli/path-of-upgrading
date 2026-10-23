@@ -51,3 +51,6 @@ target_link_libraries(fakepob PRIVATE Qt6::Core)
 pou_add_services_test(tst_pobengine itemtexts.h)
 target_compile_definitions(tst_pobengine PRIVATE FAKEPOB="$<TARGET_FILE:fakepob>")
 add_dependencies(tst_pobengine fakepob)
+
+# with the Path of Building on this computer, when there's one
+pou_add_services_test(tst_installedpob itemtexts.h)
