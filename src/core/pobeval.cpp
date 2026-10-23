@@ -41,4 +41,12 @@ PobEval readPobEval(const QJsonObject &answer)
     return eval;
 }
 
+QString pobItemName(const Item &item)
+{
+    const QString rarity = item.rarity.toLower();
+    if ((rarity == u"rare" || rarity == u"unique") && !item.baseType.isEmpty())
+        return item.name + u", "_s + item.baseType;
+    return item.name;
+}
+
 } // namespace pou

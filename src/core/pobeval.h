@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/item.h"
 #include "core/pobverdict.h"
 
 #include <QJsonObject>
@@ -39,5 +40,9 @@ struct PobEval
 PobStats readPobStats(const QJsonObject &stats);
 
 PobEval readPobEval(const QJsonObject &answer);
+
+// Its name for an item, the way placements name what they replace:
+// "Grim Grasp, Prismatic Ring" for rares and uniques.
+QString pobItemName(const Item &item);
 
 } // namespace pou

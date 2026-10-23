@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#include "core/parser.h"
 #include "core/pobeval.h"
 
 #include <QJsonDocument>
@@ -69,6 +70,32 @@ private Q_SLOTS:
         const PobEval eval = readPobEval(json(R"({"ok": true, "before": {}, "results": [{"ok": false}]})"));
         QCOMPARE(eval.items.size(), 1);
         QCOMPARE(eval.items.at(0).error, u"Path of Building couldn't try this item."_s);
+    }
+
+    void itemNames_data()
+    {
+        QTest::addColumn<QString>("text");
+        QTest::addColumn<QString>("name");
+
+        QTest::newRow("rare") << u"Item Class: Rings\nRarity: Rare\nGrim Grasp\nPrismatic Ring\n--------\n"
+                                 "+40 to maximum Life"_s
+                              << u"Grim Grasp, Prismatic Ring"_s;
+        QTest::newRow("unique") << u"Item Class: Helmets\nRarity: Unique\nMournful Visage\nVisored Helm\n"
+                                   "--------\nArmour: 100"_s
+                                << u"Mournful Visage, Visored Helm"_s;
+        QTest::newRow("magic") << u"Item Class: Rings\nRarity: Magic\nHale Gold Ring of the Fox\n--------\n"
+                                  "+20 to maximum Life"_s
+                               << u"Hale Gold Ring of the Fox"_s;
+        QTest::newRow("normal") << u"Item Class: Helmets\nRarity: Normal\nSuperior Visored Helm\n--------\n"
+                                   "Armour: 100"_s
+                                << u"Superior Visored Helm"_s;
+    }
+
+    void itemNames()
+    {
+        QFETCH(QString, text);
+        QFETCH(QString, name);
+        QCOMPARE(pobItemName(parseItem(text).value()), name);
     }
 };
 
