@@ -3,6 +3,7 @@
 
 #include "core/budget.h"
 #include "core/league.h"
+#include "core/placement.h"
 #include "core/pobverdict.h"
 #include "core/tradequery.h"
 
@@ -36,8 +37,6 @@ struct PobSettings
 
     friend bool operator==(const PobSettings &, const PobSettings &) = default;
 };
-
-enum class PopupPosition { Cursor, Left, Right, Top };
 
 struct OverlaySettings
 {
