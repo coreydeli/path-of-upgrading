@@ -35,6 +35,7 @@ struct ReportFigure
     Q_PROPERTY(QString change MEMBER change)
     Q_PROPERTY(QString from MEMBER from)
     Q_PROPERTY(QString to MEMBER to)
+    Q_PROPERTY(QString note MEMBER note)
     Q_PROPERTY(pou::Tone::Tone tone MEMBER tone)
 
 public:
@@ -43,6 +44,7 @@ public:
     // Empty when only the change is known.
     QString from;
     QString to;
+    QString note; // "under the cap"
     Tone::Tone tone = Tone::Plain;
 
     friend bool operator==(const ReportFigure &, const ReportFigure &) = default;
@@ -66,6 +68,7 @@ struct ItemReport
     Q_PROPERTY(QStringList risks MEMBER risks)
     Q_PROPERTY(QString caps MEMBER caps)
     Q_PROPERTY(QList<pou::ReportFigure> headline MEMBER headline)
+    Q_PROPERTY(QList<pou::ReportFigure> changes MEMBER changes)
     Q_PROPERTY(bool pobChecking MEMBER pobChecking)
     Q_PROPERTY(QString pobStatus MEMBER pobStatus)
     Q_PROPERTY(QStringList notes MEMBER notes)
@@ -88,6 +91,8 @@ public:
     // What Path of Building says it does to your damage, effective HP and
     // resistances.
     QList<ReportFigure> headline;
+    // What equipping it changes on your character, resistances first.
+    QList<ReportFigure> changes;
     // Where Path of Building is with it when it hasn't judged it: still
     // checking, why it couldn't, or that it could with a build.
     bool pobChecking = false;

@@ -4,6 +4,10 @@
 #include "core/numbers.h"
 #include "core/resists.h"
 
+#include <QHash>
+#include <QLocale>
+#include <cmath>
+
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
@@ -136,6 +140,65 @@ QList<ReportFigure> headlineOf(const PobVerdict &v)
     return headline;
 }
 
+// A stat as the popup shows it: whole from 100 up, with commas from 1,000.
+QString amount(double v)
+{
+    if (std::abs(v) < 100)
+        return formatNumber(roundTo(v, 1));
+    static const QLocale english(QLocale::English);
+    return english.toString(roundHalfUp(v), 'f', 0);
+}
+
+QString signedAmount(double v)
+{
+    return (v > 0 ? u"+"_s : QString()) + amount(v);
+}
+
+QString percent(double v)
+{
+    return formatNumber(roundHalfUp(v)) + u'%';
+}
+
+QString pobLabel(const QString &stat)
+{
+    static const QHash<QString, QString> labels = {
+        {u"EnergyShield"_s, u"Energy Shield"_s},
+        {u"SpiritUnreserved"_s, u"Unreserved Spirit"_s},
+        {u"MinionLife"_s, u"Minion Life"_s},
+    };
+    return labels.value(stat, stat);
+}
+
+QList<ReportFigure> pobChanges(const PobVerdict &v)
+{
+    QList<ReportFigure> changes;
+    for (const PobResistChange &r : v.resists) {
+        const double change = roundHalfUp(r.to) - roundHalfUp(r.from);
+        // past the cap only the cap counts
+        if (r.capped && r.wasCapped && change == 0)
+            continue;
+        ReportFigure f{.label = elementName(r.element) + u" res"_s,
+                       .change = (change > 0 ? u"+"_s : QString()) + percent(change),
+                       .from = percent(r.from),
+                       .to = percent(r.to)};
+        // a raised cap can leave you under it with what you had
+        if (!r.capped)
+            f.note = r.wasCapped && change < 0 ? u"off the cap"_s : u"under the cap"_s;
+        else if (!r.wasCapped)
+            f.note = u"capped"_s;
+        f.tone = r.capped && !r.wasCapped ? Tone::Good : toneOf(change);
+        changes << f;
+    }
+    for (const PobChange &c : v.changes) {
+        changes << ReportFigure{.label = pobLabel(c.stat),
+                                .change = signedAmount(c.to - c.from),
+                                .from = amount(c.from),
+                                .to = amount(c.to),
+                                .tone = toneOf(c.to - c.from)};
+    }
+    return changes;
+}
+
 bool isUnique(const Item &item)
 {
     return item.rarity.compare(u"Unique", Qt::CaseInsensitive) == 0;
@@ -191,6 +254,7 @@ ItemReport reportOf(const ItemCheck &check)
     if (e.pob) {
         report.caps = capsOf(e.pob->verdict);
         report.headline = headlineOf(e.pob->verdict);
+        report.changes = pobChanges(e.pob->verdict);
     }
     putPobStatus(report, check);
     report.notes << r.notes;

@@ -284,6 +284,82 @@ private Q_SLOTS:
         QVERIFY(reportOf(judged(Verdict::Upgrade)).headline.isEmpty());
     }
 
+    void changesByPob()
+    {
+        PobVerdict v;
+        v.verdict = Verdict::ResistLoss;
+        using enum Element;
+        v.resists = {
+            {.element = Fire, .from = 75, .to = 60, .wasCapped = true, .lost = true},
+            {.element = Cold, .from = 50, .to = 75, .capped = true, .reachesCap = true},
+            {.element = Lightning, .from = 40, .to = 45.4},
+            // over the cap either way
+            {.element = Chaos,
+             .from = 75,
+             .to = 75,
+             .totalFrom = 80,
+             .totalTo = 90,
+             .wasCapped = true,
+             .capped = true},
+        };
+        v.changes = {
+            {.stat = u"Life"_s, .from = 1200, .to = 1350},
+            {.stat = u"EnergyShield"_s, .from = 2450.4, .to = 2300},
+            {.stat = u"SpiritUnreserved"_s, .from = 12, .to = 0},
+            {.stat = u"Mana"_s, .from = 80, .to = 95},
+        };
+        QCOMPARE(
+            reportOf(judgedByPob(v)).changes,
+            (QList<ReportFigure>{
+                {.label = u"Fire res"_s,
+                 .change = u"-15%"_s,
+                 .from = u"75%"_s,
+                 .to = u"60%"_s,
+                 .note = u"off the cap"_s,
+                 .tone = Tone::Bad},
+                {.label = u"Cold res"_s,
+                 .change = u"+25%"_s,
+                 .from = u"50%"_s,
+                 .to = u"75%"_s,
+                 .note = u"capped"_s,
+                 .tone = Tone::Good},
+                {.label = u"Lightning res"_s,
+                 .change = u"+5%"_s,
+                 .from = u"40%"_s,
+                 .to = u"45%"_s,
+                 .note = u"under the cap"_s,
+                 .tone = Tone::Good},
+                {.label = u"Life"_s,
+                 .change = u"+150"_s,
+                 .from = u"1,200"_s,
+                 .to = u"1,350"_s,
+                 .tone = Tone::Good},
+                {.label = u"Energy Shield"_s,
+                 .change = u"-150"_s,
+                 .from = u"2,450"_s,
+                 .to = u"2,300"_s,
+                 .tone = Tone::Bad},
+                {.label = u"Unreserved Spirit"_s,
+                 .change = u"-12"_s,
+                 .from = u"12"_s,
+                 .to = u"0"_s,
+                 .tone = Tone::Bad},
+                {.label = u"Mana"_s, .change = u"+15"_s, .from = u"80"_s, .to = u"95"_s, .tone = Tone::Good},
+            }));
+    }
+
+    void raisedCap()
+    {
+        PobVerdict v;
+        v.verdict = Verdict::Upgrade;
+        v.resists = {{.element = Element::Fire, .from = 75, .to = 75, .max = 78, .wasCapped = true}};
+        QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{{.label = u"Fire res"_s,
+                                                                         .change = u"0%"_s,
+                                                                         .from = u"75%"_s,
+                                                                         .to = u"75%"_s,
+                                                                         .note = u"under the cap"_s}}));
+    }
+
     void pobStatus_data()
     {
         QTest::addColumn<ItemCheck::Pob>("pob");
