@@ -210,6 +210,37 @@ private Q_SLOTS:
         QCOMPARE(reportOn(unique, wearing({{u"Helmet"_s, unique}})).verdict, u"Equipped"_s);
     }
 
+    void pobStatus_data()
+    {
+        QTest::addColumn<ItemCheck::Pob>("pob");
+        QTest::addColumn<bool>("checking");
+        QTest::addColumn<QString>("status");
+
+        using enum ItemCheck::Pob;
+        QTest::newRow("unused") << Unused << false << QString();
+        QTest::newRow("no build")
+            << NoBuild << false
+            << u"Import this character's build from Path of Building for exact verdicts."_s;
+        QTest::newRow("checking") << Checking << true << u"Checking with Path of Building"_s;
+        QTest::newRow("checked") << Checked << false << QString();
+        QTest::newRow("failed") << Failed << false << u"Path of Building stopped."_s;
+    }
+
+    void pobStatus()
+    {
+        QFETCH(ItemCheck::Pob, pob);
+        QFETCH(bool, checking);
+        QFETCH(QString, status);
+
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.pob = pob;
+        if (pob == ItemCheck::Pob::Failed)
+            check.pobError = u"Path of Building stopped."_s;
+        const ItemReport report = reportOf(check);
+        QCOMPARE(report.pobChecking, checking);
+        QCOMPARE(report.pobStatus, status);
+    }
+
     void notGear()
     {
         const ItemReport report = reportOn(item(

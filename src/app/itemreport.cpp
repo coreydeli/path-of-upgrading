@@ -69,6 +69,25 @@ void putScore(ItemReport &report, const Evaluation &e)
     }
 }
 
+void putPobStatus(ItemReport &report, const ItemCheck &check)
+{
+    switch (check.pob) {
+    case ItemCheck::Pob::Checking:
+        report.pobChecking = true;
+        report.pobStatus = u"Checking with Path of Building"_s;
+        return;
+    case ItemCheck::Pob::Failed:
+        report.pobStatus = check.pobError;
+        return;
+    case ItemCheck::Pob::NoBuild:
+        report.pobStatus = u"Import this character's build from Path of Building for exact verdicts."_s;
+        return;
+    case ItemCheck::Pob::Unused:
+    case ItemCheck::Pob::Checked:
+        return;
+    }
+}
+
 bool isUnique(const Item &item)
 {
     return item.rarity.compare(u"Unique", Qt::CaseInsensitive) == 0;
@@ -116,6 +135,7 @@ ItemReport reportOf(const ItemCheck &check)
         report.versus = u"in your %1 slot"_s.arg(r.targetSlot);
     else if (!r.replacing.isEmpty())
         report.versus = u"vs "_s + r.replacing.join(u" and "_s);
+    putPobStatus(report, check);
     report.notes << r.notes;
     return report;
 }
