@@ -66,7 +66,8 @@ private Q_SLOTS:
         QCOMPARE(fire->to.value(), 90.0);
         QVERIFY(!fire->under);
         QVERIFY(!resistFor(*change, Element::Lightning));
-        QCOMPARE(change->warnings, QStringList{u"Cold res drops below the cap (50% of 75%)"_s});
+        QCOMPARE(cold->warning, u"Cold res drops below the cap (50% of 75%)"_s);
+        QCOMPARE(fire->warning, QString());
 
         QCOMPARE(change->totals.size(), 1);
         QCOMPARE(change->totals.first().label, u"Mana"_s);
@@ -94,9 +95,11 @@ private Q_SLOTS:
         const auto live = liveResists(snapshotResists(entry, worn, ResistSource::Pob), worn);
 
         const auto change = changeIfEquipped(worn, withStats({{cold, 29}}), {u"Gloves"_s}, &*live);
-        QCOMPARE(change->warnings.size(), 1);
-        QVERIFY(change->warnings.first().startsWith(u"Lightning res would be only 8% over the cap (-39%)."));
-        QVERIFY(change->warnings.first().contains(u"Path of Building's"));
+        const QString warning = resistFor(*change, Element::Lightning)->warning;
+        QVERIFY(warning.startsWith(u"Lightning res would be only 8% over the cap (-39%)."));
+        QVERIFY(warning.contains(u"Path of Building's"));
+        // still well over it
+        QCOMPARE(resistFor(*change, Element::Cold)->warning, QString());
     }
 
     void unknownResistsStillShowTheChange()
@@ -106,7 +109,7 @@ private Q_SLOTS:
         const ResistChange *chaos = resistFor(*change, Element::Chaos);
         QCOMPARE(chaos->delta, 13.0);
         QVERIFY(!chaos->from);
-        QVERIFY(change->warnings.isEmpty());
+        QCOMPARE(chaos->warning, QString());
         QVERIFY(!change->overall);
     }
 
@@ -119,6 +122,14 @@ private Q_SLOTS:
         const auto change =
             changeIfEquipped(worn, withStats({{u"# to maximum Life"_s, 20}}), {u"Weapon"_s, u"Offhand"_s});
         QCOMPARE(change->totals.first().delta, -60.0);
+    }
+
+    void secondWeaponSetLeavesYourResistances()
+    {
+        const Equipped worn = {{u"Offhand 2"_s, withStats({{u"#% to Fire Resistance"_s, 30}})}};
+        const auto change =
+            changeIfEquipped(worn, withStats({{u"#% to Cold Resistance"_s, 20}}), {u"Offhand 2"_s});
+        QVERIFY(change->resists.isEmpty());
     }
 
     void jewelleryEnergyShieldAddsUp()

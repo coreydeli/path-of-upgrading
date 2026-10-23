@@ -22,6 +22,10 @@ bool comparesWithWeakest(const QString &group);
 // "Ring 2" -> "Ring", "Weapon 2" -> "Weapon", "Helmet" -> "Helmet".
 QString groupOf(const QString &slot);
 
+// The other hand of the same weapon set, "Weapon 2" -> "Offhand 2" and
+// "Offhand" -> "Weapon". Empty for a slot that isn't a hand's.
+QString otherHand(const QString &slot);
+
 // Maps the "Item Class:" line of copied item text to a slot group. Empty for
 // things that aren't gear (currency, gems, waystones...).
 QString slotForClass(const QString &itemClass);

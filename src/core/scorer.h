@@ -26,6 +26,9 @@ struct StatRow
     double diff = 0; // rounded to two decimals
     double weight = 0;
     double impact = 0; // diff * weight
+    // What a unit of it is worth: your weight for it, or to your build
+    // profile when an evaluation judges by gear score.
+    double usefulness = 0;
 };
 
 struct Comparison
@@ -54,10 +57,15 @@ inline double score(const Item &item, const Weights &weights)
 QList<StatRow> diffStats(const StatMap &newStats, const StatMap &oldStats, const Weights &weights,
                          const StatFilter &ignore = {});
 
+// Sorts rows by what their change is worth, diff * usefulness, biggest first.
+void sortRows(QList<StatRow> &rows);
+
 // Compares an item with what's saved in its slot. Rings, charms and jewels go
 // into an empty slot if there is one, else replace your weakest; two-handed
-// weapons replace the weapon and offhand together.
+// weapons replace a weapon set's weapon and offhand together. An item you
+// wear is compared with itself, where you wear it. Name a slot to compare it
+// with what's there instead.
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &weights,
-                   const StatFilter &ignore = {});
+                   const StatFilter &ignore = {}, const QString &slot = {});
 
 } // namespace pou

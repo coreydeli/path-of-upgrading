@@ -196,16 +196,16 @@ QString gearGrade(int score)
     return u"D"_s;
 }
 
-double usefulness(const QString &slot, const QString &key, QStringView build)
+double usefulness(const QString &slot, const QString &key, const GearScoreOptions &options)
 {
-    const BuildProfile *profile = buildProfile(build);
+    const BuildProfile *profile = buildProfile(options.build);
     if (!profile)
         return 0;
     const QString group = groupOf(slot);
     for (const ProfileStat &s : profile->stats) {
         if (!s.pattern.match(key).hasMatch())
             continue;
-        const double importance = s.importance.at(group);
+        const double importance = importanceOf(s, group, options);
         return importance > 0 ? importance / capOf(s, group) : 0;
     }
     return 0;

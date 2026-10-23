@@ -70,9 +70,9 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
 
 QString gearGrade(int score);
 
-// Points per unit of a stat for the build in that slot; 0 when the build
-// doesn't want it there.
-double usefulness(const QString &slot, const QString &key, QStringView build = {});
+// Points per unit of a stat for the build in that slot, with your tweaks; 0
+// when the build doesn't want it there.
+double usefulness(const QString &slot, const QString &key, const GearScoreOptions &options = {});
 
 struct KeyStat
 {

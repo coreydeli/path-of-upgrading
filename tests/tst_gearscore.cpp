@@ -206,6 +206,11 @@ private Q_SLOTS:
         QCOMPARE(usefulness(u"Ring 1"_s, u"# to maximum Life"_s), 0.07);
         QCOMPARE(usefulness(u"Weapon"_s, u"# to maximum Life"_s), 0.0);
         QCOMPARE(usefulness(u"Ring 1"_s, u"nothing #"_s), 0.0);
+
+        QCOMPARE(usefulness(u"Ring 1"_s, u"# to maximum Life"_s, {.tweaks = {{u"Life"_s, 2}}}), 0.14);
+        QCOMPARE(usefulness(u"Ring 1"_s, u"#% to Chaos Resistance"_s, {.tweaks = {{u"Chaos res"_s, 0}}}),
+                 0.0);
+        QCOMPARE(usefulness(u"Amulet"_s, u"# to maximum Mana"_s, {.build = u"es-caster"_s}), 0.02);
     }
 };
 

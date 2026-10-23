@@ -68,6 +68,8 @@ private Q_SLOTS:
                                      defaultWeights());
         for (qsizetype i = 1; i < r.rows.size(); ++i)
             QVERIFY(std::abs(r.rows.at(i - 1).impact) >= std::abs(r.rows.at(i).impact));
+        for (const StatRow &row : r.rows)
+            QCOMPARE(row.usefulness, row.weight);
         // stats only the old item had are listed too
         QCOMPARE(rowFor(r, u"#% to Lightning Resistance").oldValue, 18.0);
     }
@@ -88,6 +90,25 @@ private Q_SLOTS:
         QCOMPARE(empty.targetSlot, u"Ring 2"_s);
         QCOMPARE(empty.verdict, Verdict::New);
         QVERIFY(empty.notes.last().contains(u"Ring 2"));
+    }
+
+    void slotYouName()
+    {
+        const Item ring = item(itemtexts::advancedRing);
+        const Item weak =
+            item(u"Item Class: Rings\nRarity: Magic\nWeak Ring\n--------\n+10 to maximum Life"_s);
+        const Item strong =
+            item(u"Item Class: Rings\nRarity: Rare\nStrong\nRing\n--------\n+200 to maximum Life"_s);
+        const Equipped worn = {{u"Ring 1"_s, strong}, {u"Ring 2"_s, weak}};
+
+        const Comparison r = compare(ring, worn, defaultWeights(), {}, u"Ring 1"_s);
+        QCOMPARE(r.targetSlot, u"Ring 1"_s);
+        QCOMPARE(r.replacing, QStringList{u"Strong"_s});
+        QCOMPARE(rowFor(r, u"# to maximum Life").oldValue, 200.0);
+
+        // an empty one is still empty
+        const Comparison empty = compare(ring, {{u"Ring 1"_s, strong}}, defaultWeights(), {}, u"Ring 2"_s);
+        QCOMPARE(empty.verdict, Verdict::New);
     }
 
     void emptyJewelSlotFirst()
@@ -116,6 +137,42 @@ private Q_SLOTS:
         const Comparison offhand =
             compare(shield, {{u"Weapon"_s, item(itemtexts::twoHandMace)}}, defaultWeights());
         QVERIFY(offhand.notes.first().contains(u"two-handed"));
+        // the weapon of its own set
+        const Equipped swapMace = {{u"Weapon 2"_s, item(itemtexts::twoHandMace)}};
+        const QString cantUse = u"Your weapon is two-handed, so you can't use this with it."_s;
+        QVERIFY(compare(shield, swapMace, defaultWeights(), {}, u"Offhand 2"_s).notes.contains(cantUse));
+        QVERIFY(!compare(shield, swapMace, defaultWeights()).notes.contains(cantUse));
+
+        // named, the weapon slot still means both
+        const Comparison named =
+            compare(item(itemtexts::twoHandMace), {{u"Weapon"_s, oneHand}, {u"Offhand"_s, shield}},
+                    defaultWeights(), {}, u"Weapon"_s);
+        QCOMPARE(named.replacing, QStringList({u"A"_s, u"S"_s}));
+
+        // in your second weapon set, it's that set's offhand
+        const Item focus = item(u"Item Class: Foci\nRarity: Rare\nF\nG\n--------\n+20 to maximum Life"_s);
+        const Comparison swap =
+            compare(item(itemtexts::twoHandMace),
+                    {{u"Offhand"_s, shield}, {u"Weapon 2"_s, oneHand}, {u"Offhand 2"_s, focus}},
+                    defaultWeights(), {}, u"Weapon 2"_s);
+        QCOMPARE(swap.targetSlot, u"Weapon 2"_s);
+        QCOMPARE(swap.replacing, QStringList({u"A"_s, u"F"_s}));
+    }
+
+    void weaponInTheOffhand()
+    {
+        // a one-handed weapon held in the other hand
+        const Item mace =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nA\nB\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+30 to maximum Life"_s);
+        const Item other =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nC\nD\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+60 to maximum Life"_s);
+        const Comparison r =
+            compare(mace, {{u"Weapon"_s, mace}, {u"Offhand"_s, other}}, defaultWeights(), {}, u"Offhand"_s);
+        QCOMPARE(r.targetSlot, u"Offhand"_s);
+        QCOMPARE(r.replacing, QStringList{u"C"_s});
+        QVERIFY(r.notes.isEmpty());
     }
 
     void alreadyEquipped()
@@ -124,7 +181,34 @@ private Q_SLOTS:
         const Comparison same = compare(item(itemtexts::helmetOld), worn, defaultWeights());
         QVERIFY(same.isEquipped);
         QCOMPARE(same.verdict, Verdict::Equipped);
+        QCOMPARE(same.delta, 0.0);
         QVERIFY(!compare(item(itemtexts::helmetNew), worn, defaultWeights()).isEquipped);
+    }
+
+    void equippedWhereYouWearIt()
+    {
+        // your other ring is weaker, but this one's in Ring 2
+        const Item weak =
+            item(u"Item Class: Rings\nRarity: Magic\nWeak Ring\n--------\n+10 to maximum Life"_s);
+        const Item strong =
+            item(u"Item Class: Rings\nRarity: Rare\nStrong\nRing\n--------\n+200 to maximum Life"_s);
+        const Comparison ring =
+            compare(strong, {{u"Ring 1"_s, weak}, {u"Ring 2"_s, strong}}, defaultWeights());
+        QCOMPARE(ring.targetSlot, u"Ring 2"_s);
+        QCOMPARE(ring.replacing, QStringList{u"Strong"_s});
+        QCOMPARE(ring.delta, 0.0);
+        QVERIFY(ring.rows.isEmpty());
+
+        // in the other weapon set, by itself
+        const Item mace = item(itemtexts::twoHandMace);
+        const Item quiver =
+            item(u"Item Class: Quivers\nRarity: Magic\nHale Quiver\n--------\n+20 to maximum Life"_s);
+        const Comparison swap =
+            compare(mace, {{u"Weapon 2"_s, mace}, {u"Offhand"_s, quiver}}, defaultWeights());
+        QCOMPARE(swap.targetSlot, u"Weapon 2"_s);
+        QCOMPARE(swap.replacing, QStringList{u"Brute Knell"_s});
+        QCOMPARE(swap.verdict, Verdict::Equipped);
+        QVERIFY(swap.notes.isEmpty());
     }
 
     void ignoredStatsAreLeftOut()

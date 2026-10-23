@@ -78,6 +78,17 @@ QString groupOf(const QString &slot)
     return slot;
 }
 
+QString otherHand(const QString &slot)
+{
+    static const QHash<QString, QString> hands = {
+        {u"Weapon"_s, u"Offhand"_s},
+        {u"Offhand"_s, u"Weapon"_s},
+        {u"Weapon 2"_s, u"Offhand 2"_s},
+        {u"Offhand 2"_s, u"Weapon 2"_s},
+    };
+    return hands.value(slot);
+}
+
 QString slotForClass(const QString &itemClass)
 {
     static const QHash<QString, QString> byClass = {
