@@ -41,6 +41,8 @@ public:
     Error error() const { return m_error; }
     // What went wrong, for people.
     QString errorString() const { return m_errorString; }
+    // What the site said when it turned the request down, in its words.
+    QString siteMessage() const { return m_siteMessage; }
     // How long until the site takes requests again, when RateLimited.
     std::chrono::seconds retryAfter() const { return m_retryAfter; }
     // The site's answer, when there's no error.
@@ -66,6 +68,7 @@ private:
     bool m_finished = false;
     Error m_error = Error::None;
     QString m_errorString;
+    QString m_siteMessage;
     std::chrono::seconds m_retryAfter{};
     QJsonObject m_answer;
 };

@@ -190,6 +190,7 @@ void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     const QJsonDocument json = QJsonDocument::fromJson(reply->readAll());
     const QString message = json.object().value(u"error").toObject().value(u"message").toString();
+    trade->m_siteMessage = message;
 
     if (status == 0) {
         trade->fail(Error::Network, unreachable(*reply));

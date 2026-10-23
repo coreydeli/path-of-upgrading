@@ -133,6 +133,7 @@ private Q_SLOTS:
         TradeReply *reply = client.search(u"Standard"_s, {});
         QVERIFY(finishes(reply));
         QCOMPARE(reply->error(), TradeReply::Error::TooComplex);
+        QCOMPARE(reply->siteMessage(), u"Query is too complex."_s);
     }
 
     void rejected()
@@ -144,6 +145,7 @@ private Q_SLOTS:
         QVERIFY(finishes(reply));
         QCOMPARE(reply->error(), TradeReply::Error::Rejected);
         QCOMPARE(reply->errorString(), u"The trade site says: Invalid query"_s);
+        QCOMPARE(reply->siteMessage(), u"Invalid query"_s);
     }
 
     void unreachable()
@@ -160,6 +162,7 @@ private Q_SLOTS:
         QCOMPARE(offline->error(), TradeReply::Error::Network);
         QCOMPARE(offline->errorString(),
                  u"Couldn't reach the trade site: Host www.pathofexile.com not found"_s);
+        QVERIFY(offline->siteMessage().isEmpty());
 
         for (int i = 0; i < 2; ++i) {
             TradeReply *slow = client.data(u"stats"_s);
