@@ -142,7 +142,7 @@ private Q_SLOTS:
 
     void itemWithoutAName()
     {
-        // which isn't the one in an empty slot
+        // an empty slot has no name either, which doesn't make it the item's
         const PobItemEval eval = {.placements = {
                                       ring(u"Ring 1"_s, QString(), 1100),
                                       ring(u"Ring 2"_s, u"Doom Loop, Gold Ring"_s, 1300),
@@ -154,7 +154,7 @@ private Q_SLOTS:
 
     void triedNowhere()
     {
-        const PobItemEval eval = {.error = u"There is nowhere in the build this item can go."_s};
+        const PobItemEval eval = {.error = u"There's nowhere in the build this item can go."_s};
         QVERIFY(!bestPlacement(before, eval, grimGrasp));
     }
 };
