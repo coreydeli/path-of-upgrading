@@ -69,7 +69,8 @@ class PobEngine : public QObject
 
 public:
     enum class State {
-        Stopped, // and starts when it's asked something
+        Unavailable, // there's none to run, see errorString()
+        Stopped,     // and starts when it's asked something
         Starting,
         Ready,
         Failed, // couldn't start, see errorString()
@@ -91,6 +92,9 @@ public:
 
     // The Path of Building to run, see findPob().
     void setInstall(const PobInstall &install);
+    // That there's none to run, with why in words for people. The one that's
+    // running is stopped.
+    void setUnavailable(const QString &why);
     // The build to judge items for, in Path of Building's XML, with the gear
     // you're wearing in place of its own.
     void setBuild(const QString &xml, const QList<PobItem> &wearing = {});
@@ -103,7 +107,7 @@ public:
     void stop();
 
     State state() const { return m_state; }
-    // Why it couldn't start, when it's Failed.
+    // Why it can't run, when it's Unavailable or Failed.
     QString errorString() const { return m_errorString; }
     // Path of Building's, once it has started.
     QString version() const { return m_version; }
@@ -124,6 +128,7 @@ private:
     void send(QJsonObject request, PobReply *reply = nullptr);
     void readAnswers();
     void answered(const QJsonObject &answer);
+    void halt();
     void failStart(const QString &why);
     void failAll(const QString &why);
     void retire();
@@ -134,7 +139,7 @@ private:
     QString m_xml;
     QList<PobItem> m_wearing;
     Timeouts m_timeouts;
-    State m_state = State::Stopped;
+    State m_state = State::Unavailable;
     QString m_errorString;
     QDeadlineTimer m_retry; // when it's Failed, until it's tried again
     QString m_version;

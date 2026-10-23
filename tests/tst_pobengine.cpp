@@ -161,12 +161,45 @@ private Q_SLOTS:
     void nothingToRun()
     {
         PobEngine engine;
+        QCOMPARE(engine.state(), State::Unavailable);
         engine.setBuild(build);
         const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
         QVERIFY(reply->isFinished());
         QCOMPARE(reply->errorString(), u"There's no Path of Building to run."_s);
         QVERIFY(finishes(reply.get()));
+        QCOMPARE(engine.state(), State::Unavailable);
+        QCOMPARE(engine.errorString(), u"There's no Path of Building to run."_s);
+    }
+
+    void unavailable()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+
+        // as when it's uninstalled while it's running
+        engine.setUnavailable(u"Path of Building isn't installed."_s);
+        QCOMPARE(engine.state(), State::Unavailable);
+        QCOMPARE(engine.errorString(), u"Path of Building isn't installed."_s);
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building was stopped before it answered."_s);
+        QTRY_COMPARE(pob.stops(), 1);
+
+        reply.reset(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(reply->isFinished());
+        QCOMPARE(reply->errorString(), u"Path of Building isn't installed."_s);
+        // which stopping it doesn't change
+        engine.stop();
+        QCOMPARE(engine.state(), State::Unavailable);
+        QCOMPARE(engine.errorString(), u"Path of Building isn't installed."_s);
+
+        // until there's one again
+        engine.setInstall(pob.install());
         QCOMPARE(engine.state(), State::Stopped);
+        QCOMPARE(engine.errorString(), QString());
+        QCOMPARE(pob.runs(), 1);
     }
 
     void noBuild()

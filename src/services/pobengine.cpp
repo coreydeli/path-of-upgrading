@@ -71,6 +71,7 @@ void PobReply::finish()
 
 PobEngine::PobEngine(QObject *parent)
     : QObject(parent)
+    , m_errorString(u"There's no Path of Building to run."_s)
 {}
 
 PobEngine::~PobEngine()
@@ -97,6 +98,18 @@ void PobEngine::setTimeouts(const Timeouts &timeouts)
 void PobEngine::setInstall(const PobInstall &install)
 {
     m_install = install;
+    if (m_state == State::Unavailable) {
+        m_errorString.clear();
+        setState(State::Stopped);
+    }
+}
+
+void PobEngine::setUnavailable(const QString &why)
+{
+    halt();
+    m_install.reset();
+    m_errorString = why;
+    setState(State::Unavailable);
 }
 
 void PobEngine::setBuild(const QString &xml, const QList<PobItem> &wearing)
@@ -112,8 +125,8 @@ void PobEngine::setBuild(const QString &xml, const QList<PobItem> &wearing)
 PobReply *PobEngine::evaluate(const QList<PobItem> &items)
 {
     auto *reply = new PobReply(this);
-    if (!m_install) {
-        reply->fail(u"There's no Path of Building to run."_s);
+    if (m_state == State::Unavailable) {
+        reply->fail(m_errorString);
         return reply;
     }
     if (m_xml.isEmpty()) {
@@ -134,11 +147,9 @@ PobReply *PobEngine::evaluate(const QList<PobItem> &items)
 
 void PobEngine::stop()
 {
-    if (m_process) {
-        qCInfo(lcPob, "Stopping Path of Building");
-        retire();
-        failAll(u"Path of Building was stopped before it answered."_s);
-    }
+    if (m_state == State::Unavailable)
+        return;
+    halt();
     m_errorString.clear();
     setState(State::Stopped);
 }
@@ -242,6 +253,16 @@ void PobEngine::answered(const QJsonObject &answer)
     } else {
         sent.reply->fail(error);
     }
+}
+
+// Stops the one that's running, if it is, failing what it hasn't answered.
+void PobEngine::halt()
+{
+    if (!m_process)
+        return;
+    qCInfo(lcPob, "Stopping Path of Building");
+    retire();
+    failAll(u"Path of Building was stopped before it answered."_s);
 }
 
 // Fails what it was asked with why it couldn't start, and leaves it a while
