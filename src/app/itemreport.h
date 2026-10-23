@@ -3,6 +3,7 @@
 
 #include "app/itemjudge.h"
 
+#include <QList>
 #include <QString>
 #include <QStringList>
 #include <QtQmlIntegration/qqmlintegration.h>
@@ -24,6 +25,29 @@ Q_ENUM_NS(Tone)
 
 } // namespace Tone
 
+// A number the item changes.
+struct ReportFigure
+{
+    Q_GADGET
+    QML_VALUE_TYPE(reportFigure)
+
+    Q_PROPERTY(QString label MEMBER label)
+    Q_PROPERTY(QString change MEMBER change)
+    Q_PROPERTY(QString from MEMBER from)
+    Q_PROPERTY(QString to MEMBER to)
+    Q_PROPERTY(pou::Tone::Tone tone MEMBER tone)
+
+public:
+    QString label;  // "Life"
+    QString change; // "+150", "+4.2%"
+    // Empty when only the change is known.
+    QString from;
+    QString to;
+    Tone::Tone tone = Tone::Plain;
+
+    friend bool operator==(const ReportFigure &, const ReportFigure &) = default;
+};
+
 // What the popup says about an item you checked.
 struct ItemReport
 {
@@ -41,6 +65,7 @@ struct ItemReport
     Q_PROPERTY(QStringList losses MEMBER losses)
     Q_PROPERTY(QStringList risks MEMBER risks)
     Q_PROPERTY(QString caps MEMBER caps)
+    Q_PROPERTY(QList<pou::ReportFigure> headline MEMBER headline)
     Q_PROPERTY(bool pobChecking MEMBER pobChecking)
     Q_PROPERTY(QString pobStatus MEMBER pobStatus)
     Q_PROPERTY(QStringList notes MEMBER notes)
@@ -60,6 +85,9 @@ public:
     QStringList losses;
     QStringList risks;
     QString caps; // "Caps your fire and cold resistances"
+    // What Path of Building says it does to your damage, effective HP and
+    // resistances.
+    QList<ReportFigure> headline;
     // Where Path of Building is with it when it hasn't judged it: still
     // checking, why it couldn't, or that it could with a build.
     bool pobChecking = false;

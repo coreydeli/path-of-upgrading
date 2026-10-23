@@ -45,6 +45,17 @@ ItemCheck judged(Verdict verdict, ScoreMode mode = ScoreMode::GearScores, double
     return check;
 }
 
+// The new helmet as Path of Building judged it.
+ItemCheck judgedByPob(const PobVerdict &verdict)
+{
+    PobJudgement j;
+    j.verdict = verdict;
+    ItemCheck check = judged(verdict.verdict);
+    check.evaluation = withPob(check.evaluation, j);
+    check.pob = ItemCheck::Pob::Checked;
+    return check;
+}
+
 } // namespace
 
 class TestItemReport : public QObject
@@ -240,13 +251,37 @@ private Q_SLOTS:
         QFETCH(QList<Element>, capping);
         QFETCH(QString, caps);
 
-        PobJudgement j;
-        j.verdict.verdict = Verdict::Upgrade;
+        PobVerdict v;
+        v.verdict = Verdict::Upgrade;
         for (Element e : allElements)
-            j.verdict.resists << PobResistChange{.element = e, .reachesCap = capping.contains(e)};
-        const ItemReport report =
-            reportOf({.item = helmetNew, .evaluation = withPob(judged(Verdict::Upgrade).evaluation, j)});
-        QCOMPARE(report.caps, caps);
+            v.resists << PobResistChange{.element = e, .reachesCap = capping.contains(e)};
+        QCOMPARE(reportOf(judgedByPob(v)).caps, caps);
+    }
+
+    void headline()
+    {
+        PobVerdict v;
+        v.verdict = Verdict::Upgrade;
+        v.damage = {.stat = u"MinionDPS"_s, .from = 100000, .to = 110000, .percent = 10};
+        v.ehp = PobChange{.stat = u"TotalEHP"_s, .from = 40000, .to = 39000, .percent = -2.5};
+        v.resistGain = 12;
+        QCOMPARE(reportOf(judgedByPob(v)).headline,
+                 (QList<ReportFigure>{
+                     {.label = u"Minion DPS"_s, .change = u"+10%"_s, .tone = Tone::Good},
+                     {.label = u"Effective HP"_s, .change = u"-2.5%"_s, .tone = Tone::Bad},
+                     {.label = u"Resistance toward the caps"_s, .change = u"+12"_s, .tone = Tone::Good},
+                 }));
+
+        // what it doesn't know or doesn't change
+        v.damage = {.stat = u"FullDPS"_s, .from = 2000, .to = 2000, .percent = 0};
+        v.ehp = PobChange{.stat = u"TotalEHP"_s, .from = 0, .to = 39000};
+        v.resistGain = -4;
+        QCOMPARE(reportOf(judgedByPob(v)).headline,
+                 (QList<ReportFigure>{
+                     {.label = u"DPS"_s, .change = u"0%"_s},
+                     {.label = u"Resistance toward the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
+                 }));
+        QVERIFY(reportOf(judged(Verdict::Upgrade)).headline.isEmpty());
     }
 
     void pobStatus_data()

@@ -109,6 +109,33 @@ QString capsOf(const PobVerdict &v)
     return u"Caps your %1 %2"_s.arg(listed(capped), capped.size() == 1 ? u"resistance"_s : u"resistances"_s);
 }
 
+Tone::Tone toneOf(double change)
+{
+    if (change > 0)
+        return Tone::Good;
+    return change < 0 ? Tone::Bad : Tone::Plain;
+}
+
+QList<ReportFigure> headlineOf(const PobVerdict &v)
+{
+    QList<ReportFigure> headline;
+    if (const std::optional<double> damage = v.damage.percent) {
+        const QString label = v.damage.stat == u"MinionDPS" ? u"Minion DPS"_s : u"DPS"_s;
+        headline << ReportFigure{
+            .label = label, .change = signedNumber(*damage) + u'%', .tone = toneOf(*damage)};
+    }
+    if (const std::optional<double> ehp = v.ehp ? v.ehp->percent : std::nullopt) {
+        headline << ReportFigure{
+            .label = u"Effective HP"_s, .change = signedNumber(*ehp) + u'%', .tone = toneOf(*ehp)};
+    }
+    if (v.resistGain != 0) {
+        headline << ReportFigure{.label = u"Resistance toward the caps"_s,
+                                 .change = signedNumber(v.resistGain),
+                                 .tone = toneOf(v.resistGain)};
+    }
+    return headline;
+}
+
 bool isUnique(const Item &item)
 {
     return item.rarity.compare(u"Unique", Qt::CaseInsensitive) == 0;
@@ -161,8 +188,10 @@ ItemReport reportOf(const ItemCheck &check)
         if (!e.losses.contains(risk))
             report.risks << risk;
     }
-    if (e.pob)
+    if (e.pob) {
         report.caps = capsOf(e.pob->verdict);
+        report.headline = headlineOf(e.pob->verdict);
+    }
     putPobStatus(report, check);
     report.notes << r.notes;
     return report;
