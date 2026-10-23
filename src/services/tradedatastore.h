@@ -17,7 +17,8 @@ class TradeReply;
 
 // What searches are built from: the stats the trade site can filter on, its
 // item categories and its leagues. They only change with the game's patches
-// and leagues, so they're kept in files.
+// and leagues, so they're kept in files and asked for again once they're a
+// day old, and the older files do while the site can't be reached.
 class TradeDataStore : public QObject
 {
     Q_OBJECT
@@ -33,8 +34,9 @@ public:
     // The site's league ids, for resolveLeague().
     const QStringList &leagues() const { return m_leagues; }
 
-    // Reads the files the first time, then asks the site for what's missing.
-    void refresh();
+    // Reads the files the first time, then asks the site for what's missing
+    // or a day old, or for all of it when forced.
+    void refresh(bool force = false);
     bool isRefreshing() const;
 
 Q_SIGNALS:

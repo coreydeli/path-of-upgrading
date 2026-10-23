@@ -13,6 +13,17 @@
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
+namespace {
+
+// Whether what was fetched then is less than a day old. A time ahead of the
+// clock counts as old, or it would never be asked for again.
+bool fresh(const QDateTime &fetched, const QDateTime &now)
+{
+    const qint64 age = fetched.secsTo(now);
+    return fetched.isValid() && age >= 0 && age < 24 * 60 * 60;
+}
+
+} // namespace
 
 TradeDataStore::TradeDataStore(TradeClient *client, const QString &folder, QObject *parent)
     : QObject(parent)
@@ -28,11 +39,12 @@ TradeDataStore::~TradeDataStore()
         delete source.reply;
 }
 
-void TradeDataStore::refresh()
+void TradeDataStore::refresh(bool force)
 {
     // that one's done when what's asked for comes in
     if (isRefreshing())
         return;
+    const QDateTime now = QDateTime::currentDateTimeUtc();
     for (Source &source : m_sources) {
         if (!m_read) {
             const QString file = path(source);
@@ -41,7 +53,7 @@ void TradeDataStore::refresh()
                 source.fetched = QFileInfo(file).lastModified().toUTC();
             }
         }
-        if (source.fetched.isValid())
+        if (!force && fresh(source.fetched, now))
             continue;
         source.reply = m_client->data(source.name);
         connect(source.reply, &TradeReply::finished, this, [this, &source] { answered(source); });
