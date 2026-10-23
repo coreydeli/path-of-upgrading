@@ -66,6 +66,14 @@ struct PobBuild
 // Empty when the XML isn't a Path of Building 2 build.
 std::optional<PobBuild> parsePobBuild(const QString &xml);
 
+// Our slot for one of Path of Building's, empty for those we don't keep,
+// like "Ring 3". Which of its weapon sets is our "Weapon" depends on the
+// build's swapInUse.
+QString gearSlot(const QString &pobSlot, bool swapInUse);
+// Path of Building's slot for one of ours. Empty for the jewels, since it
+// names its sockets after the passives they're on.
+QString pobSlot(const QString &slot, bool swapInUse);
+
 // The XML is a build for the first game, which the first Path of Building
 // shares in codes just like these.
 bool isPoe1Build(const QString &xml);
