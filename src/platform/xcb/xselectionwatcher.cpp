@@ -60,8 +60,10 @@ void XSelectionWatcher::readEvents()
     while (const XReply<xcb_generic_event_t> event{xcb_poll_for_event(m_x.xcb())})
         handle(*event);
     // or the socket stays readable, and we'd be here for good
-    if (!m_x.isValid())
+    if (!m_x.isValid()) {
         m_notifier.setEnabled(false);
+        Q_EMIT disconnected();
+    }
 }
 
 void XSelectionWatcher::handle(const xcb_generic_event_t &event)

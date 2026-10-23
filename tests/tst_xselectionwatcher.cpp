@@ -14,12 +14,14 @@ using namespace pou;
 namespace {
 
 constexpr QByteArrayView testSelection = "PATH_OF_UPGRADING_TEST_SELECTION";
+constexpr QByteArrayView otherSelection = "PATH_OF_UPGRADING_TEST_SELECTION_2";
 
 // Another program that copies text, on a connection of its own.
 class Owner
 {
 public:
-    Owner()
+    explicit Owner(QByteArrayView selection = testSelection)
+        : m_selection(selection)
     {
         if (!m_x.isValid())
             return;
@@ -35,11 +37,21 @@ public:
     void copy(const QByteArray &text)
     {
         m_text = text;
-        xcb_set_selection_owner(m_x.xcb(), m_window, m_x.atom(testSelection), XCB_CURRENT_TIME);
+        xcb_set_selection_owner(m_x.xcb(), m_window, m_x.atom(m_selection), XCB_CURRENT_TIME);
+        xcb_flush(m_x.xcb());
+    }
+
+    // Has the X server close the connection of the client that made that
+    // window.
+    void closeConnection(xcb_window_t window)
+    {
+        xcb_kill_client(m_x.xcb(), window);
         xcb_flush(m_x.xcb());
     }
 
     int requests = 0;
+    // the window the last one asking for the text gave
+    xcb_window_t requestor = XCB_WINDOW_NONE;
 
 private:
     void answerRequests()
@@ -53,6 +65,7 @@ private:
     void answer(const xcb_selection_request_event_t &request)
     {
         ++requests;
+        requestor = request.requestor;
         // events go out as 32 bytes, whatever their size
         union {
             xcb_selection_notify_event_t notify;
@@ -75,6 +88,7 @@ private:
     }
 
     XConnection m_x;
+    QByteArrayView m_selection;
     xcb_window_t m_window = XCB_WINDOW_NONE;
     QByteArray m_text;
     QSocketNotifier m_notifier{QSocketNotifier::Read};
@@ -130,6 +144,24 @@ private Q_SLOTS:
         m_owner.copy("Rarity: Magic");
         QTRY_COMPARE(copied.size(), 1);
         QCOMPARE(copied.at(0).at(0).toString(), u"Rarity: Magic"_s);
+    }
+
+    void serverGone()
+    {
+        // The server closes the connection, as when Xwayland goes. Another
+        // client can have it closed, by naming the watcher's window.
+        XSelectionWatcher watcher{otherSelection};
+        Owner owner{otherSelection};
+        QSignalSpy copied(&watcher, &XSelectionWatcher::textCopied);
+        QSignalSpy disconnected(&watcher, &XSelectionWatcher::disconnected);
+        owner.copy("Rarity: Unique");
+        QTRY_COMPARE(copied.size(), 1);
+        QVERIFY(watcher.isValid());
+
+        owner.closeConnection(owner.requestor);
+        QTRY_COMPARE(disconnected.size(), 1);
+        QVERIFY(!watcher.isValid());
+        QCOMPARE(watcher.errorString(), u"Lost the connection to the X server."_s);
     }
 
 private:

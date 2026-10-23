@@ -26,6 +26,9 @@ public:
 Q_SIGNALS:
     // For each copy, even of the same text again.
     void textCopied(const QString &text);
+    // When the X server has gone, as Xwayland does when it crashes. It hears
+    // of nothing after that.
+    void disconnected();
 
 private:
     void readEvents();
