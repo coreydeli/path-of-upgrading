@@ -295,6 +295,26 @@ private Q_SLOTS:
         QCOMPARE(p.judge.current().evaluation.comparison.delta, 0);
     }
 
+    void chaosInoculation()
+    {
+        // chaos resistance off its cap, which means nothing with it
+        const QJsonObject before{{u"TotalEHP"_s, 1000}, {u"ChaosResist"_s, 75}, {u"MissingChaosResist"_s, 0}};
+        const QJsonObject after{{u"TotalEHP"_s, 1100}, {u"ChaosResist"_s, 60}, {u"MissingChaosResist"_s, 15}};
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(before, {{u"Helmet"_s, {}, after}})));
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(helmetNew);
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().evaluation.comparison.verdict, Verdict::ResistLoss);
+
+        Character c;
+        c.chaosInoculation = true;
+        p.judge.setCharacter(c);
+        p.judge.check(helmetNew);
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().evaluation.comparison.verdict, Verdict::Upgrade);
+    }
+
     void cantTryItOn()
     {
         WithPob p;

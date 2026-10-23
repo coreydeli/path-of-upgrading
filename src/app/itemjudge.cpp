@@ -72,7 +72,9 @@ void ItemJudge::answered()
 
     const PobEval eval = readPobEval(reply->answer());
     const PobItemEval tried = eval.items.value(0);
-    const std::optional<PobJudgement> best = bestPlacement(eval.before, tried, m_check.item, m_options);
+    PobVerdictOptions options = m_options;
+    options.ignoreChaos = m_character.chaosInoculation;
+    const std::optional<PobJudgement> best = bestPlacement(eval.before, tried, m_check.item, options);
     if (!best) {
         fail(tried.error.isEmpty() ? u"Path of Building didn't say how the item does."_s : tried.error);
         return;
