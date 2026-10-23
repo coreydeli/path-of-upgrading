@@ -239,6 +239,35 @@ private Q_SLOTS:
         QCOMPARE(pob.runs(), 2);
     }
 
+    void newInstall()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+
+        // the same one again
+        engine.setInstall(pob.install());
+        QCOMPARE(engine.state(), State::Ready);
+
+        // and then another while it's asked something
+        FakePob other;
+        reply.reset(engine.evaluate({{.text = advancedRing}}));
+        engine.setInstall(other.install());
+        QCOMPARE(engine.state(), State::Stopped);
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building was stopped before it answered."_s);
+        QTRY_COMPARE(pob.stops(), 1);
+
+        reply.reset(engine.evaluate({{.text = advancedRing}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(pob.runs(), 1);
+        QCOMPARE(other.runs(), 1);
+    }
+
     void startFails()
     {
         FakePob pob;
@@ -273,6 +302,28 @@ private Q_SLOTS:
         QCOMPARE(engine.state(), State::Ready);
         QCOMPARE(engine.errorString(), QString());
         QCOMPARE(pob.runs(), 2);
+    }
+
+    void fixedInstall()
+    {
+        FakePob broken;
+        PobEngine engine;
+        engine.setInstall(broken.install({u"--fail"_s}));
+        engine.setBuild(build);
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"^The fake didn't start\\."_s));
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(engine.state(), State::Failed);
+
+        // which is started without waiting to try again
+        FakePob pob;
+        engine.setInstall(pob.install());
+        QCOMPARE(engine.state(), State::Stopped);
+        QCOMPARE(engine.errorString(), QString());
+        reply.reset(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(pob.runs(), 1);
     }
 
     void crashesStarting()

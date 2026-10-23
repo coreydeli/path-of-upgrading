@@ -97,11 +97,12 @@ void PobEngine::setTimeouts(const Timeouts &timeouts)
 
 void PobEngine::setInstall(const PobInstall &install)
 {
+    if (m_install == install)
+        return;
+    halt();
     m_install = install;
-    if (m_state == State::Unavailable) {
-        m_errorString.clear();
-        setState(State::Stopped);
-    }
+    m_errorString.clear();
+    setState(State::Stopped);
 }
 
 void PobEngine::setUnavailable(const QString &why)

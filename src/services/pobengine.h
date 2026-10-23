@@ -90,7 +90,8 @@ public:
 
     void setTimeouts(const Timeouts &timeouts);
 
-    // The Path of Building to run, see findPob().
+    // The Path of Building to run, see findPob(). When it's another one, the
+    // one that's running is stopped.
     void setInstall(const PobInstall &install);
     // That there's none to run, with why in words for people. The one that's
     // running is stopped.
