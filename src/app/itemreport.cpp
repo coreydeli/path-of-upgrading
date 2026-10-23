@@ -238,6 +238,34 @@ QList<ReportFigure> characterChanges(const CharacterChange &change)
     return changes;
 }
 
+// A stat's line with the change in it, "+30 to maximum Life".
+QString statLine(const QString &key, double change)
+{
+    const QString number = signedAmount(change);
+    // a range counts as its average
+    if (const qsizetype at = key.indexOf(u"# to #"); at >= 0)
+        return QString(key).replace(at, 6, number + u" average"_s);
+    if (const qsizetype at = key.indexOf(u'#'); at >= 0)
+        return QString(key).replace(at, 1, number);
+    // the item's own, "[Base] Armour"
+    const qsizetype end = key.indexOf(u"] ");
+    return number + u' ' + (end < 0 ? key : key.sliced(end + 2));
+}
+
+QList<ReportFigure> statsOf(const QList<StatRow> &rows)
+{
+    QList<ReportFigure> stats;
+    for (const StatRow &row : rows) {
+        if (row.usefulness == 0)
+            continue;
+        stats << ReportFigure{.label = statLine(row.key, row.diff),
+                              .tone = toneOf(row.diff * row.usefulness)};
+        if (stats.size() == 4)
+            break;
+    }
+    return stats;
+}
+
 QString openAffixesOf(const Affixes &affixes)
 {
     QStringList open;
@@ -311,6 +339,7 @@ ItemReport reportOf(const ItemCheck &check)
     } else if (e.change) {
         report.changes = characterChanges(*e.change);
     }
+    report.stats = statsOf(r.rows);
     if (e.gear && e.gear->isRated() && e.mode != ScoreMode::PathOfBuilding) {
         report.gearScore = QString::number(e.gear->score);
         report.gearGrade = e.gear->grade;

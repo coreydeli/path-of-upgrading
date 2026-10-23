@@ -76,6 +76,7 @@ struct ItemReport
     Q_PROPERTY(QString caps MEMBER caps)
     Q_PROPERTY(QList<pou::ReportFigure> headline MEMBER headline)
     Q_PROPERTY(QList<pou::ReportFigure> changes MEMBER changes)
+    Q_PROPERTY(QList<pou::ReportFigure> stats MEMBER stats)
     Q_PROPERTY(bool pobChecking MEMBER pobChecking)
     Q_PROPERTY(QString pobStatus MEMBER pobStatus)
     Q_PROPERTY(QStringList notes MEMBER notes)
@@ -108,6 +109,9 @@ public:
     QList<ReportFigure> headline;
     // What equipping it changes on your character, resistances first.
     QList<ReportFigure> changes;
+    // The item's stats that change most of those that count, each as its
+    // line, "+30 to maximum Life".
+    QList<ReportFigure> stats;
     // Where Path of Building is with it when it hasn't judged it: still
     // checking, why it couldn't, or that it could with a build.
     bool pobChecking = false;

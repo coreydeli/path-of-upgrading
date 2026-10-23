@@ -518,6 +518,59 @@ private Q_SLOTS:
             }));
     }
 
+    void statLines_data()
+    {
+        QTest::addColumn<QString>("key");
+        QTest::addColumn<double>("change");
+        QTest::addColumn<QString>("line");
+
+        QTest::newRow("more") << u"# to maximum Life"_s << 30.0 << u"+30 to maximum Life"_s;
+        QTest::newRow("less") << u"#% to Cold Resistance"_s << -12.0 << u"-12% to Cold Resistance"_s;
+        QTest::newRow("a fraction") << u"#% increased Attack Speed"_s << 2.25
+                                    << u"+2.3% increased Attack Speed"_s;
+        QTest::newRow("thousands") << u"# to Armour"_s << 1234.0 << u"+1,234 to Armour"_s;
+        QTest::newRow("a range") << u"Adds # to # Fire Damage to Attacks"_s << 7.5
+                                 << u"Adds +7.5 average Fire Damage to Attacks"_s;
+        QTest::newRow("a range first")
+            << u"# to # Physical Thorns damage"_s << 12.0 << u"+12 average Physical Thorns damage"_s;
+        QTest::newRow("two numbers") << u"#% chance to Shock for # seconds"_s << 5.0
+                                     << u"+5% chance to Shock for # seconds"_s;
+        QTest::newRow("the item's own") << u"[Base] Armour"_s << 120.0 << u"+120 Armour"_s;
+        QTest::newRow("a weapon's") << u"[Weapon] Total DPS"_s << -15.5 << u"-15.5 Total DPS"_s;
+        QTest::newRow("no number") << u"Onslaught"_s << 1.0 << u"+1 Onslaught"_s;
+    }
+
+    void statLines()
+    {
+        QFETCH(QString, key);
+        QFETCH(double, change);
+        QFETCH(QString, line);
+
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.evaluation.comparison.rows = {{.key = key, .diff = change, .usefulness = 1}};
+        QCOMPARE(reportOf(check).stats.value(0).label, line);
+    }
+
+    void topStats()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.evaluation.comparison.rows = {
+            {.key = u"# to maximum Life"_s, .diff = 30, .usefulness = 1},
+            {.key = u"#% to Cold Resistance"_s, .diff = -12, .usefulness = 2},
+            // more of one you'd rather not have
+            {.key = u"#% increased Light Radius"_s, .diff = 15, .usefulness = -0.5},
+            {.key = u"# to Accuracy Rating"_s, .diff = 90},
+            {.key = u"# to Strength"_s, .diff = 10, .usefulness = 0.5},
+            {.key = u"# to Dexterity"_s, .diff = 5, .usefulness = 0.5},
+        };
+        QCOMPARE(reportOf(check).stats, (QList<ReportFigure>{
+                                            {.label = u"+30 to maximum Life"_s, .tone = Tone::Good},
+                                            {.label = u"-12% to Cold Resistance"_s, .tone = Tone::Bad},
+                                            {.label = u"+15% increased Light Radius"_s, .tone = Tone::Bad},
+                                            {.label = u"+10 to Strength"_s, .tone = Tone::Good},
+                                        }));
+    }
+
     void pobStatus_data()
     {
         QTest::addColumn<ItemCheck::Pob>("pob");
