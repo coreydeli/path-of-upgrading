@@ -81,12 +81,14 @@ private:
 };
 
 // Listings a search found, from TradeSearcher::fetch(). It's yours to delete
-// once it has finished, even in a slot connected to finished().
+// as a TradeSearch is.
 class TradeFetch : public QObject
 {
     Q_OBJECT
 
 public:
+    ~TradeFetch() override;
+
     bool isFinished() const { return m_finished; }
     TradeReply::Error error() const { return m_error; }
     QString errorString() const { return m_errorString; }

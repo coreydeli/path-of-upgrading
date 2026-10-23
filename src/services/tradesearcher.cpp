@@ -72,6 +72,11 @@ TradeFetch::TradeFetch(TradeClient *client, const QStringList &listingIds, const
     next();
 }
 
+TradeFetch::~TradeFetch()
+{
+    delete m_reply;
+}
+
 QJsonObject TradeFetch::answer() const
 {
     return {{u"result"_s, m_results}};

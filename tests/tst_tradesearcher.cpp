@@ -408,9 +408,11 @@ private Q_SLOTS:
         TradeClient client(&network);
         TradeSearcher searcher(&client);
         TradeSearch *search = searcher.search(searchBody());
-        QCOMPARE(network.sent.size(), 1);
+        TradeFetch *fetch = searcher.fetch({u"x1"_s}, u"Ab3dE9"_s);
+        QCOMPARE(network.sent.size(), 2);
 
         delete search;
+        delete fetch;
         for (const FakeNetwork::Sent &sent : std::as_const(network.sent))
             QVERIFY(!sent.reply);
         QVERIFY(client.findChildren<TradeReply *>().isEmpty());
