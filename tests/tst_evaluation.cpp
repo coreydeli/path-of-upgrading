@@ -324,17 +324,32 @@ private Q_SLOTS:
         QCOMPARE(e.change->totals.at(0).delta, -80.0);
     }
 
+    void losingSpiritIsARisk_data()
+    {
+        QTest::addColumn<int>("life");
+        QTest::addColumn<Verdict>("verdict");
+        QTest::addColumn<Verdict>("otherwise");
+
+        QTest::newRow("upgrade") << 64 << Verdict::Risky << Verdict::Upgrade;
+        QTest::newRow("small upgrade") << 40 << Verdict::Risky << Verdict::Small;
+        QTest::newRow("no better") << 20 << Verdict::Same << Verdict::Same;
+    }
+
     void losingSpiritIsARisk()
     {
+        QFETCH(int, life);
+        QFETCH(Verdict, verdict);
+        QFETCH(Verdict, otherwise);
+
         const Character c = wearing({{u"Amulet"_s, amulet(u"+20 to maximum Life\n+30 to Spirit"_s)}});
-        const Evaluation e = evaluate(lifeAmulet(64), c);
+        const Evaluation e = evaluate(lifeAmulet(life), c);
         QCOMPARE(e.risks, QStringList{u"Spirit drops by 30, so check your minions and auras still fit"_s});
-        QCOMPARE(e.comparison.verdict, Verdict::Risky);
+        QCOMPARE(e.comparison.verdict, verdict);
 
         // when you've said Spirit doesn't matter to you
-        const Evaluation anyway = evaluate(lifeAmulet(64), c, {.spirit = false});
+        const Evaluation anyway = evaluate(lifeAmulet(life), c, {.spirit = false});
         QVERIFY(anyway.risks.isEmpty());
-        QCOMPARE(anyway.comparison.verdict, Verdict::Upgrade);
+        QCOMPARE(anyway.comparison.verdict, otherwise);
     }
 
     void losingMinionLevelsIsARisk_data()
