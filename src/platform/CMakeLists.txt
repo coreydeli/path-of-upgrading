@@ -4,6 +4,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb)
 
 add_library(pou_platform STATIC
+    gamewindow.cpp gamewindow.h
     xcb/xconnection.cpp xcb/xconnection.h
 )
 

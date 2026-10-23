@@ -61,5 +61,6 @@ add_dependencies(tst_pobengine fakepob)
 # with the Path of Building on this computer, when there's one
 pou_add_services_test(tst_installedpob itemtexts.h)
 
+pou_add_platform_test(tst_gamewindow)
 # with the X server in DISPLAY, when there's one
 pou_add_platform_test(tst_xconnection)
