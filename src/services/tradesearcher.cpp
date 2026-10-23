@@ -60,9 +60,22 @@ League TradeSearcher::league() const
     return resolveLeague(m_settings.league, m_leagues);
 }
 
+QString TradeSearcher::unavailable() const
+{
+    if (!m_settings.enabled)
+        return u"Trade searches are turned off in the settings."_s;
+    if (!league().canTrade())
+        return u"There's no trading in solo self-found, so trade searches are off."_s;
+    return {};
+}
+
 TradeSearch *TradeSearcher::search(const QJsonObject &body)
 {
     auto *search = new TradeSearch(this);
+    if (const QString why = unavailable(); !why.isEmpty()) {
+        search->fail(TradeSearch::Error::Unavailable, why);
+        return search;
+    }
     search->m_league = league().tradeId();
     send(search, body);
     return search;

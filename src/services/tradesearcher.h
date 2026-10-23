@@ -24,7 +24,8 @@ class TradeSearch : public QObject
 public:
     enum class Error {
         None,
-        Failed, // see errorString()
+        Unavailable, // no trade searches, see TradeSearcher::unavailable()
+        Failed,      // see errorString()
     };
     Q_ENUM(Error)
 
@@ -69,7 +70,8 @@ private:
     QStringList m_listingIds;
 };
 
-// Searches the trade site in the league your settings say.
+// Searches the trade site the way your settings say: in your league, and not
+// at all when you've turned searches off or play solo self-found.
 class TradeSearcher : public QObject
 {
     Q_OBJECT
@@ -84,6 +86,8 @@ public:
 
     // The league searches go to, see resolveLeague().
     League league() const;
+    // Why there are no trade searches, or empty when there are.
+    QString unavailable() const;
 
     // A TradeQuery's body, searched for in league().
     TradeSearch *search(const QJsonObject &body);

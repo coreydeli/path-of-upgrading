@@ -39,10 +39,10 @@ QJsonObject searchBody()
     return customSearch({{.key = u"+# to maximum Life"_s, .min = 60}}, data, options).body;
 }
 
-TradeSettings inLeague(const QString &name, bool hardcore = false)
+TradeSettings inLeague(const QString &name, bool hardcore = false, bool soloSelfFound = false)
 {
     TradeSettings settings;
-    settings.league = {.name = name, .hardcore = hardcore};
+    settings.league = {.name = name, .hardcore = hardcore, .soloSelfFound = soloSelfFound};
     return settings;
 }
 
@@ -134,9 +134,67 @@ private Q_SLOTS:
         searcher.setLeagues(leagues);
 
         QCOMPARE(searcher.league().tradeId(), league);
+        QVERIFY(searcher.unavailable().isEmpty());
         TradeSearch *search = searcher.search(searchBody());
         QCOMPARE(urls(network), QList<QUrl>{tradeSearchUrl(league)});
         QCOMPARE(search->league(), league);
+    }
+
+    void unavailable_data()
+    {
+        QTest::addColumn<TradeSettings>("settings");
+        QTest::addColumn<QString>("why");
+        TradeSettings off;
+        off.enabled = false;
+        QTest::newRow("turned off") << off << u"Trade searches are turned off in the settings."_s;
+        const QString solo = u"There's no trading in solo self-found, so trade searches are off."_s;
+        QTest::newRow("solo self-found") << inLeague({}, false, true) << solo;
+        QTest::newRow("hardcore SSF") << inLeague(u"Standard"_s, true, true) << solo;
+    }
+
+    void unavailable()
+    {
+        QFETCH(TradeSettings, settings);
+        QFETCH(QString, why);
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+        searcher.setSettings(settings);
+        searcher.setLeagues(siteLeagues);
+        QCOMPARE(searcher.unavailable(), why);
+
+        TradeSearch *search = searcher.search(searchBody());
+        QSignalSpy finished(search, &TradeSearch::finished);
+        QCOMPARE(finished.size(), 0);
+        QVERIFY(finished.wait());
+        QCOMPARE(search->error(), TradeSearch::Error::Unavailable);
+        QCOMPARE(search->errorString(), why);
+        QVERIFY(search->url().isEmpty());
+        QVERIFY(network.sent.isEmpty());
+    }
+
+    void takesNewSettings()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+        searcher.setLeagues(siteLeagues);
+        TradeSettings settings;
+        settings.enabled = false;
+        searcher.setSettings(settings);
+        QVERIFY(finishes(searcher.search(searchBody())));
+        QVERIFY(network.sent.isEmpty());
+
+        settings.enabled = true;
+        settings.league.hardcore = true;
+        searcher.setSettings(settings);
+        QVERIFY(finishes(searcher.search(searchBody())));
+
+        // and the site's leagues, when a new one starts
+        searcher.setLeagues({u"Forbidden Rites"_s, u"HC Forbidden Rites"_s, u"Standard"_s, u"Hardcore"_s});
+        QVERIFY(finishes(searcher.search(searchBody())));
+        QCOMPARE(urls(network), (QList<QUrl>{tradeSearchUrl(u"HC Runes of Aldur"_s),
+                                             tradeSearchUrl(u"HC Forbidden Rites"_s)}));
     }
 
     void fails_data()
