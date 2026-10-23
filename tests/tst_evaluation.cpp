@@ -263,6 +263,113 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.targetSlot, u"Ring 2"_s);
     }
 
+    void whatEquippingChanges()
+    {
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        const Evaluation e = evaluate(lifeAmulet(64), c);
+        QVERIFY(e.change);
+        QCOMPARE(e.change->targets, QStringList{u"Amulet"_s});
+        QCOMPARE(e.change->totals.size(), 1);
+        QCOMPARE(e.change->totals.at(0).label, u"Life"_s);
+        QCOMPARE(e.change->totals.at(0).delta, 24.0);
+        // the average over your main slots, of which there's only the amulet
+        QCOMPARE(e.change->overall->from, double(e.gearEquipped->score));
+        QCOMPARE(e.change->overall->to, double(e.gear->score));
+        QVERIFY(e.risks.isEmpty());
+
+        QVERIFY(!evaluate(lifeAmulet(40), c).change);
+    }
+
+    void twoHanderTakesTheOffhandsPlace()
+    {
+        const Item mace =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nDoom Knell\nTorment Club\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+30 to maximum Life"_s);
+        const Item shield = item(u"Item Class: Shields\nRarity: Rare\nWoe Guard\nPainted Tower Shield\n"
+                                 "--------\nArmour: 200\n--------\n+50 to maximum Life"_s);
+        const Item maul =
+            item(u"Item Class: Two Hand Maces\nRarity: Rare\nBrute Knell\nForge Maul\n--------\n"
+                 "Physical Damage: 100-160\nAttacks per Second: 1.10\n--------\n+40 to Strength"_s);
+        const Evaluation e = evaluate(maul, wearing({{u"Weapon"_s, mace}, {u"Offhand"_s, shield}}));
+        QCOMPARE(e.change->targets, (QStringList{u"Weapon"_s, u"Offhand"_s}));
+        QCOMPARE(e.change->totals.at(0).label, u"Life"_s);
+        QCOMPARE(e.change->totals.at(0).delta, -80.0);
+    }
+
+    void losingSpiritIsARisk()
+    {
+        const Character c = wearing({{u"Amulet"_s, amulet(u"+20 to maximum Life\n+30 to Spirit"_s)}});
+        const Evaluation e = evaluate(lifeAmulet(64), c);
+        QCOMPARE(e.risks, QStringList{u"Spirit drops by 30, so check your minions and auras still fit"_s});
+        QCOMPARE(e.comparison.verdict, Verdict::Risky);
+
+        // when you've said Spirit doesn't matter to you
+        const Evaluation anyway = evaluate(lifeAmulet(64), c, {.spirit = false});
+        QVERIFY(anyway.risks.isEmpty());
+        QCOMPARE(anyway.comparison.verdict, Verdict::Upgrade);
+    }
+
+    void losingMinionLevelsIsARisk_data()
+    {
+        QTest::addColumn<QString>("mod");
+        QTest::addColumn<QString>("risk");
+
+        QTest::newRow("one") << u"+1 to Level of all Minion Skills"_s << u"Minion skills lose a level"_s;
+        QTest::newRow("two") << u"+2 to Level of all Minion Skills"_s << u"Minion skills lose 2 levels"_s;
+    }
+
+    void losingMinionLevelsIsARisk()
+    {
+        QFETCH(QString, mod);
+        QFETCH(QString, risk);
+
+        const Character c = wearing({{u"Amulet"_s, amulet(u"+20 to maximum Life\n"_s + mod)}});
+        const Evaluation e = evaluate(lifeAmulet(64), c);
+        QCOMPARE(e.risks, QStringList{risk});
+        QCOMPARE(e.comparison.verdict, Verdict::Risky);
+    }
+
+    void resistanceWarningsAreRisks()
+    {
+        // only just over the cap without it
+        const Equipped gear = {{u"Amulet"_s, amulet(u"+20 to maximum Life\n+10% to Fire Resistance"_s)}};
+        Character c = wearing(gear);
+        c.resists = resists(gear, 90, {}, {}, {});
+        const Evaluation e = evaluate(lifeAmulet(64), c);
+        QCOMPARE(e.risks.size(), 1);
+        QVERIFY(e.risks.at(0).startsWith(u"Fire res would be only 5% over the cap"));
+        QCOMPARE(e.comparison.verdict, Verdict::Risky);
+    }
+
+    void chaosResistanceRisks_data()
+    {
+        QTest::addColumn<double>("chaos");
+        QTest::addColumn<bool>("priority");
+        QTest::addColumn<bool>("inoculation");
+        QTest::addColumn<bool>("risk");
+
+        // dropping off a cap you had always matters
+        QTest::newRow("capped") << 80.0 << false << false << true;
+        QTest::newRow("under") << 30.0 << false << false << false;
+        QTest::newRow("under, and you want it") << 30.0 << true << false << true;
+        QTest::newRow("Chaos Inoculation") << 80.0 << true << true << false;
+    }
+
+    void chaosResistanceRisks()
+    {
+        QFETCH(double, chaos);
+        QFETCH(bool, priority);
+        QFETCH(bool, inoculation);
+        QFETCH(bool, risk);
+
+        const Equipped gear = {{u"Amulet"_s, amulet(u"+20 to maximum Life\n+13% to Chaos Resistance"_s)}};
+        Character c = wearing(gear);
+        c.resists = resists(gear, {}, {}, {}, chaos);
+        c.chaosInoculation = inoculation;
+        const Evaluation e = evaluate(lifeAmulet(64), c, {.chaos = priority});
+        QCOMPARE(!e.risks.isEmpty(), risk);
+    }
+
     void notGear()
     {
         const Evaluation e = evaluate(

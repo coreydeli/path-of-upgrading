@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/evaluation.h"
 
+#include "core/numbers.h"
 #include "core/slots.h"
 
 #include <algorithm>
@@ -36,6 +37,22 @@ QString profileLabel(Element e)
 double capOf(const LiveResists &resists, Element e)
 {
     return resists.caps[e] != 0 ? resists.caps[e] : resists.cap;
+}
+
+// Chaos resistance counts when you say so or you had it capped, and never
+// with Chaos Inoculation.
+bool resistCounts(const ResistChange &r, const Character &character, const PobPriorities &priorities)
+{
+    return r.element != Element::Chaos || (!character.chaosInoculation && (priorities.chaos || !r.wasUnder));
+}
+
+double deltaOf(const CharacterChange &change, QStringView label)
+{
+    for (const TotalChange &t : change.totals) {
+        if (t.label == label)
+            return t.delta;
+    }
+    return 0;
 }
 
 // Of your rings, charms or jewels, the one with the lowest gear score. One
@@ -137,6 +154,36 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         if (!r.isEquipped && e.gearEquipped)
             r.verdict = gearVerdict(int(r.delta));
     }
+    if (r.isEquipped)
+        return e;
+
+    QStringList targets = {r.targetSlot};
+    if (item.twoHanded && r.targetSlot == u"Weapon" && character.gear.contains(u"Offhand"_s))
+        targets << u"Offhand"_s;
+    const std::optional<LiveResists> resists =
+        character.resists ? liveResists(*character.resists, character.gear) : std::nullopt;
+    const GearScoreFn slotScore = [&](const Item &it, const QString &s) -> std::optional<double> {
+        if (const std::optional<GearScore> g = gearIn(it, s); g && g->isRated())
+            return g->score;
+        return std::nullopt;
+    };
+    e.change = changeIfEquipped(character.gear, item, targets, resists ? &*resists : nullptr, slotScore);
+    if (!e.change)
+        return e;
+
+    if (const double spirit = deltaOf(*e.change, u"Spirit"); spirit < 0 && priorities.spirit)
+        e.risks << u"Spirit drops by %1, so check your minions and auras still fit"_s.arg(
+            formatNumber(-spirit));
+    for (const ResistChange &rc : std::as_const(e.change->resists)) {
+        if (!rc.warning.isEmpty() && resistCounts(rc, character, priorities))
+            e.risks << rc.warning;
+    }
+    if (const double levels = deltaOf(*e.change, u"Minion skill levels"); levels < 0) {
+        e.risks << (levels == -1 ? u"Minion skills lose a level"_s
+                                 : u"Minion skills lose %1 levels"_s.arg(formatNumber(-levels)));
+    }
+    if (!e.risks.isEmpty() && (r.verdict == Verdict::Upgrade || r.verdict == Verdict::Small))
+        r.verdict = Verdict::Risky;
     return e;
 }
 

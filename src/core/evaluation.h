@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/character.h"
 #include "core/characterstore.h"
 #include "core/gearscore.h"
 #include "core/pobverdict.h"
 #include "core/scorer.h"
 
 #include <QString>
+#include <QStringList>
 #include <optional>
 
 namespace pou {
@@ -40,12 +42,19 @@ struct Evaluation
     // Empty without a build profile.
     std::optional<GearScore> gear;
     std::optional<GearScore> gearEquipped;
+    // What equipping it changes on your character. Empty for an item you
+    // wear.
+    std::optional<CharacterChange> change;
+    // In words, what the score doesn't see that can make an upgrade a risk:
+    // losing Spirit, minion skill levels or resistance you need.
+    QStringList risks;
 };
 
 // By gear score when the item and what you wear both have one, else by your
 // weights. A ring, charm or jewel is compared with your weakest one by gear
 // score, unless slot says which. slot can also be another slot the item
-// goes in, like the offhand for a one-handed weapon.
+// goes in, like the offhand for a one-handed weapon. An upgrade with risks
+// is Risky.
 Evaluation evaluate(const Item &item, const Character &character, const PobPriorities &priorities = {},
                     const QString &slot = {});
 
