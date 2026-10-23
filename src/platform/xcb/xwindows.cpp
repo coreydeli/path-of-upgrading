@@ -48,8 +48,12 @@ XPointer queryPointer(XConnection &x)
     // under the programs', which have none.
     xcb_window_t window = x.root();
     for (int depth = 0; depth < 8; ++depth) {
+        // a window can go between asking about its parent and asking about
+        // it, and nothing reads the errors that aren't taken here
+        xcb_generic_error_t *error = nullptr;
         const XReply<xcb_query_pointer_reply_t> reply(
-            xcb_query_pointer_reply(x.xcb(), xcb_query_pointer(x.xcb(), window), nullptr));
+            xcb_query_pointer_reply(x.xcb(), xcb_query_pointer(x.xcb(), window), &error));
+        std::free(error);
         if (!reply)
             break;
         if (depth == 0)
