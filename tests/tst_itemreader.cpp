@@ -68,9 +68,12 @@ private Q_SLOTS:
     {
         FakeGameInput game;
         ItemReader reader(&game);
+        QSignalSpy read(&reader, &ItemReader::itemRead);
         reader.setPaused(true);
         reader.read();
+        Q_EMIT game.textCopied(itemtexts::helmetNew);
         QCOMPARE(game.copies, 0);
+        QVERIFY(read.isEmpty());
 
         reader.setPaused(false);
         reader.read();
@@ -193,6 +196,35 @@ private Q_SLOTS:
         reader.read();
         Q_EMIT game.itemCopied(itemtexts::helmetNew, std::nullopt);
         QVERIFY(!slow.wait(400));
+    }
+
+    void gearYouCopy()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        QSignalSpy read(&reader, &ItemReader::itemRead);
+        Q_EMIT game.textCopied(itemtexts::helmetNew);
+        QCOMPARE(read.size(), 1);
+        QVERIFY(!mouseOf(read));
+
+        // not what you copy to paste somewhere else
+        Q_EMIT game.textCopied(currency);
+        Q_EMIT game.textCopied(u"Hello"_s);
+        QCOMPARE(read.size(), 1);
+
+        reader.setWatchClipboard(false);
+        Q_EMIT game.textCopied(itemtexts::helmetNew);
+        QCOMPARE(read.size(), 1);
+    }
+
+    void notWhileReading()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        QSignalSpy read(&reader, &ItemReader::itemRead);
+        reader.read();
+        Q_EMIT game.textCopied(itemtexts::helmetNew);
+        QVERIFY(read.isEmpty());
     }
 };
 

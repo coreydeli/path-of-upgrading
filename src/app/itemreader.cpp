@@ -47,6 +47,7 @@ ItemReader::ItemReader(GameInput *input, QObject *parent)
     connect(&m_slow, &QTimer::timeout, this, &ItemReader::slow);
     connect(input, &GameInput::itemCopied, this, &ItemReader::copied);
     connect(input, &GameInput::copyFailed, this, &ItemReader::notCopied);
+    connect(input, &GameInput::textCopied, this, &ItemReader::copiedByHand);
 }
 
 void ItemReader::setHotkey(const QString &key)
@@ -57,6 +58,11 @@ void ItemReader::setHotkey(const QString &key)
 void ItemReader::setAdvancedCopy(bool advanced)
 {
     m_advanced = advanced;
+}
+
+void ItemReader::setWatchClipboard(bool watch)
+{
+    m_watchClipboard = watch;
 }
 
 void ItemReader::setPaused(bool paused)
@@ -91,6 +97,16 @@ void ItemReader::notCopied(GameInput::Failure why, const QString &detail,
 {
     finish();
     Q_EMIT failed(whyNothing(why, detail, hotkey()), mouse);
+}
+
+void ItemReader::copiedByHand(const QString &text)
+{
+    if (m_paused || !m_watchClipboard || m_reading)
+        return;
+    // currency, gems and the like, which you copy to paste somewhere
+    const std::optional<Item> item = parseItem(text);
+    if (item && !item->slot.isEmpty())
+        Q_EMIT itemRead(*item, std::nullopt);
 }
 
 void ItemReader::finish()
