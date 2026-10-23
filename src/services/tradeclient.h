@@ -50,7 +50,8 @@ Q_SIGNALS:
     // Always from the event loop, never from inside a call to the client.
     void finished();
     // When it's next to go but has to wait its turn under the site's limits,
-    // with how long that will be. Also from the event loop.
+    // with how long that will be. It can come again with the time left, as
+    // when the site answers another request. Also from the event loop.
     void waiting(std::chrono::milliseconds wait);
 
 private:
@@ -112,8 +113,8 @@ private:
     TradeReply *send(Queue &queue, const QNetworkRequest &request, const QByteArray &body = {});
     // Sends what can go, and fails what would wait too long.
     void pump(Queue &queue);
-    void start(const Queue::Waiting &waiting);
-    void answered(TradeReply *trade, QNetworkReply *reply);
+    void start(Queue &queue, const Queue::Waiting &waiting);
+    void answered(Queue &queue, TradeReply *trade, QNetworkReply *reply);
 
     QNetworkAccessManager *m_network;
     Queue m_searches;

@@ -33,6 +33,20 @@ QString unreachable(const QNetworkReply &reply)
     return u"Couldn't reach the trade site: %1"_s.arg(reply.errorString());
 }
 
+// What an answer said about the site's limits.
+RateHeaders rateHeaders(const QNetworkReply &reply)
+{
+    const auto header = [&reply](const char *name) {
+        return QString::fromLatin1(reply.rawHeader(name));
+    };
+    return {
+        .ip = header("X-Rate-Limit-Ip"),
+        .ipState = header("X-Rate-Limit-Ip-State"),
+        .account = header("X-Rate-Limit-Account"),
+        .accountState = header("X-Rate-Limit-Account-State"),
+    };
+}
+
 } // namespace
 
 TradeReply::TradeReply(QObject *parent)
@@ -114,7 +128,7 @@ void TradeClient::pump(Queue &queue)
         const std::chrono::milliseconds wait = queue.limiter.wait(now);
         if (wait == 0ms) {
             queue.limiter.sent(now);
-            start(queue.waiting.takeFirst());
+            start(queue, queue.waiting.takeFirst());
         } else if (now + wait > next.deadline) {
             const auto retryAfter = std::chrono::ceil<std::chrono::seconds>(wait);
             queue.waiting.takeFirst().trade->fail(TradeReply::Error::RateLimited, tooMany(retryAfter),
@@ -127,20 +141,23 @@ void TradeClient::pump(Queue &queue)
     }
 }
 
-void TradeClient::start(const Queue::Waiting &waiting)
+void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
 {
     TradeReply *trade = waiting.trade;
     QNetworkReply *reply = waiting.body.isEmpty() ? m_network->get(waiting.request)
                                                   : m_network->post(waiting.request, waiting.body);
     // deleting the trade reply calls the request off
     reply->setParent(trade);
-    connect(reply, &QNetworkReply::finished, trade, [this, trade, reply] { answered(trade, reply); });
+    connect(reply, &QNetworkReply::finished, trade,
+            [this, &queue, trade, reply] { answered(queue, trade, reply); });
 }
 
-void TradeClient::answered(TradeReply *trade, QNetworkReply *reply)
+void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply)
 {
     using Error = TradeReply::Error;
     reply->deleteLater();
+    const Clock::time_point now = Clock::now();
+    queue.limiter.learn(rateHeaders(*reply), now);
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     const QJsonDocument json = QJsonDocument::fromJson(reply->readAll());
     const QString message = json.object().value(u"error").toObject().value(u"message").toString();
@@ -161,6 +178,8 @@ void TradeClient::answered(TradeReply *trade, QNetworkReply *reply)
     } else {
         trade->succeed(json.object());
     }
+    // what the site said can change when the next can go
+    pump(queue);
 }
 
 } // namespace pou

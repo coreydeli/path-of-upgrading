@@ -4,6 +4,7 @@
 #include "services/network.h"
 #include "services/tradeclient.h"
 
+#include <QElapsedTimer>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QSignalSpy>
@@ -26,10 +27,11 @@ QByteArray siteError(const QString &message)
     return json({{u"error"_s, QJsonObject{{u"code"_s, 2}, {u"message"_s, message}}}});
 }
 
+// Waits for the reply to finish, if it hasn't.
 bool finishes(TradeReply *reply)
 {
     QSignalSpy finished(reply, &TradeReply::finished);
-    return finished.wait();
+    return reply->isFinished() || finished.wait();
 }
 
 } // namespace
@@ -231,6 +233,76 @@ private Q_SLOTS:
         // fetches are limited apart
         QVERIFY(finishes(client.fetch({u"x1"_s}, u"Ab3dE9"_s)));
         QCOMPARE(network.sent.size(), 5);
+    }
+
+    void heldRequestsGoInTurn()
+    {
+        FakeNetwork network;
+        // one a second, of each kind
+        const FakeAnswer oneASecond{.headers = {{"X-Rate-Limit-Ip", "1:1:0"}}};
+        network.answers << oneASecond << oneASecond << oneASecond;
+        TradeClient client(&network);
+        QElapsedTimer clock;
+        clock.start();
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+        QVERIFY(finishes(client.fetch({u"x1"_s}, u"Ab3dE9"_s)));
+        QVERIFY(finishes(client.data(u"stats"_s)));
+
+        // part of the way to their turn
+        QTest::qWait(500);
+        TradeReply *calledOff = client.search(u"Hardcore"_s, {});
+        const QList<TradeReply *> held{
+            client.search(u"Runes of Aldur"_s, {}),
+            client.fetch({u"x2"_s}, u"Ab3dE9"_s),
+            client.data(u"leagues"_s),
+        };
+        QCOMPARE(network.sent.size(), 3);
+        delete calledOff;
+        for (TradeReply *reply : held)
+            QVERIFY(finishes(reply));
+        QCOMPARE_GE(clock.elapsed(), 1250);
+        QCOMPARE(network.sent.size(), 6);
+        QCOMPARE(network.sent[3].request.url(), tradeSearchUrl(u"Runes of Aldur"_s));
+    }
+
+    void countsRequestsFromElsewhere_data()
+    {
+        QTest::addColumn<FakeAnswer>("answer");
+        // three a minute, of which the site has counted two
+        QTest::newRow("address") << FakeAnswer{
+            .headers = {{"X-Rate-Limit-Ip", "3:60:60"}, {"X-Rate-Limit-Ip-State", "2:60:0"}}};
+        QTest::newRow("account") << FakeAnswer{
+            .headers = {{"X-Rate-Limit-Account", "3:60:60"}, {"X-Rate-Limit-Account-State", "2:60:0"}}};
+    }
+
+    void countsRequestsFromElsewhere()
+    {
+        QFETCH(FakeAnswer, answer);
+        FakeNetwork network;
+        network.answers << answer;
+        TradeClient client(&network);
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+
+        // the one to spare is gone, and waiting for it would take too long
+        TradeReply *next = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(next));
+        QCOMPARE(next->error(), TradeReply::Error::RateLimited);
+        QCOMPARE(network.sent.size(), 1);
+    }
+
+    void bannedWhileWaiting()
+    {
+        FakeNetwork network;
+        // a minute's ban, from requests made elsewhere
+        network.answers << FakeAnswer{
+            .headers = {{"X-Rate-Limit-Ip", "5:10:60"}, {"X-Rate-Limit-Ip-State", "6:10:60"}}};
+        TradeClient client(&network);
+        TradeReply *fifth = nullptr;
+        for (int i = 0; i < 5; ++i)
+            fifth = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(fifth));
+        QCOMPARE(fifth->error(), TradeReply::Error::RateLimited);
+        QCOMPARE(network.sent.size(), 4);
     }
 };
 
