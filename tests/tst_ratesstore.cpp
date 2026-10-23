@@ -290,6 +290,30 @@ private Q_SLOTS:
         QCOMPARE(refreshed.size(), 1);
     }
 
+    void startsOverForAnotherLeague()
+    {
+        QTemporaryDir dir;
+        QVERIFY(keep(fileOf(dir.path(), hardcore), overview(120), 20min));
+        FakeNetwork network;
+        network.answers = {{.error = QNetworkReply::HostNotFoundError}, {.status = 503}};
+        RatesStore store(&network, dir.path());
+        QVERIFY(refreshes(store, softcore));
+
+        QVERIFY(refreshes(store, hardcore));
+        QCOMPARE(network.sent.size(), 1);
+        QCOMPARE(store.league(), hardcore);
+        QCOMPARE(store.divineRate(), 120.0);
+        QCOMPARE(minutesOld(store), 20);
+        QVERIFY(store.errorString().isEmpty());
+
+        // and asks again for the one it couldn't get, with none of the other's
+        QVERIFY(refreshes(store, softcore));
+        QCOMPARE(network.sent.size(), 2);
+        QVERIFY(store.rates().isEmpty());
+        QVERIFY(!store.fetched().isValid());
+        QCOMPARE(store.errorString(), u"poe.ninja's answer couldn't be read (HTTP 503)."_s);
+    }
+
     void callsOffTheLastLeagues()
     {
         QTemporaryDir dir;
