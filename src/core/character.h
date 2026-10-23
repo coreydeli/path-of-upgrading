@@ -37,6 +37,9 @@ struct ResistChange
     bool wasUnder = false;
     bool thin = false; // capped, but by less than the buffer
     bool wasThin = false;
+    // What's wrong, when it loses resistance you need: it leaves you under the
+    // cap or only just over it.
+    QString warning;
 };
 
 struct CharacterChange
@@ -45,7 +48,6 @@ struct CharacterChange
     QList<TotalChange> totals;
     QList<ResistChange> resists;
     std::optional<TotalChange> overall; // average gear score over the main slots
-    QStringList warnings;
 };
 
 // A slot's gear score, when there is one.

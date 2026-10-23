@@ -108,6 +108,8 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
 
     const double cap = resists && resists->cap != 0 ? resists->cap : 75;
     const double buffer = resists ? resists->buffer : 0;
+    const QString source =
+        resists && resists->source == ResistSource::Pob ? u"Path of Building's"_s : u"Your"_s;
     for (Element e : allElements) {
         const QString key = resistKey(e);
         double removed = 0;
@@ -132,6 +134,17 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
             r.wasUnder = from < r.cap;
             r.thin = to >= r.cap && to < r.safe;
             r.wasThin = from >= r.cap && from < r.safe;
+            if (delta < 0 && r.under && !r.wasUnder) {
+                r.warning = u"%1 drops below the cap (%2% of %3%)"_s.arg(r.label, formatNumber(to),
+                                                                         formatNumber(r.cap));
+            } else if (delta < 0 && r.under) {
+                r.warning = u"%1 goes further under the cap (from %2% to %3%)"_s.arg(
+                    r.label, formatNumber(from), formatNumber(to));
+            } else if (delta < 0 && r.thin && from >= r.safe) {
+                r.warning = u"%1 would be only %2% over the cap (%3%). %4 numbers can include charms and "
+                            "buffs that aren't always on, so check your character sheet."_s.arg(
+                                r.label, formatNumber(to - r.cap), formatNumber(delta), source);
+            }
         }
         change.resists << r;
     }
@@ -141,24 +154,6 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
         const std::optional<double> b = averageScore(after, gearScore);
         if (a && b)
             change.overall = TotalChange{u"Gear score"_s, *a, *b, *b - *a};
-    }
-
-    const QString source =
-        resists && resists->source == ResistSource::Pob ? u"Path of Building's"_s : u"Your"_s;
-    for (const ResistChange &r : std::as_const(change.resists)) {
-        if (!r.from || r.delta >= 0)
-            continue;
-        if (r.under && !r.wasUnder) {
-            change.warnings << u"%1 drops below the cap (%2% of %3%)"_s.arg(r.label, formatNumber(*r.to),
-                                                                            formatNumber(r.cap));
-        } else if (r.under) {
-            change.warnings << u"%1 goes further under the cap (from %2% to %3%)"_s.arg(
-                r.label, formatNumber(*r.from), formatNumber(*r.to));
-        } else if (r.thin && *r.from >= r.safe) {
-            change.warnings << u"%1 would be only %2% over the cap (%3%). %4 numbers can include charms and "
-                               "buffs that aren't always on, so check your character sheet."_s.arg(
-                                   r.label, formatNumber(*r.to - r.cap), formatNumber(r.delta), source);
-        }
     }
     return change;
 }
