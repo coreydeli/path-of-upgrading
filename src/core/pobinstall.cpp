@@ -49,6 +49,7 @@ PobPlaces pobPlaces()
         .flatpakInstallations = {qEnvironmentVariable("FLATPAK_USER_DIR", dataHome + u"/flatpak"_s),
                                  qEnvironmentVariable("FLATPAK_SYSTEM_DIR", u"/var/lib/flatpak"_s)},
         .flatpak = QStandardPaths::findExecutable(u"flatpak"_s),
+        .luajit = QStandardPaths::findExecutable(u"luajit"_s),
     };
 }
 
@@ -65,11 +66,17 @@ std::optional<PobInstall> findPob(const PobPlaces &places, QString *why)
             // nothing the app asks of it needs
             .arguments = {u"run"_s, u"--die-with-parent"_s, u"--unshare=network"_s, u"--command=luajit"_s,
                           pobFlatpakId.toString()},
+            .flatpak = true,
         };
     }
+    const QString native = places.dataHome + poe2Folder;
+    if (hasPob(native) && !places.luajit.isEmpty())
+        return PobInstall{.folder = native, .program = places.luajit};
 
     if (flatpak)
         setWhy(why, u"Open Path of Building PoE 2 once, so it downloads what it needs."_s);
+    else if (hasPob(native))
+        setWhy(why, u"Running Path of Building needs LuaJIT, which isn't installed."_s);
     else
         setWhy(why, u"Path of Building isn't installed. Get it from Flathub with: "
                     u"flatpak install flathub %1"_s.arg(pobFlatpakId));

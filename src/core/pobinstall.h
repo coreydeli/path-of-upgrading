@@ -23,6 +23,7 @@ struct PobInstall
     QString folder; // the one with HeadlessWrapper.lua
     QString program;
     QStringList arguments;
+    bool flatpak = false; // in the Flatpak's sandbox
 
     friend bool operator==(const PobInstall &, const PobInstall &) = default;
 };
@@ -34,13 +35,15 @@ struct PobPlaces
     QString dataHome;                 // $XDG_DATA_HOME
     QStringList flatpakInstallations; // yours, then the system's
     QString flatpak;                  // the flatpak command, empty when it isn't installed
+    QString luajit;                   // the same for LuaJIT
 };
 
 // The places on this computer.
 PobPlaces pobPlaces();
 
-// The Flatpak's Path of Building. Empty when there's none, with why in words
-// for people when it's given.
+// The Flatpak's Path of Building, or else one from rusty-path-of-building
+// installed some other way. Empty when there's none, with why in words for
+// people when it's given.
 std::optional<PobInstall> findPob(const PobPlaces &places, QString *why = nullptr);
 
 } // namespace pou
