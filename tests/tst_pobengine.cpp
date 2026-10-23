@@ -133,6 +133,20 @@ private Q_SLOTS:
         QCOMPARE(pob.runs(), 1);
     }
 
+    void notLoaded()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        // for Path of Exile 1
+        engine.setBuild(u"<PathOfBuilding><Build level=\"90\"/></PathOfBuilding>"_s);
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"The fake couldn't load the build."_s);
+        QVERIFY(reply->answer().isEmpty());
+        QCOMPARE(engine.state(), State::Ready);
+    }
+
     void nothingToRun()
     {
         PobEngine engine;

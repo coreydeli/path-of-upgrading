@@ -3,8 +3,9 @@
 // Stands in for LuaJIT running pobbridge.lua in Path of Building's folder, for
 // testing the engine. It answers as the bridge does without working anything
 // out: an eval's answer has the items it was sent, the build and gear it has
-// and the commands it has had. It counts how many times it's run in a file
-// called runs in the folder.
+// and the commands it has had. A build that isn't for Path of Exile 2 doesn't
+// load. It counts how many times it's run in a file called runs in the
+// folder.
 
 #include <QFile>
 #include <QJsonArray>
@@ -64,6 +65,7 @@ int main(int argc, char *argv[])
     answer({{u"ready"_s, true}, {u"version"_s, u"0.1.0"_s}});
     QString xml;
     QJsonValue wearing;
+    QString noBuild = u"There's no build loaded."_s;
     QJsonArray seen;
     // until stdin is closed
     for (QByteArray line = in.readLine(); !line.isEmpty(); line = in.readLine()) {
@@ -74,6 +76,12 @@ int main(int argc, char *argv[])
         if (command == u"load") {
             xml = request.value(u"xml").toString();
             wearing = QJsonValue();
+            noBuild =
+                xml.startsWith(u"<PathOfBuilding2>") ? QString() : u"The fake couldn't load the build."_s;
+        }
+        if (!noBuild.isEmpty()) {
+            r.insert(u"ok"_s, false);
+            r.insert(u"error"_s, noBuild);
         } else if (command == u"equip") {
             wearing = request.value(u"items");
         } else if (command == u"eval") {
