@@ -22,6 +22,7 @@ class TradeReply : public QObject
 public:
     enum class Error {
         None,
+        Network,   // the site couldn't be reached
         BadAnswer, // the site's answer couldn't be read
     };
     Q_ENUM(Error)

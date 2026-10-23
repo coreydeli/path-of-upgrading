@@ -75,6 +75,29 @@ private Q_SLOTS:
         QCOMPARE(network.sent[1].request.url(), tradeDataUrl(u"leagues"_s));
     }
 
+    void unreachable()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.error = QNetworkReply::HostNotFoundError}
+                        // a transfer timeout, which older versions of Qt report as canceled
+                        << FakeAnswer{.error = QNetworkReply::OperationCanceledError}
+                        << FakeAnswer{.error = QNetworkReply::TimeoutError};
+        TradeClient client(&network);
+
+        TradeReply *offline = client.data(u"stats"_s);
+        QVERIFY(finishes(offline));
+        QCOMPARE(offline->error(), TradeReply::Error::Network);
+        QCOMPARE(offline->errorString(),
+                 u"Couldn't reach the trade site: Host www.pathofexile.com not found"_s);
+
+        for (int i = 0; i < 2; ++i) {
+            TradeReply *slow = client.data(u"stats"_s);
+            QVERIFY(finishes(slow));
+            QCOMPARE(slow->error(), TradeReply::Error::Network);
+            QCOMPARE(slow->errorString(), u"The trade site didn't answer in time."_s);
+        }
+    }
+
     void badAnswers()
     {
         FakeNetwork network;

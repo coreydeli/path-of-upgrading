@@ -11,6 +11,17 @@
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
+namespace {
+
+QString unreachable(const QNetworkReply &reply)
+{
+    if (reply.error() == QNetworkReply::OperationCanceledError ||
+        reply.error() == QNetworkReply::TimeoutError)
+        return u"The trade site didn't answer in time."_s;
+    return u"Couldn't reach the trade site: %1"_s.arg(reply.errorString());
+}
+
+} // namespace
 
 TradeReply::TradeReply(QObject *parent)
     : QObject(parent)
@@ -74,7 +85,9 @@ void TradeClient::answered(TradeReply *trade, QNetworkReply *reply)
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     const QJsonDocument json = QJsonDocument::fromJson(reply->readAll());
 
-    if (status != 200 || !json.isObject()) {
+    if (status == 0) {
+        trade->fail(Error::Network, unreachable(*reply));
+    } else if (status != 200 || !json.isObject()) {
         trade->fail(Error::BadAnswer, u"The trade site's answer couldn't be read (HTTP %1)."_s.arg(status));
     } else {
         trade->succeed(json.object());
