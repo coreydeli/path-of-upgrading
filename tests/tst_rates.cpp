@@ -106,16 +106,11 @@ private Q_SLOTS:
         QCOMPARE(rates, CurrencyRates({{u"exalted"_s, 1}, {u"divine"_s, 700}, {u"chaos"_s, 12.5}}));
     }
 
-    void urls()
+    void url()
     {
-        const QList<QUrl> urls = ninjaCurrencyUrls(u"Rise of the Abyssal"_s);
-        QCOMPARE(urls.size(), 2);
-        QCOMPARE(urls.at(0).toString(QUrl::FullyEncoded),
+        QCOMPARE(ninjaCurrencyUrl(u"HC Runes of Aldur"_s).toString(QUrl::FullyEncoded),
                  u"https://poe.ninja/poe2/api/economy/exchange/current/overview"
-                 "?league=Rise%20of%20the%20Abyssal&type=Currency"_s);
-        QCOMPARE(urls.at(1).toString(QUrl::FullyEncoded),
-                 u"https://poe.ninja/poe2/api/economy/currencyexchange/overview"
-                 "?leagueName=Rise%20of%20the%20Abyssal&overviewName=Currency"_s);
+                 "?league=HC%20Runes%20of%20Aldur&type=Currency"_s);
     }
 };
 

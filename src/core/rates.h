@@ -3,19 +3,18 @@
 
 #include <QHash>
 #include <QJsonObject>
-#include <QList>
 #include <QString>
 #include <QUrl>
 #include <optional>
 
 namespace pou {
 
-// Currency prices from poe.ninja's PoE2 currency exchange overview. It has
-// answered in two shapes (the documented /exchange/current/overview and the
-// older /currencyexchange/overview), and both are read.
+// Currency prices from poe.ninja's PoE2 currency exchange overview. Its
+// older answers, from the /currencyexchange/overview it no longer has, came
+// in another shape, and that's read too.
 
-// Where to ask, newest first. poe.ninja names leagues as the trade site does.
-QList<QUrl> ninjaCurrencyUrls(const QString &league);
+// Where to ask for a league's. poe.ninja names leagues as the trade site does.
+QUrl ninjaCurrencyUrl(const QString &league);
 
 // How many Exalted Orbs a Divine Orb is worth, to one decimal. Empty when
 // the overview doesn't say, or says something no market has ever had.

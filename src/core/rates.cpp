@@ -12,15 +12,6 @@ using namespace Qt::Literals::StringLiterals;
 namespace pou {
 namespace {
 
-QUrl ninjaUrl(const QString &path, const QList<std::pair<QString, QString>> &query)
-{
-    QUrl url(u"https://poe.ninja/poe2/api/economy/"_s + path);
-    QUrlQuery q;
-    q.setQueryItems(query);
-    url.setQuery(q);
-    return url;
-}
-
 QJsonArray linesOf(const QJsonObject &overview)
 {
     return overview.value(u"lines").toArray();
@@ -66,13 +57,11 @@ std::optional<double> primaryValue(const QJsonObject &overview, const QString &i
 
 } // namespace
 
-QList<QUrl> ninjaCurrencyUrls(const QString &league)
+QUrl ninjaCurrencyUrl(const QString &league)
 {
-    return {
-        ninjaUrl(u"exchange/current/overview"_s, {{u"league"_s, league}, {u"type"_s, u"Currency"_s}}),
-        ninjaUrl(u"currencyexchange/overview"_s,
-                 {{u"leagueName"_s, league}, {u"overviewName"_s, u"Currency"_s}}),
-    };
+    QUrl url(u"https://poe.ninja/poe2/api/economy/exchange/current/overview"_s);
+    url.setQuery(QUrlQuery{{u"league"_s, league}, {u"type"_s, u"Currency"_s}});
+    return url;
 }
 
 std::optional<double> divineInExalts(const QJsonObject &overview)
