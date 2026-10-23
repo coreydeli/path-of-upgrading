@@ -74,7 +74,14 @@ int main(int argc, char *argv[])
     if (!in.open(stdin, QIODevice::ReadOnly) || !out.open(stdout, QIODevice::WriteOnly))
         quit("it can't read or write");
     const qint64 length = in.readLine().trimmed().toLongLong();
-    const QByteArray script = in.read(length);
+    // which can come in more than one go, as it does to LuaJIT
+    QByteArray script;
+    while (script.size() < length) {
+        const QByteArray part = in.read(length - script.size());
+        if (part.isEmpty())
+            break;
+        script += part;
+    }
     if (script.size() != length || !script.startsWith("-- SPDX-License-Identifier: MIT\n--\n"
                                                       "-- Path of Upgrading's bridge to Path of Building."))
         quit("it wasn't sent the bridge");
