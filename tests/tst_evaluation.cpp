@@ -32,6 +32,9 @@ Item ring(const QString &name, const QString &mods)
     return item(u"Item Class: Rings\nRarity: Rare\n"_s + name + u"\nGold Ring\n--------\n"_s + mods);
 }
 
+const Item uniqueRing =
+    item(u"Item Class: Rings\nRarity: Unique\nVenom Coil\nGold Ring\n--------\n+10 to maximum Life"_s);
+
 Character wearing(const Equipped &gear)
 {
     Character c;
@@ -242,8 +245,7 @@ private Q_SLOTS:
     void uniqueRingIsntTheWeakest()
     {
         const Character c = wearing({
-            {u"Ring 1"_s, item(u"Item Class: Rings\nRarity: Unique\nVenom Coil\nGold Ring\n--------\n"
-                               "+10 to maximum Life"_s)},
+            {u"Ring 1"_s, uniqueRing},
             {u"Ring 2"_s, ring(u"Woe Band"_s, u"+20 to maximum Life"_s)},
         });
         const Evaluation e = evaluate(ring(u"Grim Grasp"_s, u"+40 to maximum Life"_s), c);
@@ -315,14 +317,14 @@ private Q_SLOTS:
 
     void whatEquippingChanges()
     {
-        const Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}, {u"Ring 1"_s, uniqueRing}});
         const Evaluation e = evaluate(lifeAmulet(64), c);
         QVERIFY(e.change);
         QCOMPARE(e.change->targets, QStringList{u"Amulet"_s});
         QCOMPARE(e.change->totals.size(), 1);
         QCOMPARE(e.change->totals.at(0).label, u"Life"_s);
         QCOMPARE(e.change->totals.at(0).delta, 24.0);
-        // the average over your main slots, of which there's only the amulet
+        // the average over your main slots, where the unique has no gear score
         QCOMPARE(e.change->overall->from, double(e.gearEquipped->score));
         QCOMPARE(e.change->overall->to, double(e.gear->score));
         QVERIFY(e.risks.isEmpty());
