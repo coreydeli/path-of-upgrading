@@ -36,9 +36,10 @@ public:
     XConnection(const XConnection &) = delete;
     XConnection &operator=(const XConnection &) = delete;
 
-    bool isValid() const { return m_root != XCB_WINDOW_NONE; }
+    // Until the server goes away, as Xwayland does when it crashes.
+    bool isValid() const { return m_root != XCB_WINDOW_NONE && !xcb_connection_has_error(m_xcb); }
     // Why it isn't, in words for people.
-    QString errorString() const { return m_errorString; }
+    QString errorString() const;
 
     xcb_connection_t *xcb() const { return m_xcb; }
     xcb_window_t root() const { return m_root; }

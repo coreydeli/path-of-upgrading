@@ -43,6 +43,13 @@ XConnection::~XConnection()
     xcb_disconnect(m_xcb);
 }
 
+QString XConnection::errorString() const
+{
+    if (m_errorString.isEmpty() && xcb_connection_has_error(m_xcb))
+        return u"Lost the connection to the X server."_s;
+    return m_errorString;
+}
+
 xcb_atom_t XConnection::atom(QByteArrayView name)
 {
     const QByteArray key = name.toByteArray();

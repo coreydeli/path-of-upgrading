@@ -6,6 +6,7 @@
 
 #include <QTest>
 
+using namespace Qt::Literals::StringLiterals;
 using namespace pou;
 
 class TestXConnection : public QObject
@@ -51,6 +52,25 @@ private Q_SLOTS:
 
         xcb_destroy_window(m_x.xcb(), window);
         QVERIFY(m_x.bytes(window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING).isEmpty());
+    }
+
+    void lostConnection()
+    {
+        XConnection x;
+        QVERIFY(x.isValid());
+        QCOMPARE(x.errorString(), QString());
+
+        // xcb gives up on the connection when a request is longer than the
+        // server takes, the same as when the server goes away
+        const xcb_window_t window = xcb_generate_id(x.xcb());
+        xcb_create_window(x.xcb(), XCB_COPY_FROM_PARENT, window, x.root(), 0, 0, 1, 1, 0,
+                          XCB_WINDOW_CLASS_INPUT_ONLY, XCB_COPY_FROM_PARENT, 0, nullptr);
+        const QByteArray tooLong(qsizetype(xcb_get_maximum_request_length(x.xcb())) * 4, 'x');
+        xcb_change_property(x.xcb(), XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8,
+                            tooLong.size(), tooLong.constData());
+
+        QVERIFY(!x.isValid());
+        QCOMPARE(x.errorString(), u"Lost the connection to the X server."_s);
     }
 
 private:
