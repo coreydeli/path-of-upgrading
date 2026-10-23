@@ -11,6 +11,11 @@ function(pou_add_services_test name)
     target_link_libraries(${name} PRIVATE pou_services)
 endfunction()
 
+function(pou_add_platform_test name)
+    pou_add_test(${name} ${ARGN})
+    target_link_libraries(${name} PRIVATE pou_platform)
+endfunction()
+
 pou_add_test(tst_slots)
 pou_add_test(tst_statnorm)
 pou_add_test(tst_numbers)
@@ -55,3 +60,14 @@ add_dependencies(tst_pobengine fakepob)
 
 # with the Path of Building on this computer, when there's one
 pou_add_services_test(tst_installedpob itemtexts.h)
+
+pou_add_platform_test(tst_copykeys)
+pou_add_platform_test(tst_gamewindow)
+pou_add_platform_test(tst_screenmap)
+# with the X server in DISPLAY, when there's one
+pou_add_platform_test(tst_xconnection)
+pou_add_platform_test(tst_xgameinput)
+pou_add_platform_test(tst_xkeysender)
+pou_add_platform_test(tst_xmonitors)
+pou_add_platform_test(tst_xselectionwatcher)
+pou_add_platform_test(tst_xwindows)
