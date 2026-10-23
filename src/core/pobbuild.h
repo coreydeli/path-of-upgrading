@@ -74,6 +74,17 @@ QString gearSlot(const QString &pobSlot, bool swapInUse);
 // names its sockets after the passives they're on.
 QString pobSlot(const QString &slot, bool swapInUse);
 
+// An item for Path of Building: its text as the game copies it, and the slot
+// to try it in by Path of Building's name for it, or none to try it in each
+// one it can go in.
+struct PobItem
+{
+    QString text;
+    QString slot;
+
+    friend bool operator==(const PobItem &, const PobItem &) = default;
+};
+
 // The XML is a build for the first game, which the first Path of Building
 // shares in codes just like these.
 bool isPoe1Build(const QString &xml);

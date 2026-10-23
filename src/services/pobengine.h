@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/pobbuild.h"
 #include "core/pobinstall.h"
 
 #include <QByteArray>
@@ -17,17 +18,6 @@
 class QProcess;
 
 namespace pou {
-
-// An item for Path of Building: its text as the game copies it, and the slot
-// to try it in by Path of Building's name for it, or none to try it in each
-// one it can go in.
-struct PobItem
-{
-    QString text;
-    QString slot;
-
-    friend bool operator==(const PobItem &, const PobItem &) = default;
-};
 
 // A request to Path of Building. It belongs to the engine, and is yours to
 // delete once it has finished, even in a slot connected to finished(), or
