@@ -24,6 +24,8 @@ public:
     enum class Error {
         None,
         RateLimited, // too many requests, see retryAfter()
+        TooComplex,  // a search with more filters than the site takes
+        Rejected,    // the site said no, see errorString()
         Network,     // the site couldn't be reached
         BadAnswer,   // the site's answer couldn't be read
     };

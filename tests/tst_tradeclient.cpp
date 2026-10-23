@@ -115,6 +115,27 @@ private Q_SLOTS:
         QCOMPARE(bare->retryAfter(), 60s);
     }
 
+    void tooComplex()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.status = 400, .body = siteError(u"Query is too complex."_s)};
+        TradeClient client(&network);
+        TradeReply *reply = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(reply));
+        QCOMPARE(reply->error(), TradeReply::Error::TooComplex);
+    }
+
+    void rejected()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.status = 400, .body = siteError(u"Invalid query"_s)};
+        TradeClient client(&network);
+        TradeReply *reply = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(reply));
+        QCOMPARE(reply->error(), TradeReply::Error::Rejected);
+        QCOMPARE(reply->errorString(), u"The trade site says: Invalid query"_s);
+    }
+
     void unreachable()
     {
         FakeNetwork network;
