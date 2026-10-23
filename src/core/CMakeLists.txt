@@ -8,6 +8,7 @@ add_library(pou_core STATIC
     character.cpp character.h
     characterstore.cpp characterstore.h
     datafiles.cpp datafiles.h
+    evaluation.cpp evaluation.h
     gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
