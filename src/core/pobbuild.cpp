@@ -663,6 +663,7 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
                                 [&](const ItemSet &s) { return s.id == activeItemSet; });
         if (set == itemSets.cend())
             set = itemSets.cbegin();
+        build.swapInUse = set->swapInUse;
         for (const auto &[pobSlot, id] : set->slots) {
             const QString slot = gearSlot(pobSlot, set->swapInUse);
             if (const auto item = items.constFind(id); !slot.isEmpty() && item != items.cend())

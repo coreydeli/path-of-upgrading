@@ -413,6 +413,7 @@ private Q_SLOTS:
         QCOMPARE(sortedSlots(*build), (QStringList{u"Belt"_s, u"Gloves"_s, u"Life Flask"_s, u"Offhand"_s,
                                                    u"Weapon"_s, u"Weapon 2"_s}));
         // its second weapon set is the one in use
+        QVERIFY(build->swapInUse);
         QCOMPARE(nameIn(*build, u"Weapon"_s), u"Victory Star"_s);
         QCOMPARE(nameIn(*build, u"Offhand"_s), u"Rapture Ward"_s);
         QCOMPARE(nameIn(*build, u"Weapon 2"_s), u"Corpse Song"_s);
@@ -443,6 +444,7 @@ private Q_SLOTS:
                                 .replace(u"useSecondWeaponSet=\"true\""_s, u"useSecondWeaponSet=\"false\""_s);
         const auto build = parsePobBuild(xml);
         QVERIFY(build);
+        QVERIFY(!build->swapInUse);
         QCOMPARE(nameIn(*build, u"Weapon"_s), u"Corpse Song"_s);
         QCOMPARE(nameIn(*build, u"Weapon 2"_s), u"Victory Star"_s);
         QCOMPARE(nameIn(*build, u"Offhand 2"_s), u"Rapture Ward"_s);

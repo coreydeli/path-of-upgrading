@@ -52,6 +52,9 @@ struct PobBuild
     // By slot: "Weapon", "Ring 1", "Life Flask", "Charm 2"... The weapon set
     // in use is "Weapon" and "Offhand", the other one "Weapon 2" and "Offhand 2".
     QHash<QString, PobItemText> gear;
+    // The set in use is the one Path of Building calls its second, with the
+    // slots "Weapon 1 Swap" and "Weapon 2 Swap".
+    bool swapInUse = false;
     // In the order of the nodes they're socketed in.
     QList<PobItemText> jewels;
 
