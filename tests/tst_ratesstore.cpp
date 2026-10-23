@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
+#include "core/datafiles.h"
 #include "core/rates.h"
 #include "fakenetwork.h"
 #include "services/ratesstore.h"
 
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLoggingCategory>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 
 namespace {
@@ -42,6 +46,20 @@ QJsonObject overview(double exalts, double chaos = 10)
 const QByteArray unknownLeague =
     R"({"core":{"items":[],"rates":{},"primary":"chaos","secondary":"divine"},"lines":[],"items":[]})";
 
+QString fileOf(const QString &folder, const QString &league)
+{
+    return folder + u'/' + league + u".json"_s;
+}
+
+// A file an overview was kept in that long ago.
+bool keep(const QString &path, const QJsonObject &overview, std::chrono::minutes age)
+{
+    QFile file(path);
+    return writeJsonFile(path, overview) && file.open(QIODevice::ReadWrite) &&
+           file.setFileTime(QDateTime::currentDateTimeUtc().addSecs(-std::chrono::seconds(age).count()),
+                            QFileDevice::FileModificationTime);
+}
+
 int minutesOld(const RatesStore &store)
 {
     return int(store.fetched().secsTo(QDateTime::currentDateTimeUtc()) / 60);
@@ -71,9 +89,11 @@ private Q_SLOTS:
 
     void asksPoeNinja()
     {
+        QTemporaryDir dir;
+        const QString folder = dir.filePath(u"ninja"_s);
         FakeNetwork network;
         network.answers = {{.body = json(overview(400))}};
-        RatesStore store(&network);
+        RatesStore store(&network, folder);
 
         QVERIFY(refreshes(store, softcore));
         QCOMPARE(network.sent.size(), 1);
@@ -86,6 +106,9 @@ private Q_SLOTS:
         QVERIFY(store.errorString().isEmpty());
         QVERIFY(!store.isRefreshing());
 
+        // and keeps them
+        QCOMPARE(readJsonFile(fileOf(folder, softcore)).value_or(QJsonObject()), overview(400));
+
         // and lets go of the reply
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
         QVERIFY(!network.sent.at(0).reply);
@@ -94,11 +117,12 @@ private Q_SLOTS:
     // poe.ninja's prices have four figures, which can make for more in a rate
     void roundsTheDivineRate()
     {
+        QTemporaryDir dir;
         QJsonObject data = overview(539.6);
         data.insert(u"lines"_s, QJsonArray{line(u"divine"_s, 1), line(u"exalted"_s, 0.001853)});
         FakeNetwork network;
         network.answers = {{.body = json(data)}};
-        RatesStore store(&network);
+        RatesStore store(&network, dir.path());
 
         QVERIFY(refreshes(store, softcore));
         QCOMPARE(store.rates().value(u"divine"_s), 539.7);
@@ -127,35 +151,41 @@ private Q_SLOTS:
     {
         QFETCH(FakeAnswer, answer);
         QFETCH(QString, why);
+        QTemporaryDir dir;
+        QVERIFY(keep(fileOf(dir.path(), softcore), overview(400), 90min));
         FakeNetwork network;
-        network.answers = {{.body = json(overview(400))}, answer};
-        RatesStore store(&network);
-        QVERIFY(refreshes(store, softcore));
+        network.answers = {answer};
+        RatesStore store(&network, dir.path());
 
         QVERIFY(refreshes(store, softcore));
-        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(network.sent.size(), 1);
         QCOMPARE(store.errorString(), why);
         QCOMPARE(store.divineRate(), 400.0);
+        QCOMPARE(minutesOld(store), 90);
+        QCOMPARE(readJsonFile(fileOf(dir.path(), softcore)).value_or(QJsonObject()), overview(400));
     }
 
     void saysWhyThereAreNone()
     {
+        QTemporaryDir dir;
         FakeNetwork network;
         network.answers = {{.error = QNetworkReply::HostNotFoundError}};
-        RatesStore store(&network);
+        RatesStore store(&network, dir.path());
 
         QVERIFY(refreshes(store, softcore));
         QVERIFY(store.rates().isEmpty());
         QCOMPARE(store.divineRate(), 0.0);
         QVERIFY(!store.fetched().isValid());
         QCOMPARE(store.errorString(), unreachable);
+        QVERIFY(!QFile::exists(fileOf(dir.path(), softcore)));
     }
 
     void oneRefreshAtATime()
     {
+        QTemporaryDir dir;
         FakeNetwork network;
         network.answers = {{.body = json(overview(400))}};
-        RatesStore store(&network);
+        RatesStore store(&network, dir.path());
         QSignalSpy refreshed(&store, &RatesStore::refreshed);
 
         store.refresh(softcore);
@@ -170,9 +200,10 @@ private Q_SLOTS:
 
     void callsOffTheLastLeagues()
     {
+        QTemporaryDir dir;
         FakeNetwork network;
         network.answers = {{.body = json(overview(400))}, {.body = json(overview(120))}};
-        RatesStore store(&network);
+        RatesStore store(&network, dir.path());
         QSignalSpy refreshed(&store, &RatesStore::refreshed);
 
         store.refresh(softcore);
@@ -185,12 +216,25 @@ private Q_SLOTS:
         QCOMPARE(store.divineRate(), 120.0);
         QTest::qWait(10);
         QCOMPARE(refreshed.size(), 1);
+        QVERIFY(!QFile::exists(fileOf(dir.path(), softcore)));
+    }
+
+    void fileNames()
+    {
+        QTemporaryDir dir;
+        FakeNetwork network;
+        network.answers = {{.body = json(overview(400))}};
+        RatesStore store(&network, dir.path());
+
+        QVERIFY(refreshes(store, u"Ours/Theirs (PL12345)"_s));
+        QVERIFY(QFile::exists(dir.filePath(u"Ours%2FTheirs %28PL12345%29.json"_s)));
     }
 
     void callingOff()
     {
+        QTemporaryDir dir;
         FakeNetwork network;
-        auto *store = new RatesStore(&network);
+        auto *store = new RatesStore(&network, dir.path());
         store->refresh(softcore);
         QCOMPARE(network.sent.size(), 1);
         delete store;

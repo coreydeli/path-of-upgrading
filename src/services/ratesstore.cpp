@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 #include "services/ratesstore.h"
 
+#include "core/datafiles.h"
 #include "services/logging.h"
 #include "services/network.h"
 
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QUrl>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -23,9 +26,10 @@ QString unreachable(const QNetworkReply &reply)
 
 } // namespace
 
-RatesStore::RatesStore(QNetworkAccessManager *network, QObject *parent)
+RatesStore::RatesStore(QNetworkAccessManager *network, const QString &folder, QObject *parent)
     : QObject(parent)
     , m_network(network)
+    , m_folder(folder)
 {}
 
 RatesStore::~RatesStore()
@@ -48,12 +52,27 @@ void RatesStore::refresh(const QString &league)
         m_rates.clear();
         m_fetched = {};
         m_errorString.clear();
+        read();
     } else if (isRefreshing()) {
         // that one's done when poe.ninja answers
         return;
     }
     m_reply = m_network->get(apiRequest(ninjaCurrencyUrl(m_league)));
     connect(m_reply, &QNetworkReply::finished, this, &RatesStore::answered);
+}
+
+// The league's file, with its id percent-encoded so nothing in it can lead
+// out of the folder.
+QString RatesStore::path() const
+{
+    return m_folder + u'/' + QString::fromLatin1(QUrl::toPercentEncoding(m_league, " ")) + u".json"_s;
+}
+
+void RatesStore::read()
+{
+    const QString file = path();
+    if (const std::optional<QJsonObject> overview = readJsonFile(file); overview && take(*overview))
+        m_fetched = QFileInfo(file).lastModified().toUTC();
 }
 
 // Takes the overview's rates, unless it has no Divine Orb price, which a
@@ -76,7 +95,8 @@ void RatesStore::answered()
     m_reply.clear();
 
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    const QJsonDocument json = QJsonDocument::fromJson(reply->readAll());
+    const QByteArray body = reply->readAll();
+    const QJsonDocument json = QJsonDocument::fromJson(body);
     if (status == 0) {
         fail(unreachable(*reply));
     } else if (status != 200 || !json.isObject()) {
@@ -88,6 +108,11 @@ void RatesStore::answered()
         m_errorString.clear();
         qCDebug(lcNinja, "A Divine Orb is worth %.1f Exalted Orbs in %s", divineRate(),
                 qUtf8Printable(m_league));
+        const QString file = path();
+        QString error;
+        if (!writeFile(file, body, &error))
+            qCWarning(lcNinja, "Couldn't keep poe.ninja's rates for %s in %s: %s", qUtf8Printable(m_league),
+                      qUtf8Printable(file), qUtf8Printable(error));
     }
     Q_EMIT refreshed();
 }

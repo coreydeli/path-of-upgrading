@@ -15,13 +15,15 @@ namespace pou {
 
 // What currencies are worth in a league, from poe.ninja, for pricing
 // listings in Exalted Orbs and turning a budget in Divine Orbs into them.
+// Each league's are kept in a file, and those do while poe.ninja can't be
+// reached.
 class RatesStore : public QObject
 {
     Q_OBJECT
 
 public:
-    // The network has to outlive the store.
-    explicit RatesStore(QNetworkAccessManager *network, QObject *parent = nullptr);
+    // The files go in the folder. The network has to outlive the store.
+    RatesStore(QNetworkAccessManager *network, const QString &folder, QObject *parent = nullptr);
     ~RatesStore() override;
 
     // The trade site's id for the league they're for.
@@ -48,11 +50,14 @@ Q_SIGNALS:
     void refreshed();
 
 private:
+    QString path() const;
+    void read();
     bool take(const QJsonObject &overview);
     void answered();
     void fail(const QString &why);
 
     QNetworkAccessManager *m_network;
+    QString m_folder;
     QString m_league;
     CurrencyRates m_rates;
     QDateTime m_fetched;
