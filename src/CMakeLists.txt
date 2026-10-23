@@ -1,4 +1,5 @@
 add_subdirectory(core)
+add_subdirectory(services)
 
 qt_add_executable(path-of-upgrading
     main.cpp
