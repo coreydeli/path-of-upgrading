@@ -8,6 +8,23 @@ using namespace Qt::Literals::StringLiterals;
 namespace pou {
 namespace {
 
+// Gear score points from which an item is an upgrade, a small one or a
+// downgrade. A few points either way is noise.
+constexpr int upgradeAt = 6;
+constexpr int smallUpgradeAt = 3;
+constexpr int downgradeAt = -3;
+
+Verdict gearVerdict(int delta)
+{
+    if (delta >= upgradeAt)
+        return Verdict::Upgrade;
+    if (delta >= smallUpgradeAt)
+        return Verdict::Small;
+    if (delta <= downgradeAt)
+        return Verdict::Downgrade;
+    return Verdict::Same;
+}
+
 // what the build profiles call it
 QString profileLabel(Element e)
 {
@@ -53,6 +70,42 @@ GearScoreOptions gearScoreOptions(const Character &character, const QString &slo
             options.tweaks.insert(profileLabel(e), 2);
     }
     return options;
+}
+
+Evaluation evaluate(const Item &item, const Character &character, const PobPriorities &priorities,
+                    const QString &slot)
+{
+    const StatFilter ignore = [&character](const QString &key) {
+        return isIgnored(character.ignored, key);
+    };
+    Evaluation e;
+    e.comparison = compare(item, character.gear, character.weights, ignore, slot);
+    Comparison &r = e.comparison;
+    if (!r.ok)
+        return e;
+
+    const auto gearIn = [&](const Item &it, const QString &s) {
+        return gearScore(it, gearScoreOptions(character, s, priorities));
+    };
+    e.gear = gearIn(item, r.targetSlot);
+    const auto yours = character.gear.constFind(r.targetSlot);
+    if (!r.isEquipped && yours != character.gear.cend())
+        e.gearEquipped = gearIn(*yours, r.targetSlot);
+
+    // what you wear could be a unique, which leaves only your weights
+    if (e.gear && e.gear->isRated() && (!e.gearEquipped || e.gearEquipped->isRated())) {
+        e.mode = ScoreMode::GearScores;
+        r.newScore = e.gear->score;
+        if (r.isEquipped)
+            r.oldScore = r.newScore;
+        else
+            r.oldScore = e.gearEquipped ? e.gearEquipped->score : 0;
+        r.delta = r.newScore - r.oldScore;
+        r.percent.reset();
+        if (!r.isEquipped && e.gearEquipped)
+            r.verdict = gearVerdict(int(r.delta));
+    }
+    return e;
 }
 
 } // namespace pou

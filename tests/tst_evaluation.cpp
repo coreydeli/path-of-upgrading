@@ -19,6 +19,21 @@ Item amulet(const QString &mods)
     return item(u"Item Class: Amulets\nRarity: Rare\nDoom Charm\nGold Amulet\n--------\n"_s + mods);
 }
 
+Item lifeAmulet(int life)
+{
+    return amulet(u"+%1 to maximum Life"_s.arg(life));
+}
+
+const Item uniqueAmulet = item(
+    u"Item Class: Amulets\nRarity: Unique\nHollow Promise\nGold Amulet\n--------\n+10 to maximum Life"_s);
+
+Character wearing(const Equipped &gear)
+{
+    Character c;
+    c.gear = gear;
+    return c;
+}
+
 // Your resistances as you'd type them in, with the gear you wear now.
 ResistRecord resists(const Equipped &gear, std::optional<double> fire, std::optional<double> cold,
                      std::optional<double> lightning, std::optional<double> chaos)
@@ -95,6 +110,94 @@ private Q_SLOTS:
 
         c.tweaks = {{u"Chaos res"_s, 1}};
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks, (ProfileTweaks{{u"Chaos res"_s, 1}}));
+    }
+
+    void byGearScore_data()
+    {
+        QTest::addColumn<int>("yours");
+        QTest::addColumn<int>("life");
+        QTest::addColumn<Verdict>("verdict");
+
+        // an amulet with nothing but life scores about a point for every 4 of it
+        QTest::newRow("upgrade") << 40 << 64 << Verdict::Upgrade;
+        QTest::newRow("small upgrade") << 40 << 60 << Verdict::Small;
+        QTest::newRow("just a small one") << 40 << 52 << Verdict::Small;
+        QTest::newRow("too little to tell") << 40 << 48 << Verdict::Same;
+        QTest::newRow("too little either way") << 40 << 32 << Verdict::Same;
+        QTest::newRow("downgrade") << 40 << 28 << Verdict::Downgrade;
+    }
+
+    void byGearScore()
+    {
+        QFETCH(int, yours);
+        QFETCH(int, life);
+        QFETCH(Verdict, verdict);
+
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(yours)}});
+        const Evaluation e = evaluate(lifeAmulet(life), c);
+        QCOMPARE(e.mode, ScoreMode::GearScores);
+        QCOMPARE(e.comparison.verdict, verdict);
+        QCOMPARE(e.comparison.newScore, double(e.gear->score));
+        QCOMPARE(e.comparison.oldScore, double(e.gearEquipped->score));
+        QCOMPARE(e.comparison.delta, double(e.gear->score - e.gearEquipped->score));
+        QVERIFY(!e.comparison.percent);
+    }
+
+    void intoAnEmptySlot()
+    {
+        const Evaluation e = evaluate(lifeAmulet(60), {});
+        QCOMPARE(e.mode, ScoreMode::GearScores);
+        QCOMPARE(e.comparison.verdict, Verdict::New);
+        QCOMPARE(e.comparison.delta, double(e.gear->score));
+        QVERIFY(!e.gearEquipped);
+    }
+
+    void itemYouWear()
+    {
+        const Evaluation e = evaluate(lifeAmulet(60), wearing({{u"Amulet"_s, lifeAmulet(60)}}));
+        QCOMPARE(e.comparison.verdict, Verdict::Equipped);
+        QCOMPARE(e.comparison.delta, 0.0);
+        QVERIFY(!e.gearEquipped);
+    }
+
+    void byWeightsWhenYoursHasNoGearScore()
+    {
+        const Evaluation e = evaluate(lifeAmulet(60), wearing({{u"Amulet"_s, uniqueAmulet}}));
+        QCOMPARE(e.mode, ScoreMode::StatWeights);
+        QVERIFY(e.gear->isRated());
+        QCOMPARE(e.gearEquipped->unrated, GearScore::Unrated::Unique);
+        QCOMPARE(e.comparison.delta, 50.0);
+        QVERIFY(e.comparison.percent);
+        QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
+    }
+
+    void byWeightsForAUnique()
+    {
+        const Evaluation e = evaluate(uniqueAmulet, wearing({{u"Amulet"_s, lifeAmulet(60)}}));
+        QCOMPARE(e.mode, ScoreMode::StatWeights);
+        QCOMPARE(e.gear->unrated, GearScore::Unrated::Unique);
+        QCOMPARE(e.comparison.verdict, Verdict::Downgrade);
+    }
+
+    void byWeightsWithoutABuildProfile()
+    {
+        Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        c.buildProfile = u"none of them"_s;
+        const Evaluation e = evaluate(lifeAmulet(44), c);
+        QCOMPARE(e.mode, ScoreMode::StatWeights);
+        QVERIFY(!e.gear);
+        QVERIFY(!e.gearEquipped);
+        QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
+    }
+
+    void notGear()
+    {
+        const Evaluation e = evaluate(
+            item(
+                u"Item Class: Stackable Currency\nRarity: Currency\nDivine Orb\n--------\nStack Size: 1/20"_s),
+            {});
+        QVERIFY(!e.comparison.ok);
+        QVERIFY(!e.gear);
     }
 };
 
