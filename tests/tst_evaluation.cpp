@@ -347,6 +347,24 @@ private Q_SLOTS:
         QCOMPARE(e.change->targets, (QStringList{u"Weapon"_s, u"Offhand"_s}));
         QCOMPARE(e.change->totals.at(0).label, u"Life"_s);
         QCOMPARE(e.change->totals.at(0).delta, -80.0);
+
+        // in your second weapon set, that set's offhand
+        const Character sets = wearing({
+            {u"Weapon"_s, mace},
+            {u"Offhand"_s, shield},
+            {u"Weapon 2"_s, mace},
+            {u"Offhand 2"_s, shield},
+        });
+        QCOMPARE(evaluate(maul, sets, {}, u"Weapon 2"_s).change->targets,
+                 (QStringList{u"Weapon 2"_s, u"Offhand 2"_s}));
+
+        // with no offhand, or for a one-hander, only the weapon
+        QCOMPARE(evaluate(maul, wearing({{u"Weapon"_s, mace}})).change->targets, QStringList{u"Weapon"_s});
+        const Item club =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nGrim Knell\nTorment Club\n--------\n"
+                 "Physical Damage: 12-24\nAttacks per Second: 1.50\n--------\n+50 to maximum Life"_s);
+        QCOMPARE(evaluate(club, wearing({{u"Weapon"_s, mace}, {u"Offhand"_s, shield}})).change->targets,
+                 QStringList{u"Weapon"_s});
     }
 
     void losingSpiritIsARisk_data()

@@ -163,8 +163,8 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         return e;
 
     QStringList targets = {r.targetSlot};
-    if (item.twoHanded && r.targetSlot == u"Weapon" && character.gear.contains(u"Offhand"_s))
-        targets << u"Offhand"_s;
+    if (const QString offhand = otherHand(r.targetSlot); item.twoHanded && character.gear.contains(offhand))
+        targets << offhand;
     const std::optional<LiveResists> resists =
         character.resists ? liveResists(*character.resists, character.gear) : std::nullopt;
     const GearScoreFn slotScore = [&](const Item &it, const QString &s) -> std::optional<double> {
