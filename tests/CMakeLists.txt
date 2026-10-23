@@ -16,6 +16,11 @@ function(pou_add_platform_test name)
     target_link_libraries(${name} PRIVATE pou_platform)
 endfunction()
 
+function(pou_add_app_test name)
+    pou_add_test(${name} ${ARGN})
+    target_link_libraries(${name} PRIVATE pou_app)
+endfunction()
+
 pou_add_test(tst_slots)
 pou_add_test(tst_statnorm)
 pou_add_test(tst_numbers)
@@ -73,3 +78,5 @@ pou_add_platform_test(tst_xkeysender)
 pou_add_platform_test(tst_xmonitors)
 pou_add_platform_test(tst_xselectionwatcher)
 pou_add_platform_test(tst_xwindows)
+
+pou_add_app_test(tst_itemreader fakegameinput.h itemtexts.h)
