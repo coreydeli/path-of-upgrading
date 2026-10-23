@@ -205,4 +205,28 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
     return e;
 }
 
+Evaluation withPob(Evaluation evaluation, const PobJudgement &judgement)
+{
+    Comparison &r = evaluation.comparison;
+    if (!r.ok || r.isEquipped)
+        return evaluation;
+
+    const PobVerdict &v = judgement.verdict;
+    evaluation.mode = ScoreMode::PathOfBuilding;
+    r.verdict = v.verdict;
+    r.delta = v.score;
+    r.percent.reset();
+    evaluation.risks = v.breaks;
+    // it knows the whole build, so its verdict says which resistances it loses
+    evaluation.resistLosses.clear();
+    evaluation.resistRank = v.resistRank;
+    if (groupOf(r.targetSlot) == u"Jewel") {
+        const PobPlacement &p = judgement.placement;
+        r.replacing = {p.replacing.isEmpty() ? u"an empty jewel socket (%1)"_s.arg(p.label)
+                                             : u"%1 (%2)"_s.arg(p.replacing, p.label)};
+    }
+    evaluation.pob = judgement;
+    return evaluation;
+}
+
 } // namespace pou

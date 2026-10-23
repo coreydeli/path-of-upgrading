@@ -4,6 +4,7 @@
 #include "core/character.h"
 #include "core/characterstore.h"
 #include "core/gearscore.h"
+#include "core/pobeval.h"
 #include "core/pobverdict.h"
 #include "core/scorer.h"
 
@@ -29,7 +30,8 @@ enum class ScoreMode {
     StatWeights,
     GearScores,
     // The delta is how much better Path of Building says the build gets, in
-    // percent.
+    // percent. The item's scores are still those of its gear score or your
+    // weights.
     PathOfBuilding,
 };
 
@@ -55,6 +57,7 @@ struct Evaluation
     // For sorting by resistance, as in PobVerdict: 2 caps one you're short
     // of, 1 adds toward a cap, -1 loses some you need and 0 is the rest.
     int resistRank = 0;
+    std::optional<PobJudgement> pob;
 };
 
 // By gear score when the item and what you wear both have one, else by your
@@ -64,5 +67,11 @@ struct Evaluation
 // is Risky, and losing resistance you need is a ResistLoss.
 Evaluation evaluate(const Item &item, const Character &character, const PobPriorities &priorities = {},
                     const QString &slot = {});
+
+// Path of Building's judgement of the item, in place of the evaluation's
+// own: its verdict, its score as the delta and what it breaks as the risks.
+// A jewel goes in one of the build's sockets rather than your jewel slots.
+// An item you wear stays Equipped.
+Evaluation withPob(Evaluation evaluation, const PobJudgement &judgement);
 
 } // namespace pou

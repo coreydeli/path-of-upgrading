@@ -445,6 +445,75 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.verdict == Verdict::ResistLoss, risk);
     }
 
+    void pathOfBuildingsJudgement()
+    {
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        PobJudgement j;
+        j.placement = {.slot = u"Amulet"_s, .label = u"Amulet"_s, .replacing = u"Doom Charm, Gold Amulet"_s};
+        j.verdict.verdict = Verdict::Risky;
+        j.verdict.score = 4.2;
+        j.verdict.breaks = {u"Not enough Dexterity to use your gear (80 of 95)"_s};
+        j.verdict.resistRank = 1;
+
+        const Evaluation e = withPob(evaluate(lifeAmulet(64), c), j);
+        QCOMPARE(e.mode, ScoreMode::PathOfBuilding);
+        QCOMPARE(e.comparison.verdict, Verdict::Risky);
+        QCOMPARE(e.comparison.delta, 4.2);
+        QVERIFY(!e.comparison.percent);
+        QCOMPARE(e.risks, j.verdict.breaks);
+        QCOMPARE(e.resistRank, 1);
+        QCOMPARE(e.comparison.replacing, QStringList{u"Doom Charm"_s});
+        QCOMPARE(e.pob->placement.slot, u"Amulet"_s);
+        // still there to show
+        QVERIFY(e.gear);
+        QVERIFY(e.change);
+    }
+
+    void pathOfBuildingKnowsYourResistances()
+    {
+        const Equipped gear = {{u"Amulet"_s, amulet(u"+20 to maximum Life\n+20% to Fire Resistance"_s)}};
+        Character c = wearing(gear);
+        c.resists = resists(gear, 80, {}, {}, {});
+        const Evaluation ours = evaluate(lifeAmulet(64), c);
+        QCOMPARE(ours.comparison.verdict, Verdict::ResistLoss);
+
+        // its tree makes up for the amulet
+        PobJudgement j;
+        j.verdict.verdict = Verdict::Upgrade;
+        j.verdict.score = 6;
+        const Evaluation e = withPob(ours, j);
+        QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
+        QVERIFY(e.resistLosses.isEmpty());
+        QVERIFY(e.risks.isEmpty());
+        QCOMPARE(e.resistRank, 0);
+    }
+
+    void jewelSockets()
+    {
+        const Item jewel =
+            item(u"Item Class: Jewels\nRarity: Rare\nGrim Eye\nSapphire\n--------\n+20 to maximum Life"_s);
+        const Evaluation ours = evaluate(jewel, {});
+        QCOMPARE(ours.comparison.targetSlot, u"Jewel 1"_s);
+
+        PobJudgement j;
+        j.placement = {.slot = u"Jewel 61834"_s, .label = u"Socket #3"_s, .replacing = {}};
+        j.verdict.verdict = Verdict::Upgrade;
+        QCOMPARE(withPob(ours, j).comparison.replacing, QStringList{u"an empty jewel socket (Socket #3)"_s});
+        j.placement.replacing = u"Doom Eye, Ruby"_s;
+        QCOMPARE(withPob(ours, j).comparison.replacing, QStringList{u"Doom Eye, Ruby (Socket #3)"_s});
+    }
+
+    void pathOfBuildingOnAnItemYouWear()
+    {
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        PobJudgement j;
+        j.verdict.verdict = Verdict::Same;
+        const Evaluation e = withPob(evaluate(lifeAmulet(40), c), j);
+        QCOMPARE(e.comparison.verdict, Verdict::Equipped);
+        QCOMPARE(e.mode, ScoreMode::GearScores);
+        QVERIFY(!e.pob);
+    }
+
     void notGear()
     {
         const Evaluation e = evaluate(
