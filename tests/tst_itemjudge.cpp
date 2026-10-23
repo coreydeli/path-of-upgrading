@@ -27,6 +27,17 @@ Item item(const QString &text)
 const Item helmetNew = item(itemtexts::helmetNew);
 const Item helmetOld = item(itemtexts::helmetOld);
 
+Item ring(const QString &name, const QString &mods)
+{
+    return item(u"Item Class: Rings\nRarity: Rare\n"_s + name + u"\nGold Ring\n--------\n"_s + mods);
+}
+
+Item mace(const QString &name)
+{
+    return item(u"Item Class: Two Hand Maces\nRarity: Rare\n"_s + name +
+                u"\nForge Maul\n--------\nPhysical Damage: 50-80\nAttacks per Second: 1.10"_s);
+}
+
 Character wearing(const Equipped &gear)
 {
     Character c;
@@ -178,6 +189,56 @@ private Q_SLOTS:
         QTRY_VERIFY(p.engine.findChildren<PobReply *>().isEmpty());
     }
 
+    void whereItDoesBest()
+    {
+        const Item strong = ring(u"Grim Band"_s, u"+80 to maximum Life"_s);
+        const Item weak = ring(u"Doom Band"_s, u"+10 to maximum Life"_s);
+        const Item storm = item(itemtexts::advancedRing);
+        const Character c = wearing({{u"Ring 1"_s, strong}, {u"Ring 2"_s, weak}});
+        QCOMPARE(evaluate(storm, c).comparison.targetSlot, u"Ring 2"_s);
+
+        // where Path of Building says it does best
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(asItIs, {{u"Ring 1"_s, u"Grim Band, Gold Ring"_s, tougher},
+                                             {u"Ring 2"_s, u"Doom Band, Gold Ring"_s, asItIs}})));
+        p.judge.setCharacter(c);
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(storm);
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().evaluation.comparison.targetSlot, u"Ring 1"_s);
+        QCOMPARE(p.judge.current().evaluation.comparison.replacing, QStringList{u"Grim Band"_s});
+    }
+
+    void weaponSwap()
+    {
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(asItIs, {{u"Weapon 1"_s, u"Doom Knell, Forge Maul"_s, tougher}})));
+        PobBuild swapped;
+        swapped.swapInUse = true;
+        p.judge.setBuild(swapped);
+        p.judge.setCharacter(
+            wearing({{u"Weapon"_s, mace(u"Grim Knell"_s)}, {u"Weapon 2"_s, mace(u"Doom Knell"_s)}}));
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(item(itemtexts::twoHandMace));
+        QVERIFY(checked.wait());
+        // its first weapon set is your second
+        QCOMPARE(p.judge.current().evaluation.comparison.targetSlot, u"Weapon 2"_s);
+        QCOMPARE(p.judge.current().evaluation.comparison.replacing, QStringList{u"Doom Knell"_s});
+    }
+
+    void jewelSockets()
+    {
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(asItIs, {{u"Jewel 61834"_s, {}, tougher}})));
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(
+            item(u"Item Class: Jewels\nRarity: Rare\nGrim Eye\nSapphire\n--------\n+20 to maximum Life"_s));
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().pob, Pob::Checked);
+        QCOMPARE(p.judge.current().evaluation.comparison.replacing,
+                 QStringList{u"an empty jewel socket (Jewel 61834)"_s});
+    }
+
     void yourPrioritiesForPathOfBuilding()
     {
         // short of Strength with the item, which you can say doesn't matter
@@ -194,6 +255,28 @@ private Q_SLOTS:
         p.judge.check(helmetNew);
         QVERIFY(checked.wait());
         QCOMPARE(p.judge.current().evaluation.comparison.verdict, Verdict::Upgrade);
+    }
+
+    void yourPrioritiesForTheGearScore()
+    {
+        // short of the fire resistance cap, which counts for more when
+        // resistances come first
+        Character c = wearing({{u"Helmet"_s, helmetOld}});
+        ResistEntry entry;
+        entry.values[Element::Fire] = 50;
+        c.resists = snapshotResists(entry, c.gear, ResistSource::Manual);
+        const PobPriorities later{.resistsFirst = false};
+        const auto score = evaluate(helmetNew, c, later).gear->score;
+        QVERIFY(score != evaluate(helmetNew, c).gear->score);
+
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(asItIs, {{u"Helmet"_s, {}, tougher}})));
+        p.judge.setCharacter(c);
+        p.judge.setPriorities(later);
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(helmetNew);
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().evaluation.gear->score, score);
     }
 
     void cantTryItOn()

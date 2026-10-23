@@ -73,7 +73,10 @@ void ItemJudge::answered()
         fail(tried.error.isEmpty() ? u"Path of Building didn't say how the item does."_s : tried.error);
         return;
     }
-    m_check.evaluation = withPob(m_check.evaluation, *best);
+    // compared with what you wear where it does best, which isn't always
+    // where the gear score would put it
+    const QString slot = gearSlot(best->placement.slot, m_build && m_build->swapInUse);
+    m_check.evaluation = withPob(evaluate(m_check.item, m_character, m_priorities, slot), *best);
     m_check.pob = ItemCheck::Pob::Checked;
     Q_EMIT checked(m_check);
 }
