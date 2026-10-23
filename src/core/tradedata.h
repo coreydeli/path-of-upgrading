@@ -68,6 +68,9 @@ class TradeCategories
 public:
     static TradeCategories fromJson(const QJsonObject &response);
 
+    // Whether there are none from the site, only the ones built in.
+    bool isEmpty() const { return m_byName.isEmpty(); }
+
     // "armour.helmet" for "Helmets". Falls back to ids built in for when the
     // filters couldn't be fetched, and is empty for classes without one.
     QString categoryFor(const QString &itemClass) const;
