@@ -1,6 +1,8 @@
 add_library(pou_services STATIC
+    logging.cpp logging.h
     network.cpp network.h
     tradeclient.cpp tradeclient.h
+    tradedatastore.cpp tradedatastore.h
 )
 
 target_compile_definitions(pou_services PRIVATE
