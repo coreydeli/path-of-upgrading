@@ -20,6 +20,7 @@ QByteArray manifest(const QByteArray &repository)
            repository + "/{branch}/src/\"/></PoBVersion>";
 }
 
+const QByteArray poe2Manifest = manifest("PathOfBuilding-PoE2");
 const QByteArray poe1Manifest = manifest("PathOfBuilding");
 
 const QStringList flatpakArguments = {u"run"_s, u"--die-with-parent"_s, u"--unshare=network"_s,
@@ -231,6 +232,22 @@ private Q_SLOTS:
         // which can't be told without its manifest
         QVERIFY(QFile::remove(folder + u"/manifest.xml"_s));
         QVERIFY(findPob(computer.places, folder));
+    }
+
+    void repositoryCopy()
+    {
+        Computer computer;
+        const QString root = computer.dir.filePath(u"PathOfBuilding-PoE2"_s);
+        QVERIFY(writeFile(root + u"/manifest.xml"_s, poe2Manifest));
+        QVERIFY(addPob(root + u"/src"_s));
+        // picked at the top or at src
+        QCOMPARE(findPob(computer.places, root).value().folder, root + u"/src"_s);
+        QCOMPARE(findPob(computer.places, root + u"/src"_s).value().folder, root + u"/src"_s);
+
+        QVERIFY(writeFile(root + u"/manifest.xml"_s, poe1Manifest));
+        QString why;
+        QVERIFY(!findPob(computer.places, root, &why));
+        QCOMPARE(why, u"The Path of Building in %1 is for Path of Exile 1."_s.arg(root));
     }
 };
 

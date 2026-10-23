@@ -40,16 +40,23 @@ bool hasFlatpak(const PobPlaces &places)
 }
 
 // Path of Building for Path of Exile 1 has the same files, but its manifest
-// updates it from that game's repository.
+// updates it from that game's repository. The manifest is next to the files,
+// or a folder up in a copy of the repository.
 bool isForPoe1(const QString &folder)
 {
-    const std::optional<QByteArray> manifest = readFile(folder + u"/manifest.xml"_s);
-    return manifest && !manifest->contains("PathOfBuilding-PoE2");
+    const QString manifests[] = {folder + u"/manifest.xml"_s, folder + u"/../manifest.xml"_s};
+    for (const QString &manifest : manifests) {
+        if (const std::optional<QByteArray> text = readFile(manifest))
+            return !text->contains("PathOfBuilding-PoE2");
+    }
+    return false;
 }
 
 std::optional<PobInstall> pobIn(const PobPlaces &places, const QString &location, QString *why)
 {
-    const QString folder = QDir::cleanPath(location);
+    QString folder = QDir::cleanPath(location);
+    if (!hasPob(folder))
+        folder += u"/src"_s; // a copy of its repository
     if (!hasPob(folder)) {
         setWhy(why, u"There's no Path of Building in %1."_s.arg(location));
         return std::nullopt;
