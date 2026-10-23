@@ -3,6 +3,7 @@ qt_add_library(pou_app STATIC
     itemjudge.cpp itemjudge.h
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
+    popuphider.cpp popuphider.h
 )
 
 qt_add_qml_module(pou_app
