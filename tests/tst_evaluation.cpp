@@ -213,8 +213,8 @@ private Q_SLOTS:
         QCOMPARE(e.gear->score, 20);
         QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
         // against the ring it replaces
-        QCOMPARE(e.comparison.rows.at(0).key, u"#% increased Rarity of Items found"_s);
-        QCOMPARE(e.comparison.rows.at(0).oldValue, 20.0);
+        QCOMPARE(e.comparison.rows.at(0).key, u"# to maximum Life"_s);
+        QCOMPARE(e.comparison.rows.at(0).oldValue, 10.0);
     }
 
     void uniqueRingIsntTheWeakest()
@@ -261,6 +261,34 @@ private Q_SLOTS:
         const Evaluation e = evaluate(c.gear.value(u"Ring 2"_s), c);
         QCOMPARE(e.comparison.verdict, Verdict::Equipped);
         QCOMPARE(e.comparison.targetSlot, u"Ring 2"_s);
+    }
+
+    void rowsByWhatTheyreWorth()
+    {
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(20)}});
+        const Item better =
+            amulet(u"+40 to maximum Life\n+50 to maximum Mana\n30% increased Rarity of Items found"_s);
+
+        // to the build, where mana is worth nothing
+        const Evaluation e = evaluate(better, c);
+        QCOMPARE(e.mode, ScoreMode::GearScores);
+        const QList<StatRow> &rows = e.comparison.rows;
+        QCOMPARE(rows.size(), 3);
+        QCOMPARE(rows.at(0).key, u"#% increased Rarity of Items found"_s);
+        QCOMPARE(rows.at(0).usefulness, 0.05);
+        QCOMPARE(rows.at(1).key, u"# to maximum Life"_s);
+        QCOMPARE(rows.at(1).usefulness, 0.07);
+        QCOMPARE(rows.at(2).key, u"# to maximum Mana"_s);
+        QCOMPARE(rows.at(2).usefulness, 0.0);
+
+        // by your weights, which don't have rarity
+        Character noProfile = c;
+        noProfile.buildProfile = u"none of them"_s;
+        const QList<StatRow> byWeight = evaluate(better, noProfile).comparison.rows;
+        QCOMPARE(byWeight.at(0).key, u"# to maximum Life"_s);
+        QCOMPARE(byWeight.at(1).key, u"# to maximum Mana"_s);
+        QCOMPARE(byWeight.at(1).usefulness, byWeight.at(1).weight);
+        QCOMPARE(byWeight.at(2).key, u"#% increased Rarity of Items found"_s);
     }
 
     void whatEquippingChanges()

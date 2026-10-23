@@ -68,6 +68,8 @@ private Q_SLOTS:
                                      defaultWeights());
         for (qsizetype i = 1; i < r.rows.size(); ++i)
             QVERIFY(std::abs(r.rows.at(i - 1).impact) >= std::abs(r.rows.at(i).impact));
+        for (const StatRow &row : r.rows)
+            QCOMPARE(row.usefulness, row.weight);
         // stats only the old item had are listed too
         QCOMPARE(rowFor(r, u"#% to Lightning Resistance").oldValue, 18.0);
     }

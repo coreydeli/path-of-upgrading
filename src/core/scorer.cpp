@@ -91,15 +91,22 @@ QList<StatRow> diffStats(const StatMap &newStats, const StatMap &oldStats, const
         if (diff == 0)
             continue;
         const double weight = weights.value(key);
-        rows << StatRow{key, newValue, oldValue, diff, weight, diff * weight};
+        rows << StatRow{key, newValue, oldValue, diff, weight, diff * weight, weight};
     }
-    // unweighted stats sort by size after the weighted ones
+    sortRows(rows);
+    return rows;
+}
+
+void sortRows(QList<StatRow> &rows)
+{
+    // those worth nothing sort by size after the rest
     std::stable_sort(rows.begin(), rows.end(), [](const StatRow &a, const StatRow &b) {
-        if (std::abs(a.impact) != std::abs(b.impact))
-            return std::abs(a.impact) > std::abs(b.impact);
+        const double worthA = std::abs(a.diff * a.usefulness);
+        const double worthB = std::abs(b.diff * b.usefulness);
+        if (worthA != worthB)
+            return worthA > worthB;
         return std::abs(a.diff) > std::abs(b.diff);
     });
-    return rows;
 }
 
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &allWeights,

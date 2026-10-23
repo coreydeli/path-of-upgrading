@@ -26,6 +26,9 @@ struct StatRow
     double diff = 0; // rounded to two decimals
     double weight = 0;
     double impact = 0; // diff * weight
+    // What a unit of it is worth: your weight for it, or to your build
+    // profile when an evaluation judges by gear score.
+    double usefulness = 0;
 };
 
 struct Comparison
@@ -53,6 +56,9 @@ inline double score(const Item &item, const Weights &weights)
 // The stats that change, biggest weighted impact first.
 QList<StatRow> diffStats(const StatMap &newStats, const StatMap &oldStats, const Weights &weights,
                          const StatFilter &ignore = {});
+
+// Sorts rows by what their change is worth, diff * usefulness, biggest first.
+void sortRows(QList<StatRow> &rows);
 
 // Compares an item with what's saved in its slot. Rings, charms and jewels go
 // into an empty slot if there is one, else replace your weakest; two-handed

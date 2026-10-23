@@ -153,6 +153,11 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         r.percent.reset();
         if (!r.isEquipped && e.gearEquipped)
             r.verdict = gearVerdict(int(r.delta));
+
+        const GearScoreOptions options = gearScoreOptions(character, r.targetSlot, priorities);
+        for (StatRow &row : r.rows)
+            row.usefulness = usefulness(item.slot, row.key, options);
+        sortRows(r.rows);
     }
     if (r.isEquipped)
         return e;
