@@ -405,6 +405,27 @@ private Q_SLOTS:
         QVERIFY(network.sent.isEmpty());
     }
 
+    void saysHowLongItWaits()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+        // the client sends four in ten seconds until the site says how many
+        for (int i = 0; i < 4; ++i)
+            searcher.search(searchBody());
+        TradeSearch *search = searcher.search(searchBody());
+        TradeFetch *fetch = searcher.fetch(listingIds(50), u"Ab3dE9"_s);
+
+        QSignalSpy searchWaiting(search, &TradeSearch::waiting);
+        QSignalSpy fetchWaiting(fetch, &TradeFetch::waiting);
+        QTRY_VERIFY(!searchWaiting.isEmpty());
+        QCOMPARE_GT(searchWaiting.first().first().value<std::chrono::milliseconds>(), 9s);
+        // after its first four tens
+        QTRY_VERIFY(!fetchWaiting.isEmpty());
+        QCOMPARE_GT(fetchWaiting.first().first().value<std::chrono::milliseconds>(), 9s);
+        QCOMPARE(network.sent.size(), 8);
+    }
+
     void callingOff()
     {
         FakeNetwork network;

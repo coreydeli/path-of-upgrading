@@ -90,6 +90,7 @@ void TradeFetch::next()
         return;
     }
     m_reply = m_client->fetch(ids, m_searchId);
+    connect(m_reply, &TradeReply::waiting, this, &TradeFetch::waiting);
     connect(m_reply, &TradeReply::finished, this, &TradeFetch::answered);
 }
 
@@ -174,6 +175,7 @@ void TradeSearcher::send(TradeSearch *search, const QJsonObject &body)
     qCDebug(lcTrade, "Searching %s: %s", qUtf8Printable(search->m_league),
             QJsonDocument(search->m_body).toJson(QJsonDocument::Compact).constData());
     search->m_reply = m_client->search(search->m_league, search->m_body);
+    connect(search->m_reply, &TradeReply::waiting, search, &TradeSearch::waiting);
     connect(search->m_reply, &TradeReply::finished, search, [this, search] { answered(search); });
 }
 

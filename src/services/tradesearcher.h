@@ -60,6 +60,8 @@ public:
 Q_SIGNALS:
     // Always from the event loop.
     void finished();
+    // While it waits its turn, as TradeReply::waiting().
+    void waiting(std::chrono::milliseconds wait);
 
 private:
     friend class TradeSearcher;
@@ -104,6 +106,8 @@ public:
 Q_SIGNALS:
     // Always from the event loop.
     void finished();
+    // While it waits its turn, as TradeReply::waiting().
+    void waiting(std::chrono::milliseconds wait);
 
 private:
     friend class TradeSearcher;
