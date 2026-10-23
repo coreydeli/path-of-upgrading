@@ -48,10 +48,8 @@ void TradeDataStore::refresh(bool force)
     for (Source &source : m_sources) {
         if (!m_read) {
             const QString file = path(source);
-            if (const std::optional<QJsonObject> json = readJsonFile(file)) {
-                take(source, *json);
+            if (const std::optional<QJsonObject> json = readJsonFile(file); json && take(source, *json))
                 source.fetched = QFileInfo(file).lastModified().toUTC();
-            }
         }
         if (!force && fresh(source.fetched, now))
             continue;
@@ -74,14 +72,27 @@ QString TradeDataStore::path(const Source &source) const
     return m_folder + u'/' + source.name + u".json"_s;
 }
 
-void TradeDataStore::take(const Source &source, const QJsonObject &answer)
+// Reads in what the site said, unless it's empty, which would leave
+// searches with less than the file had.
+bool TradeDataStore::take(const Source &source, const QJsonObject &answer)
 {
-    if (source.name == u"stats")
-        m_data.stats = StatIndex::fromJson(answer);
-    else if (source.name == u"filters")
-        m_data.categories = TradeCategories::fromJson(answer);
-    else
-        m_leagues = tradeLeaguesFromJson(answer);
+    if (source.name == u"stats") {
+        StatIndex stats = StatIndex::fromJson(answer);
+        if (stats.isEmpty())
+            return false;
+        m_data.stats = std::move(stats);
+    } else if (source.name == u"filters") {
+        TradeCategories categories = TradeCategories::fromJson(answer);
+        if (categories.isEmpty())
+            return false;
+        m_data.categories = std::move(categories);
+    } else {
+        QStringList leagues = tradeLeaguesFromJson(answer);
+        if (leagues.isEmpty())
+            return false;
+        m_leagues = std::move(leagues);
+    }
+    return true;
 }
 
 void TradeDataStore::answered(Source &source)
@@ -93,8 +104,9 @@ void TradeDataStore::answered(Source &source)
     if (reply->error() != TradeReply::Error::None) {
         qCWarning(lcTrade, "Couldn't get the trade site's %s: %s", qUtf8Printable(source.name),
                   qUtf8Printable(reply->errorString()));
+    } else if (!take(source, reply->answer())) {
+        qCWarning(lcTrade, "The trade site's %s came back empty", qUtf8Printable(source.name));
     } else {
-        take(source, reply->answer());
         source.fetched = QDateTime::currentDateTimeUtc();
         const QString file = path(source);
         QString error;

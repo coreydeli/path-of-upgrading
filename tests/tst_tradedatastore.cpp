@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QLoggingCategory>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -87,6 +88,12 @@ class TestTradeDataStore : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        // what it says when the site lets it down, which the tests make it do
+        QLoggingCategory::setFilterRules(u"pathofupgrading.trade.warning=false"_s);
+    }
+
     void asksForWhatsMissing()
     {
         QTemporaryDir dir;
@@ -135,6 +142,29 @@ private Q_SLOTS:
         QCOMPARE(store.leagues(), QStringList{u"Runes of Aldur"_s});
     }
 
+    void readsPastBadFiles_data()
+    {
+        QTest::addColumn<QByteArray>("file");
+        QTest::newRow("not JSON") << QByteArray("{\"result\": [");
+        QTest::newRow("no stats") << QByteArray("{}");
+    }
+
+    void readsPastBadFiles()
+    {
+        QFETCH(QByteArray, file);
+        QTemporaryDir dir;
+        QVERIFY(keepAll(dir.path(), 1h));
+        QVERIFY(writeFile(dir.filePath(u"stats.json"_s), file));
+        FakeNetwork network;
+        network.answers = {{.body = json(tradefixtures::stats())}};
+        TradeClient client(&network);
+        TradeDataStore store(&client, dir.path());
+
+        QVERIFY(refreshes(store));
+        QCOMPARE(urls(network), QList<QUrl>{tradeDataUrl(u"stats"_s)});
+        QCOMPARE(store.data().stats.all().size(), 7);
+    }
+
     void asksAgain_data()
     {
         QTest::addColumn<std::chrono::hours>("age");
@@ -166,6 +196,32 @@ private Q_SLOTS:
         // and not again today
         QVERIFY(refreshes(store));
         QCOMPARE(network.sent.size(), 3);
+    }
+
+    void keepsWhatItHas_data()
+    {
+        QTest::addColumn<FakeAnswer>("answer");
+        QTest::newRow("unreachable") << FakeAnswer{.error = QNetworkReply::HostNotFoundError};
+        QTest::newRow("turned down") << FakeAnswer{.status = 503, .body = "<html>"};
+        QTest::newRow("empty") << FakeAnswer{.body = json({{u"result"_s, QJsonArray()}})};
+    }
+
+    void keepsWhatItHas()
+    {
+        QFETCH(FakeAnswer, answer);
+        QTemporaryDir dir;
+        QVERIFY(keepAll(dir.path(), 48h, u"Runes of Aldur"_s));
+        FakeNetwork network;
+        network.answers = {answer, answer, answer};
+        TradeClient client(&network);
+        TradeDataStore store(&client, dir.path());
+
+        QVERIFY(refreshes(store));
+        QCOMPARE(network.sent.size(), 3);
+        QCOMPARE(store.data().stats.all().size(), 7);
+        QVERIFY(!store.data().categories.isEmpty());
+        QCOMPARE(store.leagues(), QStringList{u"Runes of Aldur"_s});
+        QCOMPARE(readJsonFile(dir.filePath(u"stats.json"_s)).value_or(QJsonObject()), tradefixtures::stats());
     }
 
     void oneRefreshAtATime()

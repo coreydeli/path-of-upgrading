@@ -54,7 +54,7 @@ private:
     };
 
     QString path(const Source &source) const;
-    void take(const Source &source, const QJsonObject &answer);
+    bool take(const Source &source, const QJsonObject &answer);
     void answered(Source &source);
 
     TradeClient *m_client;
