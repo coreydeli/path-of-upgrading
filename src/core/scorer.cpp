@@ -137,10 +137,12 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
     Comparison r;
     if (slot.isEmpty() && worn != slotNames.cend()) {
         r = compareWith(item, {itemIn(equipped, *worn)}, weights, *worn, ignore);
-    } else if (item.slot == u"Weapon" && item.twoHanded && (slot.isEmpty() || slot == u"Weapon")) {
-        r = compareWith(item, {itemIn(equipped, u"Weapon"_s), itemIn(equipped, u"Offhand"_s)}, weights,
-                        u"Weapon"_s, ignore);
-        if (equipped.contains(u"Offhand"_s))
+    } else if (item.slot == u"Weapon" && item.twoHanded && (slot.isEmpty() || groupOf(slot) == u"Weapon")) {
+        const QString weaponSlot = slot.isEmpty() ? u"Weapon"_s : slot;
+        const QString offhandSlot = otherHand(weaponSlot);
+        r = compareWith(item, {itemIn(equipped, weaponSlot), itemIn(equipped, offhandSlot)}, weights,
+                        weaponSlot, ignore);
+        if (equipped.contains(offhandSlot))
             notes << u"Two-handed, so it's compared against your weapon and offhand together."_s;
     } else if (!slot.isEmpty()) {
         r = compareWith(item, {itemIn(equipped, slot)}, weights, slot, ignore);

@@ -143,6 +143,15 @@ private Q_SLOTS:
             compare(item(itemtexts::twoHandMace), {{u"Weapon"_s, oneHand}, {u"Offhand"_s, shield}},
                     defaultWeights(), {}, u"Weapon"_s);
         QCOMPARE(named.replacing, QStringList({u"A"_s, u"S"_s}));
+
+        // in your second weapon set, it's that set's offhand
+        const Item focus = item(u"Item Class: Foci\nRarity: Rare\nF\nG\n--------\n+20 to maximum Life"_s);
+        const Comparison swap =
+            compare(item(itemtexts::twoHandMace),
+                    {{u"Offhand"_s, shield}, {u"Weapon 2"_s, oneHand}, {u"Offhand 2"_s, focus}},
+                    defaultWeights(), {}, u"Weapon 2"_s);
+        QCOMPARE(swap.targetSlot, u"Weapon 2"_s);
+        QCOMPARE(swap.replacing, QStringList({u"A"_s, u"F"_s}));
     }
 
     void weaponInTheOffhand()
