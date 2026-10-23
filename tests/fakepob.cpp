@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 //
 // Stands in for LuaJIT running pobbridge.lua in Path of Building's folder, for
-// testing the engine. It answers as the bridge does without working anything
-// out: an eval's answer has the items it was sent, the build and gear it has
-// and the commands it has had. A build that isn't for Path of Exile 2 doesn't
-// load. In the folder, it counts how many times it's run in a file called
-// runs, and how many times it has stopped once stdin was closed in one called
-// stops.
+// testing the engine and what uses it. It answers as the bridge does without
+// working anything out: an eval's answer has the items it was sent, the build
+// and gear it has and the commands it has had, plus what's in a file called
+// eval.json in the folder, where a test can write what the bridge would have
+// worked out. A build that isn't for Path of Exile 2 doesn't load. In the
+// folder, it counts how many times it's run in a file called runs, and how
+// many times it has stopped once stdin was closed in one called stops.
 //
 // Its own arguments come before LuaJIT's, for going wrong:
 //   --fail           it says it couldn't start
@@ -130,6 +131,11 @@ int main(int argc, char *argv[])
             r.insert(u"xml"_s, xml);
             r.insert(u"wearing"_s, wearing);
             r.insert(u"seen"_s, seen);
+            if (QFile judged(u"eval.json"_s); judged.open(QIODevice::ReadOnly)) {
+                const QJsonObject eval = QJsonDocument::fromJson(judged.readAll()).object();
+                for (auto it = eval.constBegin(); it != eval.constEnd(); ++it)
+                    r.insert(it.key(), it.value());
+            }
         }
         answer(r);
     }

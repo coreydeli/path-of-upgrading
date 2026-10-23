@@ -4,6 +4,8 @@
 #include "core/pobinstall.h"
 
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTemporaryDir>
 
 using namespace Qt::Literals::StringLiterals;
@@ -22,6 +24,14 @@ struct FakePob
     int runs() const { return count(u"runs"_s); }
     // and has stopped on its own
     int stops() const { return count(u"stops"_s); }
+
+    // What its answers to evals have from now on, the way the bridge would
+    // work them out, see eval in pobbridge.lua.
+    bool answers(const QJsonObject &eval) const
+    {
+        QFile file(folder.filePath(u"eval.json"_s));
+        return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(eval).toJson()) > 0;
+    }
 
     int count(const QString &name) const
     {
