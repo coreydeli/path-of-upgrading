@@ -6,7 +6,13 @@
 // and the commands it has had. A build that isn't for Path of Exile 2 doesn't
 // load. It counts how many times it's run in a file called runs in the
 // folder.
+//
+// Its own arguments come before LuaJIT's, for going wrong:
+//   --fail   it says it couldn't start
+//   --crash  it stops before it has started
+//   --once   only the first time it's run
 
+#include <QByteArrayList>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -35,14 +41,16 @@ void answer(const QJsonObject &answer)
     out.flush();
 }
 
-void countRun()
+// Returns how many times it has been run, with this one.
+int countRun()
 {
     QFile file(u"runs"_s);
-    const int runs = file.open(QIODevice::ReadOnly) ? file.readAll().toInt() : 0;
+    const int runs = (file.open(QIODevice::ReadOnly) ? file.readAll().toInt() : 0) + 1;
     file.close();
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
         quit("it can't count its runs");
-    file.write(QByteArray::number(runs + 1));
+    file.write(QByteArray::number(runs));
+    return runs;
 }
 
 } // namespace
@@ -52,6 +60,7 @@ int main(int argc, char *argv[])
     // LuaJIT's arguments come last: -e and the code that reads the bridge
     if (argc < 3 || std::strcmp(argv[argc - 2], "-e") != 0)
         quit("it wasn't given code to run");
+    const QByteArrayList flags(argv + 1, argv + argc - 2);
     if (!in.open(stdin, QIODevice::ReadOnly) || !out.open(stdout, QIODevice::WriteOnly))
         quit("it can't read or write");
     const qint64 length = in.readLine().trimmed().toLongLong();
@@ -59,8 +68,15 @@ int main(int argc, char *argv[])
     if (script.size() != length || !script.startsWith("-- SPDX-License-Identifier: MIT\n--\n"
                                                       "-- Path of Upgrading's bridge to Path of Building."))
         quit("it wasn't sent the bridge");
-    countRun();
+    const int runs = countRun();
+    const bool goWrong = !flags.contains("--once") || runs == 1;
     std::fprintf(stderr, "Uniques loaded\n");
+    if (goWrong && flags.contains("--crash"))
+        return 3;
+    if (goWrong && flags.contains("--fail")) {
+        answer({{u"ready"_s, false}, {u"error"_s, u"The fake didn't start."_s}});
+        return 1;
+    }
 
     answer({{u"ready"_s, true}, {u"version"_s, u"0.1.0"_s}});
     QString xml;

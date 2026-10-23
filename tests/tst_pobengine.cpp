@@ -3,12 +3,15 @@
 #include "services/pobengine.h"
 
 #include <QJsonArray>
+#include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <chrono>
 #include <memory>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 using namespace itemtexts;
 
@@ -21,7 +24,11 @@ struct FakePob
 {
     QTemporaryDir folder;
 
-    PobInstall install() const { return {.folder = folder.path(), .program = QStringLiteral(FAKEPOB)}; }
+    // with the fake's arguments for going wrong
+    PobInstall install(const QStringList &flags = {}) const
+    {
+        return {.folder = folder.path(), .program = QStringLiteral(FAKEPOB), .arguments = flags};
+    }
     // how many times it has been started
     int runs() const
     {
@@ -169,6 +176,87 @@ private Q_SLOTS:
         // it isn't started for nothing
         QCOMPARE(engine.state(), State::Stopped);
         QCOMPARE(pob.runs(), 0);
+    }
+
+    void startFails()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setTimeouts({.retry = 300ms});
+        engine.setInstall(pob.install({u"--fail"_s, u"--once"_s}));
+        engine.setBuild(build);
+        // with what it printed when that was read in time
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"^The fake didn't start\\."_s));
+
+        // what it was asked while it was starting
+        const std::unique_ptr<PobReply> first(engine.evaluate({{.text = helmetOld}}));
+        const std::unique_ptr<PobReply> second(engine.evaluate({{.text = advancedRing}}));
+        QVERIFY(finishes(first.get()));
+        QVERIFY(finishes(second.get()));
+        QCOMPARE(first->errorString(), u"The fake didn't start."_s);
+        QCOMPARE(second->errorString(), u"The fake didn't start."_s);
+        QCOMPARE(engine.state(), State::Failed);
+        QCOMPARE(engine.errorString(), u"The fake didn't start."_s);
+
+        // it isn't tried again straight away
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(reply->isFinished());
+        QCOMPARE(reply->errorString(), u"The fake didn't start."_s);
+        QCOMPARE(pob.runs(), 1);
+
+        // but is after a while
+        QTest::qWait(350);
+        reply.reset(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(engine.state(), State::Ready);
+        QCOMPARE(engine.errorString(), QString());
+        QCOMPARE(pob.runs(), 2);
+    }
+
+    void crashesStarting()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install({u"--crash"_s}));
+        engine.setBuild(build);
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Path of Building stopped while starting. It printed:\nUniques loaded");
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building stopped while starting."_s);
+        QCOMPARE(engine.state(), State::Failed);
+    }
+
+    void cantRun()
+    {
+        FakePob pob;
+        PobEngine engine;
+        // with no LuaJIT where it's meant to be
+        engine.setInstall({.folder = pob.folder.path(), .program = pob.folder.filePath(u"luajit"_s)});
+        engine.setBuild(build);
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"^Couldn't run Path of Building: "_s));
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QVERIFY2(reply->errorString().startsWith(u"Couldn't run Path of Building: "),
+                 qPrintable(reply->errorString()));
+        QCOMPARE(engine.state(), State::Failed);
+    }
+
+    void noProgram()
+    {
+        FakePob pob;
+        PobEngine engine;
+        // which fails as it's started, before evaluate() returns
+        engine.setInstall({.folder = pob.folder.path()});
+        engine.setBuild(build);
+        QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"^Couldn't run Path of Building: "_s));
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(reply->isFinished());
+        QVERIFY2(reply->errorString().startsWith(u"Couldn't run Path of Building: "),
+                 qPrintable(reply->errorString()));
+        QCOMPARE(engine.state(), State::Failed);
+        QVERIFY(finishes(reply.get()));
     }
 
     void inOrder()

@@ -3,11 +3,14 @@
 
 #include "core/pobinstall.h"
 
+#include <QByteArray>
+#include <QDeadlineTimer>
 #include <QJsonObject>
 #include <QList>
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <chrono>
 #include <optional>
 
 class QProcess;
@@ -58,7 +61,8 @@ private:
 
 // Path of Building for Path of Exile 2, run without its window to judge items
 // for a build by its own calculations. It starts the first time it's asked
-// something.
+// something. When it can't, what it's asked fails with why until it's tried
+// again a while later.
 class PobEngine : public QObject
 {
     Q_OBJECT
@@ -68,11 +72,22 @@ public:
         Stopped, // and starts when it's asked something
         Starting,
         Ready,
+        Failed, // couldn't start, see errorString()
     };
     Q_ENUM(State)
 
+    struct Timeouts
+    {
+        // after it couldn't start, until it's tried again
+        std::chrono::milliseconds retry = std::chrono::seconds(30);
+        // to stop on its own before it's killed
+        std::chrono::milliseconds quit = std::chrono::seconds(2);
+    };
+
     explicit PobEngine(QObject *parent = nullptr);
     ~PobEngine() override;
+
+    void setTimeouts(const Timeouts &timeouts);
 
     // The Path of Building to run, see findPob().
     void setInstall(const PobInstall &install);
@@ -85,6 +100,8 @@ public:
     PobReply *evaluate(const QList<PobItem> &items);
 
     State state() const { return m_state; }
+    // Why it couldn't start, when it's Failed.
+    QString errorString() const { return m_errorString; }
     // Path of Building's, once it has started.
     QString version() const { return m_version; }
 
@@ -104,15 +121,23 @@ private:
     void send(QJsonObject request, PobReply *reply = nullptr);
     void readAnswers();
     void answered(const QJsonObject &answer);
+    void failStart(const QString &why);
+    void failAll(const QString &why);
+    void retire();
+    void warn(const QString &why) const;
     void setState(State state);
 
     std::optional<PobInstall> m_install;
     QString m_xml;
     QList<PobItem> m_wearing;
+    Timeouts m_timeouts;
     State m_state = State::Stopped;
+    QString m_errorString;
+    QDeadlineTimer m_retry; // when it's Failed, until it's tried again
     QString m_version;
     QProcess *m_process = nullptr;
-    QList<Sent> m_sent; // in the order they were sent
+    QByteArray m_printed; // the end of what it has printed
+    QList<Sent> m_sent;   // in the order they were sent
     int m_lastId = 0;
 };
 
