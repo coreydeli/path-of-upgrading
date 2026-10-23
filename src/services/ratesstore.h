@@ -15,8 +15,9 @@ namespace pou {
 
 // What currencies are worth in a league, from poe.ninja, for pricing
 // listings in Exalted Orbs and turning a budget in Divine Orbs into them.
-// Each league's are kept in a file, and those do while poe.ninja can't be
-// reached.
+// Prices move through the day, so they're asked for again once they're an
+// hour old. Each league's are kept in a file, and the older ones do while
+// poe.ninja can't be reached.
 class RatesStore : public QObject
 {
     Q_OBJECT
@@ -39,9 +40,10 @@ public:
     // Why the last refresh didn't get new ones, or empty when it did.
     QString errorString() const { return m_errorString; }
 
-    // Asks poe.ninja for the rates for the league, by its trade site id
-    // (League::tradeId()).
-    void refresh(const QString &league);
+    // The rates for the league, by its trade site id (League::tradeId()):
+    // from its file the first time, then from poe.ninja once they're an hour
+    // old, or right away when forced.
+    void refresh(const QString &league, bool force = false);
     bool isRefreshing() const { return !m_reply.isNull(); }
 
 Q_SIGNALS:

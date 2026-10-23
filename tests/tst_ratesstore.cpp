@@ -65,10 +65,10 @@ int minutesOld(const RatesStore &store)
     return int(store.fetched().secsTo(QDateTime::currentDateTimeUtc()) / 60);
 }
 
-bool refreshes(RatesStore &store, const QString &league)
+bool refreshes(RatesStore &store, const QString &league, bool force = false)
 {
     QSignalSpy refreshed(&store, &RatesStore::refreshed);
-    store.refresh(league);
+    store.refresh(league, force);
     return refreshed.wait();
 }
 
@@ -108,6 +108,10 @@ private Q_SLOTS:
 
         // and keeps them
         QCOMPARE(readJsonFile(fileOf(folder, softcore)).value_or(QJsonObject()), overview(400));
+        RatesStore again(&network, folder);
+        QVERIFY(refreshes(again, softcore));
+        QCOMPARE(network.sent.size(), 1);
+        QCOMPARE(again.rates(), store.rates());
 
         // and lets go of the reply
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
@@ -126,6 +130,74 @@ private Q_SLOTS:
 
         QVERIFY(refreshes(store, softcore));
         QCOMPARE(store.rates().value(u"divine"_s), 539.7);
+    }
+
+    void readsTheFile()
+    {
+        QTemporaryDir dir;
+        QVERIFY(keep(fileOf(dir.path(), hardcore), overview(120, 5), 59min));
+        FakeNetwork network;
+        RatesStore store(&network, dir.path());
+
+        QSignalSpy refreshed(&store, &RatesStore::refreshed);
+        store.refresh(hardcore);
+        QCOMPARE(refreshed.size(), 0);
+        QVERIFY(refreshed.wait());
+        QVERIFY(network.sent.isEmpty());
+        QCOMPARE(store.divineRate(), 120.0);
+        QCOMPARE(store.rates().value(u"chaos"_s), 24.0);
+        QCOMPARE(minutesOld(store), 59);
+    }
+
+    void readsPastBadFiles_data()
+    {
+        QTest::addColumn<QByteArray>("file");
+        QTest::newRow("not JSON") << QByteArray(R"({"core": [)");
+        QTest::newRow("no Divine Orb price") << unknownLeague;
+    }
+
+    void readsPastBadFiles()
+    {
+        QFETCH(QByteArray, file);
+        QTemporaryDir dir;
+        QVERIFY(writeFile(fileOf(dir.path(), softcore), file));
+        FakeNetwork network;
+        network.answers = {{.body = json(overview(400))}};
+        RatesStore store(&network, dir.path());
+
+        QVERIFY(refreshes(store, softcore));
+        QCOMPARE(network.sent.size(), 1);
+        QCOMPARE(store.divineRate(), 400.0);
+    }
+
+    void asksAgain_data()
+    {
+        QTest::addColumn<std::chrono::minutes>("age");
+        QTest::addColumn<bool>("force");
+        QTest::newRow("an hour old") << 61min << false;
+        QTest::newRow("from the future") << -10min << false;
+        QTest::newRow("forced") << 10min << true;
+    }
+
+    void asksAgain()
+    {
+        QFETCH(std::chrono::minutes, age);
+        QFETCH(bool, force);
+        QTemporaryDir dir;
+        QVERIFY(keep(fileOf(dir.path(), softcore), overview(400), age));
+        FakeNetwork network;
+        network.answers = {{.body = json(overview(450))}};
+        RatesStore store(&network, dir.path());
+
+        QVERIFY(refreshes(store, softcore, force));
+        QCOMPARE(network.sent.size(), 1);
+        QCOMPARE(store.divineRate(), 450.0);
+        QCOMPARE(minutesOld(store), 0);
+        QCOMPARE(readJsonFile(fileOf(dir.path(), softcore)).value_or(QJsonObject()), overview(450));
+
+        // and not again for an hour
+        QVERIFY(refreshes(store, softcore));
+        QCOMPARE(network.sent.size(), 1);
     }
 
     void keepsWhatItHas_data()
@@ -190,7 +262,7 @@ private Q_SLOTS:
 
         store.refresh(softcore);
         QVERIFY(store.isRefreshing());
-        store.refresh(softcore);
+        store.refresh(softcore, true);
         QVERIFY(refreshed.wait());
         QCOMPARE(network.sent.size(), 1);
         QVERIFY(!store.isRefreshing());

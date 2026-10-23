@@ -10,11 +10,23 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QUrl>
+#include <chrono>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 
 namespace pou {
 namespace {
+
+constexpr std::chrono::seconds freshFor = 1h;
+
+// Whether that was less than the time ago. A time ahead of the clock counts
+// as long ago, or it would never be asked for again.
+bool within(const QDateTime &then, const QDateTime &now, std::chrono::seconds time)
+{
+    const qint64 ago = then.secsTo(now);
+    return then.isValid() && ago >= 0 && ago < time.count();
+}
 
 QString unreachable(const QNetworkReply &reply)
 {
@@ -43,7 +55,7 @@ double RatesStore::divineRate() const
     return m_rates.value(u"divine"_s);
 }
 
-void RatesStore::refresh(const QString &league)
+void RatesStore::refresh(const QString &league, bool force)
 {
     if (league != m_league) {
         // what's asked for another league is no use now
@@ -55,6 +67,10 @@ void RatesStore::refresh(const QString &league)
         read();
     } else if (isRefreshing()) {
         // that one's done when poe.ninja answers
+        return;
+    }
+    if (!force && within(m_fetched, QDateTime::currentDateTimeUtc(), freshFor)) {
+        QMetaObject::invokeMethod(this, &RatesStore::refreshed, Qt::QueuedConnection);
         return;
     }
     m_reply = m_network->get(apiRequest(ninjaCurrencyUrl(m_league)));
