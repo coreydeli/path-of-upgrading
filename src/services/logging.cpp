@@ -3,6 +3,7 @@
 
 namespace pou {
 
+Q_LOGGING_CATEGORY(lcNinja, "pathofupgrading.ninja", QtInfoMsg)
 Q_LOGGING_CATEGORY(lcTrade, "pathofupgrading.trade", QtInfoMsg)
 
 } // namespace pou

@@ -42,7 +42,7 @@ public:
                 for (const auto &[name, value] : answer.headers)
                     setRawHeader(name, value);
             } else {
-                setError(answer.error, QStringLiteral("Host www.pathofexile.com not found"));
+                setError(answer.error, QStringLiteral("Host %1 not found").arg(url().host()));
                 Q_EMIT errorOccurred(answer.error);
             }
             setFinished(true);
