@@ -1,15 +1,10 @@
 add_subdirectory(core)
 add_subdirectory(services)
 add_subdirectory(platform)
+add_subdirectory(app)
 
 qt_add_executable(path-of-upgrading
     main.cpp
-)
-
-qt_add_qml_module(path-of-upgrading
-    URI PathOfUpgrading
-    QML_FILES
-        qml/Main.qml
 )
 
 target_compile_definitions(path-of-upgrading PRIVATE
@@ -18,10 +13,8 @@ target_compile_definitions(path-of-upgrading PRIVATE
 )
 
 target_link_libraries(path-of-upgrading PRIVATE
-    pou_core
+    pou_appplugin
     Qt6::Widgets
-    Qt6::Qml
-    Qt6::Quick
     Qt6::QuickControls2
 )
 

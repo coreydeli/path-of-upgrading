@@ -5,7 +5,10 @@
 #include <QFileInfo>
 #include <QLibraryInfo>
 #include <QQmlApplicationEngine>
+#include <QQmlExtensionPlugin>
 #include <QQuickStyle>
+
+Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
 using namespace Qt::Literals::StringLiterals;
 

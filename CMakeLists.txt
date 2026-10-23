@@ -42,6 +42,8 @@ add_compile_definitions(
 # has Qt 6.8
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Widgets Qml Quick QuickControls2)
 qt_standard_project_setup(REQUIRES 6.8)
+# all the QML modules in one folder, which is where qmllint looks for them
+set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml)
 
 option(BUILD_TESTING "Build the unit tests" ON)
 
