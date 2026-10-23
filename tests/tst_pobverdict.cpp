@@ -154,6 +154,7 @@ private Q_SLOTS:
         QCOMPARE(v.resistGain, -37);
         QVERIFY(v.score < 0); // losing 37 points outweighs 10% more damage
         QCOMPARE(v.breaks, QStringList{u"Lightning res drops below the cap (38% of 75%)"_s});
+        QCOMPARE(v.losses, v.breaks);
 
         QCOMPARE(v.resists.size(), 1);
         const PobResistChange &r = v.resists.first();
@@ -310,6 +311,7 @@ private Q_SLOTS:
             judgeWithPob(geared, with(geared, {{u"MinionDPS"_s, 120000}, {u"SpiritUnreserved"_s, -10}}));
         QCOMPARE(spirit.breaks, QStringList{u"Not enough Spirit for your minions and auras (10 short)"_s});
         QCOMPARE(spirit.verdict, Verdict::Risky);
+        QVERIFY(spirit.losses.isEmpty());
 
         const PobVerdict strength =
             judgeWithPob(geared, with(geared, {{u"MinionDPS"_s, 120000}, {u"Str"_s, 60}}));
@@ -350,6 +352,7 @@ private Q_SLOTS:
         QVERIFY(v.losesDamage);
         QCOMPARE(v.resistRank, -1);
         QCOMPARE(v.breaks, QStringList{u"Minion damage drops 10%"_s});
+        QCOMPARE(v.losses, v.breaks);
 
         const PobVerdict own = judgeWithPob({{u"FullDPS"_s, 2000}}, {{u"FullDPS"_s, 1500}});
         QCOMPARE(own.breaks, QStringList{u"Damage drops 25%"_s});
@@ -385,6 +388,16 @@ private Q_SLOTS:
         QCOMPARE(v.verdict, Verdict::ResistLoss);
         QVERIFY(v.losesDamage);
         QCOMPARE(v.breaks.size(), 2);
+        QCOMPARE(v.losses, v.breaks);
+    }
+
+    void lossesFirst()
+    {
+        const PobStats after = with(shortOfLightning, {{u"Str"_s, 60}, {u"ReqStr"_s, 75}});
+        const PobVerdict v = judgeWithPob(geared, after);
+        QCOMPARE(v.breaks, (QStringList{u"Lightning res drops below the cap (38% of 75%)"_s,
+                                        u"Not enough Strength to use your gear (60 of 75)"_s}));
+        QCOMPARE(v.losses, QStringList{v.breaks.first()});
     }
 
     void otherNumbers()

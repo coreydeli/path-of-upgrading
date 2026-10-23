@@ -109,11 +109,11 @@ double judgeResists(const PobStats &before, const PobStats &after, const PobVerd
             gain += std::min(r.to, r.max) - std::min(r.from, maxFrom);
         if (r.wasCapped && !r.capped && drops) {
             r.lost = true;
-            v.breaks << u"%1 res drops below the cap (%2% of %3%)"_s.arg(elementName(e), whole(r.to),
+            v.losses << u"%1 res drops below the cap (%2% of %3%)"_s.arg(elementName(e), whole(r.to),
                                                                          whole(r.max));
         } else if (!r.wasCapped && drops && counts) {
             r.lost = true;
-            v.breaks << u"%1 res goes further under the cap (from %2% to %3%)"_s.arg(
+            v.losses << u"%1 res goes further under the cap (from %2% to %3%)"_s.arg(
                 elementName(e), whole(r.from), whole(r.to));
         }
         r.reachesCap = !r.wasCapped && r.capped && counts;
@@ -191,10 +191,11 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
 
     v.losesDamage = priorities.keepDamage && v.damage.from > 0 && damagePercent.value_or(0) <= -damageLossAt;
     if (v.losesDamage) {
-        v.breaks << u"%1 drops %2%"_s.arg(damageStat == u"MinionDPS" ? u"Minion damage"_s : u"Damage"_s,
+        v.losses << u"%1 drops %2%"_s.arg(damageStat == u"MinionDPS" ? u"Minion damage"_s : u"Damage"_s,
                                           formatNumber(std::abs(v.damage.percent.value_or(0))));
     }
     judgeRequirements(before, after, priorities, v);
+    v.breaks = v.losses + v.breaks;
 
     if (score >= upgradeAt)
         v.verdict = Verdict::Upgrade;

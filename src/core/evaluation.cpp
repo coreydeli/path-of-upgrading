@@ -151,6 +151,8 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
             r.oldScore = e.gearEquipped ? e.gearEquipped->score : 0;
         r.delta = r.newScore - r.oldScore;
         r.percent.reset();
+        // your weights only matter when they judge it
+        r.notes.removeOne(unweightedNote());
         if (!r.isEquipped && e.gearEquipped)
             r.verdict = gearVerdict(int(r.delta));
 
@@ -184,9 +186,10 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
             continue;
         if (!rc.warning.isEmpty())
             e.risks << rc.warning;
-        if (rc.under && rc.delta < 0)
+        if (rc.under && rc.delta < 0) {
             e.resistLosses << rc;
-        else if (rc.wasUnder && !rc.under)
+            e.losses << rc.warning;
+        } else if (rc.wasUnder && !rc.under)
             e.resistRank = std::max(e.resistRank, 2);
         else if (rc.wasUnder && rc.delta > 0)
             e.resistRank = std::max(e.resistRank, 1);
@@ -216,7 +219,9 @@ Evaluation withPob(Evaluation evaluation, const PobJudgement &judgement)
     r.verdict = v.verdict;
     r.delta = v.score;
     r.percent.reset();
+    r.notes.removeOne(unweightedNote());
     evaluation.risks = v.breaks;
+    evaluation.losses = v.losses;
     // it knows the whole build, so its verdict says which resistances it loses
     evaluation.resistLosses.clear();
     evaluation.resistRank = v.resistRank;

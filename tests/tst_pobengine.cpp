@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#include "fakepob.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
 
@@ -7,7 +8,6 @@
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSignalSpy>
-#include <QTemporaryDir>
 #include <QTest>
 #include <chrono>
 #include <memory>
@@ -20,28 +20,6 @@ using namespace itemtexts;
 namespace {
 
 using State = PobEngine::State;
-
-// A stand-in for Path of Building in a temporary folder, see fakepob.cpp.
-struct FakePob
-{
-    QTemporaryDir folder;
-
-    // with the fake's arguments for going wrong
-    PobInstall install(const QStringList &flags = {}) const
-    {
-        return {.folder = folder.path(), .program = QStringLiteral(FAKEPOB), .arguments = flags};
-    }
-    // how many times it has been started
-    int runs() const { return count(u"runs"_s); }
-    // and has stopped on its own
-    int stops() const { return count(u"stops"_s); }
-
-    int count(const QString &name) const
-    {
-        QFile file(folder.filePath(name));
-        return file.open(QIODevice::ReadOnly) ? file.readAll().toInt() : 0;
-    }
-};
 
 const QString build = u"<PathOfBuilding2><Build level=\"90\" className=\"Sorceress\"/></PathOfBuilding2>"_s;
 
@@ -546,6 +524,10 @@ private Q_SLOTS:
     void deletedEarly()
     {
         FakePob pob;
+        // and the answer isn't taken for the build's
+        const QJsonObject couldnt{{u"ok"_s, false}, {u"error"_s, u"Nowhere to put it."_s}};
+        QVERIFY(pob.answers({{u"results"_s, QJsonArray{couldnt}}}));
+        QTest::failOnWarning(QRegularExpression(u"your gear"_s));
         PobEngine engine;
         engine.setInstall(pob.install());
         engine.setBuild(build);

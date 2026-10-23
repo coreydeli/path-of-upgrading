@@ -424,6 +424,7 @@ private Q_SLOTS:
         const Evaluation e = evaluate(lifeAmulet(64), c);
         QCOMPARE(e.risks.size(), 1);
         QVERIFY(e.risks.at(0).startsWith(u"Fire res would be only 5% over the cap"));
+        QVERIFY(e.losses.isEmpty());
         QCOMPARE(e.comparison.verdict, Verdict::Risky);
     }
 
@@ -439,6 +440,7 @@ private Q_SLOTS:
         QCOMPARE(e.resistLosses.at(0).to, 60.0);
         QCOMPARE(e.resistRank, -1);
         QCOMPARE(e.risks, QStringList{u"Fire res drops below the cap (60% of 75%)"_s});
+        QCOMPARE(e.losses, e.risks);
     }
 
     void resistanceRanks_data()
@@ -519,6 +521,7 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.delta, 4.2);
         QVERIFY(!e.comparison.percent);
         QCOMPARE(e.risks, j.verdict.breaks);
+        QVERIFY(e.losses.isEmpty());
         QCOMPARE(e.resistRank, 1);
         QCOMPARE(e.comparison.replacing, QStringList{u"Doom Charm"_s});
         QCOMPARE(e.pob->placement.slot, u"Amulet"_s);
@@ -543,7 +546,18 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.verdict, Verdict::Upgrade);
         QVERIFY(e.resistLosses.isEmpty());
         QVERIFY(e.risks.isEmpty());
+        QVERIFY(e.losses.isEmpty());
         QCOMPARE(e.resistRank, 0);
+    }
+
+    void lossesByPathOfBuilding()
+    {
+        PobJudgement j;
+        j.verdict.verdict = Verdict::DamageLoss;
+        j.verdict.breaks = j.verdict.losses = {u"Damage drops 25%"_s};
+        const Evaluation e = withPob(evaluate(lifeAmulet(64), wearing({{u"Amulet"_s, lifeAmulet(40)}})), j);
+        QCOMPARE(e.comparison.verdict, Verdict::DamageLoss);
+        QCOMPARE(e.losses, j.verdict.losses);
     }
 
     void pathOfBuildingOverYourWeights()
@@ -562,6 +576,19 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.delta, 1.5);
         // the delta is a percentage already
         QVERIFY(!e.comparison.percent);
+    }
+
+    void unweightedOnlyByWeights()
+    {
+        Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        c.weights = {};
+        const QString unweighted = u"None of the stats that change have a weight yet."_s;
+        QVERIFY(!evaluate(lifeAmulet(64), c).comparison.notes.contains(unweighted));
+
+        c.buildProfile = u"none of them"_s;
+        const Evaluation ours = evaluate(lifeAmulet(64), c);
+        QVERIFY(ours.comparison.notes.contains(unweighted));
+        QVERIFY(!withPob(ours, {}).comparison.notes.contains(unweighted));
     }
 
     void jewelSockets()
