@@ -134,21 +134,16 @@ private Q_SLOTS:
         QCOMPARE(limiter.wait(start + 30s), 30000ms);
     }
 
-    void retryAfter()
+    void holds()
     {
         RateLimiter limiter;
-        limiter.learn({.retryAfter = u"30"_s}, start);
+        limiter.holdFor(30s, start);
         QCOMPARE(limiter.wait(start), 30000ms);
         QCOMPARE(limiter.wait(start + 30s), 0ms);
 
         // a shorter one later doesn't cut it short
-        limiter.learn({.retryAfter = u"30"_s}, start);
-        limiter.learn({.retryAfter = u"5"_s}, start + 1s);
+        limiter.holdFor(5s, start + 1s);
         QCOMPARE(limiter.wait(start + 1s), 29000ms);
-
-        RateLimiter unreadable;
-        unreadable.learn({.retryAfter = u"soon"_s}, start);
-        QCOMPARE(unreadable.wait(start), 0ms);
     }
 
     void hugeCounts()

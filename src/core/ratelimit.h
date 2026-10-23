@@ -33,7 +33,6 @@ struct RateHeaders
     QString ipState;      // x-rate-limit-ip-state
     QString account;      // x-rate-limit-account
     QString accountState; // x-rate-limit-account-state
-    QString retryAfter;   // Retry-After, in seconds
 };
 
 // Spaces requests out to stay under the limits with one to spare in each, as
@@ -52,9 +51,11 @@ public:
 
     // Takes up the limits an answer gave and what the site counted, which
     // includes requests from elsewhere, like the trade site open in your
-    // browser. A Retry-After, or a ban in the counts, holds every request
-    // until it's over.
+    // browser. A ban in the counts holds every request until it's over.
     void learn(const RateHeaders &headers, Clock::time_point now);
+    // Holds every request for that long, as when the site has turned one down
+    // for there being too many.
+    void holdFor(std::chrono::seconds duration, Clock::time_point now);
 
     QList<RateWindow> limits() const { return m_limits; }
 

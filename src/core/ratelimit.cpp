@@ -74,11 +74,12 @@ void RateLimiter::learn(const RateHeaders &headers, Clock::time_point now)
     // address's from other accounts
     takeCounts(rateWindows(headers.ipState), now);
     takeCounts(rateWindows(headers.accountState), now);
-
-    bool ok = false;
-    if (const int seconds = headers.retryAfter.toInt(&ok); ok && seconds > 0)
-        m_blockedUntil = std::max(m_blockedUntil, now + std::chrono::seconds(seconds));
     forgetOld(now);
+}
+
+void RateLimiter::holdFor(std::chrono::seconds duration, Clock::time_point now)
+{
+    m_blockedUntil = std::max(m_blockedUntil, now + duration);
 }
 
 void RateLimiter::note(Clock::time_point at)
@@ -107,7 +108,7 @@ void RateLimiter::takeCounts(QList<RateWindow> counted, Clock::time_point now)
             note(at);
         at = now - countedFor(window.seconds);
         if (window.ban > 0)
-            m_blockedUntil = std::max(m_blockedUntil, now + std::chrono::seconds(window.ban));
+            holdFor(std::chrono::seconds(window.ban), now);
     }
 }
 
