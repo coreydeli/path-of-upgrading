@@ -7,10 +7,10 @@ add_library(pou_core STATIC
     catalog.cpp catalog.h
     character.cpp character.h
     characterstore.cpp characterstore.h
+    datafiles.cpp datafiles.h
     gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
-    datafiles.cpp datafiles.h
     league.cpp league.h
     listing.cpp listing.h
     numbers.cpp numbers.h
