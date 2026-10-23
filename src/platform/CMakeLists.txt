@@ -6,6 +6,7 @@ pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb)
 add_library(pou_platform STATIC
     gamewindow.cpp gamewindow.h
     xcb/xconnection.cpp xcb/xconnection.h
+    xcb/xwindows.cpp xcb/xwindows.h
 )
 
 target_include_directories(pou_platform PUBLIC ${PROJECT_SOURCE_DIR}/src)
