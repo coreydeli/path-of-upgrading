@@ -60,6 +60,43 @@ private Q_SLOTS:
         // the network's reply goes once it has been read
         QTRY_VERIFY(sent.reply.isNull());
     }
+
+    void fetchesAndData()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        QVERIFY(finishes(client.fetch({u"x1"_s, u"x2"_s}, u"Ab3dE9"_s)));
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+
+        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(network.sent[0].operation, QNetworkAccessManager::GetOperation);
+        QCOMPARE(network.sent[0].request.url(), tradeFetchUrl({u"x1"_s, u"x2"_s}, u"Ab3dE9"_s));
+        QCOMPARE(network.sent[1].operation, QNetworkAccessManager::GetOperation);
+        QCOMPARE(network.sent[1].request.url(), tradeDataUrl(u"leagues"_s));
+    }
+
+    void badAnswers()
+    {
+        FakeNetwork network;
+        // a page in front of the site that won't let the app through
+        network.answers << FakeAnswer{.status = 403, .body = "<!DOCTYPE html><title>Just a moment...</title>"}
+                        << FakeAnswer{.body = "[]"} << FakeAnswer{.status = 500};
+        TradeClient client(&network);
+
+        TradeReply *blocked = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(blocked));
+        QCOMPARE(blocked->error(), TradeReply::Error::BadAnswer);
+        QCOMPARE(blocked->errorString(), u"The trade site's answer couldn't be read (HTTP 403)."_s);
+
+        TradeReply *list = client.data(u"stats"_s);
+        QVERIFY(finishes(list));
+        QCOMPARE(list->error(), TradeReply::Error::BadAnswer);
+
+        // JSON, but not an answer
+        TradeReply *broken = client.data(u"stats"_s);
+        QVERIFY(finishes(broken));
+        QCOMPARE(broken->error(), TradeReply::Error::BadAnswer);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTradeClient)

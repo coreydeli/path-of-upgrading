@@ -6,6 +6,7 @@
 #include <QNetworkRequest>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -62,9 +63,15 @@ public:
     // A TradeQuery's body. The answer has the search's "id", how many
     // listings it found in "total" and the ids of the first 100 in "result".
     TradeReply *search(const QString &league, const QJsonObject &body);
+    // Up to tradeFetchLimit of the listings a search found, for
+    // listingsFromJson().
+    TradeReply *fetch(const QStringList &listingIds, const QString &searchId);
+    // "stats", "filters" or "leagues", see tradeDataUrl().
+    TradeReply *data(const QString &name);
 
 private:
-    TradeReply *send(const QNetworkRequest &request, const QByteArray &body);
+    // POSTed when there's a body
+    TradeReply *send(const QNetworkRequest &request, const QByteArray &body = {});
     void answered(TradeReply *trade, QNetworkReply *reply);
 
     QNetworkAccessManager *m_network;

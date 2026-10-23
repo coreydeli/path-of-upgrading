@@ -49,10 +49,20 @@ TradeReply *TradeClient::search(const QString &league, const QJsonObject &body)
     return send(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
 }
 
+TradeReply *TradeClient::fetch(const QStringList &listingIds, const QString &searchId)
+{
+    return send(apiRequest(tradeFetchUrl(listingIds, searchId)));
+}
+
+TradeReply *TradeClient::data(const QString &name)
+{
+    return send(apiRequest(tradeDataUrl(name)));
+}
+
 TradeReply *TradeClient::send(const QNetworkRequest &request, const QByteArray &body)
 {
     auto *trade = new TradeReply(this);
-    QNetworkReply *reply = m_network->post(request, body);
+    QNetworkReply *reply = body.isEmpty() ? m_network->get(request) : m_network->post(request, body);
     connect(reply, &QNetworkReply::finished, trade, [this, trade, reply] { answered(trade, reply); });
     return trade;
 }
