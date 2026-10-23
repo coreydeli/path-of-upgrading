@@ -66,6 +66,7 @@ pou_add_platform_test(tst_gamewindow)
 pou_add_platform_test(tst_screenmap)
 # with the X server in DISPLAY, when there's one
 pou_add_platform_test(tst_xconnection)
+pou_add_platform_test(tst_xgameinput)
 pou_add_platform_test(tst_xkeysender)
 pou_add_platform_test(tst_xmonitors)
 pou_add_platform_test(tst_xselectionwatcher)
