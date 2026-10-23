@@ -297,6 +297,13 @@ ItemReport reportOf(const ItemCheck &check)
     } else if (e.change) {
         report.changes = characterChanges(*e.change);
     }
+    if (e.gear && e.gear->isRated() && e.mode != ScoreMode::PathOfBuilding) {
+        report.gearScore = QString::number(e.gear->score);
+        report.gearGrade = e.gear->grade;
+        report.gearBuild = e.gear->buildName;
+        if (e.gearEquipped && e.gearEquipped->isRated())
+            report.yourGearScore = QString::number(e.gearEquipped->score);
+    }
     putPobStatus(report, check);
     report.notes << r.notes;
     return report;

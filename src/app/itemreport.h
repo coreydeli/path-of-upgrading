@@ -66,6 +66,10 @@ struct ItemReport
     Q_PROPERTY(QString score MEMBER score)
     Q_PROPERTY(QString scoreLabel MEMBER scoreLabel)
     Q_PROPERTY(QString versus MEMBER versus)
+    Q_PROPERTY(QString gearScore MEMBER gearScore)
+    Q_PROPERTY(QString gearGrade MEMBER gearGrade)
+    Q_PROPERTY(QString yourGearScore MEMBER yourGearScore)
+    Q_PROPERTY(QString gearBuild MEMBER gearBuild)
     Q_PROPERTY(QStringList losses MEMBER losses)
     Q_PROPERTY(QStringList risks MEMBER risks)
     Q_PROPERTY(QString caps MEMBER caps)
@@ -86,6 +90,12 @@ public:
     QString score;
     QString scoreLabel;
     QString versus; // "vs Grim Crown"
+    // Its gear score, "78", and grade, "A", next to yours in the slot. Empty
+    // when it has none, or Path of Building has judged it.
+    QString gearScore;
+    QString gearGrade;
+    QString yourGearScore;
+    QString gearBuild; // the build profile's name
     // Resistance or damage it loses, which matters more than its risks.
     QStringList losses;
     QStringList risks;

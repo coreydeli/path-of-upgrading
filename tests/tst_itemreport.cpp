@@ -221,6 +221,34 @@ private Q_SLOTS:
         QCOMPARE(reportOn(unique, wearing({{u"Helmet"_s, unique}})).verdict, u"Equipped"_s);
     }
 
+    void gearScores()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        Evaluation &e = check.evaluation;
+        e.gear = GearScore{.buildName = u"Minions"_s, .score = 78, .grade = u"A"_s};
+        e.gearEquipped = GearScore{.buildName = u"Minions"_s, .score = 56, .grade = u"B"_s};
+        ItemReport report = reportOf(check);
+        QCOMPARE(report.gearScore, u"78"_s);
+        QCOMPARE(report.gearGrade, u"A"_s);
+        QCOMPARE(report.yourGearScore, u"56"_s);
+        QCOMPARE(report.gearBuild, u"Minions"_s);
+
+        e.gearEquipped->unrated = GearScore::Unrated::Unique;
+        report = reportOf(check);
+        QCOMPARE(report.gearScore, u"78"_s);
+        QCOMPARE(report.yourGearScore, QString());
+
+        e.gear->unrated = GearScore::Unrated::Unidentified;
+        QCOMPARE(reportOf(check).gearScore, QString());
+
+        // as Path of Building's is the one that counts
+        e.gear->unrated = GearScore::Unrated::No;
+        e.mode = ScoreMode::PathOfBuilding;
+        report = reportOf(check);
+        QCOMPARE(report.gearScore, QString());
+        QCOMPARE(report.gearGrade, QString());
+    }
+
     void lossesAndRisks()
     {
         ItemCheck check = judged(Verdict::ResistLoss);
