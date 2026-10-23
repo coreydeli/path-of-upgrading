@@ -90,6 +90,25 @@ private Q_SLOTS:
         QVERIFY(empty.notes.last().contains(u"Ring 2"));
     }
 
+    void slotYouName()
+    {
+        const Item ring = item(itemtexts::advancedRing);
+        const Item weak =
+            item(u"Item Class: Rings\nRarity: Magic\nWeak Ring\n--------\n+10 to maximum Life"_s);
+        const Item strong =
+            item(u"Item Class: Rings\nRarity: Rare\nStrong\nRing\n--------\n+200 to maximum Life"_s);
+        const Equipped worn = {{u"Ring 1"_s, strong}, {u"Ring 2"_s, weak}};
+
+        const Comparison r = compare(ring, worn, defaultWeights(), {}, u"Ring 1"_s);
+        QCOMPARE(r.targetSlot, u"Ring 1"_s);
+        QCOMPARE(r.replacing, QStringList{u"Strong"_s});
+        QCOMPARE(rowFor(r, u"# to maximum Life").oldValue, 200.0);
+
+        // an empty one is still empty
+        const Comparison empty = compare(ring, {{u"Ring 1"_s, strong}}, defaultWeights(), {}, u"Ring 2"_s);
+        QCOMPARE(empty.verdict, Verdict::New);
+    }
+
     void emptyJewelSlotFirst()
     {
         const Item a = item(
@@ -116,6 +135,28 @@ private Q_SLOTS:
         const Comparison offhand =
             compare(shield, {{u"Weapon"_s, item(itemtexts::twoHandMace)}}, defaultWeights());
         QVERIFY(offhand.notes.first().contains(u"two-handed"));
+
+        // named, the weapon slot still means both
+        const Comparison named =
+            compare(item(itemtexts::twoHandMace), {{u"Weapon"_s, oneHand}, {u"Offhand"_s, shield}},
+                    defaultWeights(), {}, u"Weapon"_s);
+        QCOMPARE(named.replacing, QStringList({u"A"_s, u"S"_s}));
+    }
+
+    void weaponInTheOffhand()
+    {
+        // a one-handed weapon held in the other hand
+        const Item mace =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nA\nB\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+30 to maximum Life"_s);
+        const Item other =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nC\nD\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+60 to maximum Life"_s);
+        const Comparison r =
+            compare(mace, {{u"Weapon"_s, mace}, {u"Offhand"_s, other}}, defaultWeights(), {}, u"Offhand"_s);
+        QCOMPARE(r.targetSlot, u"Offhand"_s);
+        QCOMPARE(r.replacing, QStringList{u"C"_s});
+        QVERIFY(r.notes.isEmpty());
     }
 
     void alreadyEquipped()

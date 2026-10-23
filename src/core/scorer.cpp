@@ -103,7 +103,7 @@ QList<StatRow> diffStats(const StatMap &newStats, const StatMap &oldStats, const
 }
 
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &allWeights,
-                   const StatFilter &ignore)
+                   const StatFilter &ignore, const QString &slot)
 {
     if (item.slot.isEmpty()) {
         Comparison r;
@@ -123,36 +123,38 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
         notes << u"Corrupted, so it can't be modified any further."_s;
 
     Comparison r;
-    if (comparesWithWeakest(item.slot)) {
+    if (item.slot == u"Weapon" && item.twoHanded && (slot.isEmpty() || slot == u"Weapon")) {
+        r = compareWith(item, {itemIn(equipped, u"Weapon"_s), itemIn(equipped, u"Offhand"_s)}, weights,
+                        u"Weapon"_s, ignore);
+        if (equipped.contains(u"Offhand"_s))
+            notes << u"Two-handed, so it's compared against your weapon and offhand together."_s;
+    } else if (!slot.isEmpty()) {
+        r = compareWith(item, {itemIn(equipped, slot)}, weights, slot, ignore);
+    } else if (comparesWithWeakest(item.slot)) {
         const QStringList group = slotGroup(item.slot);
         const auto empty = std::find_if(group.cbegin(), group.cend(),
                                         [&equipped](const QString &s) { return !equipped.contains(s); });
         if (empty != group.cend()) {
             r = compareWith(item, {}, weights, *empty, ignore);
         } else {
-            for (const QString &slot : group) {
-                Comparison c = compareWith(item, {itemIn(equipped, slot)}, weights, slot, ignore);
-                if (slot == group.first() || c.delta > r.delta)
+            for (const QString &member : group) {
+                Comparison c = compareWith(item, {itemIn(equipped, member)}, weights, member, ignore);
+                if (member == group.first() || c.delta > r.delta)
                     r = std::move(c);
             }
         }
-    } else if (item.slot == u"Weapon" && item.twoHanded) {
-        r = compareWith(item, {itemIn(equipped, u"Weapon"_s), itemIn(equipped, u"Offhand"_s)}, weights,
-                        u"Weapon"_s, ignore);
-        if (equipped.contains(u"Offhand"_s))
-            notes << u"Two-handed, so it's compared against your weapon and offhand together."_s;
     } else {
         r = compareWith(item, {itemIn(equipped, item.slot)}, weights, item.slot, ignore);
-        const Item *weapon = itemIn(equipped, u"Weapon"_s);
-        if (item.slot == u"Offhand" && weapon && weapon->twoHanded &&
-            !item.itemClass.contains(u"quiver", Qt::CaseInsensitive)) {
-            notes << u"Your weapon is two-handed, so you can't use this with it."_s;
-        }
+    }
+    const Item *weapon = itemIn(equipped, u"Weapon"_s);
+    if (item.slot == u"Offhand" && weapon && weapon->twoHanded &&
+        !item.itemClass.contains(u"quiver", Qt::CaseInsensitive)) {
+        notes << u"Your weapon is two-handed, so you can't use this with it."_s;
     }
 
     const QStringList slotNames = slotGroup(item.slot);
     r.isEquipped = std::any_of(slotNames.cbegin(), slotNames.cend(),
-                               [&](const QString &slot) { return sameItem(item, itemIn(equipped, slot)); });
+                               [&](const QString &name) { return sameItem(item, itemIn(equipped, name)); });
 
     const bool hasBaseline = !r.replacing.isEmpty();
     if (!hasBaseline)
