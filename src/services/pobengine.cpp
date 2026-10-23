@@ -72,7 +72,10 @@ void PobReply::finish()
 PobEngine::PobEngine(QObject *parent)
     : QObject(parent)
     , m_errorString(u"There's no Path of Building to run."_s)
-{}
+{
+    m_timer.setSingleShot(true);
+    connect(&m_timer, &QTimer::timeout, this, &PobEngine::timedOut);
+}
 
 PobEngine::~PobEngine()
 {
@@ -209,7 +212,10 @@ void PobEngine::send(QJsonObject request, PobReply *reply)
 {
     request.insert(u"id"_s, ++m_lastId);
     m_process->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + '\n');
-    m_sent << Sent{m_lastId, reply};
+    m_sent << Sent{.id = m_lastId, .items = request.value(u"items").toArray().size(), .reply = reply};
+    // when it's the one it's waiting on
+    if (m_sent.size() == 1)
+        watch();
 }
 
 void PobEngine::readAnswers()
@@ -229,6 +235,7 @@ void PobEngine::readAnswers()
             started(answer);
         } else if (!m_sent.isEmpty() && answer.value(u"id").toInt() == m_sent.first().id) {
             answered(m_sent.takeFirst(), answer);
+            watch();
         } else {
             qCDebug(lcPob, "The answer that couldn't be read: %s", line.trimmed().constData());
             giveUp(u"Path of Building's answer couldn't be read."_s);
@@ -333,11 +340,33 @@ void PobEngine::warn(const QString &why) const
         qCWarning(lcPob, "%s It printed:\n%s", qUtf8Printable(why), printed.constData());
 }
 
+// Gives it a while for what it's doing, which is starting or answering the
+// oldest request, before it's given up on.
+void PobEngine::watch()
+{
+    if (m_state == State::Starting)
+        m_timer.start(m_timeouts.start);
+    else if (m_state == State::Ready && !m_sent.isEmpty())
+        m_timer.start(m_timeouts.request + m_timeouts.perItem * m_sent.first().items);
+    else
+        m_timer.stop();
+}
+
+void PobEngine::timedOut()
+{
+    if (m_state == State::Starting)
+        failStart(u"Path of Building didn't start in time."_s);
+    else
+        giveUp(u"Path of Building didn't answer in time."_s);
+}
+
 void PobEngine::setState(State state)
 {
     if (state == m_state)
         return;
     m_state = state;
+    // as what it's waiting for changes with it
+    watch();
     Q_EMIT stateChanged(state);
 }
 

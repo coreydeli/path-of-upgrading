@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QTimer>
 #include <chrono>
 #include <optional>
 
@@ -79,6 +80,11 @@ public:
 
     struct Timeouts
     {
+        // to start, which takes a second or so
+        std::chrono::milliseconds start = std::chrono::seconds(30);
+        // to answer, with more for each item
+        std::chrono::milliseconds request = std::chrono::seconds(15);
+        std::chrono::milliseconds perItem = std::chrono::seconds(1);
         // after it couldn't start, until it's tried again
         std::chrono::milliseconds retry = std::chrono::seconds(30);
         // to stop on its own before it's killed
@@ -121,6 +127,7 @@ private:
     struct Sent
     {
         int id = 0;
+        qsizetype items = 0;
         QPointer<PobReply> reply; // none for the build, and null once it's deleted
     };
 
@@ -136,6 +143,8 @@ private:
     void failAll(const QString &why);
     void retire();
     void warn(const QString &why) const;
+    void watch();
+    void timedOut();
     void setState(State state);
 
     std::optional<PobInstall> m_install;
@@ -150,6 +159,7 @@ private:
     QByteArray m_printed; // the end of what it has printed
     QList<Sent> m_sent;   // in the order they were sent
     int m_lastId = 0;
+    QTimer m_timer; // see watch()
 };
 
 } // namespace pou

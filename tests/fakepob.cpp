@@ -11,8 +11,10 @@
 // Its own arguments come before LuaJIT's, for going wrong:
 //   --fail           it says it couldn't start
 //   --crash          it stops before it has started
+//   --silent         it never says it has started
 //   --crash-on-eval  it stops when it's asked to judge items
 //   --garble         its answer to an eval isn't JSON
+//   --hang-on-eval   it doesn't answer one
 //   --once           only the first time it's run
 
 #include <QByteArrayList>
@@ -80,6 +82,12 @@ int main(int argc, char *argv[])
         answer({{u"ready"_s, false}, {u"error"_s, u"The fake didn't start."_s}});
         return 1;
     }
+    if (goWrong && flags.contains("--silent")) {
+        while (!in.readLine().isEmpty()) {
+        }
+        count(u"stops"_s);
+        return 0;
+    }
 
     answer({{u"ready"_s, true}, {u"version"_s, u"0.1.0"_s}});
     QString xml;
@@ -94,6 +102,8 @@ int main(int argc, char *argv[])
             std::fprintf(stderr, "The fake crashed\n");
             return 4;
         }
+        if (command == u"eval" && goWrong && flags.contains("--hang-on-eval"))
+            continue;
         if (command == u"eval" && goWrong && flags.contains("--garble")) {
             out.write("@@{\"id\": " + QByteArray::number(request.value(u"id").toInt()) + ", \"ok\"\n");
             out.flush();
