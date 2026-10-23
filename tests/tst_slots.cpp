@@ -63,6 +63,14 @@ private Q_SLOTS:
         QCOMPARE(allSlots().size(), mainSlots().size() + extraSlots().size());
         QCOMPARE(mainSlots().first(), u"Weapon"_s);
     }
+
+    void hands()
+    {
+        QCOMPARE(otherHand(u"Weapon"_s), u"Offhand"_s);
+        QCOMPARE(otherHand(u"Weapon 2"_s), u"Offhand 2"_s);
+        QCOMPARE(otherHand(u"Offhand 2"_s), u"Weapon 2"_s);
+        QCOMPARE(otherHand(u"Ring 1"_s), QString());
+    }
 };
 
 QTEST_GUILESS_MAIN(TestSlots)
