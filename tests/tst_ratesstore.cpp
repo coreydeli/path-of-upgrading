@@ -1,0 +1,142 @@
+// SPDX-License-Identifier: MIT
+#include "core/rates.h"
+#include "fakenetwork.h"
+#include "services/ratesstore.h"
+
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QSignalSpy>
+#include <QTest>
+
+using namespace Qt::Literals::StringLiterals;
+using namespace pou;
+
+namespace {
+
+const QString softcore = u"Runes of Aldur"_s;
+const QString hardcore = u"HC Runes of Aldur"_s;
+
+QByteArray json(const QJsonObject &object)
+{
+    return QJsonDocument(object).toJson(QJsonDocument::Compact);
+}
+
+QJsonObject line(const QString &id, double primaryValue)
+{
+    return {{u"id"_s, id}, {u"primaryValue"_s, primaryValue}};
+}
+
+// Shaped like poe.ninja's currency overview, which prices everything in
+// Divine Orbs.
+QJsonObject overview(double exalts, double chaos = 10)
+{
+    const QJsonObject core{{u"primary"_s, u"divine"_s},
+                           {u"secondary"_s, u"chaos"_s},
+                           {u"rates"_s, QJsonObject{{u"exalted"_s, exalts}, {u"chaos"_s, chaos}}}};
+    const QJsonArray lines{line(u"divine"_s, 1), line(u"exalted"_s, 1 / exalts), line(u"chaos"_s, 1 / chaos)};
+    return {{u"core"_s, core}, {u"lines"_s, lines}};
+}
+
+int minutesOld(const RatesStore &store)
+{
+    return int(store.fetched().secsTo(QDateTime::currentDateTimeUtc()) / 60);
+}
+
+bool refreshes(RatesStore &store, const QString &league)
+{
+    QSignalSpy refreshed(&store, &RatesStore::refreshed);
+    store.refresh(league);
+    return refreshed.wait();
+}
+
+} // namespace
+
+class TestRatesStore : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void asksPoeNinja()
+    {
+        FakeNetwork network;
+        network.answers = {{.body = json(overview(400))}};
+        RatesStore store(&network);
+
+        QVERIFY(refreshes(store, softcore));
+        QCOMPARE(network.sent.size(), 1);
+        QCOMPARE(network.sent.at(0).request.url(), ninjaCurrencyUrl(softcore));
+        QCOMPARE(store.league(), softcore);
+        QCOMPARE(store.divineRate(), 400.0);
+        QCOMPARE(store.rates().value(u"chaos"_s), 40.0);
+        QCOMPARE(store.rates().value(u"exalted"_s), 1.0);
+        QCOMPARE(minutesOld(store), 0);
+        QVERIFY(store.errorString().isEmpty());
+        QVERIFY(!store.isRefreshing());
+
+        // and lets go of the reply
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        QVERIFY(!network.sent.at(0).reply);
+    }
+
+    // poe.ninja's prices have four figures, which can make for more in a rate
+    void roundsTheDivineRate()
+    {
+        QJsonObject data = overview(539.6);
+        data.insert(u"lines"_s, QJsonArray{line(u"divine"_s, 1), line(u"exalted"_s, 0.001853)});
+        FakeNetwork network;
+        network.answers = {{.body = json(data)}};
+        RatesStore store(&network);
+
+        QVERIFY(refreshes(store, softcore));
+        QCOMPARE(store.rates().value(u"divine"_s), 539.7);
+    }
+
+    void oneRefreshAtATime()
+    {
+        FakeNetwork network;
+        network.answers = {{.body = json(overview(400))}};
+        RatesStore store(&network);
+        QSignalSpy refreshed(&store, &RatesStore::refreshed);
+
+        store.refresh(softcore);
+        QVERIFY(store.isRefreshing());
+        store.refresh(softcore);
+        QVERIFY(refreshed.wait());
+        QCOMPARE(network.sent.size(), 1);
+        QVERIFY(!store.isRefreshing());
+        QTest::qWait(10);
+        QCOMPARE(refreshed.size(), 1);
+    }
+
+    void callsOffTheLastLeagues()
+    {
+        FakeNetwork network;
+        network.answers = {{.body = json(overview(400))}, {.body = json(overview(120))}};
+        RatesStore store(&network);
+        QSignalSpy refreshed(&store, &RatesStore::refreshed);
+
+        store.refresh(softcore);
+        store.refresh(hardcore);
+        QCOMPARE(network.sent.size(), 2);
+        QVERIFY(!network.sent.at(0).reply);
+        QCOMPARE(network.sent.at(1).request.url(), ninjaCurrencyUrl(hardcore));
+        QVERIFY(refreshed.wait());
+        QCOMPARE(store.league(), hardcore);
+        QCOMPARE(store.divineRate(), 120.0);
+        QTest::qWait(10);
+        QCOMPARE(refreshed.size(), 1);
+    }
+
+    void callingOff()
+    {
+        FakeNetwork network;
+        auto *store = new RatesStore(&network);
+        store->refresh(softcore);
+        QCOMPARE(network.sent.size(), 1);
+        delete store;
+        QVERIFY(!network.sent.at(0).reply);
+    }
+};
+
+QTEST_GUILESS_MAIN(TestRatesStore)
+#include "tst_ratesstore.moc"
