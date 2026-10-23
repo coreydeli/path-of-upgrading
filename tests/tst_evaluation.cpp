@@ -561,6 +561,15 @@ private Q_SLOTS:
             {});
         QVERIFY(!e.comparison.ok);
         QVERIFY(!e.gear);
+        QVERIFY(!e.change);
+
+        // and there's nothing for Path of Building to judge
+        PobJudgement j;
+        j.verdict.verdict = Verdict::Upgrade;
+        const Evaluation pob = withPob(e, j);
+        QVERIFY(!pob.comparison.ok);
+        QCOMPARE(pob.mode, ScoreMode::StatWeights);
+        QVERIFY(!pob.pob);
     }
 };
 
