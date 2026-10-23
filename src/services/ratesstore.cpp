@@ -72,7 +72,8 @@ void RatesStore::refresh(const QString &league, bool force)
         return;
     }
     const QDateTime now = QDateTime::currentDateTimeUtc();
-    if (!force && (within(m_fetched, now, freshFor) || within(m_failed, now, holdFor))) {
+    if (m_league.isEmpty() ||
+        (!force && (within(m_fetched, now, freshFor) || within(m_failed, now, holdFor)))) {
         QMetaObject::invokeMethod(this, &RatesStore::refreshed, Qt::QueuedConnection);
         return;
     }

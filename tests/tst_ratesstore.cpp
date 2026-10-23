@@ -335,6 +335,28 @@ private Q_SLOTS:
         QVERIFY(!QFile::exists(fileOf(dir.path(), softcore)));
     }
 
+    void noneWithoutTrading()
+    {
+        QTemporaryDir dir;
+        QVERIFY(keep(fileOf(dir.path(), softcore), overview(400), 10min));
+        FakeNetwork network;
+        RatesStore store(&network, dir.path());
+        QVERIFY(refreshes(store, softcore));
+
+        QSignalSpy refreshed(&store, &RatesStore::refreshed);
+        store.refresh({});
+        QCOMPARE(refreshed.size(), 0);
+        QVERIFY(refreshed.wait());
+        QVERIFY(store.league().isEmpty());
+        QVERIFY(store.rates().isEmpty());
+        QVERIFY(!store.fetched().isValid());
+        QVERIFY(store.errorString().isEmpty());
+
+        // even when forced
+        QVERIFY(refreshes(store, {}, true));
+        QVERIFY(network.sent.isEmpty());
+    }
+
     void fileNames()
     {
         QTemporaryDir dir;

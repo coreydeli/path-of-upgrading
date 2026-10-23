@@ -44,7 +44,8 @@ public:
     // from its file the first time, then from poe.ninja once they're an hour
     // old, or right away when forced. It's fine to call before every price
     // check, as after poe.ninja lets it down it waits five minutes before
-    // asking again, unless forced.
+    // asking again, unless forced. There are none for a league with no
+    // trading, which has an empty id.
     void refresh(const QString &league, bool force = false);
     bool isRefreshing() const { return !m_reply.isNull(); }
 
