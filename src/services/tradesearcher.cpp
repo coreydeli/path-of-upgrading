@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "services/tradesearcher.h"
 
+#include "core/tradequery.h"
 #include "core/tradesite.h"
 #include "services/logging.h"
 
@@ -10,6 +11,23 @@
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
+namespace {
+
+// The listing status a search body asks for, as the site names it.
+QString statusOf(const QJsonObject &body)
+{
+    return body.value(u"query").toObject().value(u"status").toObject().value(u"option").toString();
+}
+
+QJsonObject withStatus(QJsonObject body, const QString &status)
+{
+    QJsonObject query = body.value(u"query").toObject();
+    query.insert(u"status"_s, QJsonObject{{u"option"_s, status}});
+    body.insert(u"query"_s, query);
+    return body;
+}
+
+} // namespace
 
 TradeSearch::TradeSearch(QObject *parent)
     : QObject(parent)
@@ -86,10 +104,12 @@ TradeSearch *TradeSearcher::search(const QJsonObject &body)
 
 void TradeSearcher::send(TradeSearch *search, const QJsonObject &body)
 {
-    search->m_body = body;
+    search->m_body = m_turnedDown.contains(statusOf(body))
+                         ? withStatus(body, listingStatusId(ListingStatus::Online))
+                         : body;
     qCDebug(lcTrade, "Searching %s: %s", qUtf8Printable(search->m_league),
-            QJsonDocument(body).toJson(QJsonDocument::Compact).constData());
-    search->m_reply = m_client->search(search->m_league, body);
+            QJsonDocument(search->m_body).toJson(QJsonDocument::Compact).constData());
+    search->m_reply = m_client->search(search->m_league, search->m_body);
     connect(search->m_reply, &TradeReply::finished, search, [this, search] { answered(search); });
 }
 
@@ -109,6 +129,17 @@ void TradeSearcher::answered(TradeSearch *search)
         search->fail(TradeSearch::Error::TooComplex, reply->errorString());
         return;
     case Error::Rejected:
+        // turned down for its listing status, it may go through as online listings
+        if (const QString status = statusOf(search->m_body);
+            reply->siteMessage().contains(u"status", Qt::CaseInsensitive) && !status.isEmpty() &&
+            status != listingStatusId(ListingStatus::Online)) {
+            qCInfo(lcTrade, "The trade site turned down the listing status \"%s\", so searching online ones",
+                   qUtf8Printable(status));
+            m_turnedDown.insert(status);
+            send(search, search->m_body);
+            return;
+        }
+        [[fallthrough]];
     case Error::Network:
     case Error::BadAnswer:
         qCWarning(lcTrade, "Couldn't search the trade site: %s", qUtf8Printable(reply->errorString()));

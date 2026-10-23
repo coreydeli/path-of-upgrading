@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
@@ -97,7 +98,9 @@ public:
     // Why there are no trade searches, or empty when there are.
     QString unavailable() const;
 
-    // A TradeQuery's body, searched for in league().
+    // A TradeQuery's body, searched for in league(). When the site turns
+    // down the listing status it asks for, it's searched again for online
+    // listings, as that status is from then on.
     TradeSearch *search(const QJsonObject &body);
 
 private:
@@ -107,6 +110,7 @@ private:
     TradeClient *m_client;
     TradeSettings m_settings;
     QStringList m_leagues;
+    QSet<QString> m_turnedDown; // listing statuses the site wouldn't search for
 };
 
 } // namespace pou

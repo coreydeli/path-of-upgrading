@@ -30,14 +30,33 @@ FakeAnswer siteError(const QString &message)
             .body = json({{u"error"_s, QJsonObject{{u"code"_s, 2}, {u"message"_s, message}}}})};
 }
 
-// A search body as the app makes them.
-QJsonObject searchBody()
+// What the site answers when it has run one.
+FakeAnswer found(const QString &id, int total, const QStringList &ids)
+{
+    const QJsonObject answer{
+        {u"id"_s, id},
+        {u"total"_s, total},
+        {u"result"_s, QJsonArray::fromStringList(ids)},
+    };
+    return {.body = json(answer)};
+}
+
+// A search body as the app makes them, for listings of that status.
+QJsonObject searchBody(ListingStatus status = ListingStatus::Available)
 {
     const TradeData data{StatIndex::fromJson(tradefixtures::stats()),
                          TradeCategories::fromJson(tradefixtures::filters())};
     CustomSearchOptions options;
+    options.status = status;
     options.itemClass = u"Helmets"_s;
     return customSearch({{.key = u"+# to maximum Life"_s, .min = 60}}, data, options).body;
+}
+
+// The listing status a search went out with.
+QString sentStatus(const FakeNetwork::Sent &sent)
+{
+    const QJsonObject query = QJsonDocument::fromJson(sent.body).object().value(u"query").toObject();
+    return query.value(u"status").toObject().value(u"option").toString();
 }
 
 TradeSettings inLeague(const QString &name, bool hardcore = false, bool soloSelfFound = false)
@@ -74,7 +93,8 @@ private Q_SLOTS:
     void initTestCase()
     {
         // what it says when the site lets it down, which the tests make it do
-        QLoggingCategory::setFilterRules(u"pathofupgrading.trade.warning=false"_s);
+        QLoggingCategory::setFilterRules(u"pathofupgrading.trade.warning=false\n"
+                                         u"pathofupgrading.trade.info=false"_s);
     }
 
     void searches()
@@ -245,6 +265,63 @@ private Q_SLOTS:
         QCOMPARE(search->url(), inTheBrowser ? tradePrefilledUrl(u"Standard"_s, searchBody()) : QUrl());
         QVERIFY(search->listingIds().isEmpty());
         QCOMPARE(network.sent.size(), 1);
+    }
+
+    void triesOnlineListings()
+    {
+        FakeNetwork network;
+        network.answers = {siteError(u"Status not supported"_s), found(u"Ab3dE9"_s, 3, {u"x1"_s})};
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+
+        TradeSearch *search = searcher.search(searchBody());
+        QVERIFY(finishes(search));
+        QCOMPARE(search->error(), TradeSearch::Error::None);
+        QCOMPARE(search->id(), u"Ab3dE9"_s);
+        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(sentStatus(network.sent[0]), u"available"_s);
+        // and the rest as it was
+        QCOMPARE(QJsonDocument::fromJson(network.sent[1].body).object(), searchBody(ListingStatus::Online));
+
+        // from then on
+        QVERIFY(finishes(searcher.search(searchBody())));
+        QCOMPARE(sentStatus(network.sent[2]), u"online"_s);
+        // but only for that status
+        QVERIFY(finishes(searcher.search(searchBody(ListingStatus::Securable))));
+        QCOMPARE(sentStatus(network.sent[3]), u"securable"_s);
+    }
+
+    void givesUpOnTheStatus_data()
+    {
+        QTest::addColumn<QJsonObject>("body");
+        QTest::addColumn<int>("sent");
+        QJsonObject noStatus = searchBody();
+        QJsonObject query = noStatus.value(u"query").toObject();
+        query.remove(u"status"_s);
+        noStatus.insert(u"query"_s, query);
+        QTest::newRow("online already") << searchBody(ListingStatus::Online) << 1;
+        QTest::newRow("without one") << noStatus << 1;
+        QTest::newRow("online too") << searchBody() << 2;
+    }
+
+    void givesUpOnTheStatus()
+    {
+        QFETCH(QJsonObject, body);
+        QFETCH(int, sent);
+        FakeNetwork network;
+        network.answers = {siteError(u"Invalid status option"_s), siteError(u"Invalid status option"_s)};
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+
+        TradeSearch *search = searcher.search(body);
+        QVERIFY(finishes(search));
+        QCOMPARE(search->error(), TradeSearch::Error::Failed);
+        QCOMPARE(search->errorString(), u"The trade site says: Invalid status option"_s);
+        QCOMPARE(network.sent.size(), sent);
+        // the browser gets the last one that went
+        QCOMPARE(
+            search->url(),
+            tradePrefilledUrl(u"Standard"_s, QJsonDocument::fromJson(network.sent.last().body).object()));
     }
 
     void callingOff()
