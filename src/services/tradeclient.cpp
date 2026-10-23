@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
 using namespace std::chrono_literals;
@@ -108,6 +109,18 @@ TradeReply *TradeClient::data(const QString &name)
     return send(m_data, apiRequest(tradeDataUrl(name)));
 }
 
+bool TradeClient::isSessionId(QStringView text)
+{
+    return !text.isEmpty() && std::all_of(text.begin(), text.end(),
+                                          [](QChar c) { return c.unicode() < 0x80 && c.isLetterOrNumber(); });
+}
+
+void TradeClient::setSessionId(const QString &id)
+{
+    const QString trimmed = id.trimmed();
+    m_sessionId = isSessionId(trimmed) ? trimmed.toLatin1() : QByteArray();
+}
+
 TradeReply *TradeClient::send(Queue &queue, const QNetworkRequest &request, const QByteArray &body)
 {
     auto *trade = new TradeReply(this);
@@ -143,9 +156,15 @@ void TradeClient::pump(Queue &queue)
 
 void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
 {
+    QNetworkRequest request = waiting.request;
+    if (!m_sessionId.isEmpty()) {
+        request.setRawHeader(QByteArrayLiteral("Cookie"), QByteArrayLiteral("POESESSID=") + m_sessionId);
+        // or the network's cookie jar sends its own in place of it
+        request.setAttribute(QNetworkRequest::CookieLoadControlAttribute, QNetworkRequest::Manual);
+    }
     TradeReply *trade = waiting.trade;
-    QNetworkReply *reply = waiting.body.isEmpty() ? m_network->get(waiting.request)
-                                                  : m_network->post(waiting.request, waiting.body);
+    QNetworkReply *reply =
+        waiting.body.isEmpty() ? m_network->get(request) : m_network->post(request, waiting.body);
     // deleting the trade reply calls the request off
     reply->setParent(trade);
     connect(reply, &QNetworkReply::finished, trade,

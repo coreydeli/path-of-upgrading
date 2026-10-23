@@ -90,6 +90,13 @@ public:
     // "stats", "filters" or "leagues", see tradeDataUrl().
     TradeReply *data(const QString &name);
 
+    // Whether the text could be your session id on the site: the POESESSID
+    // cookie of a browser that's signed in to it, which is letters and digits.
+    static bool isSessionId(QStringView text);
+    // Sends requests signed in with that session id, once it's trimmed, or
+    // signed out when it isn't one.
+    void setSessionId(const QString &id);
+
 private:
     using Clock = RateLimiter::Clock;
 
@@ -117,6 +124,7 @@ private:
     void answered(Queue &queue, TradeReply *trade, QNetworkReply *reply);
 
     QNetworkAccessManager *m_network;
+    QByteArray m_sessionId;
     Queue m_searches;
     Queue m_fetches;
     Queue m_data;

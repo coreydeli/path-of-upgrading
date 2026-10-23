@@ -350,6 +350,44 @@ private Q_SLOTS:
         QCOMPARE(next->retryAfter(), hold);
         QCOMPARE(network.sent.size(), 1);
     }
+
+    void sessionIds()
+    {
+        QVERIFY(TradeClient::isSessionId(u"0123456789abcdef0123456789abcdef"));
+        QVERIFY(TradeClient::isSessionId(u"0123456789ABCDEF"));
+        QVERIFY(!TradeClient::isSessionId(u""));
+        // more than the cookie's value, which would go out as it's written
+        QVERIFY(!TradeClient::isSessionId(u"POESESSID=0123456789abcdef"));
+        QVERIFY(!TradeClient::isSessionId(u"0123456789abcdef; other=1"));
+        QVERIFY(!TradeClient::isSessionId(u"0123456789abcdef\r\nX-Other: 1"));
+        QVERIFY(!TradeClient::isSessionId(u"0123456789abcd\u00e9f"));
+    }
+
+    void signedIn()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        // as pasted from the browser
+        client.setSessionId(u" 0123456789abcdef0123456789abcdef\n"_s);
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+        QVERIFY(finishes(client.fetch({u"x1"_s}, u"Ab3dE9"_s)));
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        for (const FakeNetwork::Sent &sent : std::as_const(network.sent)) {
+            QCOMPARE(sent.request.rawHeader("Cookie"), "POESESSID=0123456789abcdef0123456789abcdef");
+            // which the network's cookie jar would send its own in place of
+            QCOMPARE(sent.request.attribute(QNetworkRequest::CookieLoadControlAttribute).toInt(),
+                     int(QNetworkRequest::Manual));
+        }
+
+        client.setSessionId(u"0123456789abcdef; other=1"_s);
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        client.setSessionId({});
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        for (const FakeNetwork::Sent &sent : network.sent.mid(3)) {
+            QVERIFY(!sent.request.hasRawHeader("Cookie"));
+            QVERIFY(!sent.request.attribute(QNetworkRequest::CookieLoadControlAttribute).isValid());
+        }
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTradeClient)
