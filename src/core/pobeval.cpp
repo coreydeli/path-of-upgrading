@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: MIT
+#include "core/pobeval.h"
+
+#include <QJsonArray>
+
+using namespace Qt::Literals::StringLiterals;
+
+namespace pou {
+
+PobStats readPobStats(const QJsonObject &stats)
+{
+    PobStats out;
+    for (auto it = stats.constBegin(); it != stats.constEnd(); ++it) {
+        if (it.value().isDouble())
+            out.insert(it.key(), it.value().toDouble());
+    }
+    return out;
+}
+
+PobEval readPobEval(const QJsonObject &answer)
+{
+    PobEval eval;
+    eval.before = readPobStats(answer.value(u"before").toObject());
+    for (const QJsonValue result : answer.value(u"results").toArray()) {
+        PobItemEval item;
+        if (!result[u"ok"].toBool()) {
+            item.error = result[u"error"].toString(u"Path of Building couldn't try this item."_s);
+            eval.items << item;
+            continue;
+        }
+        for (const QJsonValue placement : result[u"slots"].toArray()) {
+            item.placements << PobPlacement{
+                .slot = placement[u"slot"].toString(),
+                .label = placement[u"label"].toString(),
+                .replacing = placement[u"replacing"].toString(),
+                .stats = readPobStats(placement[u"stats"].toObject()),
+            };
+        }
+        eval.items << item;
+    }
+    return eval;
+}
+
+} // namespace pou

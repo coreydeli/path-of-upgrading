@@ -16,6 +16,7 @@ add_library(pou_core STATIC
     numbers.cpp numbers.h
     parser.cpp parser.h
     pobbuild.cpp pobbuild.h
+    pobeval.cpp pobeval.h
     pobinstall.cpp pobinstall.h
     pobverdict.cpp pobverdict.h
     ratelimit.cpp ratelimit.h
