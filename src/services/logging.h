@@ -5,10 +5,11 @@
 
 namespace pou {
 
-// What the app says about the sites it talks to, for finding out why
-// something didn't work. Warnings and notes show by default, the rest with
-// QT_LOGGING_RULES="pathofupgrading.*.debug=true".
+// What the app says about the sites it talks to and Path of Building, for
+// finding out why something didn't work. Warnings and notes show by default,
+// the rest with QT_LOGGING_RULES="pathofupgrading.*.debug=true".
 Q_DECLARE_LOGGING_CATEGORY(lcNinja)
+Q_DECLARE_LOGGING_CATEGORY(lcPob)
 Q_DECLARE_LOGGING_CATEGORY(lcTrade)
 
 } // namespace pou
