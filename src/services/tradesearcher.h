@@ -97,6 +97,9 @@ public:
     // The listings, in the order they were asked for and shaped like the
     // site's answer, for listingsFromJson().
     QJsonObject answer() const;
+    // How many of the ids the site answered for, from the first. Fewer than
+    // were asked for when there's an error, as it stops there.
+    int fetched() const { return m_fetched; }
 
 Q_SIGNALS:
     // Always from the event loop.

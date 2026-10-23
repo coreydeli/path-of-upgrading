@@ -358,6 +358,7 @@ private Q_SLOTS:
         TradeFetch *fetch = searcher.fetch(ids, u"Ab3dE9"_s);
         QVERIFY(finishes(fetch));
         QCOMPARE(fetch->error(), TradeReply::Error::None);
+        QCOMPARE(fetch->fetched(), 25);
         QCOMPARE(fetch->answer(), listings(ids, sold));
         QCOMPARE(urls(network), (QList<QUrl>{tradeFetchUrl(ids.first(10), u"Ab3dE9"_s),
                                              tradeFetchUrl(ids.mid(10, 10), u"Ab3dE9"_s),
@@ -383,6 +384,7 @@ private Q_SLOTS:
         QCOMPARE(fetch->errorString(),
                  u"The trade site has had too many requests from you. Try again in 5 seconds."_s);
         // with what came before it
+        QCOMPARE(fetch->fetched(), 10);
         QCOMPARE(fetch->answer(), listings(ids.first(10)));
         QCOMPARE(network.sent.size(), 2);
     }
@@ -398,6 +400,7 @@ private Q_SLOTS:
         QCOMPARE(finished.size(), 0);
         QVERIFY(finished.wait());
         QCOMPARE(fetch->error(), TradeReply::Error::None);
+        QCOMPARE(fetch->fetched(), 0);
         QCOMPARE(fetch->answer(), listings({}));
         QVERIFY(network.sent.isEmpty());
     }
