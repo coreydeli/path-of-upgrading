@@ -15,6 +15,20 @@ QJsonObject json(const char *text)
     return QJsonDocument::fromJson(text).object();
 }
 
+const PobStats before = {{u"FullDPS"_s, 1000}, {u"TotalEHP"_s, 5000}};
+
+PobPlacement ring(const QString &slot, const QString &replacing, double dps)
+{
+    return {.slot = slot,
+            .label = slot,
+            .replacing = replacing,
+            .stats = {{u"FullDPS"_s, dps}, {u"TotalEHP"_s, 5000}}};
+}
+
+const Item grimGrasp =
+    parseItem(u"Item Class: Rings\nRarity: Rare\nGrim Grasp\nPrismatic Ring\n--------\n+40 to maximum Life"_s)
+        .value();
+
 } // namespace
 
 class TestPobEval : public QObject
@@ -96,6 +110,50 @@ private Q_SLOTS:
         QFETCH(QString, text);
         QFETCH(QString, name);
         QCOMPARE(pobItemName(parseItem(text).value()), name);
+    }
+
+    void bestPlace()
+    {
+        const PobItemEval eval = {.placements = {
+                                      ring(u"Ring 1"_s, u"Doom Loop, Gold Ring"_s, 1100),
+                                      ring(u"Ring 2"_s, u"Woe Band, Ruby Ring"_s, 1300),
+                                  }};
+        const auto judgement = bestPlacement(before, eval, grimGrasp);
+        QVERIFY(judgement);
+        QCOMPARE(judgement->placement.slot, u"Ring 2"_s);
+        QCOMPARE(judgement->verdict.verdict, Verdict::Upgrade);
+        QCOMPARE(judgement->verdict.score, judgeWithPob(before, eval.placements.at(1).stats).score);
+    }
+
+    void itemYouWear()
+    {
+        // it can't be in the other ring slot as well
+        const PobItemEval eval = {.placements = {
+                                      ring(u"Ring 1"_s, u"Doom Loop, Gold Ring"_s, 1300),
+                                      ring(u"Ring 2"_s, u"Grim Grasp, Prismatic Ring"_s, 1000),
+                                  }};
+        const auto judgement = bestPlacement(before, eval, grimGrasp);
+        QVERIFY(judgement);
+        QCOMPARE(judgement->placement.slot, u"Ring 2"_s);
+        QCOMPARE(judgement->verdict.verdict, Verdict::Same);
+    }
+
+    void itemWithoutAName()
+    {
+        // which isn't the one in an empty slot
+        const PobItemEval eval = {.placements = {
+                                      ring(u"Ring 1"_s, QString(), 1100),
+                                      ring(u"Ring 2"_s, u"Doom Loop, Gold Ring"_s, 1300),
+                                  }};
+        const auto judgement = bestPlacement(before, eval, Item{});
+        QVERIFY(judgement);
+        QCOMPARE(judgement->placement.slot, u"Ring 2"_s);
+    }
+
+    void triedNowhere()
+    {
+        const PobItemEval eval = {.error = u"There is nowhere in the build this item can go."_s};
+        QVERIFY(!bestPlacement(before, eval, grimGrasp));
     }
 };
 

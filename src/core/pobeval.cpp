@@ -49,4 +49,25 @@ QString pobItemName(const Item &item)
     return item.name;
 }
 
+std::optional<PobJudgement> bestPlacement(const PobStats &before, const PobItemEval &eval, const Item &item,
+                                          const PobVerdictOptions &options)
+{
+    const QString name = pobItemName(item);
+    QList<PobPlacement> placements;
+    for (const PobPlacement &placement : eval.placements) {
+        if (!name.isEmpty() && placement.replacing == name)
+            placements << placement;
+    }
+    if (placements.isEmpty())
+        placements = eval.placements;
+
+    QList<PobVerdict> verdicts;
+    for (const PobPlacement &placement : placements)
+        verdicts << judgeWithPob(before, placement.stats, options);
+    const qsizetype best = bestVerdict(verdicts);
+    if (best < 0)
+        return std::nullopt;
+    return PobJudgement{placements.at(best), verdicts.at(best)};
+}
+
 } // namespace pou

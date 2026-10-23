@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QList>
 #include <QString>
+#include <optional>
 
 namespace pou {
 
@@ -44,5 +45,18 @@ PobEval readPobEval(const QJsonObject &answer);
 // Its name for an item, the way placements name what they replace:
 // "Grim Grasp, Prismatic Ring" for rares and uniques.
 QString pobItemName(const Item &item);
+
+// How an item does in one of the places it was tried in.
+struct PobJudgement
+{
+    PobPlacement placement;
+    PobVerdict verdict;
+};
+
+// The place an item does best in, see bestVerdict(). An item you wear, found
+// by its name, is only judged in the place it's in. Empty when it wasn't
+// tried anywhere, and the eval says why.
+std::optional<PobJudgement> bestPlacement(const PobStats &before, const PobItemEval &eval, const Item &item,
+                                          const PobVerdictOptions &options = {});
 
 } // namespace pou
