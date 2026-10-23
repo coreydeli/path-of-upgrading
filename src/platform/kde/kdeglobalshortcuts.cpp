@@ -47,6 +47,7 @@ QString KdeGlobalShortcuts::errorString() const
 
 void KdeGlobalShortcuts::add(const QString &id, const QString &name, const QKeySequence &key)
 {
+    Q_ASSERT(!m_actions.contains(id));
     auto *action = new QAction(name, this);
     action->setObjectName(id);
     action->setProperty("componentName", component());

@@ -20,9 +20,9 @@ public:
     virtual bool isAvailable() const = 0;
     virtual QString errorString() const = 0;
 
-    // By an id that mustn't change between versions, with a name for it in
-    // System Settings. It gets the key it had last time, or this one the
-    // first time.
+    // Once for each id, which mustn't change between versions, with a name
+    // for it in System Settings. It gets the key it had last time, or this
+    // one the first time.
     virtual void add(const QString &id, const QString &name, const QKeySequence &key) = 0;
     // None when it has no key, as when another program had it first.
     virtual QKeySequence key(const QString &id) const = 0;
