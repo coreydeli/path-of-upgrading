@@ -68,6 +68,25 @@ TradeSettings inLeague(const QString &name, bool hardcore = false, bool soloSelf
 
 const QStringList siteLeagues = {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s};
 
+// x1, x2...
+QStringList listingIds(int count)
+{
+    QStringList ids;
+    for (int i = 1; i <= count; ++i)
+        ids << u"x%1"_s.arg(i);
+    return ids;
+}
+
+// Shaped like the site's answer to a fetch, with only the ids in them, and
+// null for those sold since the search.
+QJsonObject listings(const QStringList &ids, const QStringList &sold = {})
+{
+    QJsonArray result;
+    for (const QString &id : ids)
+        result << (sold.contains(id) ? QJsonValue(QJsonValue::Null) : QJsonObject{{u"id"_s, id}});
+    return {{u"result"_s, result}};
+}
+
 QList<QUrl> urls(const FakeNetwork &network)
 {
     QList<QUrl> urls;
@@ -77,10 +96,11 @@ QList<QUrl> urls(const FakeNetwork &network)
 }
 
 // Waits for it to finish, if it hasn't.
-bool finishes(TradeSearch *search)
+template<typename Job>
+bool finishes(Job *job)
 {
-    QSignalSpy finished(search, &TradeSearch::finished);
-    return search->isFinished() || finished.wait();
+    QSignalSpy finished(job, &Job::finished);
+    return job->isFinished() || finished.wait();
 }
 
 } // namespace
@@ -324,6 +344,64 @@ private Q_SLOTS:
             tradePrefilledUrl(u"Standard"_s, QJsonDocument::fromJson(network.sent.last().body).object()));
     }
 
+    void fetches()
+    {
+        const QStringList ids = listingIds(25);
+        const QStringList sold = {u"x14"_s};
+        FakeNetwork network;
+        network.answers = {{.body = json(listings(ids.first(10)))},
+                           {.body = json(listings(ids.mid(10, 10), sold))},
+                           {.body = json(listings(ids.sliced(20)))}};
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+
+        TradeFetch *fetch = searcher.fetch(ids, u"Ab3dE9"_s);
+        QVERIFY(finishes(fetch));
+        QCOMPARE(fetch->error(), TradeReply::Error::None);
+        QCOMPARE(fetch->answer(), listings(ids, sold));
+        QCOMPARE(urls(network), (QList<QUrl>{tradeFetchUrl(ids.first(10), u"Ab3dE9"_s),
+                                             tradeFetchUrl(ids.mid(10, 10), u"Ab3dE9"_s),
+                                             tradeFetchUrl(ids.sliced(20), u"Ab3dE9"_s)}));
+
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        QVERIFY(client.findChildren<TradeReply *>().isEmpty());
+    }
+
+    void stopsFetchingAtAFailure()
+    {
+        const QStringList ids = listingIds(25);
+        FakeNetwork network;
+        network.answers = {{.body = json(listings(ids.first(10)))},
+                           {.status = 429, .headers = {{"Retry-After", "5"}}}};
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+
+        TradeFetch *fetch = searcher.fetch(ids, u"Ab3dE9"_s);
+        QVERIFY(finishes(fetch));
+        QCOMPARE(fetch->error(), TradeReply::Error::RateLimited);
+        QCOMPARE(fetch->retryAfter(), 5s);
+        QCOMPARE(fetch->errorString(),
+                 u"The trade site has had too many requests from you. Try again in 5 seconds."_s);
+        // with what came before it
+        QCOMPARE(fetch->answer(), listings(ids.first(10)));
+        QCOMPARE(network.sent.size(), 2);
+    }
+
+    void fetchesNothing()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeSearcher searcher(&client);
+
+        TradeFetch *fetch = searcher.fetch({}, u"Ab3dE9"_s);
+        QSignalSpy finished(fetch, &TradeFetch::finished);
+        QCOMPARE(finished.size(), 0);
+        QVERIFY(finished.wait());
+        QCOMPARE(fetch->error(), TradeReply::Error::None);
+        QCOMPARE(fetch->answer(), listings({}));
+        QVERIFY(network.sent.isEmpty());
+    }
+
     void callingOff()
     {
         FakeNetwork network;
@@ -344,13 +422,18 @@ private Q_SLOTS:
         TradeClient client(&network);
         TradeSearcher searcher(&client);
         TradeSearch *search = searcher.search(searchBody());
+        TradeFetch *fetch = searcher.fetch({u"x1"_s}, u"Ab3dE9"_s);
 
         int finished = 0;
         connect(search, &TradeSearch::finished, this, [&finished, search] {
             finished += search->isFinished();
             delete search;
         });
-        QTRY_COMPARE(finished, 1);
+        connect(fetch, &TradeFetch::finished, this, [&finished, fetch] {
+            finished += fetch->isFinished();
+            delete fetch;
+        });
+        QTRY_COMPARE(finished, 2);
     }
 };
 

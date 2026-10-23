@@ -7,6 +7,7 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -61,6 +62,59 @@ void TradeSearch::finish()
     QMetaObject::invokeMethod(this, &TradeSearch::finished, Qt::QueuedConnection);
 }
 
+TradeFetch::TradeFetch(TradeClient *client, const QStringList &listingIds, const QString &searchId,
+                       QObject *parent)
+    : QObject(parent)
+    , m_client(client)
+    , m_listingIds(listingIds)
+    , m_searchId(searchId)
+{
+    next();
+}
+
+QJsonObject TradeFetch::answer() const
+{
+    return {{u"result"_s, m_results}};
+}
+
+void TradeFetch::next()
+{
+    const QStringList ids = m_listingIds.mid(m_fetched, tradeFetchLimit);
+    if (ids.isEmpty()) {
+        finish();
+        return;
+    }
+    m_reply = m_client->fetch(ids, m_searchId);
+    connect(m_reply, &TradeReply::finished, this, &TradeFetch::answered);
+}
+
+void TradeFetch::answered()
+{
+    TradeReply *reply = m_reply;
+    reply->deleteLater();
+
+    if (reply->error() != TradeReply::Error::None) {
+        qCWarning(lcTrade, "Couldn't fetch listings from the trade site: %s",
+                  qUtf8Printable(reply->errorString()));
+        m_error = reply->error();
+        m_errorString = reply->errorString();
+        m_retryAfter = reply->retryAfter();
+        finish();
+        return;
+    }
+    // sold ones come back null, and stay in for listingsFromJson() to leave out
+    for (const QJsonValue &result : reply->answer().value(u"result").toArray())
+        m_results << result;
+    m_fetched = std::min(m_fetched + tradeFetchLimit, int(m_listingIds.size()));
+    next();
+}
+
+void TradeFetch::finish()
+{
+    m_finished = true;
+    QMetaObject::invokeMethod(this, &TradeFetch::finished, Qt::QueuedConnection);
+}
+
 TradeSearcher::TradeSearcher(TradeClient *client, QObject *parent)
     : QObject(parent)
     , m_client(client)
@@ -100,6 +154,11 @@ TradeSearch *TradeSearcher::search(const QJsonObject &body)
     search->m_league = league().tradeId();
     send(search, body);
     return search;
+}
+
+TradeFetch *TradeSearcher::fetch(const QStringList &listingIds, const QString &searchId)
+{
+    return new TradeFetch(m_client, listingIds, searchId, this);
 }
 
 void TradeSearcher::send(TradeSearch *search, const QJsonObject &body)
