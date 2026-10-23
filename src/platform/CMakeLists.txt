@@ -5,6 +5,7 @@ pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-keysyms xcb-randr xcb-xfi
 
 find_package(Qt6 REQUIRED COMPONENTS DBus)
 find_package(KF6GlobalAccel 6.0 REQUIRED)
+find_package(LayerShellQt 6.0 REQUIRED)
 
 add_library(pou_platform STATIC
     copykeys.cpp copykeys.h
@@ -13,6 +14,7 @@ add_library(pou_platform STATIC
     globalshortcuts.cpp globalshortcuts.h
     kde/kdeglobalshortcuts.cpp kde/kdeglobalshortcuts.h
     logging.cpp logging.h
+    overlay.cpp overlay.h
     screenmap.cpp screenmap.h
     xcb/xconnection.cpp xcb/xconnection.h
     xcb/xgameinput.cpp xcb/xgameinput.h
@@ -25,5 +27,5 @@ add_library(pou_platform STATIC
 target_include_directories(pou_platform PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(pou_platform
     PUBLIC Qt6::Gui PkgConfig::XCB
-    PRIVATE Qt6::DBus KF6::GlobalAccel
+    PRIVATE Qt6::DBus KF6::GlobalAccel LayerShellQt::Interface
 )
