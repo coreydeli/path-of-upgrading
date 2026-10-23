@@ -21,6 +21,13 @@ function(pou_add_app_test name)
     target_link_libraries(${name} PRIVATE pou_app)
 endfunction()
 
+# for tests with a stand-in for Path of Building, see fakepob.h
+function(pou_use_fakepob name)
+    target_sources(${name} PRIVATE fakepob.h)
+    target_compile_definitions(${name} PRIVATE FAKEPOB="$<TARGET_FILE:fakepob>")
+    add_dependencies(${name} fakepob)
+endfunction()
+
 pou_add_test(tst_slots)
 pou_add_test(tst_statnorm)
 pou_add_test(tst_numbers)
@@ -62,8 +69,7 @@ pou_add_services_test(tst_tradesearcher fakenetwork.h tradefixtures.h)
 qt_add_executable(fakepob fakepob.cpp)
 target_link_libraries(fakepob PRIVATE Qt6::Core)
 pou_add_services_test(tst_pobengine itemtexts.h)
-target_compile_definitions(tst_pobengine PRIVATE FAKEPOB="$<TARGET_FILE:fakepob>")
-add_dependencies(tst_pobengine fakepob)
+pou_use_fakepob(tst_pobengine)
 
 # with the Path of Building on this computer, when there's one
 pou_add_services_test(tst_installedpob itemtexts.h)
