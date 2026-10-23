@@ -7,6 +7,7 @@ add_library(pou_platform STATIC
     copykeys.cpp copykeys.h
     gameinput.cpp gameinput.h
     gamewindow.cpp gamewindow.h
+    globalshortcuts.h
     logging.cpp logging.h
     screenmap.cpp screenmap.h
     xcb/xconnection.cpp xcb/xconnection.h
