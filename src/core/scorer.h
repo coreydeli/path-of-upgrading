@@ -56,8 +56,9 @@ QList<StatRow> diffStats(const StatMap &newStats, const StatMap &oldStats, const
 
 // Compares an item with what's saved in its slot. Rings, charms and jewels go
 // into an empty slot if there is one, else replace your weakest; two-handed
-// weapons replace the weapon and offhand together. Name a slot to compare it
-// with what's there instead.
+// weapons replace the weapon and offhand together. An item you wear is
+// compared with itself, where you wear it. Name a slot to compare it with
+// what's there instead.
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &weights,
                    const StatFilter &ignore = {}, const QString &slot = {});
 

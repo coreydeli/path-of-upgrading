@@ -122,8 +122,15 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
     if (item.corrupted)
         notes << u"Corrupted, so it can't be modified any further."_s;
 
+    const QStringList slotNames = slotGroup(item.slot);
+    const auto worn = std::find_if(slotNames.cbegin(), slotNames.cend(), [&](const QString &name) {
+        return sameItem(item, itemIn(equipped, name));
+    });
+
     Comparison r;
-    if (item.slot == u"Weapon" && item.twoHanded && (slot.isEmpty() || slot == u"Weapon")) {
+    if (slot.isEmpty() && worn != slotNames.cend()) {
+        r = compareWith(item, {itemIn(equipped, *worn)}, weights, *worn, ignore);
+    } else if (item.slot == u"Weapon" && item.twoHanded && (slot.isEmpty() || slot == u"Weapon")) {
         r = compareWith(item, {itemIn(equipped, u"Weapon"_s), itemIn(equipped, u"Offhand"_s)}, weights,
                         u"Weapon"_s, ignore);
         if (equipped.contains(u"Offhand"_s))
@@ -152,9 +159,7 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
         notes << u"Your weapon is two-handed, so you can't use this with it."_s;
     }
 
-    const QStringList slotNames = slotGroup(item.slot);
-    r.isEquipped = std::any_of(slotNames.cbegin(), slotNames.cend(),
-                               [&](const QString &name) { return sameItem(item, itemIn(equipped, name)); });
+    r.isEquipped = worn != slotNames.cend();
 
     const bool hasBaseline = !r.replacing.isEmpty();
     if (!hasBaseline)
