@@ -1,10 +1,16 @@
 add_library(pou_services STATIC
     logging.cpp logging.h
     network.cpp network.h
+    pobengine.cpp pobengine.h
     ratesstore.cpp ratesstore.h
     tradeclient.cpp tradeclient.h
     tradedatastore.cpp tradedatastore.h
     tradesearcher.cpp tradesearcher.h
+)
+
+qt_add_resources(pou_services pobbridge
+    PREFIX /
+    FILES pobbridge.lua
 )
 
 target_compile_definitions(pou_services PRIVATE

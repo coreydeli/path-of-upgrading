@@ -38,8 +38,19 @@ pou_add_test(tst_characterstore itemtexts.h)
 pou_add_test(tst_seenstats itemtexts.h)
 pou_add_test(tst_settings)
 pou_add_test(tst_ratelimit)
+pou_add_test(tst_pobinstall)
 pou_add_services_test(tst_network)
 pou_add_services_test(tst_ratesstore fakenetwork.h)
 pou_add_services_test(tst_tradeclient fakenetwork.h)
 pou_add_services_test(tst_tradedatastore fakenetwork.h tradefixtures.h)
 pou_add_services_test(tst_tradesearcher fakenetwork.h tradefixtures.h)
+
+# with a stand-in for Path of Building
+qt_add_executable(fakepob fakepob.cpp)
+target_link_libraries(fakepob PRIVATE Qt6::Core)
+pou_add_services_test(tst_pobengine itemtexts.h)
+target_compile_definitions(tst_pobengine PRIVATE FAKEPOB="$<TARGET_FILE:fakepob>")
+add_dependencies(tst_pobengine fakepob)
+
+# with the Path of Building on this computer, when there's one
+pou_add_services_test(tst_installedpob itemtexts.h)
