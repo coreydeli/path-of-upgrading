@@ -19,11 +19,21 @@ namespace {
 // keep you waiting any longer.
 constexpr std::chrono::seconds maxWait = 30s;
 
+// "1 second", "45 seconds", or in minutes from two on, rounded up so that
+// trying again then works.
+QString duration(std::chrono::seconds time)
+{
+    const qint64 seconds = time.count();
+    if (seconds == 1)
+        return u"1 second"_s;
+    if (seconds < 120)
+        return u"%1 seconds"_s.arg(seconds);
+    return u"%1 minutes"_s.arg((seconds + 59) / 60);
+}
+
 QString tooMany(std::chrono::seconds retryAfter)
 {
-    const qint64 n = retryAfter.count();
-    return u"The trade site has had too many requests from you. Try again in %1."_s.arg(
-        n == 1 ? u"1 second"_s : u"%1 seconds"_s.arg(n));
+    return u"The trade site has had too many requests from you. Try again in %1."_s.arg(duration(retryAfter));
 }
 
 QString unreachable(const QNetworkReply &reply)

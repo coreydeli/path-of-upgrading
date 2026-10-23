@@ -101,6 +101,12 @@ private Q_SLOTS:
         QTest::newRow("unsaid")
             << FakeAnswer{.status = 429, .body = {}} << 60s
             << u"The trade site has had too many requests from you. Try again in 60 seconds."_s;
+        QTest::newRow("two minutes")
+            << FakeAnswer{.status = 429, .headers = {{"Retry-After", "120"}}} << 120s
+            << u"The trade site has had too many requests from you. Try again in 2 minutes."_s;
+        QTest::newRow("a long ban")
+            << FakeAnswer{.status = 429, .headers = {{"Retry-After", "1741"}}} << 1741s
+            << u"The trade site has had too many requests from you. Try again in 30 minutes."_s;
     }
 
     void rateLimited()
