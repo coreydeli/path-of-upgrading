@@ -86,9 +86,10 @@ void PobEngine::setInstall(const PobInstall &install)
     m_install = install;
 }
 
-void PobEngine::setBuild(const QString &xml)
+void PobEngine::setBuild(const QString &xml, const QList<PobItem> &wearing)
 {
     m_xml = xml;
+    m_wearing = wearing;
     if (m_process && !m_xml.isEmpty())
         sendBuild();
 }
@@ -134,6 +135,8 @@ void PobEngine::start()
 void PobEngine::sendBuild()
 {
     send({{u"cmd"_s, u"load"_s}, {u"xml"_s, m_xml}});
+    if (!m_wearing.isEmpty())
+        send({{u"cmd"_s, u"equip"_s}, {u"items"_s, toJson(m_wearing)}});
 }
 
 void PobEngine::send(QJsonObject request, PobReply *reply)
@@ -171,6 +174,12 @@ void PobEngine::answered(const QJsonObject &answer)
     if (!sent.reply) {
         if (!ok)
             qCWarning(lcPob, "Path of Building couldn't load the build: %s", qUtf8Printable(error));
+        // and when it's the gear you're wearing, for each item
+        for (const QJsonValue result : answer.value(u"results").toArray()) {
+            if (!result[u"ok"].toBool())
+                qCWarning(lcPob, "Path of Building couldn't put on your gear: %s",
+                          qUtf8Printable(result[u"error"].toString()));
+        }
     } else if (ok) {
         sent.reply->succeed(answer);
     } else {

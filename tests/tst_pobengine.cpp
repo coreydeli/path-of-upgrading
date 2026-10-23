@@ -93,6 +93,21 @@ private Q_SLOTS:
         QCOMPARE(pob.runs(), 1);
     }
 
+    void wearing()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        const QList<PobItem> gear{{.text = helmetOld, .slot = u"Helmet"_s},
+                                  {.text = advancedRing, .slot = u"Ring 2"_s}};
+        engine.setBuild(build, gear);
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetNew}}));
+        QVERIFY(finishes(reply.get()));
+        const QJsonObject answer = reply->answer();
+        QCOMPARE(answer.value(u"seen").toArray(), (QJsonArray{u"load"_s, u"equip"_s, u"eval"_s}));
+        QCOMPARE(answer.value(u"wearing").toArray(), itemsSent(gear));
+    }
+
     void nothingToRun()
     {
         PobEngine engine;

@@ -74,8 +74,9 @@ public:
 
     // The Path of Building to run, see findPob().
     void setInstall(const PobInstall &install);
-    // The build to judge items for, in Path of Building's XML.
-    void setBuild(const QString &xml);
+    // The build to judge items for, in Path of Building's XML, with the gear
+    // you're wearing in place of its own.
+    void setBuild(const QString &xml, const QList<PobItem> &wearing = {});
 
     // The build's numbers with each item, in the slot it names or each one it
     // can go in. See eval in pobbridge.lua for the answer.
@@ -105,6 +106,7 @@ private:
 
     std::optional<PobInstall> m_install;
     QString m_xml;
+    QList<PobItem> m_wearing;
     State m_state = State::Stopped;
     QString m_version;
     QProcess *m_process = nullptr;
