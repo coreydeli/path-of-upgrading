@@ -88,6 +88,8 @@ void PobEngine::setInstall(const PobInstall &install)
 
 void PobEngine::setBuild(const QString &xml, const QList<PobItem> &wearing)
 {
+    if (xml == m_xml && wearing == m_wearing)
+        return;
     m_xml = xml;
     m_wearing = wearing;
     if (m_process && !m_xml.isEmpty())

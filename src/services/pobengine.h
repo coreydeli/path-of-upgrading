@@ -21,6 +21,8 @@ struct PobItem
 {
     QString text;
     QString slot;
+
+    friend bool operator==(const PobItem &, const PobItem &) = default;
 };
 
 // A request to Path of Building. It belongs to the engine, and is yours to

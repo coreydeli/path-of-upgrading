@@ -108,6 +108,31 @@ private Q_SLOTS:
         QCOMPARE(answer.value(u"wearing").toArray(), itemsSent(gear));
     }
 
+    void changesBuild()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+
+        // loaded again while it's running, but not when it's the same
+        const QString other =
+            u"<PathOfBuilding2><Build level=\"91\" className=\"Witch\"/></PathOfBuilding2>"_s;
+        const QList<PobItem> gear{{.text = helmetOld, .slot = u"Helmet"_s}};
+        engine.setBuild(other, gear);
+        engine.setBuild(other, gear);
+        reply.reset(engine.evaluate({{.text = advancedRing}}));
+        QVERIFY(finishes(reply.get()));
+        const QJsonObject answer = reply->answer();
+        QCOMPARE(answer.value(u"xml").toString(), other);
+        QCOMPARE(answer.value(u"wearing").toArray(), itemsSent(gear));
+        QCOMPARE(answer.value(u"seen").toArray(),
+                 (QJsonArray{u"load"_s, u"eval"_s, u"load"_s, u"equip"_s, u"eval"_s}));
+        QCOMPARE(pob.runs(), 1);
+    }
+
     void nothingToRun()
     {
         PobEngine engine;
