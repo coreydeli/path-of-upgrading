@@ -252,6 +252,26 @@ private Q_SLOTS:
         QVERIFY(!QFile::exists(fileOf(dir.path(), softcore)));
     }
 
+    void holdsOffAfterAFailure()
+    {
+        QTemporaryDir dir;
+        FakeNetwork network;
+        network.answers = {{.error = QNetworkReply::HostNotFoundError}};
+        RatesStore store(&network, dir.path());
+        QVERIFY(refreshes(store, softcore));
+
+        QVERIFY(refreshes(store, softcore));
+        QCOMPARE(network.sent.size(), 1);
+        QCOMPARE(store.errorString(), unreachable);
+
+        // unless forced
+        network.answers = {{.body = json(overview(400))}};
+        QVERIFY(refreshes(store, softcore, true));
+        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(store.divineRate(), 400.0);
+        QVERIFY(store.errorString().isEmpty());
+    }
+
     void oneRefreshAtATime()
     {
         QTemporaryDir dir;

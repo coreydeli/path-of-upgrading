@@ -19,6 +19,7 @@ namespace pou {
 namespace {
 
 constexpr std::chrono::seconds freshFor = 1h;
+constexpr std::chrono::seconds holdFor = 5min;
 
 // Whether that was less than the time ago. A time ahead of the clock counts
 // as long ago, or it would never be asked for again.
@@ -63,13 +64,15 @@ void RatesStore::refresh(const QString &league, bool force)
         m_league = league;
         m_rates.clear();
         m_fetched = {};
+        m_failed = {};
         m_errorString.clear();
         read();
     } else if (isRefreshing()) {
         // that one's done when poe.ninja answers
         return;
     }
-    if (!force && within(m_fetched, QDateTime::currentDateTimeUtc(), freshFor)) {
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    if (!force && (within(m_fetched, now, freshFor) || within(m_failed, now, holdFor))) {
         QMetaObject::invokeMethod(this, &RatesStore::refreshed, Qt::QueuedConnection);
         return;
     }
@@ -137,6 +140,7 @@ void RatesStore::fail(const QString &why)
 {
     qCWarning(lcNinja, "Couldn't get currency rates for %s from poe.ninja: %s", qUtf8Printable(m_league),
               qUtf8Printable(why));
+    m_failed = QDateTime::currentDateTimeUtc();
     m_errorString = why;
 }
 

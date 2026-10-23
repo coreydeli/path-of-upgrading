@@ -42,7 +42,9 @@ public:
 
     // The rates for the league, by its trade site id (League::tradeId()):
     // from its file the first time, then from poe.ninja once they're an hour
-    // old, or right away when forced.
+    // old, or right away when forced. It's fine to call before every price
+    // check, as after poe.ninja lets it down it waits five minutes before
+    // asking again, unless forced.
     void refresh(const QString &league, bool force = false);
     bool isRefreshing() const { return !m_reply.isNull(); }
 
@@ -63,6 +65,7 @@ private:
     QString m_league;
     CurrencyRates m_rates;
     QDateTime m_fetched;
+    QDateTime m_failed; // when poe.ninja last let it down
     QString m_errorString;
     QPointer<QNetworkReply> m_reply; // while they're asked for
 };
