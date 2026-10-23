@@ -168,6 +168,8 @@ void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply
         // the site says how long, but a minute if it doesn't
         const int seconds = reply->rawHeader("Retry-After").toInt();
         const std::chrono::seconds retryAfter(seconds > 0 ? seconds : 60);
+        // and the rest wait as long
+        queue.limiter.holdFor(retryAfter, now);
         trade->fail(Error::RateLimited, tooMany(retryAfter), retryAfter);
     } else if (message.contains(u"too complex", Qt::CaseInsensitive)) {
         trade->fail(Error::TooComplex, u"The trade site says the search has too many filters."_s);

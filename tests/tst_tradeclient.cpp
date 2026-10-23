@@ -84,37 +84,39 @@ private Q_SLOTS:
         QCOMPARE(network.sent[1].request.url(), tradeDataUrl(u"leagues"_s));
     }
 
+    void rateLimited_data()
+    {
+        QTest::addColumn<FakeAnswer>("answer");
+        QTest::addColumn<std::chrono::seconds>("retryAfter");
+        QTest::addColumn<QString>("why");
+
+        const QByteArray tooMany = siteError(u"Rate limit exceeded"_s);
+        QTest::newRow("429")
+            << FakeAnswer{.status = 429, .body = tooMany, .headers = {{"Retry-After", "30"}}} << 30s
+            << u"The trade site has had too many requests from you. Try again in 30 seconds."_s;
+        QTest::newRow("in the message")
+            << FakeAnswer{.status = 400, .body = tooMany, .headers = {{"Retry-After", "1"}}} << 1s
+            << u"The trade site has had too many requests from you. Try again in 1 second."_s;
+        // a minute when the site doesn't say how long
+        QTest::newRow("unsaid")
+            << FakeAnswer{.status = 429, .body = {}} << 60s
+            << u"The trade site has had too many requests from you. Try again in 60 seconds."_s;
+    }
+
     void rateLimited()
     {
-        FakeNetwork network;
-        network.answers << FakeAnswer{.status = 429,
-                                      .body = siteError(u"Rate limit exceeded"_s),
-                                      .headers = {{"Retry-After", "30"}}}
-                        << FakeAnswer{.status = 400,
-                                      .body = siteError(u"Rate limit exceeded"_s),
-                                      .headers = {{"Retry-After", "1"}}}
-                        << FakeAnswer{.status = 429, .body = {}};
-        TradeClient client(&network);
+        QFETCH(FakeAnswer, answer);
+        QFETCH(std::chrono::seconds, retryAfter);
+        QFETCH(QString, why);
 
+        FakeNetwork network;
+        network.answers << answer;
+        TradeClient client(&network);
         TradeReply *reply = client.search(u"Standard"_s, {});
         QVERIFY(finishes(reply));
         QCOMPARE(reply->error(), TradeReply::Error::RateLimited);
-        QCOMPARE(reply->retryAfter(), 30s);
-        QCOMPARE(reply->errorString(),
-                 u"The trade site has had too many requests from you. Try again in 30 seconds."_s);
-
-        // said only in the message
-        TradeReply *message = client.search(u"Standard"_s, {});
-        QVERIFY(finishes(message));
-        QCOMPARE(message->error(), TradeReply::Error::RateLimited);
-        QCOMPARE(message->errorString(),
-                 u"The trade site has had too many requests from you. Try again in 1 second."_s);
-
-        // a minute when the site doesn't say how long
-        TradeReply *bare = client.search(u"Standard"_s, {});
-        QVERIFY(finishes(bare));
-        QCOMPARE(bare->error(), TradeReply::Error::RateLimited);
-        QCOMPARE(bare->retryAfter(), 60s);
+        QCOMPARE(reply->retryAfter(), retryAfter);
+        QCOMPARE(reply->errorString(), why);
     }
 
     void tooComplex()
@@ -303,6 +305,50 @@ private Q_SLOTS:
         QVERIFY(finishes(fifth));
         QCOMPARE(fifth->error(), TradeReply::Error::RateLimited);
         QCOMPARE(network.sent.size(), 4);
+    }
+
+    void waitsOutAHold()
+    {
+        FakeNetwork network;
+        // just under half a minute
+        network.answers << FakeAnswer{.status = 429, .headers = {{"Retry-After", "29"}}};
+        TradeClient client(&network);
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+
+        TradeReply *next = client.search(u"Standard"_s, {});
+        QSignalSpy waiting(next, &TradeReply::waiting);
+        QVERIFY(waiting.wait());
+        const auto wait = waiting.first().first().value<std::chrono::milliseconds>();
+        QCOMPARE_GT(wait, 28s);
+        QCOMPARE_LE(wait, 29s);
+        QCOMPARE(network.sent.size(), 1);
+    }
+
+    void failsRatherThanWaitLong_data()
+    {
+        QTest::addColumn<FakeAnswer>("answer");
+        QTest::addColumn<std::chrono::seconds>("hold");
+        // just over half a minute
+        QTest::newRow("said") << FakeAnswer{.status = 429, .headers = {{"Retry-After", "31"}}} << 31s;
+        QTest::newRow("unsaid") << FakeAnswer{.status = 429} << 60s;
+    }
+
+    void failsRatherThanWaitLong()
+    {
+        QFETCH(FakeAnswer, answer);
+        QFETCH(std::chrono::seconds, hold);
+        FakeNetwork network;
+        network.answers << answer;
+        TradeClient client(&network);
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+
+        // it fails at once, but still says so from the event loop
+        TradeReply *next = client.search(u"Standard"_s, {});
+        QSignalSpy finished(next, &TradeReply::finished);
+        QVERIFY(finished.wait());
+        QCOMPARE(next->error(), TradeReply::Error::RateLimited);
+        QCOMPARE(next->retryAfter(), hold);
+        QCOMPARE(network.sent.size(), 1);
     }
 };
 
