@@ -124,6 +124,14 @@ private Q_SLOTS:
         QCOMPARE(change->totals.first().delta, -60.0);
     }
 
+    void secondWeaponSetLeavesYourResistances()
+    {
+        const Equipped worn = {{u"Offhand 2"_s, withStats({{u"#% to Fire Resistance"_s, 30}})}};
+        const auto change =
+            changeIfEquipped(worn, withStats({{u"#% to Cold Resistance"_s, 20}}), {u"Offhand 2"_s});
+        QVERIFY(change->resists.isEmpty());
+    }
+
     void jewelleryEnergyShieldAddsUp()
     {
         const QString flat = u"# to maximum Energy Shield"_s;

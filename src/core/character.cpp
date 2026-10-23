@@ -61,6 +61,17 @@ double totalFor(const Gear &gear, const Tracked &t)
     return total;
 }
 
+// Only what you wear in your main slots counts toward your resistances.
+double resistFrom(const Gear &gear, const QString &key)
+{
+    double total = 0;
+    for (auto it = gear.cbegin(); it != gear.cend(); ++it) {
+        if (mainSlots().contains(it.key()))
+            total += statOf(it.value(), key);
+    }
+    return total;
+}
+
 std::optional<double> averageScore(const Gear &gear, const GearScoreFn &gearScore)
 {
     double sum = 0;
@@ -112,10 +123,7 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
         resists && resists->source == ResistSource::Pob ? u"Path of Building's"_s : u"Your"_s;
     for (Element e : allElements) {
         const QString key = resistKey(e);
-        double removed = 0;
-        for (const QString &slot : targets)
-            removed += statOf(before.value(slot), key);
-        const double delta = item.stats.value(key) - removed;
+        const double delta = resistFrom(after, key) - resistFrom(before, key);
         if (delta == 0)
             continue;
 
