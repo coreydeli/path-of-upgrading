@@ -54,10 +54,12 @@ private Q_SLOTS:
     void categories()
     {
         const TradeCategories fetched = TradeCategories::fromJson(tradefixtures::filters());
+        QVERIFY(!fetched.isEmpty());
         QCOMPARE(fetched.categoryFor(u"Helmets"_s), u"armour.helmet"_s);
         QCOMPARE(fetched.categoryFor(u"Two Hand Maces"_s), u"weapon.twomace"_s);
         QCOMPARE(fetched.categoryFor(u"Quarterstaves"_s), u"weapon.warstaff"_s);
         QCOMPARE(fetched.categoryFor(u"Boots"_s), u"armour.boots"_s);
+        QVERIFY(TradeCategories().isEmpty());
         QCOMPARE(TradeCategories().categoryFor(u"Boots"_s), u"armour.boots"_s);
         QVERIFY(TradeCategories().categoryFor(u"Stackable Currency"_s).isEmpty());
     }
