@@ -5,6 +5,7 @@
 #include "platform/xcb/xwindows.h"
 
 #include <QCoreApplication>
+#include <QRect>
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
@@ -48,6 +49,19 @@ private Q_SLOTS:
         info = describeWindow(m_x, window);
         QVERIFY(info.classes.isEmpty());
         QVERIFY(info.program.isEmpty());
+    }
+
+    void pointer()
+    {
+        // wherever the mouse is, it's on the screen, over a program's window
+        // or none
+        const XReply<xcb_get_geometry_reply_t> root(
+            xcb_get_geometry_reply(m_x.xcb(), xcb_get_geometry(m_x.xcb(), m_x.root()), nullptr));
+        QVERIFY(root);
+        const XPointer pointer = queryPointer(m_x);
+        QVERIFY(QRect(0, 0, root->width, root->height).contains(pointer.position));
+        const xcb_atom_t wmState = m_x.atom("WM_STATE");
+        QVERIFY(pointer.window == XCB_WINDOW_NONE || !m_x.values(pointer.window, wmState, wmState).isEmpty());
     }
 
 private:
