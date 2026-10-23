@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/item.h"
 #include "core/resists.h"
 
 #include <QHash>
 #include <QList>
+#include <QSet>
 #include <QString>
 #include <QUrl>
 #include <optional>
@@ -84,6 +86,11 @@ struct PobItem
 
     friend bool operator==(const PobItem &, const PobItem &) = default;
 };
+
+// The gear you wear, for Path of Building to put on the build in place of its
+// own. It leaves out what came from the build, which it has already, and the
+// jewels, which it has no slots for.
+QList<PobItem> pobWearing(const Equipped &gear, const QSet<QString> &fromPob, bool swapInUse);
 
 // The XML is a build for the first game, which the first Path of Building
 // shares in codes just like these.

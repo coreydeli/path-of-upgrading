@@ -499,6 +499,27 @@ private Q_SLOTS:
         }
     }
 
+    void wearing()
+    {
+        const Equipped gear = {
+            {u"Ring 1"_s, Item{.raw = u"Grim Grasp"_s}},    {u"Helmet"_s, Item{.raw = u"Doom Vise"_s}},
+            {u"Weapon 2"_s, Item{.raw = u"Corpse Song"_s}}, {u"Jewel 1"_s, Item{.raw = u"Rift Eye"_s}},
+            {u"Weapon"_s, Item{.raw = u"Victory Star"_s}},
+        };
+        // not the ring that came from the build, or the jewel
+        QCOMPARE(pobWearing(gear, {u"Ring 1"_s}, false), (QList<PobItem>{
+                                                             {u"Victory Star"_s, u"Weapon 1"_s},
+                                                             {u"Doom Vise"_s, u"Helmet"_s},
+                                                             {u"Corpse Song"_s, u"Weapon 1 Swap"_s},
+                                                         }));
+        QCOMPARE(pobWearing(gear, {}, true), (QList<PobItem>{
+                                                 {u"Victory Star"_s, u"Weapon 1 Swap"_s},
+                                                 {u"Doom Vise"_s, u"Helmet"_s},
+                                                 {u"Grim Grasp"_s, u"Ring 1"_s},
+                                                 {u"Corpse Song"_s, u"Weapon 1"_s},
+                                             }));
+    }
+
     void otherSetsAndTrees()
     {
         const QString first =

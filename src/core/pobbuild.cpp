@@ -2,6 +2,7 @@
 #include "core/pobbuild.h"
 
 #include "core/numbers.h"
+#include "core/slots.h"
 
 #include <QByteArray>
 #include <QHash>
@@ -700,6 +701,19 @@ QString gearSlot(const QString &pobSlot, bool swapInUse)
 QString pobSlot(const QString &slot, bool swapInUse)
 {
     return slotsByPobSlot().key(swapInUse ? inOtherSet(slot) : slot);
+}
+
+QList<PobItem> pobWearing(const Equipped &gear, const QSet<QString> &fromPob, bool swapInUse)
+{
+    QList<PobItem> wearing;
+    // in the order of our slots, not the hash's, which changes from run to run
+    for (const QString &slot : allSlots()) {
+        const auto item = gear.constFind(slot);
+        const QString theirs = pobSlot(slot, swapInUse);
+        if (item != gear.cend() && !fromPob.contains(slot) && !theirs.isEmpty())
+            wearing << PobItem{.text = item->raw, .slot = theirs};
+    }
+    return wearing;
 }
 
 bool isPoe1Build(const QString &xml)
