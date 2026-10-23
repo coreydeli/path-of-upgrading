@@ -41,9 +41,9 @@ struct PobPlaces
 // The places on this computer.
 PobPlaces pobPlaces();
 
-// The Flatpak's Path of Building, or else one from rusty-path-of-building
-// installed some other way. Empty when there's none, with why in words for
-// people when it's given.
-std::optional<PobInstall> findPob(const PobPlaces &places, QString *why = nullptr);
+// The Path of Building in the location when that's set, or else the
+// Flatpak's, or else one from rusty-path-of-building installed some other
+// way. Empty when there's none, with why in words for people when it's given.
+std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why = nullptr);
 
 } // namespace pou

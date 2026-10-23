@@ -62,7 +62,7 @@ private Q_SLOTS:
         QVERIFY(computer.installFlatpak());
         QVERIFY(addPob(computer.flatpakFolder()));
         QString why;
-        const std::optional<PobInstall> pob = findPob(computer.places, &why);
+        const std::optional<PobInstall> pob = findPob(computer.places, {}, &why);
         QVERIFY2(pob, qPrintable(why));
         QCOMPARE(pob->folder, computer.flatpakFolder());
         QCOMPARE(pob->program, u"/usr/bin/flatpak"_s);
@@ -75,7 +75,7 @@ private Q_SLOTS:
         Computer computer;
         QVERIFY(computer.installFlatpak(true));
         QVERIFY(addPob(computer.flatpakFolder()));
-        QVERIFY(findPob(computer.places));
+        QVERIFY(findPob(computer.places, {}));
     }
 
     void flatpakNotOpened()
@@ -86,7 +86,7 @@ private Q_SLOTS:
         QVERIFY(addPob(computer.places.home +
                        u"/.var/app/community.pathofbuilding.PathOfBuilding/data/RustyPathOfBuilding1"_s));
         QString why;
-        QVERIFY(!findPob(computer.places, &why));
+        QVERIFY(!findPob(computer.places, {}, &why));
         QCOMPARE(why, u"Open Path of Building PoE 2 once, so it downloads what it needs."_s);
     }
 
@@ -96,7 +96,7 @@ private Q_SLOTS:
         const QString install = u"Path of Building isn't installed. Get it from Flathub with: "
                                 u"flatpak install flathub community.pathofbuilding.PathOfBuilding"_s;
         QString why;
-        QVERIFY(!findPob(computer.places, &why));
+        QVERIFY(!findPob(computer.places, {}, &why));
         QCOMPARE(why, install);
 
         // nor with its folder but nothing deployed in it
@@ -104,14 +104,14 @@ private Q_SLOTS:
                               u"/app/community.pathofbuilding.PathOfBuilding"_s));
         QVERIFY(addPob(computer.flatpakFolder()));
         why.clear();
-        QVERIFY(!findPob(computer.places, &why));
+        QVERIFY(!findPob(computer.places, {}, &why));
         QCOMPARE(why, install);
 
         // nor without flatpak to run it
         QVERIFY(computer.installFlatpak());
         computer.places.flatpak.clear();
         why.clear();
-        QVERIFY(!findPob(computer.places, &why));
+        QVERIFY(!findPob(computer.places, {}, &why));
         QCOMPARE(why, install);
     }
 
@@ -135,7 +135,7 @@ private Q_SLOTS:
         Computer computer;
         const QString folder = computer.places.dataHome + u"/RustyPathOfBuilding2"_s;
         QVERIFY(addPob(folder));
-        const std::optional<PobInstall> pob = findPob(computer.places);
+        const std::optional<PobInstall> pob = findPob(computer.places, {});
         QVERIFY(pob);
         QCOMPARE(pob->folder, folder);
         QCOMPARE(pob->program, u"/usr/bin/luajit"_s);
@@ -144,7 +144,7 @@ private Q_SLOTS:
 
         computer.places.luajit.clear();
         QString why;
-        QVERIFY(!findPob(computer.places, &why));
+        QVERIFY(!findPob(computer.places, {}, &why));
         QCOMPARE(why, u"Running Path of Building needs LuaJIT, which isn't installed."_s);
     }
 
@@ -154,15 +154,57 @@ private Q_SLOTS:
         QVERIFY(computer.installFlatpak());
         QVERIFY(addPob(computer.flatpakFolder()));
         QVERIFY(addPob(computer.places.dataHome + u"/RustyPathOfBuilding2"_s));
-        std::optional<PobInstall> pob = findPob(computer.places);
+        std::optional<PobInstall> pob = findPob(computer.places, {});
         QVERIFY(pob);
         QVERIFY(pob->flatpak);
 
         // unless it hasn't been opened for Path of Exile 2
         QVERIFY(QFile::remove(computer.flatpakFolder() + u"/HeadlessWrapper.lua"_s));
-        pob = findPob(computer.places);
+        pob = findPob(computer.places, {});
         QVERIFY(pob);
         QVERIFY(!pob->flatpak);
+    }
+
+    void location()
+    {
+        Computer computer;
+        // the folder you pick, over the Flatpak
+        QVERIFY(computer.installFlatpak());
+        QVERIFY(addPob(computer.flatpakFolder()));
+        const QString folder = computer.dir.filePath(u"pob"_s);
+        QVERIFY(addPob(folder));
+        const std::optional<PobInstall> pob = findPob(computer.places, folder);
+        QVERIFY(pob);
+        QCOMPARE(pob->folder, folder);
+        QCOMPARE(pob->program, u"/usr/bin/luajit"_s);
+        QVERIFY(pob->arguments.isEmpty());
+        QVERIFY(!pob->flatpak);
+
+        QCOMPARE(findPob(computer.places, folder + u'/'), pob);
+    }
+
+    void nothingInLocation()
+    {
+        Computer computer;
+        QVERIFY(computer.installFlatpak());
+        QVERIFY(addPob(computer.flatpakFolder()));
+        const QString folder = computer.dir.filePath(u"empty"_s);
+        QVERIFY(QDir().mkpath(folder));
+        QString why;
+        QVERIFY(!findPob(computer.places, folder, &why));
+        QCOMPARE(why, u"There's no Path of Building in %1."_s.arg(folder));
+    }
+
+    void locationWithoutLuajit()
+    {
+        Computer computer;
+        const QString folder = computer.dir.filePath(u"pob"_s);
+        QVERIFY(addPob(folder));
+        computer.places.luajit.clear();
+        QString why;
+        QVERIFY(!findPob(computer.places, folder, &why));
+        QCOMPARE(why,
+                 u"Running the Path of Building in %1 needs LuaJIT, which isn't installed."_s.arg(folder));
     }
 };
 

@@ -37,6 +37,21 @@ bool hasFlatpak(const PobPlaces &places)
                        });
 }
 
+std::optional<PobInstall> pobIn(const PobPlaces &places, const QString &location, QString *why)
+{
+    const QString folder = QDir::cleanPath(location);
+    if (!hasPob(folder)) {
+        setWhy(why, u"There's no Path of Building in %1."_s.arg(location));
+        return std::nullopt;
+    }
+    if (places.luajit.isEmpty()) {
+        setWhy(why,
+               u"Running the Path of Building in %1 needs LuaJIT, which isn't installed."_s.arg(location));
+        return std::nullopt;
+    }
+    return PobInstall{.folder = folder, .program = places.luajit};
+}
+
 } // namespace
 
 PobPlaces pobPlaces()
@@ -53,8 +68,11 @@ PobPlaces pobPlaces()
     };
 }
 
-std::optional<PobInstall> findPob(const PobPlaces &places, QString *why)
+std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why)
 {
+    if (!location.isEmpty())
+        return pobIn(places, location, why);
+
     const bool flatpak = hasFlatpak(places);
     // in its own data folder, which is $XDG_DATA_HOME in the sandbox
     const QString sandboxed = places.home + u"/.var/app/"_s + pobFlatpakId + u"/data"_s + poe2Folder;
