@@ -68,4 +68,7 @@ void sortRows(QList<StatRow> &rows);
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &weights,
                    const StatFilter &ignore = {}, const QString &slot = {});
 
+// The note compare() adds when none of the stats that change have a weight.
+QString unweightedNote();
+
 } // namespace pou

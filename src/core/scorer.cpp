@@ -109,6 +109,11 @@ void sortRows(QList<StatRow> &rows)
     });
 }
 
+QString unweightedNote()
+{
+    return u"None of the stats that change have a weight yet."_s;
+}
+
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &allWeights,
                    const StatFilter &ignore, const QString &slot)
 {
@@ -177,7 +182,7 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
     const bool anyWeighted =
         std::any_of(r.rows.cbegin(), r.rows.cend(), [](const StatRow &row) { return row.weight != 0; });
     if (!anyWeighted && !r.rows.isEmpty())
-        notes << u"None of the stats that change have a weight yet."_s;
+        notes << unweightedNote();
 
     if (r.isEquipped)
         r.verdict = Verdict::Equipped;

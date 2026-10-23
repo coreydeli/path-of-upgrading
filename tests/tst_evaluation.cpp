@@ -564,6 +564,19 @@ private Q_SLOTS:
         QVERIFY(!e.comparison.percent);
     }
 
+    void unweightedOnlyByWeights()
+    {
+        Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        c.weights = {};
+        const QString unweighted = u"None of the stats that change have a weight yet."_s;
+        QVERIFY(!evaluate(lifeAmulet(64), c).comparison.notes.contains(unweighted));
+
+        c.buildProfile = u"none of them"_s;
+        const Evaluation ours = evaluate(lifeAmulet(64), c);
+        QVERIFY(ours.comparison.notes.contains(unweighted));
+        QVERIFY(!withPob(ours, {}).comparison.notes.contains(unweighted));
+    }
+
     void jewelSockets()
     {
         const Item jewel =
