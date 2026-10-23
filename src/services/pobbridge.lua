@@ -82,7 +82,12 @@ io.read = function() end
 local started, failure = pcall(dofile, "HeadlessWrapper.lua")
 io.read = read
 if not started or not build then
-    answer({ready = false, error = promptError() or failure or "Path of Building didn't start."})
+    local why = promptError() or failure
+    if why then
+        answer({ready = false, error = "Path of Building didn't start: " .. tostring(why)})
+    else
+        answer({ready = false, error = "Path of Building didn't start."})
+    end
     os.exit(1)
 end
 answer({ready = true, version = launch.versionNumber})
