@@ -212,7 +212,10 @@ void PobEngine::send(QJsonObject request, PobReply *reply)
 {
     request.insert(u"id"_s, ++m_lastId);
     m_process->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + '\n');
-    m_sent << Sent{.id = m_lastId, .items = request.value(u"items").toArray().size(), .reply = reply};
+    m_sent << Sent{.id = m_lastId,
+                   .items = request.value(u"items").toArray().size(),
+                   .eval = reply != nullptr,
+                   .reply = reply};
     // when it's the one it's waiting on
     if (m_sent.size() == 1)
         watch();
@@ -258,7 +261,7 @@ void PobEngine::answered(const Sent &sent, const QJsonObject &answer)
 {
     const bool ok = answer.value(u"ok").toBool();
     const QString error = answer.value(u"error").toString(u"Path of Building didn't say what went wrong."_s);
-    if (!sent.reply) {
+    if (!sent.eval) {
         if (!ok)
             qCWarning(lcPob, "Path of Building couldn't load the build: %s", qUtf8Printable(error));
         // and when it's the gear you're wearing, for each item
@@ -267,6 +270,8 @@ void PobEngine::answered(const Sent &sent, const QJsonObject &answer)
                 qCWarning(lcPob, "Path of Building couldn't put on your gear: %s",
                           qUtf8Printable(result[u"error"].toString()));
         }
+    } else if (!sent.reply) {
+        // it was deleted, so the answer isn't wanted
     } else if (ok) {
         sent.reply->succeed(answer);
     } else {

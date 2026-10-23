@@ -120,7 +120,8 @@ private:
     {
         int id = 0;
         qsizetype items = 0;
-        QPointer<PobReply> reply; // none for the build, and null once it's deleted
+        bool eval = false;        // from evaluate(), not the build or your gear
+        QPointer<PobReply> reply; // for an eval, null once it's deleted
     };
 
     void start();

@@ -524,6 +524,10 @@ private Q_SLOTS:
     void deletedEarly()
     {
         FakePob pob;
+        // and the answer isn't taken for the build's
+        const QJsonObject couldnt{{u"ok"_s, false}, {u"error"_s, u"Nowhere to put it."_s}};
+        QVERIFY(pob.answers({{u"results"_s, QJsonArray{couldnt}}}));
+        QTest::failOnWarning(QRegularExpression(u"your gear"_s));
         PobEngine engine;
         engine.setInstall(pob.install());
         engine.setBuild(build);
