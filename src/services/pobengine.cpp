@@ -341,13 +341,16 @@ void PobEngine::warn(const QString &why) const
 }
 
 // Gives it a while for what it's doing, which is starting or answering the
-// oldest request, before it's given up on.
+// oldest request, before it's given up on, or a while with nothing to do
+// before it's stopped.
 void PobEngine::watch()
 {
     if (m_state == State::Starting)
         m_timer.start(m_timeouts.start);
     else if (m_state == State::Ready && !m_sent.isEmpty())
         m_timer.start(m_timeouts.request + m_timeouts.perItem * m_sent.first().items);
+    else if (m_state == State::Ready)
+        m_timer.start(m_timeouts.idle);
     else
         m_timer.stop();
 }
@@ -356,8 +359,10 @@ void PobEngine::timedOut()
 {
     if (m_state == State::Starting)
         failStart(u"Path of Building didn't start in time."_s);
-    else
+    else if (!m_sent.isEmpty())
         giveUp(u"Path of Building didn't answer in time."_s);
+    else
+        stop();
 }
 
 void PobEngine::setState(State state)

@@ -2,6 +2,7 @@
 #include "itemtexts.h"
 #include "services/pobengine.h"
 
+#include <QElapsedTimer>
 #include <QJsonArray>
 #include <QRegularExpression>
 #include <QSignalSpy>
@@ -266,6 +267,30 @@ private Q_SLOTS:
         QCOMPARE(reply->errorString(), QString());
         QCOMPARE(pob.runs(), 1);
         QCOMPARE(other.runs(), 1);
+    }
+
+    void idles()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setTimeouts({.idle = 400ms});
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+
+        // and is asked something again before then, so it waits from that
+        QTest::qWait(100);
+        reply.reset(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QElapsedTimer since;
+        since.start();
+        QSignalSpy changed(&engine, &PobEngine::stateChanged);
+        QVERIFY(changed.wait());
+        QCOMPARE(changed.first().first().value<State>(), State::Stopped);
+        QCOMPARE_GE(since.elapsed(), 350);
+        QTRY_COMPARE(pob.stops(), 1);
+        QCOMPARE(pob.runs(), 1);
     }
 
     void startFails()

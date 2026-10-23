@@ -85,6 +85,8 @@ public:
         // to answer, with more for each item
         std::chrono::milliseconds request = std::chrono::seconds(15);
         std::chrono::milliseconds perItem = std::chrono::seconds(1);
+        // with nothing to do, until it's stopped to free its memory
+        std::chrono::milliseconds idle = std::chrono::minutes(10);
         // after it couldn't start, until it's tried again
         std::chrono::milliseconds retry = std::chrono::seconds(30);
         // to stop on its own before it's killed
