@@ -199,6 +199,45 @@ QList<ReportFigure> pobChanges(const PobVerdict &v)
     return changes;
 }
 
+QList<ReportFigure> characterChanges(const CharacterChange &change)
+{
+    QList<ReportFigure> changes;
+    for (const ResistChange &r : change.resists) {
+        ReportFigure f{.label = r.label, .change = signedNumber(r.delta) + u'%', .tone = toneOf(r.delta)};
+        if (r.from && r.to) {
+            f.from = formatNumber(roundTo(*r.from, 1)) + u'%';
+            f.to = formatNumber(roundTo(*r.to, 1)) + u'%';
+            const bool thinner = r.thin && r.delta < 0;
+            if (r.under)
+                f.note = u"under the cap"_s;
+            else if (thinner)
+                f.note = u"barely capped"_s;
+            if (r.delta > 0)
+                f.tone = r.wasUnder ? Tone::Good : Tone::Plain;
+            else
+                f.tone = r.under || thinner ? Tone::Bad : Tone::Plain;
+            // over the cap either way
+            f.minor = !r.under && !r.wasUnder && !thinner;
+        }
+        changes << f;
+    }
+    for (const TotalChange &t : change.totals) {
+        changes << ReportFigure{.label = t.label,
+                                .change = signedAmount(t.delta),
+                                .from = amount(t.from),
+                                .to = amount(t.to),
+                                .tone = toneOf(t.delta)};
+    }
+    if (const std::optional<TotalChange> &overall = change.overall; overall && overall->delta != 0) {
+        changes << ReportFigure{.label = u"Average gear score"_s,
+                                .change = signedAmount(overall->delta),
+                                .from = amount(overall->from),
+                                .to = amount(overall->to),
+                                .tone = toneOf(overall->delta)};
+    }
+    return changes;
+}
+
 bool isUnique(const Item &item)
 {
     return item.rarity.compare(u"Unique", Qt::CaseInsensitive) == 0;
@@ -255,6 +294,8 @@ ItemReport reportOf(const ItemCheck &check)
         report.caps = capsOf(e.pob->verdict);
         report.headline = headlineOf(e.pob->verdict);
         report.changes = pobChanges(e.pob->verdict);
+    } else if (e.change) {
+        report.changes = characterChanges(*e.change);
     }
     putPobStatus(report, check);
     report.notes << r.notes;

@@ -37,6 +37,7 @@ struct ReportFigure
     Q_PROPERTY(QString to MEMBER to)
     Q_PROPERTY(QString note MEMBER note)
     Q_PROPERTY(pou::Tone::Tone tone MEMBER tone)
+    Q_PROPERTY(bool minor MEMBER minor)
 
 public:
     QString label;  // "Life"
@@ -46,6 +47,7 @@ public:
     QString to;
     QString note; // "under the cap"
     Tone::Tone tone = Tone::Plain;
+    bool minor = false; // one to leave out when there's little room
 
     friend bool operator==(const ReportFigure &, const ReportFigure &) = default;
 };

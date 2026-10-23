@@ -281,6 +281,7 @@ private Q_SLOTS:
                      {.label = u"DPS"_s, .change = u"0%"_s},
                      {.label = u"Resistance toward the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
                  }));
+        QVERIFY(reportOf(judgedByPob({})).headline.isEmpty());
         QVERIFY(reportOf(judged(Verdict::Upgrade)).headline.isEmpty());
     }
 
@@ -308,8 +309,11 @@ private Q_SLOTS:
             {.stat = u"SpiritUnreserved"_s, .from = 12, .to = 0},
             {.stat = u"Mana"_s, .from = 80, .to = 95},
         };
+        ItemCheck check = judgedByPob(v);
+        // which Path of Building knows better
+        check.evaluation.change = CharacterChange{.totals = {{u"Life"_s, 1000, 1100, 100}}};
         QCOMPARE(
-            reportOf(judgedByPob(v)).changes,
+            reportOf(check).changes,
             (QList<ReportFigure>{
                 {.label = u"Fire res"_s,
                  .change = u"-15%"_s,
@@ -348,16 +352,113 @@ private Q_SLOTS:
             }));
     }
 
-    void raisedCap()
+    void changedCaps()
     {
         PobVerdict v;
         v.verdict = Verdict::Upgrade;
-        v.resists = {{.element = Element::Fire, .from = 75, .to = 75, .max = 78, .wasCapped = true}};
-        QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{{.label = u"Fire res"_s,
-                                                                         .change = u"0%"_s,
-                                                                         .from = u"75%"_s,
-                                                                         .to = u"75%"_s,
-                                                                         .note = u"under the cap"_s}}));
+        v.resists = {
+            {.element = Element::Fire, .from = 75, .to = 75, .max = 78, .wasCapped = true},
+            {.element = Element::Cold, .from = 74, .to = 74, .max = 74, .capped = true},
+        };
+        QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{
+                                                       {.label = u"Fire res"_s,
+                                                        .change = u"0%"_s,
+                                                        .from = u"75%"_s,
+                                                        .to = u"75%"_s,
+                                                        .note = u"under the cap"_s},
+                                                       {.label = u"Cold res"_s,
+                                                        .change = u"0%"_s,
+                                                        .from = u"74%"_s,
+                                                        .to = u"74%"_s,
+                                                        .note = u"capped"_s,
+                                                        .tone = Tone::Good},
+                                                   }));
+    }
+
+    void changesByYourGear()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        CharacterChange &change = check.evaluation.change.emplace();
+        using enum Element;
+        change.resists = {
+            {.element = Fire,
+             .label = u"Fire res"_s,
+             .delta = -20,
+             .from = 80,
+             .to = 60,
+             .safe = 85,
+             .under = true},
+            {.element = Cold,
+             .label = u"Cold res"_s,
+             .delta = -5,
+             .from = 85,
+             .to = 80,
+             .safe = 85,
+             .thin = true},
+            {.element = Lightning,
+             .label = u"Lightning res"_s,
+             .delta = 10,
+             .from = 70,
+             .to = 80,
+             .safe = 85,
+             .wasUnder = true},
+            {.element = Chaos, .label = u"Chaos res"_s, .delta = 7, .from = 90, .to = 97, .safe = 85},
+        };
+        change.totals = {{u"Life"_s, 1200, 1350, 150}, {u"Spirit"_s, 100, 70, -30}};
+        change.overall = TotalChange{u"Gear score"_s, 56, 60, 4};
+        QCOMPARE(reportOf(check).changes, (QList<ReportFigure>{
+                                              {.label = u"Fire res"_s,
+                                               .change = u"-20%"_s,
+                                               .from = u"80%"_s,
+                                               .to = u"60%"_s,
+                                               .note = u"under the cap"_s,
+                                               .tone = Tone::Bad},
+                                              {.label = u"Cold res"_s,
+                                               .change = u"-5%"_s,
+                                               .from = u"85%"_s,
+                                               .to = u"80%"_s,
+                                               .note = u"barely capped"_s,
+                                               .tone = Tone::Bad},
+                                              {.label = u"Lightning res"_s,
+                                               .change = u"+10%"_s,
+                                               .from = u"70%"_s,
+                                               .to = u"80%"_s,
+                                               .tone = Tone::Good},
+                                              {.label = u"Chaos res"_s,
+                                               .change = u"+7%"_s,
+                                               .from = u"90%"_s,
+                                               .to = u"97%"_s,
+                                               .minor = true},
+                                              {.label = u"Life"_s,
+                                               .change = u"+150"_s,
+                                               .from = u"1,200"_s,
+                                               .to = u"1,350"_s,
+                                               .tone = Tone::Good},
+                                              {.label = u"Spirit"_s,
+                                               .change = u"-30"_s,
+                                               .from = u"100"_s,
+                                               .to = u"70"_s,
+                                               .tone = Tone::Bad},
+                                              {.label = u"Average gear score"_s,
+                                               .change = u"+4"_s,
+                                               .from = u"56"_s,
+                                               .to = u"60"_s,
+                                               .tone = Tone::Good},
+                                          }));
+
+        change = {};
+        change.resists = {
+            // without your resistances, only the change to them is known
+            {.element = Fire, .label = u"Fire res"_s, .delta = 12},
+            {.element = Cold, .label = u"Cold res"_s, .delta = -7, .from = 97, .to = 90, .safe = 85},
+        };
+        change.overall = TotalChange{u"Gear score"_s, 56, 56, 0};
+        QCOMPARE(
+            reportOf(check).changes,
+            (QList<ReportFigure>{
+                {.label = u"Fire res"_s, .change = u"+12%"_s, .tone = Tone::Good},
+                {.label = u"Cold res"_s, .change = u"-7%"_s, .from = u"97%"_s, .to = u"90%"_s, .minor = true},
+            }));
     }
 
     void pobStatus_data()
