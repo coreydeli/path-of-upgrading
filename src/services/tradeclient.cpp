@@ -9,9 +9,14 @@
 #include <QNetworkReply>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 
 namespace pou {
 namespace {
+
+// How long a request may wait its turn. It fails as RateLimited rather than
+// keep you waiting any longer.
+constexpr std::chrono::seconds maxWait = 30s;
 
 QString tooMany(std::chrono::seconds retryAfter)
 {
@@ -56,36 +61,80 @@ void TradeReply::finish()
     QMetaObject::invokeMethod(this, &TradeReply::finished, Qt::QueuedConnection);
 }
 
+void TradeReply::hold(std::chrono::milliseconds wait)
+{
+    QMetaObject::invokeMethod(this, [this, wait] { Q_EMIT waiting(wait); }, Qt::QueuedConnection);
+}
+
 TradeClient::TradeClient(QNetworkAccessManager *network, QObject *parent)
     : QObject(parent)
     , m_network(network)
-{}
+{
+    for (Queue *queue : {&m_searches, &m_fetches, &m_data}) {
+        queue->timer.setSingleShot(true);
+        queue->timer.setTimerType(Qt::PreciseTimer);
+        connect(&queue->timer, &QTimer::timeout, this, [this, queue] { pump(*queue); });
+    }
+}
 
 TradeReply *TradeClient::search(const QString &league, const QJsonObject &body)
 {
     QNetworkRequest request = apiRequest(tradeSearchUrl(league));
     request.setHeader(QNetworkRequest::ContentTypeHeader, QByteArrayLiteral("application/json"));
-    return send(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    return send(m_searches, request, QJsonDocument(body).toJson(QJsonDocument::Compact));
 }
 
 TradeReply *TradeClient::fetch(const QStringList &listingIds, const QString &searchId)
 {
-    return send(apiRequest(tradeFetchUrl(listingIds, searchId)));
+    return send(m_fetches, apiRequest(tradeFetchUrl(listingIds, searchId)));
 }
 
 TradeReply *TradeClient::data(const QString &name)
 {
-    return send(apiRequest(tradeDataUrl(name)));
+    return send(m_data, apiRequest(tradeDataUrl(name)));
 }
 
-TradeReply *TradeClient::send(const QNetworkRequest &request, const QByteArray &body)
+TradeReply *TradeClient::send(Queue &queue, const QNetworkRequest &request, const QByteArray &body)
 {
     auto *trade = new TradeReply(this);
-    QNetworkReply *reply = body.isEmpty() ? m_network->get(request) : m_network->post(request, body);
+    queue.waiting << Queue::Waiting{trade, request, body, Clock::now() + maxWait};
+    pump(queue);
+    return trade;
+}
+
+void TradeClient::pump(Queue &queue)
+{
+    while (!queue.waiting.isEmpty()) {
+        const Queue::Waiting &next = queue.waiting.constFirst();
+        if (!next.trade) {
+            queue.waiting.removeFirst();
+            continue;
+        }
+        const Clock::time_point now = Clock::now();
+        const std::chrono::milliseconds wait = queue.limiter.wait(now);
+        if (wait == 0ms) {
+            queue.limiter.sent(now);
+            start(queue.waiting.takeFirst());
+        } else if (now + wait > next.deadline) {
+            const auto retryAfter = std::chrono::ceil<std::chrono::seconds>(wait);
+            queue.waiting.takeFirst().trade->fail(TradeReply::Error::RateLimited, tooMany(retryAfter),
+                                                  retryAfter);
+        } else {
+            next.trade->hold(wait);
+            queue.timer.start(wait);
+            return;
+        }
+    }
+}
+
+void TradeClient::start(const Queue::Waiting &waiting)
+{
+    TradeReply *trade = waiting.trade;
+    QNetworkReply *reply = waiting.body.isEmpty() ? m_network->get(waiting.request)
+                                                  : m_network->post(waiting.request, waiting.body);
     // deleting the trade reply calls the request off
     reply->setParent(trade);
     connect(reply, &QNetworkReply::finished, trade, [this, trade, reply] { answered(trade, reply); });
-    return trade;
 }
 
 void TradeClient::answered(TradeReply *trade, QNetworkReply *reply)

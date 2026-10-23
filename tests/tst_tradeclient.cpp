@@ -210,6 +210,28 @@ private Q_SLOTS:
         QTRY_VERIFY(finished);
         QVERIFY(network.sent.first().reply.isNull());
     }
+
+    void spacesRequestsOut()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        // four in ten seconds, under the safe guesses with one to spare
+        TradeReply *fifth = nullptr;
+        for (int i = 0; i < 5; ++i)
+            fifth = client.search(u"Standard"_s, {});
+        QCOMPARE(network.sent.size(), 4);
+
+        QSignalSpy waiting(fifth, &TradeReply::waiting);
+        QVERIFY(waiting.wait());
+        const auto wait = waiting.first().first().value<std::chrono::milliseconds>();
+        QCOMPARE_GT(wait, 9s);
+        QCOMPARE_LE(wait, 10250ms);
+        QVERIFY(!fifth->isFinished());
+
+        // fetches are limited apart
+        QVERIFY(finishes(client.fetch({u"x1"_s}, u"Ab3dE9"_s)));
+        QCOMPARE(network.sent.size(), 5);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTradeClient)

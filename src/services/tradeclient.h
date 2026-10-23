@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/ratelimit.h"
+
 #include <QByteArray>
 #include <QJsonObject>
+#include <QList>
 #include <QNetworkRequest>
 #include <QObject>
+#include <QPointer>
 #include <QString>
 #include <QStringList>
+#include <QTimer>
 #include <chrono>
 
 class QNetworkAccessManager;
@@ -44,6 +49,9 @@ public:
 Q_SIGNALS:
     // Always from the event loop, never from inside a call to the client.
     void finished();
+    // When it's next to go but has to wait its turn under the site's limits,
+    // with how long that will be. Also from the event loop.
+    void waiting(std::chrono::milliseconds wait);
 
 private:
     friend class TradeClient;
@@ -52,6 +60,7 @@ private:
     void succeed(const QJsonObject &answer);
     void fail(Error error, const QString &why, std::chrono::seconds retryAfter = {});
     void finish();
+    void hold(std::chrono::milliseconds wait);
 
     bool m_finished = false;
     Error m_error = Error::None;
@@ -60,7 +69,9 @@ private:
     QJsonObject m_answer;
 };
 
-// The official trade site.
+// The official trade site. Searches, fetches and data requests each wait
+// their turn to stay under the site's limits, and fail as RateLimited when
+// that would take more than half a minute.
 class TradeClient : public QObject
 {
     Q_OBJECT
@@ -79,11 +90,35 @@ public:
     TradeReply *data(const QString &name);
 
 private:
+    using Clock = RateLimiter::Clock;
+
+    // Requests the site limits together.
+    struct Queue
+    {
+        struct Waiting
+        {
+            QPointer<TradeReply> trade; // null once it's called off
+            QNetworkRequest request;
+            QByteArray body;
+            Clock::time_point deadline;
+        };
+
+        RateLimiter limiter;
+        QList<Waiting> waiting; // in the order they were made
+        QTimer timer;           // for when the first can go
+    };
+
     // POSTed when there's a body
-    TradeReply *send(const QNetworkRequest &request, const QByteArray &body = {});
+    TradeReply *send(Queue &queue, const QNetworkRequest &request, const QByteArray &body = {});
+    // Sends what can go, and fails what would wait too long.
+    void pump(Queue &queue);
+    void start(const Queue::Waiting &waiting);
     void answered(TradeReply *trade, QNetworkReply *reply);
 
     QNetworkAccessManager *m_network;
+    Queue m_searches;
+    Queue m_fetches;
+    Queue m_data;
 };
 
 } // namespace pou
