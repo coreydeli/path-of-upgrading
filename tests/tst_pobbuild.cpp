@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/parser.h"
 #include "core/pobbuild.h"
+#include "core/slots.h"
 #include "pobfixtures.h"
 
 #include <QTest>
@@ -413,6 +414,7 @@ private Q_SLOTS:
         QCOMPARE(sortedSlots(*build), (QStringList{u"Belt"_s, u"Gloves"_s, u"Life Flask"_s, u"Offhand"_s,
                                                    u"Weapon"_s, u"Weapon 2"_s}));
         // its second weapon set is the one in use
+        QVERIFY(build->swapInUse);
         QCOMPARE(nameIn(*build, u"Weapon"_s), u"Victory Star"_s);
         QCOMPARE(nameIn(*build, u"Offhand"_s), u"Rapture Ward"_s);
         QCOMPARE(nameIn(*build, u"Weapon 2"_s), u"Corpse Song"_s);
@@ -443,10 +445,79 @@ private Q_SLOTS:
                                 .replace(u"useSecondWeaponSet=\"true\""_s, u"useSecondWeaponSet=\"false\""_s);
         const auto build = parsePobBuild(xml);
         QVERIFY(build);
+        QVERIFY(!build->swapInUse);
         QCOMPARE(nameIn(*build, u"Weapon"_s), u"Corpse Song"_s);
         QCOMPARE(nameIn(*build, u"Weapon 2"_s), u"Victory Star"_s);
         QCOMPARE(nameIn(*build, u"Offhand 2"_s), u"Rapture Ward"_s);
         QVERIFY(!build->gear.contains(u"Offhand"_s));
+    }
+
+    void slotsBothWays_data()
+    {
+        QTest::addColumn<QString>("theirs");
+        QTest::addColumn<bool>("swapInUse");
+        QTest::addColumn<QString>("ours");
+
+        const auto row = [](const QString &theirs, bool swapInUse, const QString &ours) {
+            QTest::addRow("%s, %s set", qPrintable(theirs), swapInUse ? "second" : "first")
+                << theirs << swapInUse << ours;
+        };
+        row(u"Weapon 1"_s, false, u"Weapon"_s);
+        row(u"Weapon 2"_s, false, u"Offhand"_s);
+        row(u"Weapon 1 Swap"_s, false, u"Weapon 2"_s);
+        row(u"Weapon 2 Swap"_s, false, u"Offhand 2"_s);
+        row(u"Weapon 1"_s, true, u"Weapon 2"_s);
+        row(u"Weapon 2"_s, true, u"Offhand 2"_s);
+        row(u"Weapon 1 Swap"_s, true, u"Weapon"_s);
+        row(u"Weapon 2 Swap"_s, true, u"Offhand"_s);
+        row(u"Helmet"_s, true, u"Helmet"_s);
+        row(u"Ring 2"_s, false, u"Ring 2"_s);
+        row(u"Flask 1"_s, false, u"Life Flask"_s);
+        row(u"Flask 2"_s, true, u"Mana Flask"_s);
+        row(u"Charm 3"_s, false, u"Charm 3"_s);
+    }
+
+    void slotsBothWays()
+    {
+        QFETCH(QString, theirs);
+        QFETCH(bool, swapInUse);
+        QFETCH(QString, ours);
+        QCOMPARE(gearSlot(theirs, swapInUse), ours);
+        QCOMPARE(pobSlot(ours, swapInUse), theirs);
+    }
+
+    void unmatchedSlots()
+    {
+        QCOMPARE(gearSlot(u"Ring 3"_s, false), QString());
+        QCOMPARE(gearSlot(u"Jewel 61834"_s, true), QString());
+        QCOMPARE(pobSlot(u"Jewel 1"_s, true), QString());
+        QCOMPARE(pobSlot(QString(), false), QString());
+        // every one of ours but the jewels has one of its own
+        for (const QString &slot : allSlots()) {
+            if (groupOf(slot) != u"Jewel")
+                QVERIFY2(!pobSlot(slot, false).isEmpty(), qPrintable(slot));
+        }
+    }
+
+    void wearing()
+    {
+        const Equipped gear = {
+            {u"Ring 1"_s, Item{.raw = u"Grim Grasp"_s}},    {u"Helmet"_s, Item{.raw = u"Doom Vise"_s}},
+            {u"Weapon 2"_s, Item{.raw = u"Corpse Song"_s}}, {u"Jewel 1"_s, Item{.raw = u"Rift Eye"_s}},
+            {u"Weapon"_s, Item{.raw = u"Victory Star"_s}},
+        };
+        // not the ring that came from the build, or the jewel
+        QCOMPARE(pobWearing(gear, {u"Ring 1"_s}, false), (QList<PobItem>{
+                                                             {u"Victory Star"_s, u"Weapon 1"_s},
+                                                             {u"Doom Vise"_s, u"Helmet"_s},
+                                                             {u"Corpse Song"_s, u"Weapon 1 Swap"_s},
+                                                         }));
+        QCOMPARE(pobWearing(gear, {}, true), (QList<PobItem>{
+                                                 {u"Victory Star"_s, u"Weapon 1 Swap"_s},
+                                                 {u"Doom Vise"_s, u"Helmet"_s},
+                                                 {u"Grim Grasp"_s, u"Ring 1"_s},
+                                                 {u"Corpse Song"_s, u"Weapon 1"_s},
+                                             }));
     }
 
     void otherSetsAndTrees()

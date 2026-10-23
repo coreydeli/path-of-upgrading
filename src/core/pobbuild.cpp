@@ -2,6 +2,7 @@
 #include "core/pobbuild.h"
 
 #include "core/numbers.h"
+#include "core/slots.h"
 
 #include <QByteArray>
 #include <QHash>
@@ -257,10 +258,10 @@ bool hasDamage(const QString &itemClass)
     return classes.contains(itemClass);
 }
 
-// Our slot for one of Path of Building's, empty for those we don't keep,
-// like "Ring 3". It names its weapon sets "Weapon 1" and "Weapon 1 Swap";
-// ours are the set in use and the other one.
-QString gearSlot(const QString &pobSlot, bool swapInUse)
+// Path of Building's slots and ours for them when its first weapon set is in
+// use. It names its weapon sets "Weapon 1" and "Weapon 1 Swap"; ours are the
+// set in use and the other one.
+const QHash<QString, QString> &slotsByPobSlot()
 {
     static const QHash<QString, QString> slots = {
         {u"Weapon 1"_s, u"Weapon"_s},
@@ -281,14 +282,20 @@ QString gearSlot(const QString &pobSlot, bool swapInUse)
         {u"Charm 2"_s, u"Charm 2"_s},
         {u"Charm 3"_s, u"Charm 3"_s},
     };
+    return slots;
+}
+
+// The same slot in the other weapon set, or the slot itself when it isn't a
+// weapon set's.
+QString inOtherSet(const QString &slot)
+{
     static const QHash<QString, QString> otherSet = {
         {u"Weapon"_s, u"Weapon 2"_s},
         {u"Offhand"_s, u"Offhand 2"_s},
         {u"Weapon 2"_s, u"Weapon"_s},
         {u"Offhand 2"_s, u"Offhand"_s},
     };
-    const QString slot = slots.value(pobSlot);
-    return swapInUse ? otherSet.value(slot, slot) : slot;
+    return otherSet.value(slot, slot);
 }
 
 struct ItemSet
@@ -663,6 +670,7 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
                                 [&](const ItemSet &s) { return s.id == activeItemSet; });
         if (set == itemSets.cend())
             set = itemSets.cbegin();
+        build.swapInUse = set->swapInUse;
         for (const auto &[pobSlot, id] : set->slots) {
             const QString slot = gearSlot(pobSlot, set->swapInUse);
             if (const auto item = items.constFind(id); !slot.isEmpty() && item != items.cend())
@@ -682,6 +690,30 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
             build.resists[e] = *value + stats.value(stat + u"OverCap"_s);
     }
     return build;
+}
+
+QString gearSlot(const QString &pobSlot, bool swapInUse)
+{
+    const QString slot = slotsByPobSlot().value(pobSlot);
+    return swapInUse ? inOtherSet(slot) : slot;
+}
+
+QString pobSlot(const QString &slot, bool swapInUse)
+{
+    return slotsByPobSlot().key(swapInUse ? inOtherSet(slot) : slot);
+}
+
+QList<PobItem> pobWearing(const Equipped &gear, const QSet<QString> &fromPob, bool swapInUse)
+{
+    QList<PobItem> wearing;
+    // in the order of our slots, not the hash's, which changes from run to run
+    for (const QString &slot : allSlots()) {
+        const auto item = gear.constFind(slot);
+        const QString theirs = pobSlot(slot, swapInUse);
+        if (item != gear.cend() && !fromPob.contains(slot) && !theirs.isEmpty())
+            wearing << PobItem{.text = item->raw, .slot = theirs};
+    }
+    return wearing;
 }
 
 bool isPoe1Build(const QString &xml)

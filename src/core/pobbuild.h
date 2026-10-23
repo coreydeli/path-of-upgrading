@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/item.h"
 #include "core/resists.h"
 
 #include <QHash>
 #include <QList>
+#include <QSet>
 #include <QString>
 #include <QUrl>
 #include <optional>
@@ -52,6 +54,9 @@ struct PobBuild
     // By slot: "Weapon", "Ring 1", "Life Flask", "Charm 2"... The weapon set
     // in use is "Weapon" and "Offhand", the other one "Weapon 2" and "Offhand 2".
     QHash<QString, PobItemText> gear;
+    // The set in use is the one Path of Building calls its second, with the
+    // slots "Weapon 1 Swap" and "Weapon 2 Swap".
+    bool swapInUse = false;
     // In the order of the nodes they're socketed in.
     QList<PobItemText> jewels;
 
@@ -62,6 +67,30 @@ struct PobBuild
 
 // Empty when the XML isn't a Path of Building 2 build.
 std::optional<PobBuild> parsePobBuild(const QString &xml);
+
+// Our slot for one of Path of Building's, empty for those we don't keep,
+// like "Ring 3". Which of its weapon sets is our "Weapon" depends on the
+// build's swapInUse.
+QString gearSlot(const QString &pobSlot, bool swapInUse);
+// Path of Building's slot for one of ours. Empty for the jewels, since it
+// names its sockets after the passives they're on.
+QString pobSlot(const QString &slot, bool swapInUse);
+
+// An item for Path of Building: its text as the game copies it, and the slot
+// to try it in by Path of Building's name for it, or none to try it in each
+// one it can go in.
+struct PobItem
+{
+    QString text;
+    QString slot;
+
+    friend bool operator==(const PobItem &, const PobItem &) = default;
+};
+
+// The gear you wear, for Path of Building to put on the build in place of its
+// own. It leaves out what came from the build, which it has already, and the
+// jewels, which it has no slots for.
+QList<PobItem> pobWearing(const Equipped &gear, const QSet<QString> &fromPob, bool swapInUse);
 
 // The XML is a build for the first game, which the first Path of Building
 // shares in codes just like these.
