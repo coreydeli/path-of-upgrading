@@ -15,7 +15,8 @@ class QNetworkReply;
 namespace pou {
 
 // A request to the trade site. It belongs to the client, and is yours to
-// delete once it has finished.
+// delete once it has finished, even in a slot connected to finished(), or
+// before then to call it off.
 class TradeReply : public QObject
 {
     Q_OBJECT

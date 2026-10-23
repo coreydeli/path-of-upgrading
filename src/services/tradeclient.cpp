@@ -82,6 +82,8 @@ TradeReply *TradeClient::send(const QNetworkRequest &request, const QByteArray &
 {
     auto *trade = new TradeReply(this);
     QNetworkReply *reply = body.isEmpty() ? m_network->get(request) : m_network->post(request, body);
+    // deleting the trade reply calls the request off
+    reply->setParent(trade);
     connect(reply, &QNetworkReply::finished, trade, [this, trade, reply] { answered(trade, reply); });
     return trade;
 }

@@ -181,6 +181,35 @@ private Q_SLOTS:
         QVERIFY(finishes(broken));
         QCOMPARE(broken->error(), TradeReply::Error::BadAnswer);
     }
+
+    void callingOff()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeReply *reply = client.search(u"Standard"_s, {});
+        QSignalSpy finished(reply, &TradeReply::finished);
+        delete reply;
+        QCOMPARE(network.sent.size(), 1);
+        QVERIFY(network.sent.first().reply.isNull());
+        QTest::qWait(10);
+        QCOMPARE(finished.count(), 0);
+    }
+
+    void deletingWhenFinished()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeReply *reply = client.data(u"stats"_s);
+        QVERIFY(!reply->isFinished());
+
+        bool finished = false;
+        connect(reply, &TradeReply::finished, this, [&finished, reply] {
+            finished = reply->isFinished();
+            delete reply;
+        });
+        QTRY_VERIFY(finished);
+        QVERIFY(network.sent.first().reply.isNull());
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTradeClient)
