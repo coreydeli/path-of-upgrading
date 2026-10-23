@@ -65,5 +65,6 @@ pou_add_platform_test(tst_copykeys)
 pou_add_platform_test(tst_gamewindow)
 # with the X server in DISPLAY, when there's one
 pou_add_platform_test(tst_xconnection)
+pou_add_platform_test(tst_xkeysender)
 pou_add_platform_test(tst_xselectionwatcher)
 pou_add_platform_test(tst_xwindows)
