@@ -527,6 +527,24 @@ private Q_SLOTS:
         QCOMPARE(e.resistRank, 0);
     }
 
+    void pathOfBuildingOverYourWeights()
+    {
+        Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
+        c.buildProfile = u"none of them"_s;
+        const Evaluation ours = evaluate(lifeAmulet(64), c);
+        QVERIFY(ours.comparison.percent);
+
+        PobJudgement j;
+        j.verdict.verdict = Verdict::Small;
+        j.verdict.score = 1.5;
+        const Evaluation e = withPob(ours, j);
+        QCOMPARE(e.mode, ScoreMode::PathOfBuilding);
+        QCOMPARE(e.comparison.verdict, Verdict::Small);
+        QCOMPARE(e.comparison.delta, 1.5);
+        // the delta is a percentage already
+        QVERIFY(!e.comparison.percent);
+    }
+
     void jewelSockets()
     {
         const Item jewel =
