@@ -13,6 +13,7 @@
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 
 namespace {
@@ -200,22 +201,33 @@ private Q_SLOTS:
     void fails_data()
     {
         QTest::addColumn<FakeAnswer>("answer");
+        QTest::addColumn<TradeSearch::Error>("error");
         QTest::addColumn<QString>("why");
 
-        QTest::newRow("turned down") << siteError(u"Invalid query"_s)
+        QTest::newRow("rate limited")
+            << FakeAnswer{.status = 429, .headers = {{"Retry-After", "30"}}}
+            << TradeSearch::Error::RateLimited
+            << u"The trade site has had too many requests from you. Try again in 30 seconds."_s;
+        QTest::newRow("too complex") << siteError(u"Query is too complex."_s)
+                                     << TradeSearch::Error::TooComplex
+                                     << u"The trade site says the search has too many filters."_s;
+        QTest::newRow("turned down") << siteError(u"Invalid query"_s) << TradeSearch::Error::Failed
                                      << u"The trade site says: Invalid query"_s;
         QTest::newRow("unreachable")
-            << FakeAnswer{.error = QNetworkReply::HostNotFoundError}
+            << FakeAnswer{.error = QNetworkReply::HostNotFoundError} << TradeSearch::Error::Failed
             << u"Couldn't reach the trade site: Host www.pathofexile.com not found"_s;
         QTest::newRow("blocked") << FakeAnswer{.status = 403, .body = "<!DOCTYPE html>"}
+                                 << TradeSearch::Error::Failed
                                  << u"The trade site's answer couldn't be read (HTTP 403)."_s;
         QTest::newRow("no search") << FakeAnswer{.body = json({{u"total"_s, 3}})}
+                                   << TradeSearch::Error::Failed
                                    << u"The trade site's answer couldn't be read."_s;
     }
 
     void fails()
     {
         QFETCH(FakeAnswer, answer);
+        QFETCH(TradeSearch::Error, error);
         QFETCH(QString, why);
         FakeNetwork network;
         network.answers = {answer};
@@ -224,8 +236,9 @@ private Q_SLOTS:
 
         TradeSearch *search = searcher.search(searchBody());
         QVERIFY(finishes(search));
-        QCOMPARE(search->error(), TradeSearch::Error::Failed);
+        QCOMPARE(search->error(), error);
         QCOMPARE(search->errorString(), why);
+        QCOMPARE(search->retryAfter(), error == TradeSearch::Error::RateLimited ? 30s : 0s);
         QVERIFY(search->url().isEmpty());
         QVERIFY(search->listingIds().isEmpty());
         QCOMPARE(network.sent.size(), 1);

@@ -11,6 +11,7 @@
 #include <QString>
 #include <QStringList>
 #include <QUrl>
+#include <chrono>
 
 namespace pou {
 
@@ -25,6 +26,8 @@ public:
     enum class Error {
         None,
         Unavailable, // no trade searches, see TradeSearcher::unavailable()
+        RateLimited, // too many requests, see retryAfter()
+        TooComplex,  // more filters than the site takes, so it has to be smaller
         Failed,      // see errorString()
     };
     Q_ENUM(Error)
@@ -35,6 +38,8 @@ public:
     Error error() const { return m_error; }
     // What went wrong, for people.
     QString errorString() const { return m_errorString; }
+    // How long until the site takes searches again, when RateLimited.
+    std::chrono::seconds retryAfter() const { return m_retryAfter; }
 
     // The trade site's id for the league it searches: "HC Runes of Aldur".
     QString league() const { return m_league; }
@@ -57,13 +62,14 @@ private:
     friend class TradeSearcher;
 
     explicit TradeSearch(QObject *parent);
-    void fail(Error error, const QString &why);
+    void fail(Error error, const QString &why, std::chrono::seconds retryAfter = {});
     void finish();
 
     QPointer<TradeReply> m_reply;
     bool m_finished = false;
     Error m_error = Error::None;
     QString m_errorString;
+    std::chrono::seconds m_retryAfter{};
     QString m_league;
     QString m_id;
     int m_total = 0;

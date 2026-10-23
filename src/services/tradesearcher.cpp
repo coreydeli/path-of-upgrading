@@ -27,10 +27,11 @@ QUrl TradeSearch::url() const
     return {};
 }
 
-void TradeSearch::fail(Error error, const QString &why)
+void TradeSearch::fail(Error error, const QString &why, std::chrono::seconds retryAfter)
 {
     m_error = error;
     m_errorString = why;
+    m_retryAfter = retryAfter;
     finish();
 }
 
@@ -91,10 +92,22 @@ void TradeSearcher::send(TradeSearch *search, const QJsonObject &body)
 
 void TradeSearcher::answered(TradeSearch *search)
 {
+    using Error = TradeReply::Error;
     TradeReply *reply = search->m_reply;
     reply->deleteLater();
 
-    if (reply->error() != TradeReply::Error::None) {
+    switch (reply->error()) {
+    case Error::None:
+        break;
+    case Error::RateLimited:
+        search->fail(TradeSearch::Error::RateLimited, reply->errorString(), reply->retryAfter());
+        return;
+    case Error::TooComplex:
+        search->fail(TradeSearch::Error::TooComplex, reply->errorString());
+        return;
+    case Error::Rejected:
+    case Error::Network:
+    case Error::BadAnswer:
         qCWarning(lcTrade, "Couldn't search the trade site: %s", qUtf8Printable(reply->errorString()));
         search->fail(TradeSearch::Error::Failed, reply->errorString());
         return;
