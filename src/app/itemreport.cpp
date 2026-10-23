@@ -2,6 +2,7 @@
 #include "app/itemreport.h"
 
 #include "core/numbers.h"
+#include "core/resists.h"
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -88,6 +89,26 @@ void putPobStatus(ItemReport &report, const ItemCheck &check)
     }
 }
 
+// "a", "a and b", "a, b and c"
+QString listed(const QStringList &words)
+{
+    if (words.size() < 2)
+        return words.value(0);
+    return words.first(words.size() - 1).join(u", "_s) + u" and "_s + words.last();
+}
+
+QString capsOf(const PobVerdict &v)
+{
+    QStringList capped;
+    for (const PobResistChange &r : v.resists) {
+        if (r.reachesCap)
+            capped << elementName(r.element).toLower();
+    }
+    if (capped.isEmpty())
+        return {};
+    return u"Caps your %1 %2"_s.arg(listed(capped), capped.size() == 1 ? u"resistance"_s : u"resistances"_s);
+}
+
 bool isUnique(const Item &item)
 {
     return item.rarity.compare(u"Unique", Qt::CaseInsensitive) == 0;
@@ -135,6 +156,13 @@ ItemReport reportOf(const ItemCheck &check)
         report.versus = u"in your %1 slot"_s.arg(r.targetSlot);
     else if (!r.replacing.isEmpty())
         report.versus = u"vs "_s + r.replacing.join(u" and "_s);
+    report.losses = e.losses;
+    for (const QString &risk : e.risks) {
+        if (!e.losses.contains(risk))
+            report.risks << risk;
+    }
+    if (e.pob)
+        report.caps = capsOf(e.pob->verdict);
     putPobStatus(report, check);
     report.notes << r.notes;
     return report;

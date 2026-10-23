@@ -38,6 +38,9 @@ struct ItemReport
     Q_PROPERTY(QString score MEMBER score)
     Q_PROPERTY(QString scoreLabel MEMBER scoreLabel)
     Q_PROPERTY(QString versus MEMBER versus)
+    Q_PROPERTY(QStringList losses MEMBER losses)
+    Q_PROPERTY(QStringList risks MEMBER risks)
+    Q_PROPERTY(QString caps MEMBER caps)
     Q_PROPERTY(bool pobChecking MEMBER pobChecking)
     Q_PROPERTY(QString pobStatus MEMBER pobStatus)
     Q_PROPERTY(QStringList notes MEMBER notes)
@@ -53,6 +56,10 @@ public:
     QString score;
     QString scoreLabel;
     QString versus; // "vs Grim Crown"
+    // Resistance or damage it loses, which matters more than its risks.
+    QStringList losses;
+    QStringList risks;
+    QString caps; // "Caps your fire and cold resistances"
     // Where Path of Building is with it when it hasn't judged it: still
     // checking, why it couldn't, or that it could with a build.
     bool pobChecking = false;

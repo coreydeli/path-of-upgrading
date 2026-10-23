@@ -210,6 +210,45 @@ private Q_SLOTS:
         QCOMPARE(reportOn(unique, wearing({{u"Helmet"_s, unique}})).verdict, u"Equipped"_s);
     }
 
+    void lossesAndRisks()
+    {
+        ItemCheck check = judged(Verdict::ResistLoss);
+        const QString fire = u"Fire res drops below the cap (60% of 75%)"_s;
+        const QString spirit = u"Spirit drops by 10, so check your minions and auras still fit"_s;
+        check.evaluation.risks = {fire, spirit};
+        check.evaluation.losses = {fire};
+        const ItemReport report = reportOf(check);
+        QCOMPARE(report.losses, QStringList{fire});
+        QCOMPARE(report.risks, QStringList{spirit});
+    }
+
+    void caps_data()
+    {
+        QTest::addColumn<QList<Element>>("capping");
+        QTest::addColumn<QString>("caps");
+
+        using enum Element;
+        QTest::newRow("none") << QList<Element>{} << QString();
+        QTest::newRow("one") << QList{Fire} << u"Caps your fire resistance"_s;
+        QTest::newRow("two") << QList{Fire, Cold} << u"Caps your fire and cold resistances"_s;
+        QTest::newRow("three") << QList{Fire, Cold, Lightning}
+                               << u"Caps your fire, cold and lightning resistances"_s;
+    }
+
+    void caps()
+    {
+        QFETCH(QList<Element>, capping);
+        QFETCH(QString, caps);
+
+        PobJudgement j;
+        j.verdict.verdict = Verdict::Upgrade;
+        for (Element e : allElements)
+            j.verdict.resists << PobResistChange{.element = e, .reachesCap = capping.contains(e)};
+        const ItemReport report =
+            reportOf({.item = helmetNew, .evaluation = withPob(judged(Verdict::Upgrade).evaluation, j)});
+        QCOMPARE(report.caps, caps);
+    }
+
     void pobStatus_data()
     {
         QTest::addColumn<ItemCheck::Pob>("pob");
