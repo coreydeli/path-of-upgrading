@@ -6,6 +6,7 @@ pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-keysyms xcb-xfixes xcb-xt
 add_library(pou_platform STATIC
     copykeys.cpp copykeys.h
     gamewindow.cpp gamewindow.h
+    screenmap.cpp screenmap.h
     xcb/xconnection.cpp xcb/xconnection.h
     xcb/xkeysender.cpp xcb/xkeysender.h
     xcb/xselectionwatcher.cpp xcb/xselectionwatcher.h
