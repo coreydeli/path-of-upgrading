@@ -175,8 +175,16 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         e.risks << u"Spirit drops by %1, so check your minions and auras still fit"_s.arg(
             formatNumber(-spirit));
     for (const ResistChange &rc : std::as_const(e.change->resists)) {
-        if (!rc.warning.isEmpty() && resistCounts(rc, character, priorities))
+        if (!resistCounts(rc, character, priorities))
+            continue;
+        if (!rc.warning.isEmpty())
             e.risks << rc.warning;
+        if (rc.under && rc.delta < 0)
+            e.resistLosses << rc;
+        else if (rc.wasUnder && !rc.under)
+            e.resistRank = std::max(e.resistRank, 2);
+        else if (rc.wasUnder && rc.delta > 0)
+            e.resistRank = std::max(e.resistRank, 1);
     }
     if (const double levels = deltaOf(*e.change, u"Minion skill levels"); levels < 0) {
         e.risks << (levels == -1 ? u"Minion skills lose a level"_s
@@ -184,6 +192,11 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
     }
     if (!e.risks.isEmpty() && (r.verdict == Verdict::Upgrade || r.verdict == Verdict::Small))
         r.verdict = Verdict::Risky;
+    // resistances matter most
+    if (!e.resistLosses.isEmpty()) {
+        r.verdict = Verdict::ResistLoss;
+        e.resistRank = -1;
+    }
     return e;
 }
 

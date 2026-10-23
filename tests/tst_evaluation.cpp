@@ -341,6 +341,52 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.verdict, Verdict::Risky);
     }
 
+    void losingResistanceYouNeed()
+    {
+        const Equipped gear = {{u"Amulet"_s, amulet(u"+20 to maximum Life\n+20% to Fire Resistance"_s)}};
+        Character c = wearing(gear);
+        c.resists = resists(gear, 80, {}, {}, {});
+        const Evaluation e = evaluate(lifeAmulet(64), c);
+        QCOMPARE(e.comparison.verdict, Verdict::ResistLoss);
+        QCOMPARE(e.resistLosses.size(), 1);
+        QCOMPARE(e.resistLosses.at(0).element, Element::Fire);
+        QCOMPARE(e.resistLosses.at(0).to, 60.0);
+        QCOMPARE(e.resistRank, -1);
+        QCOMPARE(e.risks, QStringList{u"Fire res drops below the cap (60% of 75%)"_s});
+    }
+
+    void resistanceRanks_data()
+    {
+        QTest::addColumn<Element>("element");
+        QTest::addColumn<double>("from");
+        QTest::addColumn<bool>("priority");
+        QTest::addColumn<int>("rank");
+
+        QTest::newRow("caps one") << Element::Fire << 70.0 << false << 2;
+        QTest::newRow("adds toward a cap") << Element::Fire << 50.0 << false << 1;
+        QTest::newRow("already capped") << Element::Fire << 90.0 << false << 0;
+        QTest::newRow("chaos you don't want") << Element::Chaos << 30.0 << false << 0;
+        QTest::newRow("chaos you want") << Element::Chaos << 30.0 << true << 1;
+    }
+
+    void resistanceRanks()
+    {
+        QFETCH(Element, element);
+        QFETCH(double, from);
+        QFETCH(bool, priority);
+        QFETCH(int, rank);
+
+        const Equipped gear = {{u"Amulet"_s, lifeAmulet(20)}};
+        Character c = wearing(gear);
+        PerElement<std::optional<double>> values;
+        values[element] = from;
+        c.resists = resists(gear, values[Element::Fire], {}, {}, values[Element::Chaos]);
+        const Item better = amulet(u"+20 to maximum Life\n+10% to %1 Resistance"_s.arg(elementName(element)));
+        const Evaluation e = evaluate(better, c, {.chaos = priority});
+        QCOMPARE(e.resistRank, rank);
+        QVERIFY(e.resistLosses.isEmpty());
+    }
+
     void chaosResistanceRisks_data()
     {
         QTest::addColumn<double>("chaos");
@@ -368,6 +414,7 @@ private Q_SLOTS:
         c.chaosInoculation = inoculation;
         const Evaluation e = evaluate(lifeAmulet(64), c, {.chaos = priority});
         QCOMPARE(!e.risks.isEmpty(), risk);
+        QCOMPARE(e.comparison.verdict == Verdict::ResistLoss, risk);
     }
 
     void notGear()

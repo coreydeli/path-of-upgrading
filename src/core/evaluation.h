@@ -7,6 +7,7 @@
 #include "core/pobverdict.h"
 #include "core/scorer.h"
 
+#include <QList>
 #include <QString>
 #include <QStringList>
 #include <optional>
@@ -48,13 +49,19 @@ struct Evaluation
     // In words, what the score doesn't see that can make an upgrade a risk:
     // losing Spirit, minion skill levels or resistance you need.
     QStringList risks;
+    // Resistances it leaves under the cap or further under it. Any of them
+    // makes it a ResistLoss, whatever else it does.
+    QList<ResistChange> resistLosses;
+    // For sorting by resistance, as in PobVerdict: 2 caps one you're short
+    // of, 1 adds toward a cap, -1 loses some you need and 0 is the rest.
+    int resistRank = 0;
 };
 
 // By gear score when the item and what you wear both have one, else by your
 // weights. A ring, charm or jewel is compared with your weakest one by gear
 // score, unless slot says which. slot can also be another slot the item
 // goes in, like the offhand for a one-handed weapon. An upgrade with risks
-// is Risky.
+// is Risky, and losing resistance you need is a ResistLoss.
 Evaluation evaluate(const Item &item, const Character &character, const PobPriorities &priorities = {},
                     const QString &slot = {});
 
