@@ -7,7 +7,8 @@
 // eval.json in the folder, where a test can write what the bridge would have
 // worked out. A build that isn't for Path of Exile 2 doesn't load. In the
 // folder, it counts how many times it's run in a file called runs, and how
-// many times it has stopped once stdin was closed in one called stops.
+// many times it has stopped once stdin was closed in one called stops. It
+// keeps the items it was last asked to judge in one called asked.json.
 //
 // Its own arguments come before LuaJIT's, for going wrong:
 //   --fail           it says it couldn't start
@@ -127,6 +128,8 @@ int main(int argc, char *argv[])
         } else if (command == u"equip") {
             wearing = request.value(u"items");
         } else if (command == u"eval") {
+            if (QFile asked(u"asked.json"_s); asked.open(QIODevice::WriteOnly))
+                asked.write(QJsonDocument(request.value(u"items").toArray()).toJson());
             r.insert(u"items"_s, request.value(u"items"));
             r.insert(u"xml"_s, xml);
             r.insert(u"wearing"_s, wearing);

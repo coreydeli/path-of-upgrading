@@ -4,6 +4,7 @@
 #include "core/pobinstall.h"
 
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTemporaryDir>
@@ -31,6 +32,13 @@ struct FakePob
     {
         QFile file(folder.filePath(u"eval.json"_s));
         return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(eval).toJson()) > 0;
+    }
+    // The items it was last asked to judge.
+    QJsonArray asked() const
+    {
+        QFile file(folder.filePath(u"asked.json"_s));
+        return file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).array()
+                                              : QJsonArray();
     }
 
     int count(const QString &name) const
