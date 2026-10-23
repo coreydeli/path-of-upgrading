@@ -11,6 +11,7 @@
 namespace pou {
 
 class XKeySender;
+struct XPointer;
 class XSelectionWatcher;
 
 // The game as the X11 window it is under Proton, on Xwayland when the
@@ -25,10 +26,12 @@ public:
     bool isAvailable() const override;
     QString errorString() const override;
     void copyItem(bool advanced) override;
+    std::optional<ScreenPoint> mouse() const override;
 
 private:
     enum class Step { Idle, BringingForward, Pressing, Waiting };
 
+    std::optional<ScreenPoint> mouseAt(const XPointer &pointer) const;
     void connectToServer();
     void reconnect();
     void checkInFront();
