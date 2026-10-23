@@ -103,6 +103,8 @@ private Q_SLOTS:
         QTest::newRow("normal") << u"Item Class: Helmets\nRarity: Normal\nSuperior Visored Helm\n--------\n"
                                    "Armour: 100"_s
                                 << u"Superior Visored Helm"_s;
+        QTest::newRow("no name lines")
+            << u"Item Class: Rings\nRarity: Rare\n--------\n+40 to maximum Life"_s << QString();
     }
 
     void itemNames()
