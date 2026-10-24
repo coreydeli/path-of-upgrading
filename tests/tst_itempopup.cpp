@@ -274,6 +274,10 @@ private Q_SLOTS:
         QQmlEngine engine;
         FakeGameInput input;
         ItemPopup popup(&engine, &input);
+        // with nothing behind More
+        OverlaySettings settings;
+        settings.compact = false;
+        popup.setSettings(settings);
         popup.showReport(report, mouseAt(200, 300));
         for (const QString &text : std::as_const(texts)) {
             if (!shown(popup, text))
@@ -334,6 +338,34 @@ private Q_SLOTS:
         QVERIFY(shown(popup, u"Cold res"_s));
         QVERIFY(!button(popup, u"Show More"_s));
         QVERIFY(!button(popup, u"Show Less"_s));
+    }
+
+    void foldedNotes()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.notes = {u"Two-handed, so it takes your off hand too."_s};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(!shown(popup, report.notes.first()));
+        QVERIFY(click(popup, u"Show More"_s));
+        QVERIFY(shown(popup, report.notes.first()));
+    }
+
+    void whyNoVerdict()
+    {
+        // a note that can't wait behind More
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.verdict.clear();
+        report.notes = {u"Pick the character you play to compare items with your gear."_s};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(shown(popup, report.notes.first()));
+        QVERIFY(!button(popup, u"Show More"_s));
     }
 
     void nothingFolded()

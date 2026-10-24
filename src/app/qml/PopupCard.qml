@@ -13,6 +13,9 @@ Rectangle {
     readonly property itemReport report: popup.report
     // compact, with what hardly matters waiting behind More
     readonly property bool folded: popup.compact && !popup.expanded
+    // Under a verdict the notes are extras. Without one they say why it has
+    // none.
+    readonly property bool notesFold: report.verdict !== "" && report.notes.length > 0
 
     // the game's colours for them
     function rarityColor(rarity: string): color {
@@ -267,7 +270,7 @@ Rectangle {
         }
 
         Repeater {
-            model: card.report.notes
+            model: card.folded && card.notesFold ? [] : card.report.notes
 
             QQC2.Label {
                 required property string modelData
@@ -281,7 +284,7 @@ Rectangle {
         }
 
         QQC2.ToolButton {
-            visible: card.popup.compact && card.report.changes.some(figure => figure.minor)
+            visible: card.popup.compact && (card.report.changes.some(figure => figure.minor) || card.notesFold)
             text: card.popup.expanded ? qsTr("Show Less") : qsTr("Show More")
             icon.name: card.popup.expanded ? "arrow-up" : "arrow-down"
             onClicked: card.popup.expanded = !card.popup.expanded
