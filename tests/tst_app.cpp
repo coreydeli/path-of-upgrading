@@ -246,6 +246,19 @@ private Q_SLOTS:
         QCOMPARE(r.app.settings().settings().overlay.hotkey, u"F7"_s);
     }
 
+    void history()
+    {
+        Folders folders;
+        {
+            Running r(folders);
+            r.checked();
+            QCOMPARE(r.app.history().recent().size(), 1);
+        }
+        // and next time
+        Running again(folders);
+        QCOMPARE(again.app.history().recent().value(0).name, u"Doom Visage"_s);
+    }
+
     void judgesWithPob()
     {
         Folders folders;

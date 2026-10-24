@@ -32,6 +32,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_checker(qml, m_input.get())
     , m_shortcuts(std::move(shortcuts))
     , m_hotkeys(m_shortcuts.get())
+    , m_history(paths.data + u"/history.json"_s)
 {
     m_characters.load();
     connect(&m_character, &ActiveCharacter::changed, this,
@@ -43,6 +44,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     lookForPob();
     m_checker.setPob(&m_pob);
     m_checker.setSettings(settings);
+    connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
 
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
         if (hotkey == Hotkeys::Hotkey::Check)

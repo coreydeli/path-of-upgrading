@@ -4,6 +4,7 @@
 #include "app/activecharacter.h"
 #include "app/hotkeys.h"
 #include "app/itemchecker.h"
+#include "app/itemhistory.h"
 #include "app/settingsstore.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
@@ -21,8 +22,8 @@ class GameInput;
 class GlobalShortcuts;
 
 // What the app runs while it's open: the hotkeys, the item checker with its
-// popup, your characters and Path of Building, all following your settings.
-// The windows show what it has.
+// popup and the items you've checked, your characters and Path of Building,
+// all following your settings. The windows show what it has.
 class App : public QObject
 {
     Q_OBJECT
@@ -32,7 +33,7 @@ public:
     struct Paths
     {
         QString settings; // the file
-        QString data;     // the folder for your characters
+        QString data;     // the folder for your characters and the items you've checked
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
@@ -54,6 +55,7 @@ public:
     // Their keys are changed here rather than in the settings, which have the
     // keys the desktop gave them.
     Hotkeys &hotkeys() { return m_hotkeys; }
+    ItemHistory &history() { return m_history; }
 
 private:
     void followSettings();
@@ -68,6 +70,7 @@ private:
     ItemChecker m_checker;
     std::unique_ptr<GlobalShortcuts> m_shortcuts;
     Hotkeys m_hotkeys;
+    ItemHistory m_history;
     QString m_pobLocation; // where it was last looked for
 };
 
