@@ -1,5 +1,6 @@
 # The app itself: the windows in QML and what they show in C++
 qt_add_library(pou_app STATIC
+    itemchecker.cpp itemchecker.h
     itemjudge.cpp itemjudge.h
     itempopup.cpp itempopup.h
     itemreader.cpp itemreader.h
