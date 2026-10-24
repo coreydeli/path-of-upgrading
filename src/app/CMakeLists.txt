@@ -2,6 +2,7 @@
 qt_add_library(pou_app STATIC
     hotkeys.cpp hotkeys.h
     itemchecker.cpp itemchecker.h
+    itemhistory.cpp itemhistory.h
     itemjudge.cpp itemjudge.h
     itempopup.cpp itempopup.h
     itemreader.cpp itemreader.h
