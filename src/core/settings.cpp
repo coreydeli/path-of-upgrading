@@ -13,30 +13,6 @@ namespace {
 
 constexpr double noLimit = std::numeric_limits<double>::max();
 
-QString positionId(PopupPosition position)
-{
-    switch (position) {
-    case PopupPosition::Cursor:
-        return u"cursor"_s;
-    case PopupPosition::Left:
-        return u"left"_s;
-    case PopupPosition::Right:
-        return u"right"_s;
-    case PopupPosition::Top:
-        return u"top"_s;
-    }
-    return {};
-}
-
-PopupPosition positionFromId(QStringView id)
-{
-    for (PopupPosition position : {PopupPosition::Left, PopupPosition::Right, PopupPosition::Top}) {
-        if (id == positionId(position))
-            return position;
-    }
-    return PopupPosition::Cursor;
-}
-
 // Each leaves the value as it is when the key is missing.
 void read(const QSettings &store, const QString &key, bool &value)
 {
@@ -65,6 +41,15 @@ void read(const QSettings &store, const QString &key, int &value, int low, int h
 }
 
 } // namespace
+
+QString tradeUnavailable(const TradeSettings &settings)
+{
+    if (!settings.enabled)
+        return u"Trade searches are turned off in the settings."_s;
+    if (!settings.league.canTrade())
+        return u"There's no trading in solo self-found, so trade searches are off."_s;
+    return {};
+}
 
 Settings loadSettings(const QSettings &store)
 {
@@ -98,7 +83,7 @@ Settings loadSettings(const QSettings &store)
     read(store, u"overlay/resultsHotkey"_s, overlay.resultsHotkey);
     read(store, u"overlay/advancedCopy"_s, overlay.advancedCopy);
     read(store, u"overlay/watchClipboard"_s, overlay.watchClipboard);
-    overlay.position = positionFromId(store.value(u"overlay/position"_s).toString());
+    overlay.position = popupPositionFromId(store.value(u"overlay/position"_s).toString());
     read(store, u"overlay/scale"_s, overlay.scale, 0.5, 2);
     read(store, u"overlay/compact"_s, overlay.compact);
     read(store, u"overlay/colorblind"_s, overlay.colorblind);
@@ -138,7 +123,7 @@ void saveSettings(QSettings &store, const Settings &s)
     store.setValue(u"overlay/resultsHotkey"_s, overlay.resultsHotkey);
     store.setValue(u"overlay/advancedCopy"_s, overlay.advancedCopy);
     store.setValue(u"overlay/watchClipboard"_s, overlay.watchClipboard);
-    store.setValue(u"overlay/position"_s, positionId(overlay.position));
+    store.setValue(u"overlay/position"_s, popupPositionId(overlay.position));
     store.setValue(u"overlay/scale"_s, overlay.scale);
     store.setValue(u"overlay/compact"_s, overlay.compact);
     store.setValue(u"overlay/colorblind"_s, overlay.colorblind);

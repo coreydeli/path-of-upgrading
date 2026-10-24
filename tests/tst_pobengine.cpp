@@ -239,6 +239,34 @@ private Q_SLOTS:
         QCOMPARE(pob.runs(), 1);
     }
 
+    void installs()
+    {
+        FakePob pob;
+        PobEngine engine;
+        QVERIFY(!engine.install());
+        QSignalSpy changed(&engine, &PobEngine::installChanged);
+        engine.setInstall(pob.install());
+        QCOMPARE(engine.install(), pob.install());
+        QCOMPARE(changed.size(), 1);
+        // the same one again
+        engine.setInstall(pob.install());
+        QCOMPARE(changed.size(), 1);
+
+        engine.setUnavailable(u"Path of Building isn't installed."_s);
+        QVERIFY(!engine.install());
+        QCOMPARE(changed.size(), 2);
+        engine.setUnavailable(u"Path of Building isn't installed."_s);
+        QCOMPARE(changed.size(), 2);
+        // for another reason
+        engine.setUnavailable(u"There's no Path of Building in that folder."_s);
+        QCOMPARE(changed.size(), 3);
+        // or none without saying why
+        engine.setInstall(pob.install());
+        engine.setUnavailable({});
+        QVERIFY(!engine.install());
+        QCOMPARE(changed.size(), 5);
+    }
+
     void noBuild()
     {
         FakePob pob;

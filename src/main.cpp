@@ -4,6 +4,7 @@
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
 
+#include <KLocalizedQmlContext>
 #include <QApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -55,12 +56,14 @@ int main(int argc, char *argv[])
     pickControlsStyle();
 
     QQmlApplicationEngine engine;
+    KLocalization::setupLocalizedContext(&engine);
     // which goes before the engine its popup is from
     pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(),
                   std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);
+    engine.setInitialProperties({{u"app"_s, QVariant::fromValue(&root)}});
     engine.loadFromModule("PathOfUpgrading", "Main");
 
     return app.exec();

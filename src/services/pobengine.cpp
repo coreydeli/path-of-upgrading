@@ -106,14 +106,18 @@ void PobEngine::setInstall(const PobInstall &install)
     m_install = install;
     m_errorString.clear();
     setState(State::Stopped);
+    Q_EMIT installChanged();
 }
 
 void PobEngine::setUnavailable(const QString &why)
 {
     halt();
+    const bool changed = m_install || why != m_errorString;
     m_install.reset();
     m_errorString = why;
     setState(State::Unavailable);
+    if (changed)
+        Q_EMIT installChanged();
 }
 
 void PobEngine::setBuild(const QString &xml, const QList<PobItem> &wearing)

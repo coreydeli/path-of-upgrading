@@ -237,6 +237,25 @@ private Q_SLOTS:
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
     }
 
+    void settingsPages()
+    {
+        // which change what it runs with
+        Folders folders;
+        Running r(folders);
+        r.app.pobOptions()->setLocation(folders.pob.folder.path());
+        QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
+        QCOMPARE(r.app.pobOptions()->found(),
+                 u"Using Path of Building in %1."_s.arg(folders.pob.folder.path()));
+
+        QVERIFY(r.app.overlayOptions()->setCheckKey(QKeySequence(u"F6"_s)));
+        QCOMPARE(r.shortcuts->keys.value(u"check-item"_s), QKeySequence(u"F6"_s));
+        QCOMPARE(r.app.settings().settings().overlay.hotkey, u"F6"_s);
+
+        r.app.tradeOptions()->setSoloSelfFound(true);
+        QVERIFY(!r.app.checker().popup().isTradeAvailable());
+        QCOMPARE(r.app.tradeOptions()->unavailable(), r.app.trade().unavailable());
+    }
+
     void checkKey()
     {
         // the one in the settings, the first time

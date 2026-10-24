@@ -43,6 +43,9 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_trade(&m_tradeClient)
     , m_finder(&m_trade, &m_tradeData, &m_rates)
+    , m_tradeOptions(&m_settings, &m_tradeData, &m_rates)
+    , m_overlayOptions(&m_settings, &m_hotkeys)
+    , m_pobOptions(&m_settings, &m_pob)
 {
     m_characters.load();
     connect(&m_character, &ActiveCharacter::changed, this, [this] {

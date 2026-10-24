@@ -41,6 +41,14 @@ add_compile_definitions(
 # Debian 13, the oldest of the distributions with Plasma 6 still supported,
 # has Qt 6.8
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Widgets Qml Quick QuickControls2)
+# The window is Kirigami, which is only loaded at run time, as is the key
+# recorder from KDeclarative. Debian 13 has these.
+find_package(KF6Kirigami 6.13 REQUIRED)
+find_package(KF6KirigamiAddons 1.7 REQUIRED)
+find_package(KF6Declarative 6.13 REQUIRED)
+# Kirigami Addons translates its text with KI18n, which the window's engine
+# is set up for
+find_package(KF6I18n 6.13 REQUIRED)
 qt_standard_project_setup(REQUIRES 6.8)
 # all the QML modules in one folder, which is where qmllint looks for them
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml)

@@ -76,6 +76,30 @@ private Q_SLOTS:
         QCOMPARE(s.trade.status, ListingStatus::Available);
         QCOMPARE(s.overlay.position, PopupPosition::Cursor);
     }
+
+    void tradeOff_data()
+    {
+        QTest::addColumn<bool>("enabled");
+        QTest::addColumn<bool>("soloSelfFound");
+        QTest::addColumn<QString>("why");
+        const QString off = u"Trade searches are turned off in the settings."_s;
+        const QString solo = u"There's no trading in solo self-found, so trade searches are off."_s;
+        QTest::newRow("on") << true << false << QString();
+        QTest::newRow("turned off") << false << false << off;
+        QTest::newRow("solo self-found") << true << true << solo;
+        QTest::newRow("both") << false << true << off;
+    }
+
+    void tradeOff()
+    {
+        QFETCH(bool, enabled);
+        QFETCH(bool, soloSelfFound);
+        QFETCH(QString, why);
+        TradeSettings trade;
+        trade.enabled = enabled;
+        trade.league.soloSelfFound = soloSelfFound;
+        QCOMPARE(tradeUnavailable(trade), why);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestSettings)

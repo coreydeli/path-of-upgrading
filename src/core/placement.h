@@ -3,11 +3,17 @@
 
 #include <QPoint>
 #include <QSize>
+#include <QString>
 #include <optional>
 
 namespace pou {
 
 enum class PopupPosition { Cursor, Left, Right, Top };
+
+// As the settings keep it: "cursor", "left", "right" or "top".
+QString popupPositionId(PopupPosition position);
+// Cursor for anything unknown.
+PopupPosition popupPositionFromId(QStringView id);
 
 // Where the popup's top left goes on the screen the mouse is on, counted from
 // the screen's top left. Next to the mouse it goes on the right, or on the

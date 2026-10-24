@@ -106,6 +106,8 @@ public:
     void stop();
 
     State state() const { return m_state; }
+    // The one it runs, when there's one.
+    const std::optional<PobInstall> &install() const { return m_install; }
     // Why it can't run, when it's Unavailable or Failed.
     QString errorString() const { return m_errorString; }
     // Path of Building's, once it has started.
@@ -113,6 +115,9 @@ public:
 
 Q_SIGNALS:
     void stateChanged(pou::PobEngine::State state);
+    // When it's given another to run, or none, or another reason there's
+    // none.
+    void installChanged();
     // Once it has the build and your gear on, each time it starts or is given
     // another. See summary in pobbridge.lua for what it says of it.
     void buildLoaded(const QJsonObject &summary);
