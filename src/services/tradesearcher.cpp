@@ -143,11 +143,7 @@ League TradeSearcher::league() const
 
 QString TradeSearcher::unavailable() const
 {
-    if (!m_settings.enabled)
-        return u"Trade searches are turned off in the settings."_s;
-    if (!league().canTrade())
-        return u"There's no trading in solo self-found, so trade searches are off."_s;
-    return {};
+    return tradeUnavailable(m_settings);
 }
 
 TradeSearch *TradeSearcher::search(const QJsonObject &body)

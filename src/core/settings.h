@@ -26,6 +26,10 @@ struct TradeSettings
     friend bool operator==(const TradeSettings &, const TradeSettings &) = default;
 };
 
+// Why there are no trade searches with these settings, or empty when there
+// are.
+QString tradeUnavailable(const TradeSettings &settings);
+
 struct PobSettings
 {
     bool enabled = true; // judge items with Path of Building when it's there

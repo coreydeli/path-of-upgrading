@@ -66,6 +66,15 @@ void read(const QSettings &store, const QString &key, int &value, int low, int h
 
 } // namespace
 
+QString tradeUnavailable(const TradeSettings &settings)
+{
+    if (!settings.enabled)
+        return u"Trade searches are turned off in the settings."_s;
+    if (!settings.league.canTrade())
+        return u"There's no trading in solo self-found, so trade searches are off."_s;
+    return {};
+}
+
 Settings loadSettings(const QSettings &store)
 {
     Settings s;
