@@ -59,6 +59,8 @@ void ItemPopup::showReport(const ItemReport &report, const std::optional<ScreenP
 
 void ItemPopup::updateReport(const ItemReport &report)
 {
+    if (!m_message.isEmpty())
+        return;
     m_report = report;
     Q_EMIT shownChanged();
 }

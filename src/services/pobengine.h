@@ -113,6 +113,9 @@ public:
 
 Q_SIGNALS:
     void stateChanged(pou::PobEngine::State state);
+    // Once it has the build and your gear on, each time it starts or is given
+    // another. See summary in pobbridge.lua for what it says of it.
+    void buildLoaded(const QJsonObject &summary);
 
 private:
     // A request Path of Building hasn't answered yet.
@@ -152,7 +155,8 @@ private:
     QByteArray m_printed; // the end of what it has printed
     QList<Sent> m_sent;   // in the order they were sent
     int m_lastId = 0;
-    QTimer m_timer; // see watch()
+    int m_buildId = 0; // what's sent last for the build
+    QTimer m_timer;    // see watch()
 };
 
 } // namespace pou

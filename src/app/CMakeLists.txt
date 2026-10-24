@@ -1,10 +1,16 @@
 # The app itself: the windows in QML and what they show in C++
 qt_add_library(pou_app STATIC
+    activecharacter.cpp activecharacter.h
+    app.cpp app.h
+    hotkeys.cpp hotkeys.h
+    itemchecker.cpp itemchecker.h
+    itemhistory.cpp itemhistory.h
     itemjudge.cpp itemjudge.h
     itempopup.cpp itempopup.h
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
     popuphider.cpp popuphider.h
+    settingsstore.cpp settingsstore.h
 )
 
 qt_add_qml_module(pou_app

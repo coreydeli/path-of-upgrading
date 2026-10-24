@@ -2,13 +2,15 @@
 //
 // Stands in for LuaJIT running pobbridge.lua in Path of Building's folder, for
 // testing the engine and what uses it. It answers as the bridge does without
-// working anything out: an eval's answer has the items it was sent, the build
-// and gear it has and the commands it has had, plus what's in a file called
-// eval.json in the folder, where a test can write what the bridge would have
-// worked out. A build that isn't for Path of Exile 2 doesn't load. In the
-// folder, it counts how many times it's run in a file called runs, and how
-// many times it has stopped once stdin was closed in one called stops. It
-// keeps the items it was last asked to judge in one called asked.json.
+// working anything out: its answers have the build and gear it has and the
+// commands it has had, and an eval's has the items it was sent. Each has
+// what's in a file in the folder, where a test can write what the bridge would
+// have worked out: eval.json for an eval and summary.json for loading the
+// build or putting on gear. A build that isn't for Path of Exile 2 doesn't
+// load. In the folder, it counts how many times it's run in a file called
+// runs, and how many times it has stopped once stdin was closed in one called
+// stops. It keeps the items it was last asked to judge in one called
+// asked.json.
 //
 // Its own arguments come before LuaJIT's, for going wrong:
 //   --fail           it says it couldn't start
@@ -132,20 +134,24 @@ int main(int argc, char *argv[])
         if (!noBuild.isEmpty()) {
             r.insert(u"ok"_s, false);
             r.insert(u"error"_s, noBuild);
-        } else if (command == u"equip") {
+            answer(r);
+            continue;
+        }
+        if (command == u"equip")
             wearing = request.value(u"items");
-        } else if (command == u"eval") {
+        if (command == u"eval") {
             if (QFile asked(u"asked.json"_s); asked.open(QIODevice::WriteOnly))
                 asked.write(QJsonDocument(request.value(u"items").toArray()).toJson());
             r.insert(u"items"_s, request.value(u"items"));
-            r.insert(u"xml"_s, xml);
-            r.insert(u"wearing"_s, wearing);
-            r.insert(u"seen"_s, seen);
-            if (QFile judged(u"eval.json"_s); judged.open(QIODevice::ReadOnly)) {
-                const QJsonObject eval = QJsonDocument::fromJson(judged.readAll()).object();
-                for (auto it = eval.constBegin(); it != eval.constEnd(); ++it)
-                    r.insert(it.key(), it.value());
-            }
+        }
+        r.insert(u"xml"_s, xml);
+        r.insert(u"wearing"_s, wearing);
+        r.insert(u"seen"_s, seen);
+        if (QFile worked(command == u"eval" ? u"eval.json"_s : u"summary.json"_s);
+            worked.open(QIODevice::ReadOnly)) {
+            const QJsonObject extra = QJsonDocument::fromJson(worked.readAll()).object();
+            for (auto it = extra.constBegin(); it != extra.constEnd(); ++it)
+                r.insert(it.key(), it.value());
         }
         answer(r);
     }

@@ -33,6 +33,13 @@ struct FakePob
         QFile file(folder.filePath(u"eval.json"_s));
         return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(eval).toJson()) > 0;
     }
+    // And to loading the build or putting on your gear, see summary in
+    // pobbridge.lua.
+    bool loads(const QJsonObject &summary) const
+    {
+        QFile file(folder.filePath(u"summary.json"_s));
+        return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(summary).toJson()) > 0;
+    }
     // The items it was last asked to judge.
     QJsonArray asked() const
     {
