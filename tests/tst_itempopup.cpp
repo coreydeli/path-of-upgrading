@@ -158,6 +158,15 @@ private Q_SLOTS:
         equipped.verdict = u"Equipped"_s;
         equipped.versus = u"in your Helmet slot"_s;
         QTest::newRow("equipped") << equipped << QStringList{u"Equipped"_s, u"in your Helmet slot"_s};
+
+        ItemReport costly = aReport();
+        costly.losses = {u"Fire res drops below the cap"_s, u"Cold res drops below the cap"_s};
+        costly.risks = {u"Minion skills lose a level"_s};
+        costly.caps = u"Caps your lightning resistance"_s;
+        QTest::newRow("losses, risks and caps")
+            << costly
+            << QStringList{u"Fire res drops below the cap\nCold res drops below the cap"_s,
+                           u"Minion skills lose a level"_s, u"Caps your lightning resistance"_s};
     }
 
     void sections()

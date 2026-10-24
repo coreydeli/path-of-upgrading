@@ -110,5 +110,29 @@ Rectangle {
             opacity: 0.7
             text: [card.report.scoreLabel, card.report.versus].filter(part => part !== "").join(", ")
         }
+
+        // what it costs you, which matters more than what it gives
+        Kirigami.InlineMessage {
+            Layout.fillWidth: true
+            visible: card.report.losses.length > 0
+            type: Kirigami.MessageType.Error
+            text: card.report.losses.join("\n")
+        }
+
+        Kirigami.InlineMessage {
+            Layout.fillWidth: true
+            visible: card.report.risks.length > 0
+            type: Kirigami.MessageType.Warning
+            text: card.report.risks.join("\n")
+        }
+
+        ToneLabel {
+            Layout.fillWidth: true
+            visible: text !== ""
+            wrapMode: Text.Wrap
+            text: card.report.caps
+            tone: Tone.Good
+            colorblind: card.popup.colorblind
+        }
     }
 }
