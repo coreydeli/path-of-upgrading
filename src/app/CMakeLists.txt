@@ -22,7 +22,9 @@ qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
         qml/ChangesTable.qml
+        qml/KeyField.qml
         qml/Main.qml
+        qml/NumberField.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
         qml/ToneLabel.qml
