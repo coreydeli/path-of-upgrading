@@ -10,6 +10,7 @@ qt_add_library(pou_app STATIC
 qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
+        qml/ChangesTable.qml
         qml/Main.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
