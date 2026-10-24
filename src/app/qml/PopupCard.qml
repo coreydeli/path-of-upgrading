@@ -79,15 +79,36 @@ Rectangle {
             text: card.report.details.join(", ")
         }
 
-        ToneLabel {
+        RowLayout {
+            Layout.fillWidth: true
+            visible: card.report.verdict !== ""
+            spacing: Kirigami.Units.largeSpacing
+
+            ToneLabel {
+                font.bold: true
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                text: card.report.verdict
+                tone: card.report.verdictTone
+                colorblind: card.popup.colorblind
+            }
+
+            ToneLabel {
+                Layout.fillWidth: true
+                font.bold: true
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                text: card.report.score
+                tone: card.report.verdictTone
+                colorblind: card.popup.colorblind
+            }
+        }
+
+        // what the score is and what it's against: "for your build, vs Grim Crown"
+        QQC2.Label {
             Layout.fillWidth: true
             visible: text !== ""
             wrapMode: Text.Wrap
-            font.bold: true
-            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
-            text: card.report.verdict
-            tone: card.report.verdictTone
-            colorblind: card.popup.colorblind
+            opacity: 0.7
+            text: [card.report.scoreLabel, card.report.versus].filter(part => part !== "").join(", ")
         }
     }
 }

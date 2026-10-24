@@ -143,6 +143,38 @@ private Q_SLOTS:
         QCOMPARE(popup.report(), aReport());
     }
 
+    void sections_data()
+    {
+        QTest::addColumn<ItemReport>("report");
+        QTest::addColumn<QStringList>("texts");
+
+        ItemReport scored = aReport();
+        scored.score = u"+4%"_s;
+        scored.scoreLabel = u"for your build"_s;
+        scored.versus = u"vs Grim Crown"_s;
+        QTest::newRow("score") << scored << QStringList{u"+4%"_s, u"for your build, vs Grim Crown"_s};
+
+        ItemReport equipped = aReport();
+        equipped.verdict = u"Equipped"_s;
+        equipped.versus = u"in your Helmet slot"_s;
+        QTest::newRow("equipped") << equipped << QStringList{u"Equipped"_s, u"in your Helmet slot"_s};
+    }
+
+    void sections()
+    {
+        QFETCH(ItemReport, report);
+        QFETCH(QStringList, texts);
+
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(report, mouseAt(200, 300));
+        for (const QString &text : std::as_const(texts)) {
+            if (!shown(popup, text))
+                QFAIL(qPrintable(u"It doesn't show \"%1\""_s.arg(text)));
+        }
+    }
+
     void updated()
     {
         QQmlEngine engine;
