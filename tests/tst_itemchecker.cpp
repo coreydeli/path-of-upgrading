@@ -1,23 +1,35 @@
 // SPDX-License-Identifier: MIT
 #include "app/itemchecker.h"
+#include "app/tradereport.h"
+#include "core/datafiles.h"
 #include "core/parser.h"
 #include "core/placement.h"
 #include "fakegameinput.h"
+#include "fakenetwork.h"
 #include "fakepob.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
+#include "services/ratesstore.h"
+#include "services/tradeclient.h"
+#include "services/tradedatastore.h"
+#include "services/tradesearcher.h"
+#include "tradefixtures.h"
 
 #include <QGuiApplication>
+#include <QJsonDocument>
+#include <QLoggingCategory>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickWindow>
 #include <QScreen>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTest>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 
 namespace {
@@ -85,6 +97,40 @@ struct WithPob
     }
 };
 
+// The trade site, which the popup's buttons search.
+struct Trading
+{
+    QTemporaryDir dir;
+    FakeNetwork network;
+    TradeClient client{&network};
+    TradeDataStore data{&client, dir.path()};
+    TradeSearcher searcher{&client};
+    FakeNetwork ninja; // poe.ninja
+    RatesStore rates{&ninja, dir.filePath(u"rates"_s)};
+    TradeFinder finder{&searcher, &data, &rates};
+
+    explicit Trading(ItemChecker &checker)
+    {
+        checker.setFinder(&finder);
+        checker.popup().setTradeAvailable(true);
+    }
+
+    // what the site said of its stats earlier today, which the store reads
+    bool hasData()
+    {
+        const QJsonObject leagues = QJsonDocument::fromJson(R"({"result":[{"id":"Standard"}]})").object();
+        for (const auto &[name, answer] :
+             {std::pair{u"stats"_s, tradefixtures::stats()},
+              std::pair{u"filters"_s, tradefixtures::filters()}, std::pair{u"leagues"_s, leagues}}) {
+            if (!writeJsonFile(dir.filePath(name + u".json"_s), answer))
+                return false;
+        }
+        QSignalSpy refreshed(&data, &TradeDataStore::refreshed);
+        data.refresh();
+        return refreshed.wait() && network.sent.isEmpty();
+    }
+};
+
 } // namespace
 
 class TestItemChecker : public QObject
@@ -96,6 +142,12 @@ public:
     static void initMain() { qputenv("QT_QPA_PLATFORM", "offscreen"); }
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        // what it says when poe.ninja has no rates, which these tests don't need
+        QLoggingCategory::setFilterRules(u"pathofupgrading.ninja.warning=false"_s);
+    }
+
     void init() { QTest::failOnWarning(); }
 
     void showsIt()
@@ -117,6 +169,104 @@ private Q_SLOTS:
                  placed(checker.popup(), PopupPosition::Cursor, QPoint(200, 300)));
         QCOMPARE(read.size(), 1);
         QCOMPARE(read.first().at(0).value<Item>().name, u"Doom Visage"_s);
+    }
+
+    void findsOnTrade()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        trading.network.answers << FakeAnswer{.body = R"({"id":"Ab3dE9","total":3,"result":["a","b","c"]})"};
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+
+        // as the button does
+        QSignalSpy finished(&trading.finder, &TradeFinder::finished);
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QCOMPARE(checker.popup().trade(), searchingReport());
+        QVERIFY(finished.wait());
+        const TradeFinder::Found &found = *trading.finder.found();
+        QCOMPARE(found.item.name, u"Doom Visage"_s);
+        QCOMPARE(found.kind, TradeFinder::Kind::Similar);
+        QCOMPARE(checker.popup().trade(), reportOf(found));
+        QCOMPARE(checker.popup().trade().status, u"3 listed in Standard"_s);
+    }
+
+    void notOnTrade()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        TradeSettings off;
+        off.enabled = false;
+        trading.searcher.setSettings(off);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QSignalSpy finished(&trading.finder, &TradeFinder::finished);
+        checker.popup().findOnTrade(TradeFinder::Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QCOMPARE(checker.popup().trade(), failedReport(u"Trade searches are turned off in the settings."_s));
+    }
+
+    void tradeWaitsItsTurn()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        // the site takes four searches in ten seconds until it says otherwise
+        for (int i = 0; i < 4; ++i) {
+            trading.network.answers << FakeAnswer{.body = R"({"id":"Ab3dE9","total":0,"result":[]})"};
+            trading.searcher.search({});
+        }
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QSignalSpy waiting(&trading.finder, &TradeFinder::waiting);
+        QVERIFY(waiting.wait());
+        QCOMPARE(checker.popup().trade(),
+                 searchingReport(waiting.first().first().value<std::chrono::milliseconds>()));
+        QVERIFY(checker.popup().trade().status.startsWith(u"Waiting"));
+        trading.finder.cancel();
+    }
+
+    void nextItemCallsItOff()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QSignalSpy finished(&trading.finder, &TradeFinder::finished);
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(trading.finder.isBusy());
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetOld, mouseAt(200, 300));
+        QVERIFY(!trading.finder.isBusy());
+        QVERIFY(!finished.wait(50));
+        QCOMPARE(checker.popup().trade(), TradeReport());
+    }
+
+    void noFinder()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QCOMPARE(checker.popup().trade(), TradeReport());
+        // and the next item is read as ever
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetOld, mouseAt(200, 300));
+        QCOMPARE(checker.popup().report().name, u"Grim Crown"_s);
     }
 
     void slowGame()

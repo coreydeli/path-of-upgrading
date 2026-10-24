@@ -18,6 +18,7 @@ class PobEngine;
 // What the hotkey does: reads the item under the mouse, judges it for the
 // character you play and shows that in the popup, then shows it again once
 // Path of Building has answered. Gear you copy yourself goes the same way.
+// The popup's buttons search the trade site for the item.
 class ItemChecker : public QObject
 {
     Q_OBJECT
@@ -31,6 +32,9 @@ public:
     void setCharacter(const Character &character, const std::optional<PobBuild> &build);
     // Path of Building, used while the settings have it on.
     void setPob(PobEngine *pob);
+    // What the popup's buttons search with, once. It has to outlive the
+    // checker.
+    void setFinder(TradeFinder *finder);
 
     // For the hotkey.
     void check();
@@ -45,12 +49,15 @@ private:
     void read(const Item &item, const std::optional<ScreenPoint> &mouse);
     void judged(const ItemCheck &check);
     void judgeWithPob();
+    void findOnTrade(TradeFinder::Kind kind);
+    void found();
 
     GameInput *m_input;
     ItemReader m_reader;
     ItemJudge m_judge;
     ItemPopup m_popup;
     PobEngine *m_pob = nullptr;
+    TradeFinder *m_finder = nullptr;
     bool m_pobOn = true;
     std::optional<ScreenPoint> m_mouse; // where the item was read
     bool m_fresh = false;               // and it hasn't been shown yet
