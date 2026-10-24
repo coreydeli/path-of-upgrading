@@ -172,6 +172,8 @@ private Q_SLOTS:
         QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
         // for Path of Exile 1
         engine.setBuild(u"<PathOfBuilding><Build level=\"90\"/></PathOfBuilding>"_s);
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Path of Building couldn't load the build: The fake couldn't load the build.");
         const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
         QVERIFY(finishes(reply.get()));
         QCOMPARE(reply->errorString(), u"The fake couldn't load the build."_s);
