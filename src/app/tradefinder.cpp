@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 #include "app/tradefinder.h"
 
+#include "core/budget.h"
 #include "core/evaluation.h"
 #include "core/tradequery.h"
+#include "services/ratesstore.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
 
@@ -74,10 +76,12 @@ QString scoredBy(const GearSearch &search)
 
 } // namespace
 
-TradeFinder::TradeFinder(TradeSearcher *searcher, TradeDataStore *data, QObject *parent)
+TradeFinder::TradeFinder(TradeSearcher *searcher, TradeDataStore *data, const RatesStore *rates,
+                         QObject *parent)
     : QObject(parent)
     , m_searcher(searcher)
     , m_data(data)
+    , m_rates(rates)
 {
     connect(m_data, &TradeDataStore::refreshed, this, [this] {
         if (m_waiting) {
@@ -300,11 +304,23 @@ TradeFinder::Plan TradeFinder::craftPlan() const
     return plan;
 }
 
+// Yours, at poe.ninja's rate when you'd rather and it has one for the
+// league, or else the one you typed in.
+Budget TradeFinder::budget() const
+{
+    Budget budget = m_settings.trade.budget;
+    if (m_settings.trade.autoRate && m_rates->divineRate() > 0 &&
+        m_rates->league() == m_searcher->league().tradeId())
+        budget.divineRate = m_rates->divineRate();
+    return budget;
+}
+
 void TradeFinder::send()
 {
     m_plan = plan();
     if (m_plan.body.isEmpty())
         return failSoon(m_plan.error);
+    applyBudget(m_plan.body, budget());
     m_search = m_searcher->search(m_plan.body);
     connect(m_search, &TradeSearch::finished, this, &TradeFinder::answered);
 }

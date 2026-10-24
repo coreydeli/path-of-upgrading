@@ -15,6 +15,7 @@
 
 namespace pou {
 
+class RatesStore;
 class TradeDataStore;
 class TradeSearch;
 class TradeSearcher;
@@ -49,8 +50,10 @@ public:
         QStringList listingIds;
     };
 
-    // They have to outlive it.
-    TradeFinder(TradeSearcher *searcher, TradeDataStore *data, QObject *parent = nullptr);
+    // They have to outlive it. The rates turn your budget into exalts, so
+    // refresh them for the league before finding.
+    TradeFinder(TradeSearcher *searcher, TradeDataStore *data, const RatesStore *rates,
+                QObject *parent = nullptr);
     ~TradeFinder() override;
 
     void setSettings(const Settings &settings);
@@ -92,6 +95,7 @@ private:
     Plan similarPlan() const;
     Plan weightedPlan() const;
     Plan craftPlan() const;
+    Budget budget() const;
     void start();
     void send();
     void answered();
@@ -100,6 +104,7 @@ private:
 
     TradeSearcher *m_searcher;
     TradeDataStore *m_data;
+    const RatesStore *m_rates;
     Settings m_settings;
     Character m_character;
     Item m_item;

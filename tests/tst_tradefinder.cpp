@@ -8,6 +8,7 @@
 #include "core/tradesite.h"
 #include "fakenetwork.h"
 #include "itemtexts.h"
+#include "services/ratesstore.h"
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
@@ -74,6 +75,16 @@ QJsonObject manyStats()
     return response({group(u"explicit"_s, explicits), group(u"implicit"_s, implicits)});
 }
 
+// What poe.ninja says currencies are worth, with a Divine Orb at that many
+// Exalted Orbs.
+QJsonObject ninjaRates(double exalts)
+{
+    const QJsonObject core{{u"primary"_s, u"divine"_s}, {u"rates"_s, QJsonObject{{u"exalted"_s, exalts}}}};
+    const QJsonArray lines{QJsonObject{{u"id"_s, u"divine"_s}, {u"primaryValue"_s, 1}},
+                           QJsonObject{{u"id"_s, u"exalted"_s}, {u"primaryValue"_s, 1 / exalts}}};
+    return {{u"core"_s, core}, {u"lines"_s, lines}};
+}
+
 // The trade site, and searches on it in the current league.
 struct Site
 {
@@ -82,7 +93,9 @@ struct Site
     TradeClient client{&network};
     TradeDataStore data{&client, dir.path()};
     TradeSearcher searcher{&client};
-    TradeFinder finder{&searcher, &data};
+    FakeNetwork ninja; // poe.ninja
+    RatesStore rates{&ninja, dir.filePath(u"rates"_s)};
+    TradeFinder finder{&searcher, &data, &rates};
 
     Site() { searcher.setLeagues(siteLeagues); }
 
@@ -228,7 +241,8 @@ private Q_SLOTS:
     void initTestCase()
     {
         // what it says when the site lets it down, which the tests make it do
-        QLoggingCategory::setFilterRules(u"pathofupgrading.trade.warning=false"_s);
+        QLoggingCategory::setFilterRules(
+            u"pathofupgrading.trade.warning=false\npathofupgrading.ninja.warning=false"_s);
     }
 
     void init() { QTest::failOnWarning(); }
@@ -278,6 +292,49 @@ private Q_SLOTS:
                  upgrades(helmet, again.data.data(), character, u"Helmet"_s, nearlyAsGood).body);
         QCOMPARE(again.finder.found()->note,
                  u"Nothing better is listed right now, so these come within 10% of yours."_s);
+    }
+
+    void inYourBudget_data()
+    {
+        QTest::addColumn<bool>("autoRate");
+        QTest::addColumn<double>("typedRate");
+        QTest::addColumn<QString>("ratesFor"); // the league poe.ninja was asked about
+        QTest::addColumn<double>("ninjaRate"); // 0 when it had none
+        QTest::addColumn<double>("rate");      // it should go by
+
+        const QString softcore = u"Runes of Aldur"_s;
+        QTest::newRow("poe.ninja's") << true << 250.0 << softcore << 300.0 << 300.0;
+        QTest::newRow("typed in") << false << 250.0 << softcore << 300.0 << 250.0;
+        QTest::newRow("another league's") << true << 250.0 << u"HC Runes of Aldur"_s << 300.0 << 250.0;
+        QTest::newRow("none from poe.ninja") << true << 250.0 << softcore << 0.0 << 250.0;
+        QTest::newRow("none") << true << 0.0 << softcore << 0.0 << 0.0;
+    }
+
+    void inYourBudget()
+    {
+        QFETCH(bool, autoRate);
+        QFETCH(double, typedRate);
+        QFETCH(QString, ratesFor);
+        QFETCH(double, ninjaRate);
+        QFETCH(double, rate);
+
+        Site site;
+        QVERIFY(site.hasData());
+        if (ninjaRate > 0)
+            QVERIFY(
+                writeJsonFile(site.dir.filePath(u"rates/"_s + ratesFor + u".json"_s), ninjaRates(ninjaRate)));
+        QSignalSpy refreshed(&site.rates, &RatesStore::refreshed);
+        site.rates.refresh(ratesFor);
+        QVERIFY(refreshed.wait());
+
+        Settings settings;
+        settings.trade.budget = {.max = 1, .divineRate = typedRate};
+        settings.trade.autoRate = autoRate;
+        site.finder.setSettings(settings);
+        QVERIFY(site.finds(helmet));
+        QJsonObject body = similar(helmet, site.data.data()).body;
+        applyBudget(body, {.max = 1, .divineRate = rate});
+        QCOMPARE(site.searched(0), body);
     }
 
     void noUpgradesListed()
@@ -976,7 +1033,7 @@ private Q_SLOTS:
         // before the site answers
         Site site;
         QVERIFY(site.hasData());
-        auto finder = std::make_unique<TradeFinder>(&site.searcher, &site.data);
+        auto finder = std::make_unique<TradeFinder>(&site.searcher, &site.data, &site.rates);
         finder->find(helmet, Kind::Similar);
         QVERIFY(site.network.sent.at(0).reply);
         finder.reset();
