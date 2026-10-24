@@ -191,6 +191,21 @@ private Q_SLOTS:
             ReportFigure{.label = u"-30 to Spirit"_s, .tone = Tone::Bad},
         };
         QTest::newRow("stats") << stats << QStringList{u"+45 to maximum Life"_s, u"-30 to Spirit"_s};
+
+        ItemReport changes = aReport();
+        changes.changes = {
+            ReportFigure{.label = u"Fire res"_s,
+                         .change = u"-8%"_s,
+                         .from = u"75%"_s,
+                         .to = u"67%"_s,
+                         .note = u"off the cap"_s,
+                         .tone = Tone::Bad},
+            // when only the change is known
+            ReportFigure{.label = u"Cold res"_s, .change = u"+12%"_s, .tone = Tone::Good},
+        };
+        QTest::newRow("changes") << changes
+                                 << QStringList{u"Now"_s, u"With it"_s,     u"Fire res"_s, u"75%"_s, u"67%"_s,
+                                                u"-8%"_s, u"off the cap"_s, u"Cold res"_s, u"+12%"_s};
     }
 
     void sections()
@@ -301,6 +316,16 @@ private Q_SLOTS:
         ItemReport stats = aReport();
         stats.stats = {ReportFigure{.label = u"-30 to Spirit"_s, .tone = Tone::Bad}};
         QTest::newRow("stats") << stats << u"-30 to Spirit"_s << worse;
+
+        ItemReport changes = aReport();
+        changes.changes = {ReportFigure{.label = u"Cold res"_s,
+                                        .change = u"+12%"_s,
+                                        .from = u"63%"_s,
+                                        .to = u"75%"_s,
+                                        .note = u"capped"_s,
+                                        .tone = Tone::Good}};
+        QTest::newRow("a change") << changes << u"+12%"_s << better;
+        QTest::newRow("its note") << changes << u"capped"_s << better;
     }
 
     void tones()

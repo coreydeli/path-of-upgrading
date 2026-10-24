@@ -195,5 +195,108 @@ Rectangle {
                 }
             }
         }
+
+        // what equipping it changes on your character, in columns
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.report.changes.length > 0
+            spacing: 0
+
+            TextMetrics {
+                id: number
+
+                text: "+88,888%"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.largeSpacing
+                opacity: 0.7
+
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    font: Kirigami.Theme.smallFont
+                    text: qsTr("If you equip it")
+                }
+
+                QQC2.Label {
+                    Layout.preferredWidth: number.width
+                    horizontalAlignment: Text.AlignRight
+                    font: Kirigami.Theme.smallFont
+                    text: qsTr("Now")
+                }
+
+                QQC2.Label {
+                    Layout.preferredWidth: number.width
+                    horizontalAlignment: Text.AlignRight
+                    font: Kirigami.Theme.smallFont
+                    text: qsTr("With it")
+                }
+
+                Item {
+                    Layout.preferredWidth: number.width
+                }
+            }
+
+            Repeater {
+                model: card.report.changes
+
+                RowLayout {
+                    id: change
+
+                    required property reportFigure modelData
+
+                    Layout.fillWidth: true
+                    spacing: Kirigami.Units.largeSpacing
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+
+                        QQC2.Label {
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            text: change.modelData.label
+                        }
+
+                        // "under the cap"
+                        ToneLabel {
+                            Layout.fillWidth: true
+                            visible: text !== ""
+                            font: Kirigami.Theme.smallFont
+                            text: change.modelData.note
+                            tone: change.modelData.tone
+                            colorblind: card.popup.colorblind
+                        }
+                    }
+
+                    QQC2.Label {
+                        Layout.preferredWidth: number.width
+                        Layout.alignment: Qt.AlignTop
+                        horizontalAlignment: Text.AlignRight
+                        opacity: 0.7
+                        text: change.modelData.from
+                    }
+
+                    QQC2.Label {
+                        Layout.preferredWidth: number.width
+                        Layout.alignment: Qt.AlignTop
+                        horizontalAlignment: Text.AlignRight
+                        text: change.modelData.to
+                    }
+
+                    ToneLabel {
+                        Layout.preferredWidth: number.width
+                        Layout.alignment: Qt.AlignTop
+                        horizontalAlignment: Text.AlignRight
+                        font.bold: true
+                        text: change.modelData.change
+                        tone: change.modelData.tone
+                        colorblind: card.popup.colorblind
+                    }
+                }
+            }
+        }
     }
 }
