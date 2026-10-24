@@ -89,7 +89,7 @@ private:
     Plan plan() const;
     Plan upgradePlan() const;
     Plan similarPlan() const;
-    Plan weightsPlan() const;
+    Plan weightedPlan() const;
     void start();
     void send();
     void answered();

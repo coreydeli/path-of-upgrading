@@ -146,7 +146,7 @@ TradeFinder::Plan TradeFinder::plan() const
     case Kind::Upgrades:
         return upgradePlan();
     case Kind::Weighted:
-        return weightsPlan();
+        return weightedPlan();
     case Kind::Similar:
         break;
     }
@@ -238,7 +238,7 @@ TradeFinder::Plan TradeFinder::similarPlan() const
     return plan;
 }
 
-TradeFinder::Plan TradeFinder::weightsPlan() const
+TradeFinder::Plan TradeFinder::weightedPlan() const
 {
     WeightedSearchOptions options;
     options.status = m_settings.trade.status;
