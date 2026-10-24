@@ -2,6 +2,7 @@
 qt_add_library(pou_app STATIC
     activecharacter.cpp activecharacter.h
     app.cpp app.h
+    characterlist.cpp characterlist.h
     hotkeys.cpp hotkeys.h
     itemchecker.cpp itemchecker.h
     itemhistory.cpp itemhistory.h
