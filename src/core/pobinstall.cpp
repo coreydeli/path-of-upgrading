@@ -4,9 +4,11 @@
 #include "core/datafiles.h"
 
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QXmlStreamReader>
 #include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
@@ -17,6 +19,8 @@ namespace {
 // Where rusty-path-of-building keeps Path of Building for Path of Exile 2,
 // in its data folder.
 constexpr QStringView poe2Folder = u"/RustyPathOfBuilding2";
+// and where that keeps what's yours, next to it
+constexpr QStringView userFolder = u"/userdata/Path of Building (PoE2)";
 
 void setWhy(QString *why, const QString &text)
 {
@@ -73,6 +77,24 @@ std::optional<PobInstall> pobIn(const PobPlaces &places, const QString &location
     return PobInstall{.folder = folder, .program = places.luajit};
 }
 
+// The builds folder chosen in Path of Building's options. Nothing else in
+// its settings is read, as they have your sign in to the trade site too.
+QString chosenBuildsFolder(const QString &settings)
+{
+    const std::optional<QByteArray> xml = readFile(settings);
+    if (!xml)
+        return {};
+    QXmlStreamReader reader(*xml);
+    if (!reader.readNextStartElement())
+        return {};
+    while (reader.readNextStartElement()) {
+        if (reader.name() == u"Misc")
+            return reader.attributes().value(u"buildPath").toString();
+        reader.skipCurrentElement();
+    }
+    return {};
+}
+
 } // namespace
 
 PobPlaces pobPlaces()
@@ -120,6 +142,33 @@ std::optional<PobInstall> findPob(const PobPlaces &places, const QString &locati
         setWhy(why, u"Path of Building isn't installed. Get it from Flathub with: "
                     u"flatpak install flathub %1"_s.arg(pobFlatpakId));
     return std::nullopt;
+}
+
+QString pobBuildsFolder(const PobInstall &install)
+{
+    const QString user = install.folder + userFolder;
+    // one chosen in the Flatpak's sandbox can be a folder only it has
+    if (const QString chosen = chosenBuildsFolder(user + u"/Settings.xml"_s);
+        !chosen.isEmpty() && QFileInfo(chosen).isDir())
+        return QDir::cleanPath(chosen);
+    return user + u"/Builds"_s;
+}
+
+QList<SavedBuild> savedBuilds(const QString &folder)
+{
+    QList<SavedBuild> builds;
+    const QDir dir(folder);
+    QDirIterator it(folder, {u"*.xml"_s}, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QFileInfo file = it.nextFileInfo();
+        QString name = dir.relativeFilePath(file.filePath());
+        name.chop(4);
+        builds << SavedBuild{.path = file.filePath(), .name = name, .modified = file.lastModified()};
+    }
+    std::sort(builds.begin(), builds.end(), [](const SavedBuild &a, const SavedBuild &b) {
+        return a.modified != b.modified ? a.modified > b.modified : a.name < b.name;
+    });
+    return builds;
 }
 
 } // namespace pou
