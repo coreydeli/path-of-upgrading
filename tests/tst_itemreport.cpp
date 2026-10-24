@@ -68,6 +68,7 @@ private Q_SLOTS:
         const ItemReport report = reportOn(helmetNew);
         QCOMPARE(report.name, u"Doom Visage"_s);
         QCOMPARE(report.rarity, u"Rare"_s);
+        QVERIFY(report.gear);
         QCOMPARE(report.details, (QStringList{u"Expert Visored Helm"_s, u"Helmets"_s, u"Item level 79"_s}));
     }
 
@@ -608,6 +609,7 @@ private Q_SLOTS:
             u"Item Class: Stackable Currency\nRarity: Currency\nDivine Orb\n--------\nStack Size: 1/20"_s));
         QCOMPARE(report.name, u"Divine Orb"_s);
         QCOMPARE(report.details, QStringList{u"Stackable Currency"_s});
+        QVERIFY(!report.gear);
         QCOMPARE(report.verdict, QString());
         QCOMPARE(report.notes,
                  QStringList{u"Stackable Currency isn't gear, so there's nothing to compare."_s});
