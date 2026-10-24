@@ -25,6 +25,7 @@ qt_add_qml_module(pou_app
         qml/KeyField.qml
         qml/Main.qml
         qml/NumberField.qml
+        qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
         qml/ToneLabel.qml
