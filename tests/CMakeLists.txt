@@ -92,6 +92,8 @@ pou_add_platform_test(tst_xmonitors)
 pou_add_platform_test(tst_xselectionwatcher)
 pou_add_platform_test(tst_xwindows)
 
+pou_add_app_test(tst_activecharacter itemtexts.h)
+pou_use_fakepob(tst_activecharacter)
 pou_add_app_test(tst_hotkeys fakeglobalshortcuts.h)
 pou_add_app_test(tst_itemhistory itemtexts.h)
 pou_add_app_test(tst_itemreader fakegameinput.h itemtexts.h)

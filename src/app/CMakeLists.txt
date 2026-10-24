@@ -1,5 +1,6 @@
 # The app itself: the windows in QML and what they show in C++
 qt_add_library(pou_app STATIC
+    activecharacter.cpp activecharacter.h
     hotkeys.cpp hotkeys.h
     itemchecker.cpp itemchecker.h
     itemhistory.cpp itemhistory.h
