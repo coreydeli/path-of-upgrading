@@ -137,6 +137,33 @@ Rectangle {
             colorblind: card.popup.colorblind
         }
 
+        // how good it is for your build in that slot, next to what you wear
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.report.gearScore !== ""
+            spacing: Kirigami.Units.largeSpacing
+
+            QQC2.Label {
+                font.bold: true
+                text: card.report.gearScore + " " + card.report.gearGrade
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                opacity: 0.7
+                text: {
+                    const report = card.report;
+                    const parts = [report.gearBuild !== "" ? qsTr("gear score for %1").arg(report.gearBuild)
+                                                           : qsTr("gear score")];
+                    if (report.yourGearScore !== "")
+                        parts.push(qsTr("yours %1").arg(report.yourGearScore));
+                    return parts.join(", ");
+                }
+            }
+        }
+
         // what Path of Building says it does to your build
         RowLayout {
             Layout.fillWidth: true

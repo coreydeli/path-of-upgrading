@@ -203,6 +203,18 @@ private Q_SLOTS:
             // when only the change is known
             ReportFigure{.label = u"Cold res"_s, .change = u"+12%"_s, .tone = Tone::Good},
         };
+        ItemReport rated = aReport();
+        rated.gearScore = u"78"_s;
+        rated.gearGrade = u"A"_s;
+        rated.gearBuild = u"Minions"_s;
+        rated.yourGearScore = u"64"_s;
+        QTest::newRow("gear score") << rated << QStringList{u"78 A"_s, u"gear score for Minions, yours 64"_s};
+
+        ItemReport firstRated = aReport();
+        firstRated.gearScore = u"78"_s;
+        firstRated.gearGrade = u"A"_s;
+        QTest::newRow("gear score in an empty slot") << firstRated << QStringList{u"78 A"_s, u"gear score"_s};
+
         QTest::newRow("changes") << changes
                                  << QStringList{u"Now"_s, u"With it"_s,     u"Fire res"_s, u"75%"_s, u"67%"_s,
                                                 u"-8%"_s, u"off the cap"_s, u"Cold res"_s, u"+12%"_s};
