@@ -54,6 +54,7 @@ private Q_SLOTS:
         QTest::ignoreMessage(QtWarningMsg, warning);
         XGameInput input;
         QVERIFY(!input.isAvailable());
+        QCOMPARE(input.mouse(), std::nullopt);
         QSignalSpy failed(&input, &GameInput::copyFailed);
         input.copyItem(false);
         QCOMPARE(failed.size(), 1);

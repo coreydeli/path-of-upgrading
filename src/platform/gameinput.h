@@ -36,6 +36,8 @@ public:
     // copyFailed. An advanced copy, with Alt as well, has the mods' tiers in
     // it. While a copy is under way, another does nothing.
     virtual void copyItem(bool advanced) = 0;
+    // Where the mouse is, when it can be told, as it can over the game.
+    virtual std::optional<ScreenPoint> mouse() const = 0;
 
 Q_SIGNALS:
     // With where the mouse was, when that can be told.

@@ -79,11 +79,9 @@ void XGameInput::copyItem(bool advanced)
     }
     m_advanced = advanced;
 
-    // Over a Wayland window, the X server doesn't know where the mouse is.
     const XPointer pointer = queryPointer(*m_x);
     m_overGame = pointer.window != XCB_WINDOW_NONE && isGameWindow(describeWindow(*m_x, pointer.window));
-    m_mouse = pointer.window == XCB_WINDOW_NONE ? std::nullopt
-                                                : mapToScreen(pointer.position, xMonitors(*m_x), qtScreens());
+    m_mouse = mouseAt(pointer);
 
     const WindowInfo inFront = describeWindow(*m_x, activeWindow(*m_x));
     qCDebug(lcInput) << "In front:" << inFront.classes << inFront.program
@@ -100,6 +98,21 @@ void XGameInput::copyItem(bool advanced)
     } else {
         fail(Failure::NotInFront, windowName(inFront));
     }
+}
+
+std::optional<ScreenPoint> XGameInput::mouse() const
+{
+    if (!m_x->isValid())
+        return std::nullopt;
+    return mouseAt(queryPointer(*m_x));
+}
+
+std::optional<ScreenPoint> XGameInput::mouseAt(const XPointer &pointer) const
+{
+    // Over a Wayland window, the X server doesn't know where the mouse is.
+    if (pointer.window == XCB_WINDOW_NONE)
+        return std::nullopt;
+    return mapToScreen(pointer.position, xMonitors(*m_x), qtScreens());
 }
 
 void XGameInput::connectToServer()
