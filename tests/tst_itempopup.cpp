@@ -431,6 +431,20 @@ private Q_SLOTS:
         QVERIFY(!popup.isVisible());
     }
 
+    void notOverAMessage()
+    {
+        // an answer on the item before, which a message took the place of
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.showMessage(u"That isn't an item."_s, mouseAt(200, 300));
+        popup.updateReport(aReport());
+        QCOMPARE(popup.message(), u"That isn't an item."_s);
+        QCOMPARE(popup.report(), ItemReport());
+        QVERIFY(!shown(popup, u"Storm Veil"_s));
+    }
+
     void expanded()
     {
         // until the next item, which Path of Building's answer isn't

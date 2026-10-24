@@ -51,7 +51,8 @@ public:
     // known where the mouse is.
     void showReport(const ItemReport &report, const std::optional<ScreenPoint> &mouse);
     // A newer report on the item it has, as when Path of Building has
-    // answered. It stays where it is, or hidden.
+    // answered. It stays where it is, or hidden. A message has no item, so
+    // it stays as well.
     void updateReport(const ItemReport &report);
     void showMessage(const QString &message, const std::optional<ScreenPoint> &mouse);
     Q_INVOKABLE void close();
