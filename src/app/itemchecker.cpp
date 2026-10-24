@@ -23,11 +23,23 @@ void ItemChecker::setSettings(const Settings &settings)
     m_reader.setWatchClipboard(overlay.watchClipboard);
     m_reader.setPaused(overlay.paused);
     m_popup.setSettings(overlay);
+
+    m_judge.setPriorities(settings.pob.priorities);
+    m_judge.setDamageWeight(settings.pob.damageWeight);
+    m_pobOn = settings.pob.enabled;
+    judgeWithPob();
 }
 
-void ItemChecker::setCharacter(const Character &character)
+void ItemChecker::setCharacter(const Character &character, const std::optional<PobBuild> &build)
 {
     m_judge.setCharacter(character);
+    m_judge.setBuild(build);
+}
+
+void ItemChecker::setPob(PobEngine *pob)
+{
+    m_pob = pob;
+    judgeWithPob();
 }
 
 void ItemChecker::check()
@@ -39,13 +51,25 @@ void ItemChecker::read(const Item &item, const std::optional<ScreenPoint> &mouse
 {
     Q_EMIT itemRead(item);
     m_mouse = mouse;
+    m_fresh = true;
     // which says how it does before it returns
     m_judge.check(item);
 }
 
 void ItemChecker::judged(const ItemCheck &check)
 {
-    m_popup.showReport(reportOf(check), m_mouse);
+    const ItemReport report = reportOf(check);
+    if (m_fresh) {
+        m_fresh = false;
+        m_popup.showReport(report, m_mouse);
+    } else {
+        m_popup.updateReport(report);
+    }
+}
+
+void ItemChecker::judgeWithPob()
+{
+    m_judge.setEngine(m_pobOn ? m_pob : nullptr);
 }
 
 } // namespace pou
