@@ -16,6 +16,7 @@ Rectangle {
     // Under a verdict the notes are extras. Without one they say why it has
     // none.
     readonly property bool notesFold: report.verdict !== "" && report.notes.length > 0
+    readonly property tradeReport trade: popup.trade
 
     // the game's colours for them
     function rarityColor(rarity: string): color {
@@ -288,6 +289,109 @@ Rectangle {
             text: card.popup.expanded ? qsTr("Show Less") : qsTr("Show More")
             icon.name: card.popup.expanded ? "arrow-up" : "arrow-down"
             onClicked: card.popup.expanded = !card.popup.expanded
+        }
+
+        // searches on the trade site for gear like it
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.popup.tradeAvailable && card.report.gear
+            spacing: Kirigami.Units.smallSpacing
+
+            Kirigami.Separator {
+                Layout.fillWidth: true
+            }
+
+            Flow {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                Repeater {
+                    model: [
+                        {
+                            kind: TradeFinder.Upgrades,
+                            text: qsTr("Find Upgrades"),
+                            icon: "go-up"
+                        },
+                        {
+                            kind: TradeFinder.Similar,
+                            text: qsTr("Same or Better"),
+                            icon: "edit-find"
+                        },
+                        {
+                            kind: TradeFinder.Weighted,
+                            text: qsTr("By My Weights"),
+                            icon: "view-statistics"
+                        },
+                        {
+                            kind: TradeFinder.CraftBases,
+                            text: qsTr("Bases to Craft On"),
+                            icon: "tools-wizard"
+                        }
+                    ]
+
+                    QQC2.ToolButton {
+                        required property var modelData
+
+                        text: modelData.text
+                        icon.name: modelData.icon
+                        enabled: !card.trade.busy
+                        onClicked: card.popup.findOnTrade(modelData.kind)
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                visible: card.trade.asked
+                spacing: Kirigami.Units.smallSpacing
+
+                QQC2.BusyIndicator {
+                    Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                    Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                    Layout.alignment: Qt.AlignTop
+                    visible: card.trade.busy
+                    running: visible
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        visible: text !== ""
+                        wrapMode: Text.Wrap
+                        font.bold: true
+                        text: card.trade.title
+                    }
+
+                    ToneLabel {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        text: card.trade.status
+                        tone: card.trade.failed ? Tone.Bad : Tone.Plain
+                        colorblind: card.popup.colorblind
+                    }
+
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        visible: text !== ""
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: card.trade.note
+                    }
+                }
+            }
+
+            QQC2.Button {
+                visible: card.trade.url.toString() !== ""
+                text: qsTr("Open on the Trade Site")
+                icon.name: "internet-web-browser"
+                // in your browser, where you can sign in to buy
+                onClicked: Qt.openUrlExternally(card.trade.url)
+            }
         }
     }
 }

@@ -4,6 +4,7 @@
 #include "fakegameinput.h"
 
 #include <QColor>
+#include <QDesktopServices>
 #include <QGuiApplication>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
@@ -28,6 +29,7 @@ ItemReport aReport()
     ItemReport report;
     report.name = u"Storm Veil"_s;
     report.rarity = u"Rare"_s;
+    report.gear = true;
     report.details = {u"Hunter Hood"_s, u"Helmet"_s, u"Item level 74"_s};
     report.verdict = u"Upgrade"_s;
     report.verdictTone = Tone::Good;
@@ -100,6 +102,21 @@ bool click(const ItemPopup &popup, const QString &text)
     QTest::mouseClick(popup.window(), Qt::LeftButton, {}, middle);
     return true;
 }
+
+// Takes the links the popup opens, in place of the browser.
+class Browser : public QObject
+{
+    Q_OBJECT
+
+public:
+    Browser() { QDesktopServices::setUrlHandler(u"https"_s, this, "open"); }
+    ~Browser() override { QDesktopServices::unsetUrlHandler(u"https"_s); }
+
+    QList<QUrl> opened;
+
+public Q_SLOTS:
+    void open(const QUrl &url) { opened << url; }
+};
 
 // Somewhere it isn't near the popup.
 ScreenPoint elsewhere()
@@ -217,6 +234,102 @@ private Q_SLOTS:
         QCOMPARE(popup.trade(), TradeReport());
         // and you can still search when the next one is shown
         QVERIFY(popup.isTradeAvailable());
+    }
+
+    void tradeButtons_data()
+    {
+        QTest::addColumn<QString>("text");
+        QTest::addColumn<TradeFinder::Kind>("kind");
+
+        QTest::newRow("upgrades") << u"Find Upgrades"_s << TradeFinder::Kind::Upgrades;
+        QTest::newRow("similar") << u"Same or Better"_s << TradeFinder::Kind::Similar;
+        QTest::newRow("weighted") << u"By My Weights"_s << TradeFinder::Kind::Weighted;
+        QTest::newRow("craft bases") << u"Bases to Craft On"_s << TradeFinder::Kind::CraftBases;
+    }
+
+    void tradeButtons()
+    {
+        QFETCH(QString, text);
+        QFETCH(TradeFinder::Kind, kind);
+
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.setTradeAvailable(true);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QSignalSpy asked(&popup, &ItemPopup::tradeAsked);
+        QVERIFY(click(popup, text));
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(asked.first().first().value<TradeFinder::Kind>(), kind);
+    }
+
+    void noTradeButtons()
+    {
+        // while there are no trade searches, and for what isn't gear
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(!button(popup, u"Same or Better"_s));
+        popup.setTradeAvailable(true);
+        QVERIFY(button(popup, u"Same or Better"_s));
+
+        ItemReport currency = aReport();
+        currency.gear = false;
+        popup.showReport(currency, mouseAt(200, 300));
+        QVERIFY(!button(popup, u"Same or Better"_s));
+    }
+
+    void tradeSearched()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.setTradeAvailable(true);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(!shown(popup, u"Searching the trade site"_s));
+        popup.setTrade(searchingReport());
+        QVERIFY(shown(popup, u"Searching the trade site"_s));
+        QVERIFY(busy(popup));
+        // one at a time
+        QVERIFY(!button(popup, u"Same or Better"_s)->isEnabled());
+        QVERIFY(!button(popup, u"Open on the Trade Site"_s));
+
+        const TradeFinder::Found found{
+            .title = u"Same stats or better than Storm Veil"_s,
+            .note = u"Cheapest first."_s,
+            .league = u"Runes of Aldur"_s,
+            .url = QUrl(u"https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur/Ab3dE9"_s),
+            .total = 12,
+        };
+        popup.setTrade(reportOf(found));
+        QVERIFY(!busy(popup));
+        QVERIFY(shown(popup, found.title));
+        QVERIFY(shown(popup, u"12 listed in Runes of Aldur"_s));
+        QVERIFY(shown(popup, found.note));
+        QVERIFY(button(popup, u"Same or Better"_s)->isEnabled());
+
+        // in your browser
+        Browser browser;
+        QVERIFY(click(popup, u"Open on the Trade Site"_s));
+        QCOMPARE(browser.opened, QList<QUrl>{found.url});
+    }
+
+    void tradeFailed()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.setTradeAvailable(true);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.setTrade(failedReport(u"The trade site is down for maintenance."_s));
+        const QQuickItem *why = shown(popup, u"The trade site is down for maintenance."_s);
+        QVERIFY(why);
+        QCOMPARE(why->property("tone").toInt(), int(Tone::Bad));
+        QVERIFY(!busy(popup));
+        QVERIFY(!button(popup, u"Open on the Trade Site"_s));
     }
 
     void sections_data()
