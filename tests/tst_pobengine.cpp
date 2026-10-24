@@ -124,11 +124,52 @@ private Q_SLOTS:
         QCOMPARE(pob.runs(), 1);
     }
 
+    void loaded()
+    {
+        FakePob pob;
+        pob.loads({{u"mainSkill"_s, u"Spark"_s}});
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
+        engine.setBuild(build, {{.text = helmetOld, .slot = u"Helmet"_s}});
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetNew}}));
+        QVERIFY(finishes(reply.get()));
+        // once, with the gear on
+        QCOMPARE(loaded.size(), 1);
+        const QJsonObject summary = loaded.first().at(0).toJsonObject();
+        QCOMPARE(summary.value(u"mainSkill").toString(), u"Spark"_s);
+        QCOMPARE(summary.value(u"seen").toArray(), (QJsonArray{u"load"_s, u"equip"_s}));
+
+        // and each time it starts
+        engine.stop();
+        reply.reset(engine.evaluate({{.text = helmetNew}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(loaded.size(), 2);
+    }
+
+    void loadedSince()
+    {
+        // the build it's given while loading the one before
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
+        engine.setBuild(build);
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetNew}}));
+        const QString other =
+            u"<PathOfBuilding2><Build level=\"91\" className=\"Witch\"/></PathOfBuilding2>"_s;
+        engine.setBuild(other);
+        QVERIFY(loaded.wait());
+        QCOMPARE(loaded.size(), 1);
+        QCOMPARE(loaded.first().at(0).toJsonObject().value(u"xml").toString(), other);
+    }
+
     void notLoaded()
     {
         FakePob pob;
         PobEngine engine;
         engine.setInstall(pob.install());
+        QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
         // for Path of Exile 1
         engine.setBuild(u"<PathOfBuilding><Build level=\"90\"/></PathOfBuilding>"_s);
         const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
@@ -136,6 +177,7 @@ private Q_SLOTS:
         QCOMPARE(reply->errorString(), u"The fake couldn't load the build."_s);
         QVERIFY(reply->answer().isEmpty());
         QCOMPARE(engine.state(), State::Ready);
+        QVERIFY(loaded.isEmpty());
     }
 
     void nothingToRun()

@@ -206,6 +206,7 @@ void PobEngine::sendBuild()
     send({{u"cmd"_s, u"load"_s}, {u"xml"_s, m_xml}});
     if (!m_wearing.isEmpty())
         send({{u"cmd"_s, u"equip"_s}, {u"items"_s, toJson(m_wearing)}});
+    m_buildId = m_lastId;
 }
 
 void PobEngine::send(QJsonObject request, PobReply *reply)
@@ -270,6 +271,9 @@ void PobEngine::answered(const Sent &sent, const QJsonObject &answer)
                 qCWarning(lcPob, "Path of Building couldn't put on your gear: %s",
                           qUtf8Printable(result[u"error"].toString()));
         }
+        // and not for a build it's been given another since
+        if (ok && sent.id == m_buildId)
+            Q_EMIT buildLoaded(answer);
     } else if (!sent.reply) {
         // it was deleted, so the answer isn't wanted
     } else if (ok) {
