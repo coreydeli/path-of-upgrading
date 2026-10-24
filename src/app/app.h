@@ -5,8 +5,11 @@
 #include "app/hotkeys.h"
 #include "app/itemchecker.h"
 #include "app/itemhistory.h"
+#include "app/overlayoptions.h"
+#include "app/poboptions.h"
 #include "app/settingsstore.h"
 #include "app/tradefinder.h"
+#include "app/tradeoptions.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "services/pobengine.h"
@@ -17,6 +20,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QtQmlIntegration/qqmlintegration.h>
 #include <memory>
 
 class QNetworkAccessManager;
@@ -33,6 +37,13 @@ class GlobalShortcuts;
 class App : public QObject
 {
     Q_OBJECT
+    QML_ELEMENT
+    QML_UNCREATABLE("There's the one, made when the program starts.")
+
+    // The settings window's pages.
+    Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
+    Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
+    Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
 
 public:
     // Where it keeps what it has between runs.
@@ -53,7 +64,7 @@ public:
     ~App() override;
 
     // Looks for Path of Building again, as once you've installed it.
-    void lookForPob();
+    Q_INVOKABLE void lookForPob();
 
     SettingsStore &settings() { return m_settings; }
     CharacterStore &characters() { return m_characters; }
@@ -70,6 +81,10 @@ public:
     TradeSearcher &trade() { return m_trade; }
     // For the character you play.
     TradeFinder &finder() { return m_finder; }
+
+    TradeOptions *tradeOptions() { return &m_tradeOptions; }
+    OverlayOptions *overlayOptions() { return &m_overlayOptions; }
+    PobOptions *pobOptions() { return &m_pobOptions; }
 
 private:
     void followSettings();
@@ -93,6 +108,9 @@ private:
     RatesStore m_rates;
     TradeSearcher m_trade;
     TradeFinder m_finder;
+    TradeOptions m_tradeOptions;
+    OverlayOptions m_overlayOptions;
+    PobOptions m_pobOptions;
 };
 
 } // namespace pou
