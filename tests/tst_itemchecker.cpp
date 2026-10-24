@@ -119,6 +119,24 @@ private Q_SLOTS:
         QCOMPARE(read.first().at(0).value<Item>().name, u"Doom Visage"_s);
     }
 
+    void slowGame()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        input.mouseAt = mouseAt(200, 300);
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        QTRY_VERIFY(checker.popup().isVisible());
+        QCOMPARE(checker.popup().message(), u"The game is still copying the item."_s);
+        QCOMPARE(checker.popup().window()->position(),
+                 placed(checker.popup(), PopupPosition::Cursor, QPoint(200, 300)));
+
+        // and once it has
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QCOMPARE(checker.popup().message(), QString());
+        QCOMPARE(checker.popup().report().name, u"Doom Visage"_s);
+    }
+
     void failed()
     {
         QQmlEngine qml;

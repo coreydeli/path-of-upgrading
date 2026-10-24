@@ -3,13 +3,19 @@
 
 #include "app/itemreport.h"
 
+using namespace Qt::Literals::StringLiterals;
+
 namespace pou {
 
 ItemChecker::ItemChecker(QQmlEngine *engine, GameInput *input, QObject *parent)
     : QObject(parent)
+    , m_input(input)
     , m_reader(input)
     , m_popup(engine, input)
 {
+    // until it's copied, or hasn't
+    connect(&m_reader, &ItemReader::slow, this,
+            [this] { m_popup.showMessage(u"The game is still copying the item."_s, m_input->mouse()); });
     connect(&m_reader, &ItemReader::itemRead, this, &ItemChecker::read);
     connect(&m_reader, &ItemReader::failed, &m_popup, &ItemPopup::showMessage);
     connect(&m_judge, &ItemJudge::checked, this, &ItemChecker::judged);

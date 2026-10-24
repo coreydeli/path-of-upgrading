@@ -46,6 +46,7 @@ private:
     void judged(const ItemCheck &check);
     void judgeWithPob();
 
+    GameInput *m_input;
     ItemReader m_reader;
     ItemJudge m_judge;
     ItemPopup m_popup;
