@@ -177,6 +177,14 @@ GearSearch upgrades(const Item &item, const TradeData &data, const Character &ch
                       options);
 }
 
+// Life and twice as much fire resistance, which the helmet has.
+Character weighingLife()
+{
+    Character character;
+    character.weights = {{u"# to maximum Life"_s, 1}, {u"#% to Fire Resistance"_s, 2}};
+    return character;
+}
+
 SimilarSearch similar(const Item &item, const TradeData &data, int level = 0)
 {
     SimilarSearchOptions options;
@@ -601,6 +609,93 @@ private Q_SLOTS:
         QCOMPARE(site.finder.found()->note,
                  u"Nothing matched its stats, so these are all the Mageblood listed."_s);
         QCOMPARE(site.finder.found()->total, 8);
+    }
+
+    void byYourWeights()
+    {
+        Settings settings;
+        settings.trade.status = ListingStatus::Online;
+        Character character = weighingLife();
+        // which on armour is its local version
+        character.weights.insert(u"#% increased Armour"_s, 1);
+        character.ignored = {{u"res"_s, {}, IgnoreRule::Mode::Exclude}};
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setSettings(settings);
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 0)};
+        QVERIFY(site.finds(helmet, Kind::Weighted));
+
+        WeightedSearchOptions options;
+        options.status = ListingStatus::Online;
+        options.ignoreRules = character.ignored;
+        options.preferLocal = true;
+        const WeightedSearch search = weightedSearch(helmet, character.weights, site.data.data(), options);
+        QVERIFY(search.current > 0);
+        QCOMPARE(site.searched(0), search.body);
+        // and none is just none
+        QCOMPARE(site.network.sent.size(), 1);
+        const TradeFinder::Found &found = *site.finder.found();
+        QCOMPARE(found.kind, Kind::Weighted);
+        QCOMPARE(found.title, u"Beats your Doom Visage by your weights"_s);
+        QCOMPARE(found.note, QString());
+        QCOMPARE(found.total, 0);
+    }
+
+    void weightsWithoutAFilter()
+    {
+        Character character = weighingLife();
+        character.weights.insert(u"# to Strength"_s, 1);
+        character.weights.insert(u"#% increased Attribute Requirements"_s, 1);
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 4)};
+        QVERIFY(site.finds(helmet, Kind::Weighted));
+        QCOMPARE(site.finder.found()->note,
+                 u"The trade site has no filter for \"# to Strength\" and \"#% increased Attribute "
+                 u"Requirements\", so they aren't counted."_s);
+
+        character.weights.remove(u"#% increased Attribute Requirements"_s);
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s2"_s, 4)};
+        QVERIFY(site.finds(helmet, Kind::Weighted));
+        QCOMPARE(site.finder.found()->note,
+                 u"The trade site has no filter for \"# to Strength\", so it isn't counted."_s);
+    }
+
+    void noWeightsOnIt()
+    {
+        Character character;
+        character.weights = {{u"#% increased Movement Speed"_s, 1}};
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        QVERIFY(site.finds(helmet, Kind::Weighted));
+        QCOMPARE(site.finder.errorString(),
+                 u"None of your stat weights are on this item, so almost anything would beat it. Set weights "
+                 u"for its stats, or find upgrades for your build."_s);
+        QVERIFY(site.network.sent.isEmpty());
+
+        // or only ones that count against it
+        character.weights = {{u"# to maximum Life"_s, -1}};
+        site.finder.setCharacter(character);
+        QVERIFY(site.finds(helmet, Kind::Weighted));
+        QVERIFY(site.finder.errorString().startsWith(u"None of your stat weights are on this item"_s));
+        QVERIFY(site.network.sent.isEmpty());
+    }
+
+    void noWeightsOnTheSite()
+    {
+        Character character;
+        character.weights = {{u"# to Strength"_s, 1}};
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        QVERIFY(site.finds(helmet, Kind::Weighted));
+        QCOMPARE(site.finder.errorString(),
+                 u"None of your weighted stats on this item could be matched on the trade site."_s);
+        QVERIFY(site.network.sent.isEmpty());
     }
 
     void busy()

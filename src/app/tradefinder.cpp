@@ -145,6 +145,8 @@ TradeFinder::Plan TradeFinder::plan() const
     switch (m_kind) {
     case Kind::Upgrades:
         return upgradePlan();
+    case Kind::Weighted:
+        return weightsPlan();
     case Kind::Similar:
         break;
     }
@@ -233,6 +235,32 @@ TradeFinder::Plan TradeFinder::similarPlan() const
     else if (search.level > 0)
         plan.note = u"Nothing matched your exact values, so these have %1, on %2 of the %3 stats."_s.arg(
             search.levelLabel, QString::number(search.need), QString::number(search.total));
+    return plan;
+}
+
+TradeFinder::Plan TradeFinder::weightsPlan() const
+{
+    WeightedSearchOptions options;
+    options.status = m_settings.trade.status;
+    options.ignoreRules = m_character.ignored;
+    options.preferLocal = prefersLocal(m_item);
+    const WeightedSearch search = weightedSearch(m_item, m_character.weights, m_data->data(), options);
+    // with nothing to beat, almost anything would
+    if (search.current <= 0 && search.unmatched.isEmpty())
+        return {.error = u"None of your stat weights are on this item, so almost anything would beat it. Set "
+                         u"weights for its stats, or find upgrades for your build."_s};
+    if (search.current <= 0)
+        return {.error = u"None of your weighted stats on this item could be matched on the trade site."_s};
+
+    Plan plan{.body = search.body, .title = u"Beats your %1 by your weights"_s.arg(m_item.name)};
+    if (!search.unmatched.isEmpty()) {
+        QStringList quoted;
+        for (const QString &key : search.unmatched)
+            quoted << u'"' + key + u'"';
+        plan.note = u"The trade site has no filter for %1, so %2 counted."_s.arg(
+            QLocale(QLocale::English).createSeparatedList(quoted),
+            search.unmatched.size() == 1 ? u"it isn't"_s : u"they aren't"_s);
+    }
     return plan;
 }
 

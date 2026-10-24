@@ -30,6 +30,7 @@ public:
     enum class Kind {
         Upgrades, // better for your build, by its gear score
         Similar,  // the same stats or better
+        Weighted, // better by the stat weights you set
     };
     Q_ENUM(Kind)
 
@@ -52,8 +53,8 @@ public:
     ~TradeFinder() override;
 
     void setSettings(const Settings &settings);
-    // The character you play, whose build profile says what's better and
-    // whose ignored stats are left out.
+    // The character you play, whose build profile and weights say what's
+    // better and whose ignored stats are left out.
     void setCharacter(const Character &character);
 
     // Calls off the one it's busy with. While the trade site's stats are
@@ -88,6 +89,7 @@ private:
     Plan plan() const;
     Plan upgradePlan() const;
     Plan similarPlan() const;
+    Plan weightsPlan() const;
     void start();
     void send();
     void answered();
