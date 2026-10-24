@@ -70,5 +70,24 @@ Rectangle {
                 onClicked: card.popup.close()
             }
         }
+
+        QQC2.Label {
+            Layout.fillWidth: true
+            visible: text !== ""
+            wrapMode: Text.Wrap
+            opacity: 0.7
+            text: card.report.details.join(", ")
+        }
+
+        ToneLabel {
+            Layout.fillWidth: true
+            visible: text !== ""
+            wrapMode: Text.Wrap
+            font.bold: true
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+            text: card.report.verdict
+            tone: card.report.verdictTone
+            colorblind: card.popup.colorblind
+        }
     }
 }

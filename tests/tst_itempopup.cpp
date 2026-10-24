@@ -3,6 +3,7 @@
 #include "core/placement.h"
 #include "fakegameinput.h"
 
+#include <QColor>
 #include <QGuiApplication>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
@@ -97,6 +98,8 @@ private Q_SLOTS:
         QVERIFY(popup.window()->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
 
         QVERIFY(shown(popup, u"Storm Veil"_s));
+        QVERIFY(shown(popup, u"Hunter Hood, Helmet, Item level 74"_s));
+        QVERIFY(shown(popup, u"Upgrade"_s));
     }
 
     void mouseUnknown()
@@ -133,6 +136,7 @@ private Q_SLOTS:
         QCOMPARE(popup.report(), ItemReport());
         QVERIFY(shown(popup, u"That isn't an item."_s));
         QVERIFY(!shown(popup, u"Storm Veil"_s));
+        QVERIFY(!shown(popup, u"Upgrade"_s));
 
         popup.showReport(aReport(), mouseAt(200, 300));
         QVERIFY(popup.message().isEmpty());
@@ -184,6 +188,23 @@ private Q_SLOTS:
         QTRY_VERIFY(popup.window()->height() > height);
         QCOMPARE(popup.window()->position(),
                  placed(popup.window(), PopupPosition::Cursor, QPoint(200, bottom)));
+    }
+
+    void colours()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        // the game's for a rare
+        QCOMPARE(shown(popup, u"Storm Veil"_s)->property("color"), QColor(u"#ffff77"_s));
+        const QColor upgrade = shown(popup, u"Upgrade"_s)->property("color").value<QColor>();
+        QCOMPARE_NE(upgrade, QColor(u"#3daee9"_s));
+
+        OverlaySettings settings;
+        settings.colorblind = true;
+        popup.setSettings(settings);
+        QCOMPARE(shown(popup, u"Upgrade"_s)->property("color"), QColor(u"#3daee9"_s));
     }
 
     void scaled()
