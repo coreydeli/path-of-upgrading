@@ -11,6 +11,7 @@
 #include <QString>
 #include <QStringList>
 #include <QUrl>
+#include <chrono>
 #include <optional>
 
 namespace pou {
@@ -75,6 +76,9 @@ public:
 Q_SIGNALS:
     // Always from the event loop.
     void finished();
+    // While a search waits its turn, as the trade site takes only a few at a
+    // time.
+    void waiting(std::chrono::milliseconds wait);
 
 private:
     // A search for the item, as loose as it's got.

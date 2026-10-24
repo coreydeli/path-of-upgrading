@@ -323,6 +323,7 @@ void TradeFinder::send()
     applyBudget(m_plan.body, budget());
     m_search = m_searcher->search(m_plan.body);
     connect(m_search, &TradeSearch::finished, this, &TradeFinder::answered);
+    connect(m_search, &TradeSearch::waiting, this, &TradeFinder::waiting);
 }
 
 void TradeFinder::answered()

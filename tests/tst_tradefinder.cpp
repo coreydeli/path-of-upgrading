@@ -24,6 +24,7 @@
 #include <memory>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 
 namespace {
@@ -335,6 +336,21 @@ private Q_SLOTS:
         QJsonObject body = similar(helmet, site.data.data()).body;
         applyBudget(body, {.max = 1, .divineRate = rate});
         QCOMPARE(site.searched(0), body);
+    }
+
+    void waitsItsTurn()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        // the site takes four searches in ten seconds until it says otherwise
+        for (int i = 0; i < 4; ++i)
+            site.searcher.search(similar(helmet, site.data.data()).body);
+        QSignalSpy waiting(&site.finder, &TradeFinder::waiting);
+        site.finder.find(helmet, Kind::Similar);
+        QVERIFY(waiting.wait());
+        QCOMPARE_GT(waiting.first().first().value<std::chrono::milliseconds>(), 9s);
+        QVERIFY(site.finder.isBusy());
+        site.finder.cancel();
     }
 
     void noUpgradesListed()
