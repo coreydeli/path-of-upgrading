@@ -589,8 +589,8 @@ GearSearch gearSearch(const Item &item, const QList<SearchWeight> &weights, cons
             const TradeStat *id = e != k.ids.cend() ? *e : k.ids.first();
             group.append(statFilter(id->id, {{u"min"_s, std::max(1.0, std::floor(k.weight->cap * 0.5))}}));
         }
-        const int need = std::max(1, std::min({3, ownKeys > 0 ? ownKeys : 2, int(group.size())}));
-        stats = {statGroup(u"count"_s, group, {{u"min"_s, need}})};
+        result.needKeyStats = std::max(1, std::min({3, ownKeys > 0 ? ownKeys : 2, int(group.size())}));
+        stats = {statGroup(u"count"_s, group, {{u"min"_s, result.needKeyStats}})};
     }
 
     QJsonObject query = newQuery(options.status);

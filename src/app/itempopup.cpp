@@ -53,6 +53,7 @@ void ItemPopup::showReport(const ItemReport &report, const std::optional<ScreenP
     m_report = report;
     m_message.clear();
     setExpanded(false);
+    setTrade({});
     Q_EMIT shownChanged();
     show(mouse);
 }
@@ -70,6 +71,7 @@ void ItemPopup::showMessage(const QString &message, const std::optional<ScreenPo
     m_report = {};
     m_message = message;
     setExpanded(false);
+    setTrade({});
     Q_EMIT shownChanged();
     show(mouse);
 }
@@ -77,6 +79,27 @@ void ItemPopup::showMessage(const QString &message, const std::optional<ScreenPo
 void ItemPopup::close()
 {
     hide();
+}
+
+void ItemPopup::setTradeAvailable(bool available)
+{
+    if (available == m_tradeAvailable)
+        return;
+    m_tradeAvailable = available;
+    Q_EMIT tradeChanged();
+}
+
+void ItemPopup::setTrade(const TradeReport &trade)
+{
+    if (trade == m_trade)
+        return;
+    m_trade = trade;
+    Q_EMIT tradeChanged();
+}
+
+void ItemPopup::findOnTrade(TradeFinder::Kind kind)
+{
+    Q_EMIT tradeAsked(kind);
 }
 
 bool ItemPopup::isVisible() const

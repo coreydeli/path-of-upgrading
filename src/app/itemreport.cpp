@@ -294,6 +294,7 @@ ItemReport reportOf(const ItemCheck &check)
     ItemReport report;
     report.name = item.name;
     report.rarity = item.rarity;
+    report.gear = !item.slot.isEmpty();
     if (!item.baseType.isEmpty() && item.baseType != item.name)
         report.details << item.baseType;
     if (!item.itemClass.isEmpty())

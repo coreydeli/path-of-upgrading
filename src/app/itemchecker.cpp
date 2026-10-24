@@ -2,6 +2,7 @@
 #include "app/itemchecker.h"
 
 #include "app/itemreport.h"
+#include "app/tradereport.h"
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -19,6 +20,7 @@ ItemChecker::ItemChecker(QQmlEngine *engine, GameInput *input, QObject *parent)
     connect(&m_reader, &ItemReader::itemRead, this, &ItemChecker::read);
     connect(&m_reader, &ItemReader::failed, &m_popup, &ItemPopup::showMessage);
     connect(&m_judge, &ItemJudge::checked, this, &ItemChecker::judged);
+    connect(&m_popup, &ItemPopup::tradeAsked, this, &ItemChecker::findOnTrade);
 }
 
 void ItemChecker::setSettings(const Settings &settings)
@@ -48,6 +50,14 @@ void ItemChecker::setPob(PobEngine *pob)
     judgeWithPob();
 }
 
+void ItemChecker::setFinder(TradeFinder *finder)
+{
+    m_finder = finder;
+    connect(finder, &TradeFinder::finished, this, &ItemChecker::found);
+    connect(finder, &TradeFinder::waiting, this,
+            [this](std::chrono::milliseconds wait) { m_popup.setTrade(searchingReport(wait)); });
+}
+
 void ItemChecker::check()
 {
     m_reader.read();
@@ -56,6 +66,9 @@ void ItemChecker::check()
 void ItemChecker::read(const Item &item, const std::optional<ScreenPoint> &mouse)
 {
     Q_EMIT itemRead(item);
+    // what was asked for the one before is no use now
+    if (m_finder)
+        m_finder->cancel();
     m_mouse = mouse;
     m_fresh = true;
     // which says how it does before it returns
@@ -76,6 +89,20 @@ void ItemChecker::judged(const ItemCheck &check)
 void ItemChecker::judgeWithPob()
 {
     m_judge.setEngine(m_pobOn ? m_pob : nullptr);
+}
+
+void ItemChecker::findOnTrade(TradeFinder::Kind kind)
+{
+    if (!m_finder)
+        return;
+    m_popup.setTrade(searchingReport());
+    m_finder->find(m_judge.current().item, kind);
+}
+
+void ItemChecker::found()
+{
+    const std::optional<TradeFinder::Found> &found = m_finder->found();
+    m_popup.setTrade(found ? reportOf(*found) : failedReport(m_finder->errorString()));
 }
 
 } // namespace pou

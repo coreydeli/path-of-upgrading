@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
 #include "core/parser.h"
+#include "core/rates.h"
+#include "core/tradesite.h"
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
+#include "fakenetwork.h"
 #include "fakepob.h"
 #include "itemtexts.h"
+#include "tradefixtures.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
+#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -32,7 +39,9 @@ Character wearing(const QString &name, const QString &helmet)
 struct Folders
 {
     QTemporaryDir dir;
-    App::Paths paths{.settings = dir.filePath(u"settings.conf"_s), .data = dir.filePath(u"data"_s)};
+    App::Paths paths{.settings = dir.filePath(u"settings.conf"_s),
+                     .data = dir.filePath(u"data"_s),
+                     .cache = dir.filePath(u"cache"_s)};
     CharacterStore characters{dir.filePath(u"data/characters"_s)};
     FakePob pob;
 
@@ -69,19 +78,57 @@ FakeGlobalShortcuts *desktop(const QHash<QString, QKeySequence> &keys = {}, bool
     return shortcuts;
 }
 
-// The app with stand-ins for the game and the desktop.
+QByteArray json(const QJsonObject &object)
+{
+    return QJsonDocument(object).toJson(QJsonDocument::Compact);
+}
+
+// The trade site and poe.ninja, with what they say as the app starts: the
+// site's data with its leagues, then what currencies are worth in one.
+FakeNetwork *online()
+{
+    QJsonArray leagues;
+    for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
+        leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
+    auto *network = new FakeNetwork;
+    network->answers = {{.body = json(tradefixtures::stats())},
+                        {.body = json(tradefixtures::filters())},
+                        {.body = json(QJsonObject{{u"result"_s, leagues}})},
+                        {.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"}};
+    return network;
+}
+
+// The app with stand-ins for the game, the desktop and the sites it asks.
 struct Running
 {
     QQmlEngine qml;
     FakeGameInput *input = new FakeGameInput;
     FakeGlobalShortcuts *shortcuts;
+    FakeNetwork *network;
     App app;
 
-    explicit Running(const Folders &folders, FakeGlobalShortcuts *theirs = desktop())
+    explicit Running(const Folders &folders, FakeGlobalShortcuts *theirs = desktop(),
+                     FakeNetwork *sites = online())
         : shortcuts(theirs)
+        , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
-              folders.places(), folders.paths)
+              std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths)
     {}
+
+    // once poe.ninja has said what currencies are worth
+    bool rated()
+    {
+        QSignalSpy refreshed(&app.rates(), &RatesStore::refreshed);
+        return refreshed.wait();
+    }
+
+    QList<QUrl> asked() const
+    {
+        QList<QUrl> urls;
+        for (const FakeNetwork::Sent &sent : network->sent)
+            urls << sent.request.url();
+        return urls;
+    }
 
     // what the popup says of the helmet, once you've checked it
     ItemReport checked()
@@ -268,6 +315,118 @@ private Q_SLOTS:
         folders.set(settings);
         Running r(folders);
         QVERIFY(r.checked().pobChecking);
+    }
+
+    void tradeData()
+    {
+        // and the rates in the league searches go to, once the site has said
+        // which leagues there are
+        Folders folders;
+        Running r(folders);
+        QVERIFY(r.rated());
+        QCOMPARE(r.asked(), (QList<QUrl>{tradeDataUrl(u"stats"_s), tradeDataUrl(u"filters"_s),
+                                         tradeDataUrl(u"leagues"_s), ninjaCurrencyUrl(u"Runes of Aldur"_s)}));
+        QVERIFY(r.app.trade().unavailable().isEmpty());
+        QCOMPARE(r.app.trade().league().tradeId(), u"Runes of Aldur"_s);
+        QCOMPARE(r.app.tradeData().data().stats.all().size(), 7);
+        QCOMPARE(r.app.rates().divineRate(), 400);
+        // which are kept in the cache
+        QVERIFY(QFile::exists(folders.dir.filePath(u"cache/trade/stats.json"_s)));
+        QVERIFY(QFile::exists(folders.dir.filePath(u"cache/rates/Runes of Aldur.json"_s)));
+    }
+
+    void hardcore()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.league.hardcore = true;
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        QCOMPARE(r.app.trade().league().tradeId(), u"HC Runes of Aldur"_s);
+        QCOMPARE(r.asked().last(), ninjaCurrencyUrl(u"HC Runes of Aldur"_s));
+    }
+
+    void tradeOff()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.enabled = false;
+        folders.set(settings);
+        Running r(folders);
+        QCOMPARE(r.app.trade().unavailable(), u"Trade searches are turned off in the settings."_s);
+        // and neither site is asked anything
+        QVERIFY(r.asked().isEmpty());
+        // nor has the popup buttons for it
+        QVERIFY(!r.app.checker().popup().isTradeAvailable());
+
+        // until it's on
+        settings.trade.enabled = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(r.rated());
+        QCOMPARE(r.asked().size(), 4);
+        QVERIFY(r.app.trade().unavailable().isEmpty());
+        QVERIFY(r.app.checker().popup().isTradeAvailable());
+    }
+
+    void offMeanwhile()
+    {
+        // before the site has answered, so poe.ninja isn't asked
+        Folders folders;
+        Running r(folders);
+        Settings settings;
+        settings.trade.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        QSignalSpy refreshed(&r.app.tradeData(), &TradeDataStore::refreshed);
+        QVERIFY(refreshed.wait());
+        QCOMPARE(r.asked().size(), 3);
+    }
+
+    void soloSelfFound()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.league.soloSelfFound = true;
+        folders.set(settings);
+        Running r(folders);
+        QCOMPARE(r.app.trade().unavailable(),
+                 u"There's no trading in solo self-found, so trade searches are off."_s);
+        QVERIFY(r.asked().isEmpty());
+        QVERIFY(!r.app.checker().popup().isTradeAvailable());
+    }
+
+    void findsOnTrade()
+    {
+        // for the character you play, in your budget at poe.ninja's rate
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        settings.trade.budget.max = 1;
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        // from the popup's button
+        r.checked();
+        ItemPopup &popup = r.app.checker().popup();
+        QVERIFY(popup.isTradeAvailable());
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        popup.findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QVERIFY(r.app.finder().errorString().isEmpty());
+        QCOMPARE(r.app.finder().found()->total, 2);
+        QCOMPARE(popup.trade().status, u"2 listed in Runes of Aldur"_s);
+        // by your weights, which the site has filters for, unlike the usual ones
+        QVERIFY(r.app.finder().found()->note.isEmpty());
+
+        const FakeNetwork::Sent &search = r.network->sent.last();
+        QCOMPARE(search.request.url(), tradeSearchUrl(u"Runes of Aldur"_s));
+        const QJsonObject query = QJsonDocument::fromJson(search.body).object().value(u"query").toObject();
+        const QJsonObject trade = query.value(u"filters").toObject().value(u"trade_filters").toObject();
+        QCOMPARE(trade.value(u"filters").toObject().value(u"price").toObject(),
+                 (QJsonObject{{u"max"_s, 400}, {u"option"_s, u"exalted"_s}}));
     }
 };
 

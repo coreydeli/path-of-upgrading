@@ -60,6 +60,7 @@ struct ItemReport
 
     Q_PROPERTY(QString name MEMBER name)
     Q_PROPERTY(QString rarity MEMBER rarity)
+    Q_PROPERTY(bool gear MEMBER gear)
     Q_PROPERTY(QStringList details MEMBER details)
     Q_PROPERTY(QString openAffixes MEMBER openAffixes)
     Q_PROPERTY(QString verdict MEMBER verdict)
@@ -84,6 +85,7 @@ struct ItemReport
 public:
     QString name;
     QString rarity;      // as the game says it, "Rare"
+    bool gear = false;   // which goes in a slot, so there can be better
     QStringList details; // its base type, item class and item level
     // "Open affixes: 1 prefix, 2 suffixes", when the copy said which are which
     QString openAffixes;

@@ -8,6 +8,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QLibraryInfo>
+#include <QNetworkAccessManager>
 #include <QQmlApplicationEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
@@ -55,8 +56,8 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     // which goes before the engine its popup is from
-    pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::pobPlaces(),
-                  pou::App::defaultPaths());
+    pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(),
+                  std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);
