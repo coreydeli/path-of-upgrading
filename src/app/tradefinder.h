@@ -28,9 +28,10 @@ class TradeFinder : public QObject
 
 public:
     enum class Kind {
-        Upgrades, // better for your build, by its gear score
-        Similar,  // the same stats or better
-        Weighted, // better by the stat weights you set
+        Upgrades,   // better for your build, by its gear score
+        Similar,    // the same stats or better
+        Weighted,   // better by the stat weights you set
+        CraftBases, // rare ones with your build's key stats, to craft on
     };
     Q_ENUM(Kind)
 
@@ -90,6 +91,7 @@ private:
     Plan upgradePlan() const;
     Plan similarPlan() const;
     Plan weightedPlan() const;
+    Plan craftPlan() const;
     void start();
     void send();
     void answered();

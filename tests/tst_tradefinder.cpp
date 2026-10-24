@@ -177,6 +177,30 @@ GearSearch upgrades(const Item &item, const TradeData &data, const Character &ch
                       options);
 }
 
+// The site's stats, with the ones for room for another prefix or suffix.
+QJsonObject withOpenAffixes()
+{
+    using namespace tradefixtures;
+    QJsonArray groups = stats().value(u"result"_s).toArray();
+    groups << group(
+        u"pseudo"_s,
+        {stat(u"pseudo.pseudo_number_of_empty_prefix_mods"_s, u"# Empty Prefix Modifiers"_s, u"pseudo"_s),
+         stat(u"pseudo.pseudo_number_of_empty_suffix_mods"_s, u"# Empty Suffix Modifiers"_s, u"pseudo"_s)});
+    return response(groups);
+}
+
+// What it should search for to find bases to craft on.
+CraftBaseSearch craftBases(const Item &item, const TradeData &data, const Character &character,
+                           const Settings &settings = {})
+{
+    SearchOptions options;
+    options.status = settings.trade.status;
+    options.ignoreRules = character.ignored;
+    options.preferLocal = true;
+    const QList<KeyStat> keyStats = topStats(item.slot, 2, gearScoreOptions(character, item.slot));
+    return craftBaseSearch(item, keyStats, data, options);
+}
+
 // Life and twice as much fire resistance, which the helmet has.
 Character weighingLife()
 {
@@ -696,6 +720,102 @@ private Q_SLOTS:
         QCOMPARE(site.finder.errorString(),
                  u"None of your weighted stats on this item could be matched on the trade site."_s);
         QVERIFY(site.network.sent.isEmpty());
+    }
+
+    void basesToCraftOn()
+    {
+        Settings settings;
+        settings.trade.status = ListingStatus::Online;
+        Character character = inGrimCrown();
+        character.ignored = {{u"res"_s, {}, IgnoreRule::Mode::Exclude}};
+        Site site;
+        QVERIFY(site.hasData(withOpenAffixes()));
+        site.finder.setSettings(settings);
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 0)};
+        QVERIFY(site.finds(helmet, Kind::CraftBases));
+        const CraftBaseSearch search = craftBases(helmet, site.data.data(), character, settings);
+        QVERIFY(search.emptyAffixFilter);
+        QCOMPARE(site.searched(0), search.body);
+        // and none is just none
+        QCOMPARE(site.network.sent.size(), 1);
+        const TradeFinder::Found &found = *site.finder.found();
+        QCOMPARE(found.kind, Kind::CraftBases);
+        QCOMPARE(found.title, u"Craftable Helmets with Life"_s);
+        QCOMPARE(found.note, u"Each is rare and not corrupted, with Life at a decent roll and room for "
+                             u"another prefix or suffix. Cheapest first."_s);
+    }
+
+    void noOpenAffixesOnTheSite()
+    {
+        // for boots, which have two key stats
+        const Item boots = withArmour(u"Boots"_s, u"Plated Greaves"_s);
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 2)};
+        QVERIFY(site.finds(boots, Kind::CraftBases));
+        QCOMPARE(site.searched(0), craftBases(boots, site.data.data(), {}).body);
+        QCOMPARE(site.finder.found()->title, u"Craftable Boots with Movement speed and Life"_s);
+        QCOMPARE(
+            site.finder.found()->note,
+            u"Each is rare and not corrupted, with Movement speed and Life at a decent roll. The trade site "
+            u"can't be asked for room for another prefix or suffix, so look before you buy. Cheapest "
+            u"first."_s);
+    }
+
+    void twoKeyStatsAtMost()
+    {
+        // of the three a caster's ring has, the two that matter most
+        Character caster;
+        caster.buildProfile = u"es-caster"_s;
+        using tradefixtures::stat;
+        const QJsonArray stats = {
+            stat(u"explicit.stat_cast"_s, u"#% increased Cast Speed"_s, u"explicit"_s),
+            stat(u"explicit.stat_es"_s, u"+# to maximum Energy Shield"_s, u"explicit"_s),
+            stat(u"explicit.stat_spell"_s, u"#% increased Spell Damage"_s, u"explicit"_s),
+        };
+        Site site;
+        QVERIFY(site.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, stats)})));
+        site.finder.setCharacter(caster);
+        site.network.answers = {found(u"s1"_s, 2)};
+        QVERIFY(site.finds(ring(u"Grim Loop"_s, u"+20 to maximum Energy Shield"_s), Kind::CraftBases));
+        QCOMPARE(site.finder.found()->title, u"Craftable Rings with Cast speed and Energy Shield"_s);
+    }
+
+    void noKeyStats()
+    {
+        // once you turned the build profile down
+        Character character;
+        for (const ProfileStat &stat : buildProfile({})->stats)
+            character.tweaks.insert(stat.label, 0);
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        QVERIFY(site.finds(helmet, Kind::CraftBases));
+        QCOMPARE(site.finder.errorString(),
+                 u"Your build profile has no key stats for this slot to look for."_s);
+        QVERIFY(site.network.sent.isEmpty());
+    }
+
+    void keyStatsNotOnTheSite()
+    {
+        Site site;
+        const QJsonArray odd = {
+            tradefixtures::stat(u"explicit.stat_light"_s, u"#% increased Light Radius"_s, u"explicit"_s)};
+        QVERIFY(site.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, odd)})));
+        QVERIFY(site.finds(helmet, Kind::CraftBases));
+        QCOMPARE(site.finder.errorString(),
+                 u"None of your build's key stats for this slot could be matched on the trade site."_s);
+        QVERIFY(site.network.sent.isEmpty());
+
+        // or only some of them
+        const QJsonArray life = {
+            tradefixtures::stat(u"explicit.stat_life"_s, u"+# to maximum Life"_s, u"explicit"_s)};
+        Site again;
+        QVERIFY(again.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, life)})));
+        again.network.answers = {found(u"s1"_s, 2)};
+        QVERIFY(again.finds(withArmour(u"Boots"_s, u"Plated Greaves"_s), Kind::CraftBases));
+        QCOMPARE(again.finder.found()->title, u"Craftable Boots with Life"_s);
     }
 
     void busy()

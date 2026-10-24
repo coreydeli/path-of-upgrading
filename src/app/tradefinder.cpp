@@ -147,6 +147,8 @@ TradeFinder::Plan TradeFinder::plan() const
         return upgradePlan();
     case Kind::Weighted:
         return weightedPlan();
+    case Kind::CraftBases:
+        return craftPlan();
     case Kind::Similar:
         break;
     }
@@ -261,6 +263,40 @@ TradeFinder::Plan TradeFinder::weightedPlan() const
             QLocale(QLocale::English).createSeparatedList(quoted),
             search.unmatched.size() == 1 ? u"it isn't"_s : u"they aren't"_s);
     }
+    return plan;
+}
+
+TradeFinder::Plan TradeFinder::craftPlan() const
+{
+    // which leave resistances out, so what you need of them doesn't matter
+    const QList<KeyStat> keyStats = topStats(m_item.slot, 2, gearScoreOptions(m_character, m_item.slot));
+    if (keyStats.isEmpty())
+        return {.error = u"Your build profile has no key stats for this slot to look for."_s};
+    SearchOptions options;
+    options.status = m_settings.trade.status;
+    options.ignoreRules = m_character.ignored;
+    options.preferLocal = prefersLocal(m_item);
+    const CraftBaseSearch search = craftBaseSearch(m_item, keyStats, m_data->data(), options);
+    QStringList wanted;
+    for (const KeyStat &stat : keyStats) {
+        if (!search.unmatched.contains(stat.key))
+            wanted << stat.label;
+    }
+    if (wanted.isEmpty())
+        return {.error =
+                    u"None of your build's key stats for this slot could be matched on the trade site."_s};
+
+    const QString stats = QLocale(QLocale::English).createSeparatedList(wanted);
+    Plan plan{
+        .body = search.body,
+        .title = u"Craftable %1 with %2"_s.arg(m_item.itemClass, stats),
+    };
+    plan.note =
+        search.emptyAffixFilter
+            ? u"Each is rare and not corrupted, with %1 at a decent roll and room for another prefix or "
+              u"suffix. Cheapest first."_s.arg(stats)
+            : u"Each is rare and not corrupted, with %1 at a decent roll. The trade site can't be asked "
+              u"for room for another prefix or suffix, so look before you buy. Cheapest first."_s.arg(stats);
     return plan;
 }
 
