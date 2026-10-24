@@ -184,6 +184,13 @@ private Q_SLOTS:
         };
         QTest::newRow("Path of Building's figures")
             << judged << QStringList{u"+6.1%"_s, u"DPS"_s, u"-2.3%"_s, u"Effective HP"_s};
+
+        ItemReport stats = aReport();
+        stats.stats = {
+            ReportFigure{.label = u"+45 to maximum Life"_s, .tone = Tone::Good},
+            ReportFigure{.label = u"-30 to Spirit"_s, .tone = Tone::Bad},
+        };
+        QTest::newRow("stats") << stats << QStringList{u"+45 to maximum Life"_s, u"-30 to Spirit"_s};
     }
 
     void sections()
@@ -290,6 +297,10 @@ private Q_SLOTS:
         ItemReport judged = aReport();
         judged.headline = {ReportFigure{.label = u"DPS"_s, .change = u"-6.1%"_s, .tone = Tone::Bad}};
         QTest::newRow("Path of Building's figures") << judged << u"-6.1%"_s << worse;
+
+        ItemReport stats = aReport();
+        stats.stats = {ReportFigure{.label = u"-30 to Spirit"_s, .tone = Tone::Bad}};
+        QTest::newRow("stats") << stats << u"-30 to Spirit"_s << worse;
     }
 
     void tones()

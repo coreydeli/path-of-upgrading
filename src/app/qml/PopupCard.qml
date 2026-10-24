@@ -173,5 +173,27 @@ Rectangle {
                 }
             }
         }
+
+        // the item's stats that change the most of those that count
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.report.stats.length > 0
+            spacing: 0
+
+            Repeater {
+                model: card.report.stats
+
+                ToneLabel {
+                    required property reportFigure modelData
+
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    text: modelData.label
+                    tone: modelData.tone
+                    colorblind: card.popup.colorblind
+                }
+            }
+        }
     }
 }
