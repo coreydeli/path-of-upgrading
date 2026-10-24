@@ -17,6 +17,7 @@ target_link_libraries(path-of-upgrading PRIVATE
     pou_appplugin
     Qt6::Widgets
     Qt6::QuickControls2
+    KF6::I18nQml
 )
 
 # Qt and Kirigami are shared and load their QML plugins themselves, and ours
