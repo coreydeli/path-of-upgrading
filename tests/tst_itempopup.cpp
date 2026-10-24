@@ -319,6 +319,31 @@ private Q_SLOTS:
         QVERIFY(!popup.isVisible());
     }
 
+    void expanded()
+    {
+        // until the next item, which Path of Building's answer isn't
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QSignalSpy changed(&popup, &ItemPopup::expandedChanged);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(!popup.isExpanded());
+        QCOMPARE(changed.size(), 0);
+        popup.setExpanded(true);
+        popup.setExpanded(true);
+        QCOMPARE(changed.size(), 1);
+
+        popup.updateReport(aReport());
+        QVERIFY(popup.isExpanded());
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(!popup.isExpanded());
+        QCOMPARE(changed.size(), 2);
+
+        popup.setExpanded(true);
+        popup.showMessage(u"That isn't an item."_s, mouseAt(200, 300));
+        QVERIFY(!popup.isExpanded());
+    }
+
     void grows()
     {
         // near the bottom of the screen, where it has to go up as it grows

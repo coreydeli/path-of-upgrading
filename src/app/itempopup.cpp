@@ -52,6 +52,7 @@ void ItemPopup::showReport(const ItemReport &report, const std::optional<ScreenP
 {
     m_report = report;
     m_message.clear();
+    setExpanded(false);
     Q_EMIT shownChanged();
     show(mouse);
 }
@@ -66,6 +67,7 @@ void ItemPopup::showMessage(const QString &message, const std::optional<ScreenPo
 {
     m_report = {};
     m_message = message;
+    setExpanded(false);
     Q_EMIT shownChanged();
     show(mouse);
 }
@@ -87,6 +89,14 @@ void ItemPopup::setHovered(bool hovered)
     m_hovered = hovered;
     m_hider.setHovered(hovered);
     Q_EMIT hoveredChanged();
+}
+
+void ItemPopup::setExpanded(bool expanded)
+{
+    if (expanded == m_expanded)
+        return;
+    m_expanded = expanded;
+    Q_EMIT expandedChanged();
 }
 
 bool ItemPopup::makeWindow()

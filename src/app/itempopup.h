@@ -33,6 +33,9 @@ class ItemPopup : public QObject
     // Why the hotkey read nothing, shown in place of a report.
     Q_PROPERTY(QString message READ message NOTIFY shownChanged)
     Q_PROPERTY(bool hovered READ isHovered WRITE setHovered NOTIFY hoveredChanged)
+    // Whether you opened the rest of it, when it's compact. Each item starts
+    // without.
+    Q_PROPERTY(bool expanded READ isExpanded WRITE setExpanded NOTIFY expandedChanged)
     Q_PROPERTY(double scale READ scale NOTIFY settingsChanged)
     Q_PROPERTY(bool compact READ isCompact NOTIFY settingsChanged)
     Q_PROPERTY(bool colorblind READ isColorblind NOTIFY settingsChanged)
@@ -61,6 +64,8 @@ public:
     QString message() const { return m_message; }
     bool isHovered() const { return m_hovered; }
     void setHovered(bool hovered);
+    bool isExpanded() const { return m_expanded; }
+    void setExpanded(bool expanded);
     double scale() const { return m_settings.scale; }
     bool isCompact() const { return m_settings.compact; }
     bool isColorblind() const { return m_settings.colorblind; }
@@ -68,6 +73,7 @@ public:
 Q_SIGNALS:
     void shownChanged();
     void hoveredChanged();
+    void expandedChanged();
     void settingsChanged();
 
 private:
@@ -85,6 +91,7 @@ private:
     std::optional<ScreenPoint> m_mouse; // where it was shown for
     QPoint m_at;                        // and where it went, on the screen
     bool m_hovered = false;
+    bool m_expanded = false;
 };
 
 } // namespace pou
