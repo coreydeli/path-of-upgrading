@@ -43,6 +43,19 @@ struct GearLevel
 };
 constexpr std::array gearLevels = {GearLevel{1.06, 0.9}, GearLevel{1, 0.85}, GearLevel{0.9, 0.75}};
 
+// Smaller and smaller gear searches, for when the trade site says one is too
+// complex. Signed out, it takes only a handful of filters.
+struct GearSize
+{
+    int maxFilters;
+    bool explicitOnly;
+    bool keyStats; // asked for apart from the weighted sum
+    bool countOnly = false;
+};
+constexpr std::array gearSizes = {GearSize{40, false, true}, GearSize{20, true, true},
+                                  GearSize{10, true, false}, GearSize{6, true, false},
+                                  GearSize{6, true, false, true}};
+
 // What a gear search looks at.
 QString scoredBy(const GearSearch &search)
 {
@@ -156,11 +169,17 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
         return {.error = u"Your build profile wants none of the stats this slot can have."_s};
 
     const GearLevel &level = gearLevels.at(m_level);
+    const GearSize &size = gearSizes.at(m_size);
     GearSearchOptions options;
     options.status = m_settings.trade.status;
     options.ignoreRules = m_character.ignored;
     options.share = level.share;
     options.baseShare = level.baseShare;
+    options.maxFilters = size.maxFilters;
+    options.explicitOnly = size.explicitOnly;
+    if (!size.keyStats)
+        options.keyStatShare = 0;
+    options.countOnly = size.countOnly;
     const GearSearch search = gearSearch(m_item, weights, m_data->data(), options);
     if (search.filters == 0)
         return {.error = u"None of your build's stats for this slot could be matched on the trade site."_s};
@@ -170,9 +189,20 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
         .title = score->isRated() ? u"Better for your build than %1 (gear score %2)"_s.arg(
                                         m_item.name, QString::number(score->score))
                                   : u"Better for your build than %1"_s.arg(m_item.name),
-        .looser = m_level + 1 < int(gearLevels.size()),
+        // the simplest one doesn't ask for your gear score at all
+        .looser = !search.countOnly && m_level + 1 < int(gearLevels.size()),
+        .shrinks = true,
     };
-    if (m_level == 0)
+    if (search.countOnly)
+        plan.note =
+            u"The trade site only takes a simple search, so each has at least %1 of these at a decent "
+            u"roll: %2. Cheapest first."_s.arg(QString::number(search.needKeyStats),
+                                               search.keyStats.join(u", "));
+    else if (m_level == 0 && m_size > 0)
+        plan.note =
+            u"Scored by your build's main weights, as the trade site limits how many filters a search "
+            u"can have. Best for your build first."_s;
+    else if (m_level == 0)
         plan.note = scoredBy(search) + u" Best for your build first."_s;
     else if (level.share >= 1)
         plan.note = u"No clear upgrade is listed right now, so these are a little better than yours."_s;
@@ -219,6 +249,12 @@ void TradeFinder::answered()
 {
     const std::unique_ptr<TradeSearch> search(m_search.data());
     m_search.clear();
+    if (search->error() == TradeSearch::Error::TooComplex && m_plan.shrinks) {
+        if (m_size + 1 == int(gearSizes.size()))
+            return fail(u"The trade site says this search has too many filters even at its smallest."_s);
+        ++m_size;
+        return send();
+    }
     if (search->error() != TradeSearch::Error::None)
         return fail(search->errorString());
     if (search->total() == 0 && m_plan.looser) {

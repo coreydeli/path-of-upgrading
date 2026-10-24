@@ -19,6 +19,7 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <array>
 #include <memory>
 
 using namespace Qt::Literals::StringLiterals;
@@ -50,6 +51,27 @@ FakeAnswer found(const QString &id, int total, const QStringList &ids = {})
 {
     return {.body =
                 json({{u"id"_s, id}, {u"total"_s, total}, {u"result"_s, QJsonArray::fromStringList(ids)}})};
+}
+
+// What the site says of a search with more filters than it takes. It
+// takes plenty of searches, so that they aren't held.
+FakeAnswer tooManyFilters()
+{
+    return {.status = 400,
+            .body = json({{u"error"_s, QJsonObject{{u"message"_s, u"Query is too complex."_s}}}}),
+            .headers = {{"X-Rate-Limit-Ip", "30:10:0"}}};
+}
+
+// So many trade stats for life that each smaller search leaves some out,
+// and none for the other stats a helmet wants.
+QJsonObject manyStats()
+{
+    using namespace tradefixtures;
+    QJsonArray explicits;
+    for (int n = 1; n <= 24; ++n)
+        explicits << stat(u"explicit.stat_life_%1"_s.arg(n), u"+# to maximum Life"_s, u"explicit"_s);
+    const QJsonArray implicits = {stat(u"implicit.stat_life"_s, u"+# to maximum Life"_s, u"implicit"_s)};
+    return response({group(u"explicit"_s, explicits), group(u"implicit"_s, implicits)});
 }
 
 // The trade site, and searches on it in the current league.
@@ -129,11 +151,23 @@ constexpr Upgrade clearlyBetter{1.06, 0.9};
 constexpr Upgrade littleBetter{1, 0.85};
 constexpr Upgrade nearlyAsGood{0.9, 0.75};
 
-// What it should search for to find upgrades in the slot.
-GearSearch upgrades(const Item &item, const TradeData &data, const Character &character, const QString &slot,
-                    Upgrade upgrade = clearlyBetter, const Settings &settings = {})
+// The smaller searches for when the site says one is too complex, from 1.
+GearSearchOptions smaller(int size)
 {
     GearSearchOptions options;
+    options.explicitOnly = true;
+    options.maxFilters = std::array{40, 20, 10, 6, 6}.at(size);
+    if (size >= 2)
+        options.keyStatShare = 0;
+    options.countOnly = size == 4;
+    return options;
+}
+
+// What it should search for to find upgrades in the slot.
+GearSearch upgrades(const Item &item, const TradeData &data, const Character &character, const QString &slot,
+                    Upgrade upgrade = clearlyBetter, const Settings &settings = {},
+                    GearSearchOptions options = {})
+{
     options.status = settings.trade.status;
     options.ignoreRules = character.ignored;
     options.share = upgrade.share;
@@ -391,6 +425,93 @@ private Q_SLOTS:
         QCOMPARE(site.finder.errorString(),
                  u"None of your build's stats for this slot could be matched on the trade site."_s);
         QVERIFY(site.network.sent.isEmpty());
+    }
+
+    void tooComplex()
+    {
+        // so it's made smaller
+        const Character character = inGrimCrown();
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        site.network.answers = {tooManyFilters(), found(u"s1"_s, 3)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 2);
+        const TradeData &data = site.data.data();
+        QCOMPARE(site.searched(0), upgrades(helmet, data, character, u"Helmet"_s).body);
+        QCOMPARE(site.searched(1),
+                 upgrades(helmet, data, character, u"Helmet"_s, clearlyBetter, {}, smaller(1)).body);
+        QCOMPARE(site.finder.found()->total, 3);
+        QCOMPARE(site.finder.found()->note,
+                 u"Scored by your build's main weights, as the trade site limits how many filters a search "
+                 u"can have. Best for your build first."_s);
+
+        // and the next starts there, and can be made smaller again
+        site.network.answers = {tooManyFilters(), found(u"s2"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 4);
+        for (int size : {1, 2})
+            QCOMPARE(site.searched(size + 1),
+                     upgrades(helmet, data, character, u"Helmet"_s, clearlyBetter, {}, smaller(size)).body);
+        QCOMPARE(site.finder.found()->searchId, u"s2"_s);
+    }
+
+    void smallerAndLooser()
+    {
+        const Character character = inGrimCrown();
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        site.network.answers = {tooManyFilters(), found(u"s1"_s, 0), found(u"s2"_s, 2)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(
+            site.searched(2),
+            upgrades(helmet, site.data.data(), character, u"Helmet"_s, littleBetter, {}, smaller(1)).body);
+        QCOMPARE(site.finder.found()->note,
+                 u"No clear upgrade is listed right now, so these are a little better than yours."_s);
+    }
+
+    void tooComplexAtItsSmallest()
+    {
+        const Character character = inGrimCrown();
+        Site site;
+        QVERIFY(site.hasData(manyStats()));
+        site.finder.setCharacter(character);
+        site.network.answers = {tooManyFilters(), tooManyFilters(), tooManyFilters(), tooManyFilters(),
+                                tooManyFilters()};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 5);
+        // each smaller than the last
+        for (int size = 1; size < 5; ++size) {
+            const GearSearch search =
+                upgrades(helmet, site.data.data(), character, u"Helmet"_s, clearlyBetter, {}, smaller(size));
+            QCOMPARE(site.searched(size), search.body);
+            QVERIFY2(search.body != site.searched(size - 1), QByteArray::number(size).constData());
+        }
+        QCOMPARE(site.finder.errorString(),
+                 u"The trade site says this search has too many filters even at its smallest."_s);
+        QVERIFY(!site.finder.found());
+
+        // which may find nothing, and isn't any looser
+        site.network.answers = {found(u"s1"_s, 0)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 6);
+        QCOMPARE(site.searched(5), site.searched(4));
+        QCOMPARE(site.finder.found()->total, 0);
+        QCOMPARE(site.finder.found()->note,
+                 u"The trade site only takes a simple search, so each has at least 1 of these at a decent "
+                 u"roll: Life. Cheapest first."_s);
+    }
+
+    void similarTooComplex()
+    {
+        // which isn't made smaller
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {tooManyFilters()};
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.network.sent.size(), 1);
+        QCOMPARE(site.finder.errorString(), u"The trade site says the search has too many filters."_s);
     }
 
     void sameOrBetter()

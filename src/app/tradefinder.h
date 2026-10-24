@@ -20,7 +20,8 @@ class TradeSearch;
 class TradeSearcher;
 
 // Trade searches for an item you checked, of the kinds the popup's buttons
-// ask for. One that finds nothing is tried again looser.
+// ask for. One that finds nothing is tried again looser, and one the site
+// says is too complex, smaller.
 class TradeFinder : public QObject
 {
     Q_OBJECT
@@ -79,6 +80,9 @@ private:
         QString title;
         QString note;
         bool looser = false; // whether there's a looser one for when it finds nothing
+        // An upgrade search, which is made smaller when the site says it's too
+        // complex.
+        bool shrinks = false;
     };
 
     Plan plan() const;
@@ -97,6 +101,9 @@ private:
     Item m_item;
     Kind m_kind = Kind::Upgrades;
     int m_level = 0; // how much looser than at first
+    // How small the site needs an upgrade search to be. Later ones start
+    // there, rather than spend searches on ones it turns down.
+    int m_size = 0;
     Plan m_plan;     // sent last
     int m_finds = 0; // asked for or called off, so far
     bool m_busy = false;
