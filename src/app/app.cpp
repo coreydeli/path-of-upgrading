@@ -5,6 +5,7 @@
 #include "platform/globalshortcuts.h"
 
 #include <QCoreApplication>
+#include <QNetworkAccessManager>
 #include <QStandardPaths>
 
 using namespace Qt::Literals::StringLiterals;
@@ -13,16 +14,19 @@ namespace pou {
 
 App::Paths App::defaultPaths()
 {
-    // ~/.config/path-of-upgradingrc and ~/.local/share/path-of-upgrading
+    // ~/.config/path-of-upgradingrc, ~/.local/share/path-of-upgrading and
+    // ~/.cache/path-of-upgrading
     return {
         .settings = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + u'/' +
                     QCoreApplication::applicationName() + u"rc"_s,
         .data = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation),
+        .cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation),
     };
 }
 
 App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-         const PobPlaces &places, const Paths &paths, QObject *parent)
+         std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
+         QObject *parent)
     : QObject(parent)
     , m_places(places)
     , m_settings(paths.settings)
@@ -33,6 +37,11 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_shortcuts(std::move(shortcuts))
     , m_hotkeys(m_shortcuts.get())
     , m_history(paths.data + u"/history.json"_s)
+    , m_network(std::move(network))
+    , m_tradeClient(m_network.get())
+    , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
+    , m_rates(m_network.get(), paths.cache + u"/rates"_s)
+    , m_trade(&m_tradeClient)
 {
     m_characters.load();
     connect(&m_character, &ActiveCharacter::changed, this,
@@ -45,6 +54,15 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_checker.setPob(&m_pob);
     m_checker.setSettings(settings);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
+
+    // the league searches go to can change with the site's leagues, and the
+    // rates are the league's
+    connect(&m_tradeData, &TradeDataStore::refreshed, this, [this] {
+        m_trade.setLeagues(m_tradeData.leagues());
+        if (m_trade.unavailable().isEmpty())
+            m_rates.refresh(m_trade.league().tradeId());
+    });
+    followTrade();
 
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
         if (hotkey == Hotkeys::Hotkey::Check)
@@ -77,6 +95,7 @@ void App::followSettings()
         m_character.setId(settings.character);
     if (settings.pob.location != m_pobLocation)
         lookForPob();
+    followTrade();
 }
 
 void App::followKeys()
@@ -88,6 +107,14 @@ void App::followKeys()
     settings.overlay.hotkey = m_hotkeys.key(Hotkeys::Hotkey::Check);
     settings.overlay.resultsHotkey = m_hotkeys.key(Hotkeys::Hotkey::Results);
     m_settings.set(settings);
+}
+
+void App::followTrade()
+{
+    m_trade.setSettings(m_settings.settings().trade);
+    // which does nothing while what there is is fresh
+    if (m_trade.unavailable().isEmpty())
+        m_tradeData.refresh();
 }
 
 } // namespace pou
