@@ -24,6 +24,8 @@ public:
     // In place of the one before. False when it isn't a link to one of the
     // sites, and then nothing is asked for.
     bool fetch(const QString &link);
+    // Forgets the one it's fetching, which then says nothing.
+    void cancel();
     bool isFetching() const { return !m_reply.isNull(); }
 
 Q_SIGNALS:

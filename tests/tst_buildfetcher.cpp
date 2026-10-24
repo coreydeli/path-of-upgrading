@@ -101,6 +101,23 @@ private Q_SLOTS:
         QCOMPARE(network.sent.last().request.url(), QUrl(u"https://poe.ninja/poe2/pob/raw/Second"_s));
     }
 
+    void cancel()
+    {
+        FakeNetwork network;
+        BuildFetcher fetcher(&network);
+        QSignalSpy fetched(&fetcher, &BuildFetcher::fetched);
+        QSignalSpy failed(&fetcher, &BuildFetcher::failed);
+        QVERIFY(fetcher.fetch(u"https://pobb.in/AbC123"_s));
+        fetcher.cancel();
+        QVERIFY(!fetcher.isFetching());
+        QVERIFY(network.sent.first().reply.isNull());
+        // nothing comes of it
+        QTest::qWait(10);
+        QVERIFY(fetched.isEmpty());
+        QVERIFY(failed.isEmpty());
+        fetcher.cancel();
+    }
+
     void goneWhileFetching()
     {
         FakeNetwork network;

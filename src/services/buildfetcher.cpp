@@ -27,13 +27,18 @@ bool BuildFetcher::fetch(const QString &link)
     const QUrl url = buildCodeUrl(link);
     if (url.isEmpty())
         return false;
-    delete m_reply;
+    cancel();
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader, userAgent());
     request.setTransferTimeout(20000);
     m_reply = m_network->get(request);
     connect(m_reply, &QNetworkReply::finished, this, &BuildFetcher::answered);
     return true;
+}
+
+void BuildFetcher::cancel()
+{
+    delete m_reply;
 }
 
 void BuildFetcher::answered()
