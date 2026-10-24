@@ -3,7 +3,33 @@
 
 #include <algorithm>
 
+using namespace Qt::Literals::StringLiterals;
+
 namespace pou {
+
+QString popupPositionId(PopupPosition position)
+{
+    switch (position) {
+    case PopupPosition::Cursor:
+        return u"cursor"_s;
+    case PopupPosition::Left:
+        return u"left"_s;
+    case PopupPosition::Right:
+        return u"right"_s;
+    case PopupPosition::Top:
+        return u"top"_s;
+    }
+    return {};
+}
+
+PopupPosition popupPositionFromId(QStringView id)
+{
+    for (PopupPosition position : {PopupPosition::Left, PopupPosition::Right, PopupPosition::Top}) {
+        if (id == popupPositionId(position))
+            return position;
+    }
+    return PopupPosition::Cursor;
+}
 
 QPoint placePopup(PopupPosition where, const QSize &popup, const QSize &screen,
                   const std::optional<QPoint> &mouse)

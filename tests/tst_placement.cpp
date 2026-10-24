@@ -3,6 +3,7 @@
 
 #include <QTest>
 
+using namespace Qt::Literals::StringLiterals;
 using namespace pou;
 
 using Mouse = std::optional<QPoint>;
@@ -48,6 +49,30 @@ private Q_SLOTS:
         QFETCH(QPoint, expected);
 
         QCOMPARE(placePopup(where, popup, QSize(1920, 1080), mouse), expected);
+    }
+
+    void ids_data()
+    {
+        QTest::addColumn<PopupPosition>("position");
+        QTest::addColumn<QString>("id");
+        QTest::newRow("cursor") << PopupPosition::Cursor << u"cursor"_s;
+        QTest::newRow("left") << PopupPosition::Left << u"left"_s;
+        QTest::newRow("right") << PopupPosition::Right << u"right"_s;
+        QTest::newRow("top") << PopupPosition::Top << u"top"_s;
+    }
+
+    void ids()
+    {
+        QFETCH(PopupPosition, position);
+        QFETCH(QString, id);
+        QCOMPARE(popupPositionId(position), id);
+        QCOMPARE(popupPositionFromId(id), position);
+    }
+
+    void unknownId()
+    {
+        QCOMPARE(popupPositionFromId(u"middle"), PopupPosition::Cursor);
+        QCOMPARE(popupPositionFromId(u""), PopupPosition::Cursor);
     }
 };
 
