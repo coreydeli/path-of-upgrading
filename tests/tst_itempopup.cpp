@@ -281,6 +281,72 @@ private Q_SLOTS:
         }
     }
 
+    void folded()
+    {
+        // what hardly matters, behind More
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.changes = {
+            ReportFigure{.label = u"Fire res"_s, .change = u"+8%"_s, .tone = Tone::Good},
+            // over the cap either way
+            ReportFigure{.label = u"Cold res"_s, .change = u"+2%"_s, .minor = true},
+        };
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(shown(popup, u"Fire res"_s));
+        QVERIFY(!shown(popup, u"Cold res"_s));
+
+        QVERIFY(click(popup, u"Show More"_s));
+        QVERIFY(popup.isExpanded());
+        QVERIFY(shown(popup, u"Cold res"_s));
+        QVERIFY(click(popup, u"Show Less"_s));
+        QVERIFY(!popup.isExpanded());
+        QVERIFY(!shown(popup, u"Cold res"_s));
+    }
+
+    void onlyMinor()
+    {
+        // which leaves nothing to head
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.changes = {ReportFigure{.label = u"Cold res"_s, .change = u"+2%"_s, .minor = true}};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(!shown(popup, u"With it"_s));
+        QVERIFY(button(popup, u"Show More"_s));
+    }
+
+    void unfolded()
+    {
+        // when you'd rather see it all
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.compact = false;
+        popup.setSettings(settings);
+        ItemReport report = aReport();
+        report.changes = {ReportFigure{.label = u"Cold res"_s, .change = u"+2%"_s, .minor = true}};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(shown(popup, u"Cold res"_s));
+        QVERIFY(!button(popup, u"Show More"_s));
+        QVERIFY(!button(popup, u"Show Less"_s));
+    }
+
+    void nothingFolded()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.changes = {ReportFigure{.label = u"Fire res"_s, .change = u"+8%"_s, .tone = Tone::Good}};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(!button(popup, u"Show More"_s));
+    }
+
     void checking()
     {
         QQmlEngine engine;

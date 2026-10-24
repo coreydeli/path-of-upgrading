@@ -11,6 +11,8 @@ Rectangle {
 
     required property ItemPopup popup
     readonly property itemReport report: popup.report
+    // compact, with what hardly matters waiting behind More
+    readonly property bool folded: popup.compact && !popup.expanded
 
     // the game's colours for them
     function rarityColor(rarity: string): color {
@@ -237,8 +239,8 @@ Rectangle {
         ChangesTable {
             Layout.fillWidth: true
             Layout.topMargin: Kirigami.Units.smallSpacing
-            visible: card.report.changes.length > 0
-            figures: card.report.changes
+            visible: figures.length > 0
+            figures: card.folded ? card.report.changes.filter(figure => !figure.minor) : card.report.changes
             colorblind: card.popup.colorblind
         }
 
@@ -276,6 +278,13 @@ Rectangle {
                 font: Kirigami.Theme.smallFont
                 text: modelData
             }
+        }
+
+        QQC2.ToolButton {
+            visible: card.popup.compact && card.report.changes.some(figure => figure.minor)
+            text: card.popup.expanded ? qsTr("Show Less") : qsTr("Show More")
+            icon.name: card.popup.expanded ? "arrow-up" : "arrow-down"
+            onClicked: card.popup.expanded = !card.popup.expanded
         }
     }
 }
