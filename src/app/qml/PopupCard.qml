@@ -134,5 +134,44 @@ Rectangle {
             tone: Tone.Good
             colorblind: card.popup.colorblind
         }
+
+        // what Path of Building says it does to your build
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.report.headline.length > 0
+            spacing: Kirigami.Units.largeSpacing
+
+            Repeater {
+                model: card.report.headline
+
+                ColumnLayout {
+                    id: figure
+
+                    required property reportFigure modelData
+
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.alignment: Qt.AlignTop
+                    spacing: 0
+
+                    ToneLabel {
+                        font.bold: true
+                        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                        text: figure.modelData.change
+                        tone: figure.modelData.tone
+                        colorblind: card.popup.colorblind
+                    }
+
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: figure.modelData.label
+                    }
+                }
+            }
+        }
     }
 }

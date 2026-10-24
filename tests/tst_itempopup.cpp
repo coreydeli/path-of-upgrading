@@ -44,15 +44,24 @@ QPoint placed(const QWindow *window, PopupPosition where, const std::optional<QP
     return screen->geometry().topLeft() + placePopup(where, window->size(), screen->size(), mouse);
 }
 
+QQuickItem *shownIn(QQuickItem *parent, const QString &text, const char *type)
+{
+    const QList<QQuickItem *> items = parent->childItems();
+    for (QQuickItem *item : items) {
+        if (!item->isVisible())
+            continue;
+        if (item->inherits(type) && item->property("text").toString() == text)
+            return item;
+        if (QQuickItem *inside = shownIn(item, text, type))
+            return inside;
+    }
+    return nullptr;
+}
+
 // What on the popup you can see with that text, a label or a button.
 QQuickItem *shown(const ItemPopup &popup, const QString &text, const char *type = "QQuickItem")
 {
-    const QList<QQuickItem *> items = popup.window()->findChildren<QQuickItem *>();
-    for (QQuickItem *item : items) {
-        if (item->isVisible() && item->inherits(type) && item->property("text").toString() == text)
-            return item;
-    }
-    return nullptr;
+    return shownIn(popup.window()->contentItem(), text, type);
 }
 
 QQuickItem *button(const ItemPopup &popup, const QString &text)
@@ -167,6 +176,14 @@ private Q_SLOTS:
             << costly
             << QStringList{u"Fire res drops below the cap\nCold res drops below the cap"_s,
                            u"Minion skills lose a level"_s, u"Caps your lightning resistance"_s};
+
+        ItemReport judged = aReport();
+        judged.headline = {
+            ReportFigure{.label = u"DPS"_s, .change = u"+6.1%"_s, .tone = Tone::Good},
+            ReportFigure{.label = u"Effective HP"_s, .change = u"-2.3%"_s, .tone = Tone::Bad},
+        };
+        QTest::newRow("Path of Building's figures")
+            << judged << QStringList{u"+6.1%"_s, u"DPS"_s, u"-2.3%"_s, u"Effective HP"_s};
     }
 
     void sections()
