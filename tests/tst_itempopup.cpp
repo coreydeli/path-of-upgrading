@@ -265,6 +265,51 @@ private Q_SLOTS:
         QCOMPARE(shown(popup, u"Upgrade"_s)->property("color"), QColor(u"#3daee9"_s));
     }
 
+    void tones_data()
+    {
+        // in the colours for the colourblind, which don't follow the theme
+        QTest::addColumn<ItemReport>("report");
+        QTest::addColumn<QString>("text");
+        QTest::addColumn<QColor>("colour");
+
+        const QColor better(u"#3daee9"_s);
+        const QColor worse(u"#f67400"_s);
+        const QColor careful(u"#fdbc4b"_s);
+
+        ItemReport scored = aReport();
+        scored.verdict = u"Risky upgrade"_s;
+        scored.verdictTone = Tone::Warning;
+        scored.score = u"+4%"_s;
+        QTest::newRow("verdict") << scored << u"Risky upgrade"_s << careful;
+        QTest::newRow("score") << scored << u"+4%"_s << careful;
+
+        ItemReport capping = aReport();
+        capping.caps = u"Caps your fire resistance"_s;
+        QTest::newRow("caps") << capping << u"Caps your fire resistance"_s << better;
+
+        ItemReport judged = aReport();
+        judged.headline = {ReportFigure{.label = u"DPS"_s, .change = u"-6.1%"_s, .tone = Tone::Bad}};
+        QTest::newRow("Path of Building's figures") << judged << u"-6.1%"_s << worse;
+    }
+
+    void tones()
+    {
+        QFETCH(ItemReport, report);
+        QFETCH(QString, text);
+        QFETCH(QColor, colour);
+
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.colorblind = true;
+        popup.setSettings(settings);
+        popup.showReport(report, mouseAt(200, 300));
+        QQuickItem *label = shown(popup, text);
+        QVERIFY(label);
+        QCOMPARE(label->property("color"), colour);
+    }
+
     void scaled()
     {
         QQmlEngine engine;
