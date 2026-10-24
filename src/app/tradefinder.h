@@ -11,6 +11,7 @@
 #include <QString>
 #include <QStringList>
 #include <QUrl>
+#include <QtQmlIntegration/qqmlintegration.h>
 #include <chrono>
 #include <optional>
 
@@ -27,6 +28,8 @@ class TradeSearcher;
 class TradeFinder : public QObject
 {
     Q_OBJECT
+    QML_ELEMENT
+    QML_UNCREATABLE("The app has the one trade finder.")
 
 public:
     enum class Kind {

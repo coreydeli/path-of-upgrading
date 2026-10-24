@@ -184,6 +184,41 @@ private Q_SLOTS:
         QCOMPARE(popup.report(), aReport());
     }
 
+    void tradeForTheItem()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QSignalSpy changed(&popup, &ItemPopup::tradeChanged);
+        popup.setTradeAvailable(true);
+        QVERIFY(popup.isTradeAvailable());
+        QCOMPARE(changed.size(), 1);
+        popup.setTradeAvailable(true);
+        QCOMPARE(changed.size(), 1);
+
+        QSignalSpy asked(&popup, &ItemPopup::tradeAsked);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.findOnTrade(TradeFinder::Kind::Similar);
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(asked.first().first().value<TradeFinder::Kind>(), TradeFinder::Kind::Similar);
+        popup.setTrade(searchingReport());
+        QCOMPARE(popup.trade(), searchingReport());
+        QCOMPARE(changed.size(), 2);
+
+        // which a newer report on it keeps
+        popup.updateReport(aReport());
+        QCOMPARE(popup.trade(), searchingReport());
+        // and the next item doesn't
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QCOMPARE(popup.trade(), TradeReport());
+        QCOMPARE(changed.size(), 3);
+        popup.setTrade(failedReport(u"The trade site is down."_s));
+        popup.showMessage(u"That isn't an item."_s, mouseAt(200, 300));
+        QCOMPARE(popup.trade(), TradeReport());
+        // and you can still search when the next one is shown
+        QVERIFY(popup.isTradeAvailable());
+    }
+
     void sections_data()
     {
         QTest::addColumn<ItemReport>("report");

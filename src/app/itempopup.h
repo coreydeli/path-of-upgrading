@@ -3,6 +3,8 @@
 
 #include "app/itemreport.h"
 #include "app/popuphider.h"
+#include "app/tradefinder.h"
+#include "app/tradereport.h"
 #include "core/settings.h"
 #include "platform/screenmap.h"
 
@@ -39,6 +41,11 @@ class ItemPopup : public QObject
     Q_PROPERTY(double scale READ scale NOTIFY settingsChanged)
     Q_PROPERTY(bool compact READ isCompact NOTIFY settingsChanged)
     Q_PROPERTY(bool colorblind READ isColorblind NOTIFY settingsChanged)
+    // Whether there are trade searches, for its buttons that search the
+    // trade site for gear like the item.
+    Q_PROPERTY(bool tradeAvailable READ isTradeAvailable NOTIFY tradeChanged)
+    // How the last one for the item went, see findOnTrade().
+    Q_PROPERTY(pou::TradeReport trade READ trade NOTIFY tradeChanged)
 
 public:
     // The engine and the input have to outlive the popup.
@@ -56,6 +63,15 @@ public:
     void updateReport(const ItemReport &report);
     void showMessage(const QString &message, const std::optional<ScreenPoint> &mouse);
     Q_INVOKABLE void close();
+
+    bool isTradeAvailable() const { return m_tradeAvailable; }
+    void setTradeAvailable(bool available);
+    TradeReport trade() const { return m_trade; }
+    // What there is to say of a search for the item it has. Each item starts
+    // with none.
+    void setTrade(const TradeReport &trade);
+    // For the buttons, see tradeAsked().
+    Q_INVOKABLE void findOnTrade(pou::TradeFinder::Kind kind);
 
     bool isVisible() const;
     // Null until it's first shown, or when it couldn't be made.
@@ -76,6 +92,9 @@ Q_SIGNALS:
     void hoveredChanged();
     void expandedChanged();
     void settingsChanged();
+    void tradeChanged();
+    // When you ask for a search for the item it has.
+    void tradeAsked(pou::TradeFinder::Kind kind);
 
 private:
     bool makeWindow();
@@ -93,6 +112,8 @@ private:
     QPoint m_at;                        // and where it went, on the screen
     bool m_hovered = false;
     bool m_expanded = false;
+    bool m_tradeAvailable = false;
+    TradeReport m_trade;
 };
 
 } // namespace pou
