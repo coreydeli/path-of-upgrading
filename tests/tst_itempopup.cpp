@@ -13,6 +13,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QtMath>
+#include <algorithm>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
@@ -44,24 +45,41 @@ QPoint placed(const QWindow *window, PopupPosition where, const std::optional<QP
     return screen->geometry().topLeft() + placePopup(where, window->size(), screen->size(), mouse);
 }
 
-QQuickItem *shownIn(QQuickItem *parent, const QString &text, const char *type)
+void addVisible(QQuickItem *parent, QList<QQuickItem *> &items)
 {
-    const QList<QQuickItem *> items = parent->childItems();
-    for (QQuickItem *item : items) {
-        if (!item->isVisible())
-            continue;
-        if (item->inherits(type) && item->property("text").toString() == text)
-            return item;
-        if (QQuickItem *inside = shownIn(item, text, type))
-            return inside;
+    const QList<QQuickItem *> children = parent->childItems();
+    for (QQuickItem *item : children) {
+        if (item->isVisible()) {
+            items << item;
+            addVisible(item, items);
+        }
     }
-    return nullptr;
+}
+
+// What you can see on the popup.
+QList<QQuickItem *> visibleItems(const ItemPopup &popup)
+{
+    QList<QQuickItem *> items;
+    addVisible(popup.window()->contentItem(), items);
+    return items;
 }
 
 // What on the popup you can see with that text, a label or a button.
 QQuickItem *shown(const ItemPopup &popup, const QString &text, const char *type = "QQuickItem")
 {
-    return shownIn(popup.window()->contentItem(), text, type);
+    const QList<QQuickItem *> items = visibleItems(popup);
+    const auto it = std::ranges::find_if(items, [&](const QQuickItem *item) {
+        return item->inherits(type) && item->property("text").toString() == text;
+    });
+    return it != items.end() ? *it : nullptr;
+}
+
+// Whether it shows it's waiting for something.
+bool busy(const ItemPopup &popup)
+{
+    return std::ranges::any_of(visibleItems(popup), [](const QQuickItem *item) {
+        return item->inherits("QQuickBusyIndicator") && item->property("running").toBool();
+    });
 }
 
 QQuickItem *button(const ItemPopup &popup, const QString &text)
@@ -219,6 +237,12 @@ private Q_SLOTS:
         craftable.openAffixes = u"Open affixes: 1 prefix, 2 suffixes"_s;
         QTest::newRow("open affixes") << craftable << QStringList{u"Open affixes: 1 prefix, 2 suffixes"_s};
 
+        ItemReport noBuild = aReport();
+        noBuild.pobStatus = u"Import this character's build from Path of Building for exact verdicts."_s;
+        QTest::newRow("Path of Building's status")
+            << noBuild
+            << QStringList{u"Import this character's build from Path of Building for exact verdicts."_s};
+
         QTest::newRow("changes") << changes
                                  << QStringList{u"Now"_s, u"With it"_s,     u"Fire res"_s, u"75%"_s, u"67%"_s,
                                                 u"-8%"_s, u"off the cap"_s, u"Cold res"_s, u"+12%"_s};
@@ -237,6 +261,31 @@ private Q_SLOTS:
             if (!shown(popup, text))
                 QFAIL(qPrintable(u"It doesn't show \"%1\""_s.arg(text)));
         }
+    }
+
+    void checking()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.pobChecking = true;
+        report.pobStatus = u"Checking with Path of Building"_s;
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(shown(popup, u"Checking with Path of Building"_s));
+        QVERIFY(busy(popup));
+
+        // and when it's answered
+        popup.updateReport(aReport());
+        QVERIFY(!shown(popup, u"Checking with Path of Building"_s));
+        QVERIFY(!busy(popup));
+
+        // or couldn't
+        report.pobChecking = false;
+        report.pobStatus = u"There's nowhere in the build this item can go."_s;
+        popup.updateReport(report);
+        QVERIFY(shown(popup, report.pobStatus));
+        QVERIFY(!busy(popup));
     }
 
     void updated()

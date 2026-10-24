@@ -241,5 +241,27 @@ Rectangle {
             figures: card.report.changes
             colorblind: card.popup.colorblind
         }
+
+        // where Path of Building is with it, while it hasn't judged it
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.report.pobStatus !== ""
+            spacing: Kirigami.Units.smallSpacing
+
+            QQC2.BusyIndicator {
+                Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                visible: card.report.pobChecking
+                running: visible
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                opacity: 0.7
+                text: card.report.pobStatus
+            }
+        }
     }
 }
