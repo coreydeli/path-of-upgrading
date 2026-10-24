@@ -10,6 +10,7 @@ qt_add_library(pou_app STATIC
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
     overlayoptions.cpp overlayoptions.h
+    poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
     settingsstore.cpp settingsstore.h
     tradefinder.cpp tradefinder.h
