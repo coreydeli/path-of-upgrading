@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: MIT
+#include "app/app.h"
+#include "core/pobinstall.h"
+#include "platform/gameinput.h"
+#include "platform/globalshortcuts.h"
 
 #include <QApplication>
 #include <QDir>
@@ -50,6 +54,9 @@ int main(int argc, char *argv[])
     pickControlsStyle();
 
     QQmlApplicationEngine engine;
+    // which goes before the engine its popup is from
+    pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::pobPlaces(),
+                  pou::App::defaultPaths());
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);

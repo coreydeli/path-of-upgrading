@@ -13,6 +13,7 @@ target_compile_definitions(path-of-upgrading PRIVATE
 )
 
 target_link_libraries(path-of-upgrading PRIVATE
+    pou_app
     pou_appplugin
     Qt6::Widgets
     Qt6::QuickControls2
