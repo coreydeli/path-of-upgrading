@@ -29,6 +29,7 @@ qt_add_qml_module(pou_app
         qml/PopupCard.qml
         qml/PopupWindow.qml
         qml/ToneLabel.qml
+        qml/TradePage.qml
 )
 
 target_link_libraries(pou_app PUBLIC
