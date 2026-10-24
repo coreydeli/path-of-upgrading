@@ -215,6 +215,10 @@ private Q_SLOTS:
         firstRated.gearGrade = u"A"_s;
         QTest::newRow("gear score in an empty slot") << firstRated << QStringList{u"78 A"_s, u"gear score"_s};
 
+        ItemReport craftable = aReport();
+        craftable.openAffixes = u"Open affixes: 1 prefix, 2 suffixes"_s;
+        QTest::newRow("open affixes") << craftable << QStringList{u"Open affixes: 1 prefix, 2 suffixes"_s};
+
         QTest::newRow("changes") << changes
                                  << QStringList{u"Now"_s, u"With it"_s,     u"Fire res"_s, u"75%"_s, u"67%"_s,
                                                 u"-8%"_s, u"off the cap"_s, u"Cold res"_s, u"+12%"_s};

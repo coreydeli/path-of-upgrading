@@ -81,6 +81,15 @@ Rectangle {
             text: card.report.details.join(", ")
         }
 
+        // what's left to craft on it
+        QQC2.Label {
+            Layout.fillWidth: true
+            visible: text !== ""
+            wrapMode: Text.Wrap
+            opacity: 0.7
+            text: card.report.openAffixes
+        }
+
         RowLayout {
             Layout.fillWidth: true
             visible: card.report.verdict !== ""
