@@ -243,6 +243,10 @@ private Q_SLOTS:
             << noBuild
             << QStringList{u"Import this character's build from Path of Building for exact verdicts."_s};
 
+        ItemReport noted = aReport();
+        noted.notes = {u"Two-handed, so it takes your off hand too."_s, u"It's unidentified."_s};
+        QTest::newRow("notes") << noted << noted.notes;
+
         QTest::newRow("changes") << changes
                                  << QStringList{u"Now"_s, u"With it"_s,     u"Fire res"_s, u"75%"_s, u"67%"_s,
                                                 u"-8%"_s, u"off the cap"_s, u"Cold res"_s, u"+12%"_s};

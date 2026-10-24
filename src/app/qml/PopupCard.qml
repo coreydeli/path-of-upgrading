@@ -263,5 +263,19 @@ Rectangle {
                 text: card.report.pobStatus
             }
         }
+
+        Repeater {
+            model: card.report.notes
+
+            QQC2.Label {
+                required property string modelData
+
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                opacity: 0.7
+                font: Kirigami.Theme.smallFont
+                text: modelData
+            }
+        }
     }
 }
