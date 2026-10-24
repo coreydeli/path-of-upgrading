@@ -64,6 +64,8 @@ public:
     // Along with its build. When it's the one you play, you play the first of
     // the others.
     Q_INVOKABLE bool remove(const QString &id);
+    // Null when it isn't one of yours.
+    const Character *find(const QString &id) const { return m_store->find(id); }
 
     // Saves the build for the character, with its gear on, see importBuild().
     // Empty when it couldn't be saved.
