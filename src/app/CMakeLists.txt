@@ -9,6 +9,7 @@ qt_add_library(pou_app STATIC
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
     popuphider.cpp popuphider.h
+    settingsstore.cpp settingsstore.h
 )
 
 qt_add_qml_module(pou_app
