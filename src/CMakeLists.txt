@@ -18,4 +18,8 @@ target_link_libraries(path-of-upgrading PRIVATE
     Qt6::QuickControls2
 )
 
+# Qt and Kirigami are shared and load their QML plugins themselves, and ours
+# is linked in above, so there's nothing for the import scan to link.
+set_target_properties(path-of-upgrading PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
+
 install(TARGETS path-of-upgrading RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

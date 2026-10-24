@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Test)
+find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
 
 function(pou_add_test name)
     qt_add_executable(${name} ${name}.cpp ${ARGN})
@@ -19,6 +19,13 @@ endfunction()
 function(pou_add_app_test name)
     pou_add_test(${name} ${ARGN})
     target_link_libraries(${name} PRIVATE pou_app)
+endfunction()
+
+# for tests that load the app's QML, offscreen
+function(pou_add_qml_test name)
+    pou_add_app_test(${name} ${ARGN})
+    target_link_libraries(${name} PRIVATE pou_appplugin Qt6::QuickTest)
+    set_target_properties(${name} PROPERTIES QT_QML_MODULE_NO_IMPORT_SCAN ON)
 endfunction()
 
 # for tests with a stand-in for Path of Building, see fakepob.h
@@ -89,3 +96,5 @@ pou_add_app_test(tst_itemreader fakegameinput.h itemtexts.h)
 pou_add_app_test(tst_itemjudge itemtexts.h)
 pou_use_fakepob(tst_itemjudge)
 pou_add_app_test(tst_itemreport itemtexts.h)
+pou_add_app_test(tst_popuphider fakegameinput.h)
+pou_add_qml_test(tst_itempopup fakegameinput.h)

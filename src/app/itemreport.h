@@ -117,6 +117,8 @@ public:
     bool pobChecking = false;
     QString pobStatus;
     QStringList notes;
+
+    friend bool operator==(const ItemReport &, const ItemReport &) = default;
 };
 
 ItemReport reportOf(const ItemCheck &check);
