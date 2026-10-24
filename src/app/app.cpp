@@ -55,6 +55,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_character.setId(settings.character);
     lookForPob();
     m_checker.setPob(&m_pob);
+    m_checker.setFinder(&m_finder);
     m_checker.setSettings(settings);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
 
@@ -116,6 +117,7 @@ void App::followTrade()
 {
     m_trade.setSettings(m_settings.settings().trade);
     m_finder.setSettings(m_settings.settings());
+    m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
     // which does nothing while what there is is fresh
     if (m_trade.unavailable().isEmpty())
         m_tradeData.refresh();

@@ -357,6 +357,8 @@ private Q_SLOTS:
         QCOMPARE(r.app.trade().unavailable(), u"Trade searches are turned off in the settings."_s);
         // and neither site is asked anything
         QVERIFY(r.asked().isEmpty());
+        // nor has the popup buttons for it
+        QVERIFY(!r.app.checker().popup().isTradeAvailable());
 
         // until it's on
         settings.trade.enabled = true;
@@ -364,6 +366,7 @@ private Q_SLOTS:
         QVERIFY(r.rated());
         QCOMPARE(r.asked().size(), 4);
         QVERIFY(r.app.trade().unavailable().isEmpty());
+        QVERIFY(r.app.checker().popup().isTradeAvailable());
     }
 
     void offMeanwhile()
@@ -389,6 +392,7 @@ private Q_SLOTS:
         QCOMPARE(r.app.trade().unavailable(),
                  u"There's no trading in solo self-found, so trade searches are off."_s);
         QVERIFY(r.asked().isEmpty());
+        QVERIFY(!r.app.checker().popup().isTradeAvailable());
     }
 
     void findsOnTrade()
@@ -404,11 +408,16 @@ private Q_SLOTS:
         Running r(folders);
         QVERIFY(r.rated());
         r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        // from the popup's button
+        r.checked();
+        ItemPopup &popup = r.app.checker().popup();
+        QVERIFY(popup.isTradeAvailable());
         QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
-        r.app.finder().find(parseItem(itemtexts::helmetNew).value(), TradeFinder::Kind::Weighted);
+        popup.findOnTrade(TradeFinder::Kind::Weighted);
         QVERIFY(finished.wait());
         QVERIFY(r.app.finder().errorString().isEmpty());
         QCOMPARE(r.app.finder().found()->total, 2);
+        QCOMPARE(popup.trade().status, u"2 listed in Runes of Aldur"_s);
         // by your weights, which the site has filters for, unlike the usual ones
         QVERIFY(r.app.finder().found()->note.isEmpty());
 
