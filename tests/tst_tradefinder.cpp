@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/tradefinder.h"
+#include "core/buildprofiles.h"
 #include "core/datafiles.h"
+#include "core/evaluation.h"
 #include "core/parser.h"
 #include "core/tradequery.h"
 #include "core/tradesite.h"
@@ -63,11 +65,11 @@ struct Site
     Site() { searcher.setLeagues(siteLeagues); }
 
     // what the site said of its stats earlier today, which the store reads
-    bool hasData()
+    bool hasData(const QJsonObject &stats = tradefixtures::stats())
     {
         for (const auto &[name, answer] :
-             {std::pair{u"stats"_s, tradefixtures::stats()},
-              std::pair{u"filters"_s, tradefixtures::filters()}, std::pair{u"leagues"_s, leagues()}}) {
+             {std::pair{u"stats"_s, stats}, std::pair{u"filters"_s, tradefixtures::filters()},
+              std::pair{u"leagues"_s, leagues()}}) {
             if (!writeJsonFile(dir.filePath(name + u".json"_s), answer))
                 return false;
         }
@@ -99,6 +101,48 @@ Item withArmour(const QString &itemClass, const QString &base)
         .value();
 }
 
+Item ring(const QString &name, const QString &mods)
+{
+    return parseItem(u"Item Class: Rings\nRarity: Rare\n"_s + name + u"\nGold Ring\n--------\n"_s + mods)
+        .value();
+}
+
+const Item belt =
+    parseItem(u"Item Class: Belts\nRarity: Unique\nMageblood\nHeavy Belt\n--------\n+50 to maximum Life"_s)
+        .value();
+
+// Someone in their old helmet.
+Character inGrimCrown()
+{
+    Character character;
+    character.gear = {{u"Helmet"_s, parseItem(itemtexts::helmetOld).value()}};
+    return character;
+}
+
+// How a listing compares with yours.
+struct Upgrade
+{
+    double share;
+    double baseShare;
+};
+constexpr Upgrade clearlyBetter{1.06, 0.9};
+constexpr Upgrade littleBetter{1, 0.85};
+constexpr Upgrade nearlyAsGood{0.9, 0.75};
+
+// What it should search for to find upgrades in the slot.
+GearSearch upgrades(const Item &item, const TradeData &data, const Character &character, const QString &slot,
+                    Upgrade upgrade = clearlyBetter, const Settings &settings = {})
+{
+    GearSearchOptions options;
+    options.status = settings.trade.status;
+    options.ignoreRules = character.ignored;
+    options.share = upgrade.share;
+    options.baseShare = upgrade.baseShare;
+    const PobPriorities &priorities = settings.pob.priorities;
+    return gearSearch(item, searchWeights(item.slot, gearScoreOptions(character, slot, priorities)), data,
+                      options);
+}
+
 SimilarSearch similar(const Item &item, const TradeData &data, int level = 0)
 {
     SimilarSearchOptions options;
@@ -122,6 +166,232 @@ private Q_SLOTS:
     }
 
     void init() { QTest::failOnWarning(); }
+
+    void betterForYourBuild()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 9, {u"a"_s})};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(0), upgrades(helmet, site.data.data(), character, u"Helmet"_s).body);
+        QVERIFY(site.finder.errorString().isEmpty());
+
+        const TradeFinder::Found &found = *site.finder.found();
+        QCOMPARE(found.kind, Kind::Upgrades);
+        QCOMPARE(found.title, u"Better for your build than Doom Visage (gear score %1)"_s.arg(
+                                  evaluate(helmet, character).gear->score));
+        QCOMPARE(found.note, u"Scored by your build's weights for Armour at least 280, Life, and Fire res. "
+                             u"Each has at least 2 of "
+                             u"these at a decent roll: Life, Fire res. Best for your build first."_s);
+        QCOMPARE(found.total, 9);
+        QCOMPARE(found.listingIds, QStringList{u"a"_s});
+    }
+
+    void upgradesLooser()
+    {
+        const Character character = inGrimCrown();
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 0), found(u"s2"_s, 2)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(1),
+                 upgrades(helmet, site.data.data(), character, u"Helmet"_s, littleBetter).body);
+        QCOMPARE(site.finder.found()->note,
+                 u"No clear upgrade is listed right now, so these are a little better than yours."_s);
+
+        // on a site that hasn't been searched yet, so it's not held back
+        Site again;
+        QVERIFY(again.hasData());
+        again.finder.setCharacter(character);
+        again.network.answers = {found(u"s1"_s, 0), found(u"s2"_s, 0), found(u"s3"_s, 1)};
+        QVERIFY(again.finds(helmet, Kind::Upgrades));
+        QCOMPARE(again.searched(2),
+                 upgrades(helmet, again.data.data(), character, u"Helmet"_s, nearlyAsGood).body);
+        QCOMPARE(again.finder.found()->note,
+                 u"Nothing better is listed right now, so these come within 10% of yours."_s);
+    }
+
+    void noUpgradesListed()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 0), found(u"s2"_s, 0), found(u"s3"_s, 0)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 3);
+        QCOMPARE(site.finder.found()->total, 0);
+        QVERIFY(site.finder.errorString().isEmpty());
+    }
+
+    void ringItWouldReplace()
+    {
+        // the weaker of yours, whose fire resistance goes with it, by what
+        // you put first
+        Character character;
+        character.gear = {
+            {u"Ring 1"_s, ring(u"Storm Loop"_s, u"+30% to Fire Resistance\n+60 to maximum Life"_s)},
+            {u"Ring 2"_s, ring(u"Dull Loop"_s, u"+10% to Fire Resistance\n+10 to maximum Life"_s)}};
+        ResistEntry entry;
+        entry.values[Element::Fire] = 70;
+        entry.buffer = 10;
+        character.resists = snapshotResists(entry, character.gear, ResistSource::Manual);
+        Settings settings;
+        settings.pob.priorities.resistsFirst = false;
+        const PobPriorities &priorities = settings.pob.priorities;
+        const Item mine = ring(u"Grim Loop"_s, u"+40% to Fire Resistance\n+20 to maximum Life"_s);
+        const Evaluation evaluation = evaluate(mine, character, priorities);
+        QCOMPARE(evaluation.comparison.targetSlot, u"Ring 2"_s);
+        QVERIFY(evaluation.gear->score != evaluate(mine, character).gear->score);
+
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setSettings(settings);
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(mine, Kind::Upgrades));
+        const TradeData &data = site.data.data();
+        QCOMPARE(site.searched(0),
+                 upgrades(mine, data, character, u"Ring 2"_s, clearlyBetter, settings).body);
+        QVERIFY(site.searched(0) !=
+                upgrades(mine, data, character, u"Ring 1"_s, clearlyBetter, settings).body);
+        QVERIFY(site.searched(0) != upgrades(mine, data, character, u"Ring"_s, clearlyBetter, settings).body);
+        QVERIFY(site.searched(0) != upgrades(mine, data, character, u"Ring 2"_s).body);
+        QCOMPARE(site.finder.found()->title,
+                 u"Better for your build than Grim Loop (gear score %1)"_s.arg(evaluation.gear->score));
+    }
+
+    void uniqueUpgrades()
+    {
+        // have their stats, as they can't roll others
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(belt, Kind::Upgrades));
+        QCOMPARE(site.searched(0), similarSearch(belt, site.data.data()).body);
+        QCOMPARE(site.finder.found()->title, u"Same stats or better than Mageblood"_s);
+    }
+
+    void upgradesWithoutABuildProfile()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        Character character = inGrimCrown();
+        character.buildProfile = u"none of them"_s;
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(0), similar(helmet, site.data.data()).body);
+        QCOMPARE(site.finder.found()->title, u"Same stats or better than Doom Visage"_s);
+    }
+
+    void whatItLooksAt()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 1), found(u"s2"_s, 1)};
+        QVERIFY(
+            site.finds(parseItem(u"Item Class: Boots\nRarity: Rare\nGrim Stride\nExpert Sandals\n--------\n"
+                                 u"Armour: 120\nEvasion Rating: 110\nEnergy Shield: 40\n--------\n"
+                                 u"Item Level: 80\n--------\n+50 to maximum Life\n+20% to Fire Resistance\n"
+                                 u"25% increased Movement Speed"_s)
+                           .value(),
+                       Kind::Upgrades));
+        QCOMPARE(
+            site.finder.found()->note,
+            u"Scored by your build's weights for Armour at least 108, Evasion Rating at least 99, Energy "
+            u"Shield at least 36, Life, Fire res, and 1 more. Each has at least 2 of these at a decent roll: "
+            u"Movement speed, Life, Fire res. Best for your build first."_s);
+
+        // and when yours has none of it
+        QVERIFY(site.finds(
+            parseItem(u"Item Class: Rings\nRarity: Normal\nGold Ring\n--------\nItem Level: 50"_s).value(),
+            Kind::Upgrades));
+        QCOMPARE(site.finder.found()->note, u"Scored by your build's weights. Best for your build first."_s);
+
+        // or one of the stats it has to have
+        site.network.answers = {found(u"s3"_s, 1)};
+        QVERIFY(site.finds(ring(u"Grim Loop"_s, u"+50 to maximum Life"_s), Kind::Upgrades));
+        QCOMPARE(site.finder.found()->note, u"Scored by your build's weights for Life. Each has at least 1 "
+                                            u"of these at a decent roll: Life, Fire res. "
+                                            u"Best for your build first."_s);
+    }
+
+    void yourUpgrades()
+    {
+        // the listings you want, without the stats your character ignores
+        Settings settings;
+        settings.trade.status = ListingStatus::Online;
+        Character character = inGrimCrown();
+        character.ignored = {{u"res"_s, {}, IgnoreRule::Mode::Exclude}};
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setSettings(settings);
+        site.finder.setCharacter(character);
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(0),
+                 upgrades(helmet, site.data.data(), character, u"Helmet"_s, clearlyBetter, settings).body);
+    }
+
+    void flasksAndCharms()
+    {
+        // which have no gear score
+        const Item flask =
+            parseItem(u"Item Class: Life Flasks\nRarity: Magic\nUltimate Life Flask of the Doctor"
+                      u"\n--------\nItem Level: 60\n--------\n+50 to maximum Life"_s)
+                .value();
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(flask, Kind::Upgrades));
+        QCOMPARE(site.searched(0), similarSearch(flask, site.data.data()).body);
+    }
+
+    void unidentified()
+    {
+        // which anything rolled beats
+        const Item mystery =
+            parseItem(
+                u"Item Class: Helmets\nRarity: Rare\nExpert Visored Helm\n--------\nArmour: 312\n--------\n"
+                u"Item Level: 79\n--------\nUnidentified"_s)
+                .value();
+        QVERIFY(mystery.unidentified);
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(mystery, Kind::Upgrades));
+        QCOMPARE(site.searched(0), upgrades(mystery, site.data.data(), {}, u"Helmet"_s).body);
+        QCOMPARE(site.finder.found()->title, u"Better for your build than Expert Visored Helm"_s);
+    }
+
+    void nothingWanted()
+    {
+        // by the build profile, once you turned all of it down
+        Character character = inGrimCrown();
+        for (const ProfileStat &stat : buildProfile({})->stats)
+            character.tweaks.insert(stat.label, 0);
+        Site site;
+        QVERIFY(site.hasData());
+        site.finder.setCharacter(character);
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.finder.errorString(),
+                 u"Your build profile wants none of the stats this slot can have."_s);
+        QVERIFY(site.network.sent.isEmpty());
+    }
+
+    void noneOnTheSite()
+    {
+        // of the stats your build wants
+        Site site;
+        const QJsonArray odd = {
+            tradefixtures::stat(u"explicit.stat_light"_s, u"#% increased Light Radius"_s, u"explicit"_s)};
+        QVERIFY(site.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, odd)})));
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.finder.errorString(),
+                 u"None of your build's stats for this slot could be matched on the trade site."_s);
+        QVERIFY(site.network.sent.isEmpty());
+    }
 
     void sameOrBetter()
     {

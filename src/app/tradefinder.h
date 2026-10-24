@@ -27,14 +27,15 @@ class TradeFinder : public QObject
 
 public:
     enum class Kind {
-        Similar, // the same stats or better
+        Upgrades, // better for your build, by its gear score
+        Similar,  // the same stats or better
     };
     Q_ENUM(Kind)
 
     // What a search found, and how.
     struct Found
     {
-        Kind kind = Kind::Similar;
+        Kind kind = Kind::Upgrades;
         Item item;     // it was for
         QString title; // "Same stats or better than Doom Visage"
         QString note;  // how it had to search, when that needs saying
@@ -50,7 +51,8 @@ public:
     ~TradeFinder() override;
 
     void setSettings(const Settings &settings);
-    // The character you play, whose ignored stats are left out.
+    // The character you play, whose build profile says what's better and
+    // whose ignored stats are left out.
     void setCharacter(const Character &character);
 
     // Calls off the one it's busy with. While the trade site's stats are
@@ -80,6 +82,7 @@ private:
     };
 
     Plan plan() const;
+    Plan upgradePlan() const;
     Plan similarPlan() const;
     void start();
     void send();
@@ -92,7 +95,7 @@ private:
     Settings m_settings;
     Character m_character;
     Item m_item;
-    Kind m_kind = Kind::Similar;
+    Kind m_kind = Kind::Upgrades;
     int m_level = 0; // how much looser than at first
     Plan m_plan;     // sent last
     int m_finds = 0; // asked for or called off, so far

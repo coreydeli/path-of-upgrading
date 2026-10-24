@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 #include "app/tradefinder.h"
 
+#include "core/evaluation.h"
 #include "core/tradequery.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
 
 #include <QJsonArray>
+#include <QLocale>
+#include <array>
 #include <memory>
 
 using namespace Qt::Literals::StringLiterals;
@@ -28,6 +31,32 @@ bool asksForAnything(const QJsonObject &body)
     const QJsonObject query = body.value(u"query").toObject();
     return !query.value(u"stats").toArray().isEmpty() || query.contains(u"name") ||
            query.value(u"filters").toObject().contains(u"equipment_filters");
+}
+
+// How a listing's gear score has to compare with yours, and how much of your
+// base defences it needs, from clearly better to close, as nothing better may
+// be listed.
+struct GearLevel
+{
+    double share;
+    double baseShare;
+};
+constexpr std::array gearLevels = {GearLevel{1.06, 0.9}, GearLevel{1, 0.85}, GearLevel{0.9, 0.75}};
+
+// What a gear search looks at.
+QString scoredBy(const GearSearch &search)
+{
+    constexpr qsizetype shown = 5;
+    QStringList parts = search.parts.mid(0, shown);
+    if (search.parts.size() > shown)
+        parts << u"%1 more"_s.arg(search.parts.size() - shown);
+    QString note = parts.isEmpty() ? u"Scored by your build's weights."_s
+                                   : u"Scored by your build's weights for %1."_s.arg(
+                                         QLocale(QLocale::English).createSeparatedList(parts));
+    if (search.needKeyStats > 0)
+        note += u" Each has at least %1 of these at a decent roll: %2."_s.arg(
+            QString::number(search.needKeyStats), search.keyStats.join(u", "));
+    return note;
 }
 
 } // namespace
@@ -101,10 +130,56 @@ void TradeFinder::start()
 TradeFinder::Plan TradeFinder::plan() const
 {
     switch (m_kind) {
+    case Kind::Upgrades:
+        return upgradePlan();
     case Kind::Similar:
         break;
     }
     return similarPlan();
+}
+
+TradeFinder::Plan TradeFinder::upgradePlan() const
+{
+    const PobPriorities &priorities = m_settings.pob.priorities;
+    const Evaluation evaluation = evaluate(m_item, m_character, priorities, {});
+    // There's no gear score without a build profile, or for flasks and
+    // charms, and a unique's stats are what they are.
+    using Unrated = GearScore::Unrated;
+    const std::optional<GearScore> &score = evaluation.gear;
+    if (!score || score->unrated == Unrated::FlaskOrCharm || score->unrated == Unrated::Unique)
+        return similarPlan();
+    // of your rings, the one it would take the place of
+    const QString &slot = evaluation.comparison.targetSlot;
+    const QList<SearchWeight> weights =
+        searchWeights(m_item.slot, gearScoreOptions(m_character, slot, priorities));
+    if (weights.isEmpty())
+        return {.error = u"Your build profile wants none of the stats this slot can have."_s};
+
+    const GearLevel &level = gearLevels.at(m_level);
+    GearSearchOptions options;
+    options.status = m_settings.trade.status;
+    options.ignoreRules = m_character.ignored;
+    options.share = level.share;
+    options.baseShare = level.baseShare;
+    const GearSearch search = gearSearch(m_item, weights, m_data->data(), options);
+    if (search.filters == 0)
+        return {.error = u"None of your build's stats for this slot could be matched on the trade site."_s};
+
+    Plan plan{
+        .body = search.body,
+        .title = score->isRated() ? u"Better for your build than %1 (gear score %2)"_s.arg(
+                                        m_item.name, QString::number(score->score))
+                                  : u"Better for your build than %1"_s.arg(m_item.name),
+        .looser = m_level + 1 < int(gearLevels.size()),
+    };
+    if (m_level == 0)
+        plan.note = scoredBy(search) + u" Best for your build first."_s;
+    else if (level.share >= 1)
+        plan.note = u"No clear upgrade is listed right now, so these are a little better than yours."_s;
+    else
+        plan.note = u"Nothing better is listed right now, so these come within %1% of yours."_s.arg(
+            qRound((1 - level.share) * 100));
+    return plan;
 }
 
 TradeFinder::Plan TradeFinder::similarPlan() const
