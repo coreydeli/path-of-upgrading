@@ -11,6 +11,7 @@ qt_add_library(pou_app STATIC
     itemreport.cpp itemreport.h
     popuphider.cpp popuphider.h
     settingsstore.cpp settingsstore.h
+    tradefinder.cpp tradefinder.h
 )
 
 qt_add_qml_module(pou_app
