@@ -32,6 +32,7 @@ public:
     // The input has to outlive the hider.
     explicit PopupHider(GameInput *input, QObject *parent = nullptr);
 
+    const Timeouts &timeouts() const { return m_timeouts; }
     void setTimeouts(const Timeouts &timeouts);
 
     // The popup is shown, or shown again with something else, there on that
