@@ -254,6 +254,20 @@ private Q_SLOTS:
         QCOMPARE(checker.popup().trade(), TradeReport());
     }
 
+    void finderGone()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        {
+            Trading trading(checker);
+        }
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QCOMPARE(checker.popup().trade(), TradeReport());
+    }
+
     void noFinder()
     {
         QQmlEngine qml;

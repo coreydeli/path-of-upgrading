@@ -6,6 +6,7 @@
 #include "app/itemreader.h"
 
 #include <QObject>
+#include <QPointer>
 #include <optional>
 
 class QQmlEngine;
@@ -32,8 +33,7 @@ public:
     void setCharacter(const Character &character, const std::optional<PobBuild> &build);
     // Path of Building, used while the settings have it on.
     void setPob(PobEngine *pob);
-    // What the popup's buttons search with, once. It has to outlive the
-    // checker.
+    // What the popup's buttons search with, once.
     void setFinder(TradeFinder *finder);
 
     // For the hotkey.
@@ -57,7 +57,7 @@ private:
     ItemJudge m_judge;
     ItemPopup m_popup;
     PobEngine *m_pob = nullptr;
-    TradeFinder *m_finder = nullptr;
+    QPointer<TradeFinder> m_finder; // null once it's gone
     bool m_pobOn = true;
     std::optional<ScreenPoint> m_mouse; // where the item was read
     bool m_fresh = false;               // and it hasn't been shown yet
