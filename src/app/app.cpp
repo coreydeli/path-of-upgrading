@@ -42,10 +42,13 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_trade(&m_tradeClient)
+    , m_finder(&m_trade, &m_tradeData, &m_rates)
 {
     m_characters.load();
-    connect(&m_character, &ActiveCharacter::changed, this,
-            [this] { m_checker.setCharacter(m_character.character(), m_character.build()); });
+    connect(&m_character, &ActiveCharacter::changed, this, [this] {
+        m_checker.setCharacter(m_character.character(), m_character.build());
+        m_finder.setCharacter(m_character.character());
+    });
     connect(&m_settings, &SettingsStore::changed, this, &App::followSettings);
 
     const Settings &settings = m_settings.settings();
@@ -87,6 +90,14 @@ void App::lookForPob()
         m_pob.setUnavailable(why);
 }
 
+void App::findOnTrade(const Item &item, TradeFinder::Kind kind)
+{
+    // which are asked for again once they're an hour old
+    if (m_trade.unavailable().isEmpty())
+        m_rates.refresh(m_trade.league().tradeId());
+    m_finder.find(item, kind);
+}
+
 void App::followSettings()
 {
     const Settings &settings = m_settings.settings();
@@ -112,6 +123,7 @@ void App::followKeys()
 void App::followTrade()
 {
     m_trade.setSettings(m_settings.settings().trade);
+    m_finder.setSettings(m_settings.settings());
     // which does nothing while what there is is fresh
     if (m_trade.unavailable().isEmpty())
         m_tradeData.refresh();

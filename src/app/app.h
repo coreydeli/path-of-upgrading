@@ -6,6 +6,7 @@
 #include "app/itemchecker.h"
 #include "app/itemhistory.h"
 #include "app/settingsstore.h"
+#include "app/tradefinder.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "services/pobengine.h"
@@ -67,6 +68,11 @@ public:
     TradeDataStore &tradeData() { return m_tradeData; }
     RatesStore &rates() { return m_rates; }
     TradeSearcher &trade() { return m_trade; }
+    TradeFinder &finder() { return m_finder; }
+
+    // A trade search for the item, for the character you play, at what
+    // currencies are worth today.
+    void findOnTrade(const Item &item, TradeFinder::Kind kind);
 
 private:
     void followSettings();
@@ -89,6 +95,7 @@ private:
     TradeDataStore m_tradeData;
     RatesStore m_rates;
     TradeSearcher m_trade;
+    TradeFinder m_finder;
 };
 
 } // namespace pou
