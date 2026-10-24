@@ -164,6 +164,19 @@ private Q_SLOTS:
         QCOMPARE(loaded.first().at(0).toJsonObject().value(u"xml").toString(), other);
     }
 
+    void noneSince()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
+        engine.setBuild(build);
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetNew}}));
+        engine.setBuild({});
+        QVERIFY(finishes(reply.get()));
+        QVERIFY(loaded.isEmpty());
+    }
+
     void notLoaded()
     {
         FakePob pob;

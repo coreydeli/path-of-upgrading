@@ -122,6 +122,8 @@ void PobEngine::setBuild(const QString &xml, const QList<PobItem> &wearing)
         return;
     m_xml = xml;
     m_wearing = wearing;
+    // the build it has isn't wanted any more, even when there's none instead
+    m_buildId = 0;
     if (m_process && !m_xml.isEmpty())
         sendBuild();
 }
