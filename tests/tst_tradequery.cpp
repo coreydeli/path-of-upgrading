@@ -609,7 +609,13 @@ private Q_SLOTS:
         QCOMPARE(count.value(u"type").toString(), u"count"_s);
         QCOMPARE(filterIds(count), QStringList({u"explicit.minion_dmg"_s, u"explicit.es_pct"_s}));
         QCOMPARE(count.value(u"value").toObject(), minimum(2));
+        QCOMPARE(small.needKeyStats, 2);
         QCOMPARE(small.body.value(u"sort").toObject(), QJsonObject({{u"price"_s, u"asc"_s}}));
+        // and two of them from one without any, so it isn't every jewel
+        const Item plain = parseItem(u"Item Class: Jewels\nRarity: Rare\nHonour Stone\nSapphire\n--------\n"
+                                     "+8 to Intelligence"_s)
+                               .value();
+        QCOMPARE(gearSearch(plain, weights, data, smallest).needKeyStats, 2);
     }
 };
 
