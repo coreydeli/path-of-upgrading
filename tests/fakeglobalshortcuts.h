@@ -13,8 +13,8 @@ class FakeGlobalShortcuts : public pou::GlobalShortcuts
 public:
     using pou::GlobalShortcuts::GlobalShortcuts;
 
-    bool isAvailable() const override { return true; }
-    QString errorString() const override { return {}; }
+    bool isAvailable() const override { return available; }
+    QString errorString() const override { return available ? QString() : QStringLiteral("It's off."); }
 
     void add(const QString &id, const QString &name, const QKeySequence &key) override
     {
@@ -23,7 +23,8 @@ public:
             keys.insert(id, taken.contains(key) ? QKeySequence() : key);
     }
 
-    QKeySequence key(const QString &id) const override { return keys.value(id); }
+    // and none without the service, as KDE's
+    QKeySequence key(const QString &id) const override { return available ? keys.value(id) : QKeySequence(); }
 
     bool setKey(const QString &id, const QKeySequence &key) override
     {
@@ -43,6 +44,7 @@ public:
         Q_EMIT keyChanged(id, key);
     }
 
+    bool available = true;
     QHash<QString, QString> names; // of the ones added
     // Theirs, from before the app started when it's set first.
     QHash<QString, QKeySequence> keys;

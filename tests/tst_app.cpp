@@ -2,6 +2,7 @@
 #include "app/app.h"
 #include "core/parser.h"
 #include "fakegameinput.h"
+#include "fakeglobalshortcuts.h"
 #include "fakepob.h"
 #include "itemtexts.h"
 
@@ -59,15 +60,27 @@ struct Folders
     void set(const Settings &settings) const { SettingsStore(paths.settings).set(settings); }
 };
 
-// The app with a stand-in for the game.
+// What the desktop has for the app's shortcuts before it starts.
+FakeGlobalShortcuts *desktop(const QHash<QString, QKeySequence> &keys = {}, bool available = true)
+{
+    auto *shortcuts = new FakeGlobalShortcuts;
+    shortcuts->keys = keys;
+    shortcuts->available = available;
+    return shortcuts;
+}
+
+// The app with stand-ins for the game and the desktop.
 struct Running
 {
     QQmlEngine qml;
     FakeGameInput *input = new FakeGameInput;
+    FakeGlobalShortcuts *shortcuts;
     App app;
 
-    explicit Running(const Folders &folders)
-        : app(&qml, std::unique_ptr<GameInput>(input), folders.places(), folders.paths)
+    explicit Running(const Folders &folders, FakeGlobalShortcuts *theirs = desktop())
+        : shortcuts(theirs)
+        , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
+              folders.places(), folders.paths)
     {}
 
     // what the popup says of the helmet, once you've checked it
@@ -175,6 +188,62 @@ private Q_SLOTS:
         wrapper.close();
         r.app.lookForPob();
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
+    }
+
+    void checkKey()
+    {
+        // the one in the settings, the first time
+        Folders folders;
+        Settings settings;
+        settings.overlay.hotkey = u"F3"_s;
+        folders.set(settings);
+        Running r(folders);
+        QCOMPARE(r.shortcuts->keys.value(u"check-item"_s), QKeySequence(u"F3"_s));
+        // which isn't for the trade results
+        Q_EMIT r.shortcuts->activated(u"trade-results"_s);
+        QCOMPARE(r.input->copies, 0);
+        Q_EMIT r.shortcuts->activated(u"check-item"_s);
+        QCOMPARE(r.input->copies, 1);
+    }
+
+    void desktopsKeys()
+    {
+        // changed in System Settings while the app wasn't running
+        Folders folders;
+        Running r(folders, desktop({{u"check-item"_s, QKeySequence(u"F5"_s)}}));
+        QCOMPARE(r.app.settings().settings().overlay.hotkey, u"F5"_s);
+        QCOMPARE(SettingsStore(folders.paths.settings).settings().overlay.hotkey, u"F5"_s);
+        // for what you're told to press
+        r.app.checker().check();
+        Q_EMIT r.input->copyFailed(GameInput::Failure::NothingCopied, {}, std::nullopt);
+        QVERIFY(r.app.checker().popup().message().contains(u"press F5"_s));
+    }
+
+    void changedOnTheDesktop()
+    {
+        Folders folders;
+        Running r(folders);
+        r.shortcuts->change(u"trade-results"_s, QKeySequence(u"Ctrl+T"_s));
+        QCOMPARE(r.app.settings().settings().overlay.resultsHotkey, u"Ctrl+T"_s);
+    }
+
+    void yourKey()
+    {
+        Folders folders;
+        Running r(folders);
+        QVERIFY(r.app.hotkeys().setKey(Hotkeys::Hotkey::Check, u"F6"_s));
+        QCOMPARE(r.app.settings().settings().overlay.hotkey, u"F6"_s);
+    }
+
+    void noShortcuts()
+    {
+        // where the desktop has none, the keys you chose are kept
+        Folders folders;
+        Settings settings;
+        settings.overlay.hotkey = u"F7"_s;
+        folders.set(settings);
+        Running r(folders, desktop({}, false));
+        QCOMPARE(r.app.settings().settings().overlay.hotkey, u"F7"_s);
     }
 
     void judgesWithPob()

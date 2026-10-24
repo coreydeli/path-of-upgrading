@@ -2,6 +2,7 @@
 #include "app/app.h"
 
 #include "platform/gameinput.h"
+#include "platform/globalshortcuts.h"
 
 #include <QCoreApplication>
 #include <QStandardPaths>
@@ -20,8 +21,8 @@ App::Paths App::defaultPaths()
     };
 }
 
-App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, const PobPlaces &places, const Paths &paths,
-         QObject *parent)
+App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
+         const PobPlaces &places, const Paths &paths, QObject *parent)
     : QObject(parent)
     , m_places(places)
     , m_settings(paths.settings)
@@ -29,6 +30,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, const PobPlaces &pla
     , m_character(&m_characters, &m_pob)
     , m_input(std::move(input))
     , m_checker(qml, m_input.get())
+    , m_shortcuts(std::move(shortcuts))
+    , m_hotkeys(m_shortcuts.get())
 {
     m_characters.load();
     connect(&m_character, &ActiveCharacter::changed, this,
@@ -40,6 +43,16 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, const PobPlaces &pla
     lookForPob();
     m_checker.setPob(&m_pob);
     m_checker.setSettings(settings);
+
+    connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
+        if (hotkey == Hotkeys::Hotkey::Check)
+            m_checker.check();
+    });
+    connect(&m_hotkeys, &Hotkeys::keyChanged, this, &App::followKeys);
+    m_hotkeys.add(settings.overlay);
+    // which have the keys they had last time, when they've been changed on
+    // the desktop since
+    followKeys();
 }
 
 App::~App() = default;
@@ -62,6 +75,17 @@ void App::followSettings()
         m_character.setId(settings.character);
     if (settings.pob.location != m_pobLocation)
         lookForPob();
+}
+
+void App::followKeys()
+{
+    // without the desktop's shortcuts, they have none
+    if (!m_hotkeys.isAvailable())
+        return;
+    Settings settings = m_settings.settings();
+    settings.overlay.hotkey = m_hotkeys.key(Hotkeys::Hotkey::Check);
+    settings.overlay.resultsHotkey = m_hotkeys.key(Hotkeys::Hotkey::Results);
+    m_settings.set(settings);
 }
 
 } // namespace pou
