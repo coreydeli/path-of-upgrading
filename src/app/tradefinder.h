@@ -54,10 +54,8 @@ public:
         QStringList listingIds;
     };
 
-    // They have to outlive it. The rates turn your budget into exalts, so
-    // refresh them for the league before finding.
-    TradeFinder(TradeSearcher *searcher, TradeDataStore *data, const RatesStore *rates,
-                QObject *parent = nullptr);
+    // They have to outlive it. The rates turn your budget into exalts.
+    TradeFinder(TradeSearcher *searcher, TradeDataStore *data, RatesStore *rates, QObject *parent = nullptr);
     ~TradeFinder() override;
 
     void setSettings(const Settings &settings);
@@ -66,7 +64,7 @@ public:
     void setCharacter(const Character &character);
 
     // Calls off the one it's busy with. While the trade site's stats are
-    // still to come, it waits for them.
+    // still to come, it waits for them, but it goes by the rates it has.
     void find(const Item &item, Kind kind);
     // Without finishing.
     void cancel();
@@ -111,7 +109,7 @@ private:
 
     TradeSearcher *m_searcher;
     TradeDataStore *m_data;
-    const RatesStore *m_rates;
+    RatesStore *m_rates;
     Settings m_settings;
     Character m_character;
     Item m_item;

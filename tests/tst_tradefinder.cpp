@@ -299,35 +299,28 @@ private Q_SLOTS:
     {
         QTest::addColumn<bool>("autoRate");
         QTest::addColumn<double>("typedRate");
-        QTest::addColumn<QString>("ratesFor"); // the league poe.ninja was asked about
-        QTest::addColumn<double>("ninjaRate"); // 0 when it had none
+        QTest::addColumn<double>("ninjaRate"); // 0 when it has none
         QTest::addColumn<double>("rate");      // it should go by
 
-        const QString softcore = u"Runes of Aldur"_s;
-        QTest::newRow("poe.ninja's") << true << 250.0 << softcore << 300.0 << 300.0;
-        QTest::newRow("typed in") << false << 250.0 << softcore << 300.0 << 250.0;
-        QTest::newRow("another league's") << true << 250.0 << u"HC Runes of Aldur"_s << 300.0 << 250.0;
-        QTest::newRow("none from poe.ninja") << true << 250.0 << softcore << 0.0 << 250.0;
-        QTest::newRow("none") << true << 0.0 << softcore << 0.0 << 0.0;
+        QTest::newRow("poe.ninja's") << true << 250.0 << 300.0 << 300.0;
+        QTest::newRow("typed in") << false << 250.0 << 300.0 << 250.0;
+        QTest::newRow("none from poe.ninja") << true << 250.0 << 0.0 << 250.0;
+        QTest::newRow("none") << true << 0.0 << 0.0 << 0.0;
     }
 
     void inYourBudget()
     {
         QFETCH(bool, autoRate);
         QFETCH(double, typedRate);
-        QFETCH(QString, ratesFor);
         QFETCH(double, ninjaRate);
         QFETCH(double, rate);
 
+        // which it reads from their file the first time, or else asks
+        // poe.ninja for while it searches
         Site site;
         QVERIFY(site.hasData());
         if (ninjaRate > 0)
-            QVERIFY(
-                writeJsonFile(site.dir.filePath(u"rates/"_s + ratesFor + u".json"_s), ninjaRates(ninjaRate)));
-        QSignalSpy refreshed(&site.rates, &RatesStore::refreshed);
-        site.rates.refresh(ratesFor);
-        QVERIFY(refreshed.wait());
-
+            QVERIFY(writeJsonFile(site.dir.filePath(u"rates/Runes of Aldur.json"_s), ninjaRates(ninjaRate)));
         Settings settings;
         settings.trade.budget = {.max = 1, .divineRate = typedRate};
         settings.trade.autoRate = autoRate;
@@ -335,6 +328,29 @@ private Q_SLOTS:
         QVERIFY(site.finds(helmet));
         QJsonObject body = similar(helmet, site.data.data()).body;
         applyBudget(body, {.max = 1, .divineRate = rate});
+        QCOMPARE(site.searched(0), body);
+        QCOMPARE(site.ninja.sent.size(), ninjaRate > 0 ? 0 : 1);
+    }
+
+    void ratesInTheLeague()
+    {
+        // which are another's than the ones it had
+        Site site;
+        QVERIFY(site.hasData());
+        QVERIFY(writeJsonFile(site.dir.filePath(u"rates/Runes of Aldur.json"_s), ninjaRates(300)));
+        QVERIFY(writeJsonFile(site.dir.filePath(u"rates/HC Runes of Aldur.json"_s), ninjaRates(500)));
+        Settings settings;
+        settings.trade.league.hardcore = true;
+        settings.trade.budget.max = 1;
+        site.searcher.setSettings(settings.trade);
+        site.finder.setSettings(settings);
+        QSignalSpy refreshed(&site.rates, &RatesStore::refreshed);
+        site.rates.refresh(u"Runes of Aldur"_s);
+        QVERIFY(refreshed.wait());
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.rates.league(), u"HC Runes of Aldur"_s);
+        QJsonObject body = similar(helmet, site.data.data()).body;
+        applyBudget(body, {.max = 1, .divineRate = 500});
         QCOMPARE(site.searched(0), body);
     }
 

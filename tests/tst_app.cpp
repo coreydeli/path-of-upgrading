@@ -405,7 +405,7 @@ private Q_SLOTS:
         QVERIFY(r.rated());
         r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
         QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
-        r.app.findOnTrade(parseItem(itemtexts::helmetNew).value(), TradeFinder::Kind::Weighted);
+        r.app.finder().find(parseItem(itemtexts::helmetNew).value(), TradeFinder::Kind::Weighted);
         QVERIFY(finished.wait());
         QVERIFY(r.app.finder().errorString().isEmpty());
         QCOMPARE(r.app.finder().found()->total, 2);

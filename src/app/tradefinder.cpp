@@ -76,8 +76,7 @@ QString scoredBy(const GearSearch &search)
 
 } // namespace
 
-TradeFinder::TradeFinder(TradeSearcher *searcher, TradeDataStore *data, const RatesStore *rates,
-                         QObject *parent)
+TradeFinder::TradeFinder(TradeSearcher *searcher, TradeDataStore *data, RatesStore *rates, QObject *parent)
     : QObject(parent)
     , m_searcher(searcher)
     , m_data(data)
@@ -119,6 +118,9 @@ void TradeFinder::find(const Item &item, Kind kind)
     // and the site isn't asked for its stats either
     if (const QString why = m_searcher->unavailable(); !why.isEmpty())
         return failSoon(why);
+    // which come from their file the first time, and from poe.ninja again
+    // once they're an hour old
+    m_rates->refresh(m_searcher->league().tradeId());
     if (m_data->data().stats.isEmpty()) {
         m_waiting = true;
         m_data->refresh();
@@ -304,13 +306,12 @@ TradeFinder::Plan TradeFinder::craftPlan() const
     return plan;
 }
 
-// Yours, at poe.ninja's rate when you'd rather and it has one for the
-// league, or else the one you typed in.
+// Yours, at poe.ninja's rate for the league when you'd rather and it has
+// one, or else the one you typed in.
 Budget TradeFinder::budget() const
 {
     Budget budget = m_settings.trade.budget;
-    if (m_settings.trade.autoRate && m_rates->divineRate() > 0 &&
-        m_rates->league() == m_searcher->league().tradeId())
+    if (m_settings.trade.autoRate && m_rates->divineRate() > 0)
         budget.divineRate = m_rates->divineRate();
     return budget;
 }

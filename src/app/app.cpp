@@ -90,14 +90,6 @@ void App::lookForPob()
         m_pob.setUnavailable(why);
 }
 
-void App::findOnTrade(const Item &item, TradeFinder::Kind kind)
-{
-    // which are asked for again once they're an hour old
-    if (m_trade.unavailable().isEmpty())
-        m_rates.refresh(m_trade.league().tradeId());
-    m_finder.find(item, kind);
-}
-
 void App::followSettings()
 {
     const Settings &settings = m_settings.settings();
