@@ -22,10 +22,15 @@ public:
             Q_EMIT copyFailed(Failure::Unavailable, failRightAway, std::nullopt);
     }
 
-    std::optional<pou::ScreenPoint> mouse() const override { return mouseAt; }
+    std::optional<pou::ScreenPoint> mouse() const override
+    {
+        ++mouseLooks;
+        return mouseAt;
+    }
 
     int copies = 0;
     bool lastAdvanced = false;
     QString failRightAway;
     std::optional<pou::ScreenPoint> mouseAt;
+    mutable int mouseLooks = 0;
 };

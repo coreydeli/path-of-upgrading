@@ -1,0 +1,319 @@
+// SPDX-License-Identifier: MIT
+#include "app/itempopup.h"
+#include "core/placement.h"
+#include "fakegameinput.h"
+
+#include <QGuiApplication>
+#include <QQmlEngine>
+#include <QQmlExtensionPlugin>
+#include <QQuickItem>
+#include <QQuickWindow>
+#include <QScreen>
+#include <QSignalSpy>
+#include <QTest>
+#include <QtMath>
+
+Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
+
+using namespace Qt::Literals::StringLiterals;
+using namespace pou;
+
+namespace {
+
+ItemReport aReport()
+{
+    ItemReport report;
+    report.name = u"Storm Veil"_s;
+    report.rarity = u"Rare"_s;
+    report.details = {u"Hunter Hood"_s, u"Helmet"_s, u"Item level 74"_s};
+    report.verdict = u"Upgrade"_s;
+    report.verdictTone = Tone::Good;
+    return report;
+}
+
+ScreenPoint mouseAt(int x, int y)
+{
+    return {.screen = QGuiApplication::primaryScreen()->name(), .position = {x, y}};
+}
+
+// Where it should be for the mouse, on the screen.
+QPoint placed(const QWindow *window, PopupPosition where, const std::optional<QPoint> &mouse)
+{
+    QScreen *screen = QGuiApplication::primaryScreen();
+    return screen->geometry().topLeft() + placePopup(where, window->size(), screen->size(), mouse);
+}
+
+// What on the popup you can see with that text, a label or a button.
+QQuickItem *shown(const ItemPopup &popup, const QString &text, const char *type = "QQuickItem")
+{
+    const QList<QQuickItem *> items = popup.window()->findChildren<QQuickItem *>();
+    for (QQuickItem *item : items) {
+        if (item->isVisible() && item->inherits(type) && item->property("text").toString() == text)
+            return item;
+    }
+    return nullptr;
+}
+
+QQuickItem *button(const ItemPopup &popup, const QString &text)
+{
+    return shown(popup, text, "QQuickAbstractButton");
+}
+
+// Somewhere it isn't near the popup.
+ScreenPoint elsewhere()
+{
+    return {.screen = u"HDMI-A-9"_s, .position = {0, 0}};
+}
+
+} // namespace
+
+class TestItemPopup : public QObject
+{
+    Q_OBJECT
+
+public:
+    // the popup's windows aren't for the screen
+    static void initMain() { qputenv("QT_QPA_PLATFORM", "offscreen"); }
+
+private Q_SLOTS:
+    void init()
+    {
+        // which a mistake in the QML only gives
+        QTest::failOnWarning();
+    }
+
+    void byTheMouse()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QVERIFY(!popup.isVisible());
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(popup.isVisible());
+        QCOMPARE(popup.report(), aReport());
+        QVERIFY(popup.message().isEmpty());
+        QCOMPARE(popup.window()->position(), placed(popup.window(), PopupPosition::Cursor, QPoint(200, 300)));
+        // over the game, which keeps the keyboard
+        QVERIFY(popup.window()->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
+
+        QVERIFY(shown(popup, u"Storm Veil"_s));
+    }
+
+    void mouseUnknown()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), std::nullopt);
+        QVERIFY(popup.isVisible());
+        QCOMPARE(popup.window()->position(), placed(popup.window(), PopupPosition::Top, std::nullopt));
+    }
+
+    void whereTheSettingsSay()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.position = PopupPosition::Right;
+        popup.setSettings(settings);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QCOMPARE(popup.window()->position(), placed(popup.window(), PopupPosition::Right, QPoint(200, 300)));
+    }
+
+    void aMessage()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.showMessage(u"That isn't an item."_s, mouseAt(200, 300));
+        QVERIFY(popup.isVisible());
+        QCOMPARE(popup.message(), u"That isn't an item."_s);
+        QCOMPARE(popup.report(), ItemReport());
+        QVERIFY(shown(popup, u"That isn't an item."_s));
+        QVERIFY(!shown(popup, u"Storm Veil"_s));
+
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(popup.message().isEmpty());
+        QCOMPARE(popup.report(), aReport());
+    }
+
+    void updated()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        const QPoint at = popup.window()->position();
+
+        ItemReport newer = aReport();
+        newer.verdict = u"Sidegrade"_s;
+        popup.updateReport(newer);
+        QVERIFY(popup.isVisible());
+        QCOMPARE(popup.report(), newer);
+        QCOMPARE(popup.window()->position(), at);
+    }
+
+    void updatedWhenHidden()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.close();
+        popup.updateReport(aReport());
+        QVERIFY(!popup.isVisible());
+    }
+
+    void grows()
+    {
+        // near the bottom of the screen, where it has to go up as it grows
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        const int bottom = QGuiApplication::primaryScreen()->size().height() - 10;
+        popup.showReport(aReport(), mouseAt(200, bottom));
+        const int height = popup.window()->height();
+
+        // as it does when Path of Building answers, here with a name long
+        // enough to wrap
+        ItemReport longer = aReport();
+        longer.name = u"Storm Veil of the Long Winter Kept Behind the Gate of the Drowned City"_s;
+        popup.updateReport(longer);
+        QTRY_VERIFY(popup.window()->height() > height);
+        QCOMPARE(popup.window()->position(),
+                 placed(popup.window(), PopupPosition::Cursor, QPoint(200, bottom)));
+    }
+
+    void scaled()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        const QQuickItem *card = popup.window()->contentItem()->childItems().value(0);
+        QVERIFY(card);
+        QCOMPARE(popup.window()->size(), QSize(qCeil(card->implicitWidth()), qCeil(card->implicitHeight())));
+
+        OverlaySettings settings;
+        settings.scale = 1.5;
+        popup.setSettings(settings);
+        QCOMPARE(popup.scale(), 1.5);
+        const QSize scaled(qCeil(card->implicitWidth() * 1.5), qCeil(card->implicitHeight() * 1.5));
+        QTRY_COMPARE(popup.window()->size(), scaled);
+    }
+
+    void closed()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QSignalSpy hovered(&popup, &ItemPopup::hoveredChanged);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.setHovered(true);
+        popup.setHovered(true);
+        popup.close();
+        QVERIFY(!popup.isVisible());
+        QVERIFY(!popup.isHovered());
+        QCOMPARE(hovered.size(), 2);
+
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(popup.isVisible());
+    }
+
+    void closeButton()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QQuickItem *close = button(popup, u"Close"_s);
+        QVERIFY(close);
+        const QPoint middle = close->mapToScene(close->boundingRect().center()).toPoint();
+        QTest::mouseClick(popup.window(), Qt::LeftButton, {}, middle);
+        QVERIFY(!popup.isVisible());
+    }
+
+    void hovered()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QTest::mouseMove(popup.window(), QPoint(20, 20));
+        QTRY_VERIFY(popup.isHovered());
+    }
+
+    void hidesByItself()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.autoHideSeconds = 2;
+        popup.setSettings(settings);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QTest::qWait(1500);
+        QVERIFY(popup.isVisible());
+        QTRY_VERIFY_WITH_TIMEOUT(!popup.isVisible(), 2000);
+    }
+
+    void staysWhileHovered()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.autoHideSeconds = 2;
+        popup.setSettings(settings);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.setHovered(true);
+        QTest::qWait(2500);
+        QVERIFY(popup.isVisible());
+    }
+
+    void hidesWhenYouGoAway()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        input.mouseAt = elsewhere();
+        QTRY_VERIFY_WITH_TIMEOUT(!popup.isVisible(), 2000);
+    }
+
+    void stopsLooking()
+    {
+        // for the mouse, once it's closed
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QTRY_VERIFY(input.mouseLooks > 0);
+        popup.close();
+        const int looks = input.mouseLooks;
+        QTest::qWait(300);
+        QCOMPARE(input.mouseLooks, looks);
+    }
+
+    void notByTheMouse()
+    {
+        // at the side of the screen, where you go past it to the item
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.position = PopupPosition::Right;
+        popup.setSettings(settings);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        input.mouseAt = elsewhere();
+        QTest::qWait(1500);
+        QVERIFY(popup.isVisible());
+    }
+};
+
+QTEST_MAIN(TestItemPopup)
+#include "tst_itempopup.moc"
