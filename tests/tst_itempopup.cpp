@@ -13,6 +13,7 @@
 #include <QSignalSpy>
 #include <QTest>
 #include <QtMath>
+#include <QtQuickTest/quicktest.h>
 #include <algorithm>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
@@ -85,6 +86,19 @@ bool busy(const ItemPopup &popup)
 QQuickItem *button(const ItemPopup &popup, const QString &text)
 {
     return shown(popup, text, "QQuickAbstractButton");
+}
+
+// Clicks the button with that text, where it is once the popup's laid out.
+bool click(const ItemPopup &popup, const QString &text)
+{
+    if (!QQuickTest::qWaitForPolish(popup.window()))
+        return false;
+    const QQuickItem *b = button(popup, text);
+    if (!b)
+        return false;
+    const QPoint middle = b->mapToScene(b->boundingRect().center()).toPoint();
+    QTest::mouseClick(popup.window(), Qt::LeftButton, {}, middle);
+    return true;
 }
 
 // Somewhere it isn't near the popup.
@@ -483,10 +497,7 @@ private Q_SLOTS:
         ItemPopup popup(&engine, &input);
         popup.showReport(aReport(), mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
-        QQuickItem *close = button(popup, u"Close"_s);
-        QVERIFY(close);
-        const QPoint middle = close->mapToScene(close->boundingRect().center()).toPoint();
-        QTest::mouseClick(popup.window(), Qt::LeftButton, {}, middle);
+        QVERIFY(click(popup, u"Close"_s));
         QVERIFY(!popup.isVisible());
     }
 
