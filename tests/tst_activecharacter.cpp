@@ -112,6 +112,7 @@ private Q_SLOTS:
         QSignalSpy changed(&c.active, &ActiveCharacter::changed);
         c.active.setId(id);
         QCOMPARE(c.active.id(), id);
+        QVERIFY(c.active.exists());
         QCOMPARE(changed.size(), 1);
         QCOMPARE(c.active.character().name, u"Torvald"_s);
         QVERIFY(c.active.build());
@@ -160,6 +161,7 @@ private Q_SLOTS:
         c.active.setId(c.add(inGrimCrown(), build));
         QSignalSpy changed(&c.active, &ActiveCharacter::changed);
         c.active.setId(u"nobody"_s);
+        QVERIFY(!c.active.exists());
         QCOMPARE(changed.size(), 1);
         QCOMPARE(c.active.character().name, QString());
         QVERIFY(c.active.character().gear.isEmpty());

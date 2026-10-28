@@ -31,7 +31,9 @@ public:
     // Reads it again, for when it's been changed in the store.
     void reload();
 
-    // With nothing on when the store has no character with the id.
+    // False when the store has no character with the id.
+    bool exists() const { return m_store->find(m_id) != nullptr; }
+    // With nothing on when it doesn't exist.
     const Character &character() const { return m_character; }
     // None when it has none, or one that isn't for Path of Exile 2.
     const std::optional<PobBuild> &build() const { return m_build; }
