@@ -3,8 +3,11 @@
 
 #include "core/pobeval.h"
 #include "core/pobverdict.h"
+#include "core/wearing.h"
 #include "services/logging.h"
 #include "services/pobengine.h"
+
+using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
 
@@ -33,6 +36,41 @@ void ActiveCharacter::reload()
     else
         m_pob->setBuild({});
     Q_EMIT changed();
+}
+
+bool ActiveCharacter::wear(const QString &slot, const Item &item)
+{
+    const Character *saved = m_store->find(m_id);
+    if (!saved)
+        return fail(u"There's no character to wear it. Add one first."_s);
+    const std::optional<Character> worn = pou::wear(*saved, slot, item);
+    if (!worn)
+        return fail(u"%1 can't go in %2."_s.arg(item.name, slot));
+    return save(*worn);
+}
+
+bool ActiveCharacter::takeOff(const QString &slot)
+{
+    const Character *saved = m_store->find(m_id);
+    if (!saved || !saved->gear.contains(slot))
+        return true;
+    return save(pou::takeOff(*saved, slot));
+}
+
+bool ActiveCharacter::save(const Character &character)
+{
+    if (!m_store->save(m_id, character))
+        return fail(u"Couldn't save %1: %2"_s.arg(character.name, m_store->errorString()));
+    m_error.clear();
+    // which has Path of Building wear it too
+    reload();
+    return true;
+}
+
+bool ActiveCharacter::fail(const QString &why)
+{
+    m_error = why;
+    return false;
 }
 
 void ActiveCharacter::loaded(const QJsonObject &summary)

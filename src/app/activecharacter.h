@@ -36,17 +36,26 @@ public:
     // None when it has none, or one that isn't for Path of Exile 2.
     const std::optional<PobBuild> &build() const { return m_build; }
 
+    // Puts the item on in the slot and saves that, see pou::wear(). False when
+    // it can't go there or it can't be saved, with why in errorString().
+    bool wear(const QString &slot, const Item &item);
+    bool takeOff(const QString &slot);
+    QString errorString() const { return m_error; }
+
 Q_SIGNALS:
     void changed();
 
 private:
     void loaded(const QJsonObject &summary);
+    bool save(const Character &character);
+    bool fail(const QString &why);
 
     CharacterStore *m_store;
     PobEngine *m_pob;
     QString m_id;
     Character m_character;
     std::optional<PobBuild> m_build;
+    QString m_error;
 };
 
 } // namespace pou
