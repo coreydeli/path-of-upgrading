@@ -171,6 +171,66 @@ private Q_SLOTS:
         QCOMPARE(read.first().at(0).value<Item>().name, u"Doom Visage"_s);
     }
 
+    void wear()
+    {
+        // as the popup's buttons do
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.setCharacter(inGrimCrown(), std::nullopt);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QCOMPARE(checker.popup().report().wearIn, QStringList{u"Helmet"_s});
+        QSignalSpy asked(&checker, &ItemChecker::wearAsked);
+        checker.popup().wear(u"Helmet"_s);
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(asked.first().at(0).value<Item>().name, u"Doom Visage"_s);
+        QCOMPARE(asked.first().at(1).toString(), u"Helmet"_s);
+    }
+
+    void judgedAgain()
+    {
+        // for the character you play now, as once you wear it
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.setCharacter(inGrimCrown(), std::nullopt);
+        QSignalSpy read(&checker, &ItemChecker::itemRead);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QCOMPARE(checker.popup().report().versus, u"vs Grim Crown"_s);
+        checker.popup().setExpanded(true);
+
+        Character worn;
+        worn.gear = {{u"Helmet"_s, parseItem(itemtexts::helmetNew).value()}};
+        checker.setCharacter(worn, std::nullopt);
+        QCOMPARE(checker.popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(checker.popup().report().versus, u"in your Helmet slot"_s);
+        QVERIFY(checker.popup().report().wearIn.isEmpty());
+        // which isn't another item read
+        QCOMPARE(read.size(), 1);
+        QVERIFY(checker.popup().isExpanded());
+        QCOMPARE(checker.popup().window()->position(),
+                 placed(checker.popup(), PopupPosition::Cursor, QPoint(200, 300)));
+    }
+
+    void notJudgedAgain()
+    {
+        // once you've closed it
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.setCharacter(inGrimCrown(), std::nullopt);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        checker.popup().close();
+        QSignalSpy shown(&checker.popup(), &ItemPopup::shownChanged);
+        checker.setCharacter({}, std::nullopt);
+        QCOMPARE(shown.size(), 0);
+        QVERIFY(!checker.popup().isVisible());
+        QCOMPARE(checker.popup().report().versus, u"vs Grim Crown"_s);
+    }
+
     void findsOnTrade()
     {
         QQmlEngine qml;
