@@ -592,6 +592,7 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"gearHelp"_s)));
         QVERIFY(!isVisible(w.find(u"gearError"_s)));
         QVERIFY(!isVisible(w.find(u"extras"_s)));
     }
@@ -603,6 +604,7 @@ private Q_SLOTS:
         w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}, {u"Ring 1"_s, item(itemtexts::advancedRing)}},
                {u"Ring 1"_s});
         QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(isVisible(w.find(u"gearHelp"_s)));
         QVERIFY(!isVisible(w.find(u"extras"_s)));
 
         QObject *helmet = w.find(u"slot:Helmet"_s);

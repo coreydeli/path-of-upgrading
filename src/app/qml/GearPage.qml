@@ -98,6 +98,12 @@ FormCard.FormCardPage {
         }
     }
 
+    FormCard.FormSectionText {
+        objectName: "gearHelp"
+        visible: gearPage.gear.character !== ""
+        text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
+    }
+
     FormCard.FormHeader {
         visible: extras.visible
         title: qsTr("Weapon Swap, Flasks, Charms and Jewels")
