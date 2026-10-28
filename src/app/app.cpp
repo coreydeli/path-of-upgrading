@@ -45,6 +45,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_finder(&m_trade, &m_tradeData, &m_rates)
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
+    , m_gearList(&m_character, &m_settings)
     , m_tradeOptions(&m_settings, &m_tradeData, &m_rates)
     , m_overlayOptions(&m_settings, &m_hotkeys)
     , m_pobOptions(&m_settings, &m_pob)

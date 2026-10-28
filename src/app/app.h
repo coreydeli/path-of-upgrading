@@ -4,6 +4,7 @@
 #include "app/activecharacter.h"
 #include "app/buildimporter.h"
 #include "app/characterlist.h"
+#include "app/gearlist.h"
 #include "app/hotkeys.h"
 #include "app/itemchecker.h"
 #include "app/itemhistory.h"
@@ -45,6 +46,7 @@ class App : public QObject
     // The main window's pages.
     Q_PROPERTY(pou::CharacterList *characterList READ characterList CONSTANT)
     Q_PROPERTY(pou::BuildImporter *buildImporter READ buildImporter CONSTANT)
+    Q_PROPERTY(pou::GearList *gearList READ gearList CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
@@ -88,6 +90,7 @@ public:
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
+    GearList *gearList() { return &m_gearList; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
@@ -116,6 +119,7 @@ private:
     TradeFinder m_finder;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
+    GearList m_gearList;
     TradeOptions m_tradeOptions;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
