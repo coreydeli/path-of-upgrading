@@ -3,6 +3,7 @@
 
 #include "core/numbers.h"
 #include "core/resists.h"
+#include "core/wearing.h"
 
 #include <QHash>
 #include <QLocale>
@@ -295,6 +296,8 @@ ItemReport reportOf(const ItemCheck &check)
     report.name = item.name;
     report.rarity = item.rarity;
     report.gear = !item.slot.isEmpty();
+    if (!r.isEquipped)
+        report.wearIn = slotsFor(item);
     if (!item.baseType.isEmpty() && item.baseType != item.name)
         report.details << item.baseType;
     if (!item.itemClass.isEmpty())

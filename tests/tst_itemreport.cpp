@@ -610,9 +610,19 @@ private Q_SLOTS:
         QCOMPARE(report.name, u"Divine Orb"_s);
         QCOMPARE(report.details, QStringList{u"Stackable Currency"_s});
         QVERIFY(!report.gear);
+        QCOMPARE(report.wearIn, QStringList());
         QCOMPARE(report.verdict, QString());
         QCOMPARE(report.notes,
                  QStringList{u"Stackable Currency isn't gear, so there's nothing to compare."_s});
+    }
+
+    void wearIn()
+    {
+        QCOMPARE(reportOn(helmetNew).wearIn, QStringList{u"Helmet"_s});
+        QCOMPARE(reportOn(helmetNew, wearing({{u"Helmet"_s, helmetOld}})).wearIn, QStringList{u"Helmet"_s});
+        QCOMPARE(reportOn(item(itemtexts::advancedRing)).wearIn, (QStringList{u"Ring 1"_s, u"Ring 2"_s}));
+        // what you have on already
+        QCOMPARE(reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}})).wearIn, QStringList());
     }
 
     void notesOnTheItem()
