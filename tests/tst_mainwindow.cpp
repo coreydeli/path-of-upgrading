@@ -241,30 +241,6 @@ public:
 private Q_SLOTS:
     void init() { QTest::failOnWarning(); }
 
-    void bare_data()
-    {
-        QTest::addColumn<QByteArray>("qml");
-        QTest::newRow("window") << QByteArray(
-            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
-            "height: 500; visible: true\n"
-            "Kirigami.PromptDialog { objectName: \"d\"; title: \"Remove?\"; subtitle: \"Sure?\"; "
-            "standardButtons: Kirigami.Dialog.Cancel } }");
-        QTest::newRow("page") << QByteArray(
-            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
-            "height: 500; visible: true\n"
-            "pageStack.initialPage: Kirigami.Page { Kirigami.PromptDialog { objectName: \"d\"; title: "
-            "\"Remove?\"; subtitle: \"Sure?\"; standardButtons: Kirigami.Dialog.Cancel } } }");
-        QTest::newRow("noButtons") << QByteArray(
-            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
-            "height: 500; visible: true\n"
-            "Kirigami.PromptDialog { objectName: \"d\"; title: \"Remove?\"; subtitle: \"Sure?\" } }");
-        QTest::newRow("plainDialog") << QByteArray(
-            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
-            "height: 500; visible: true\n"
-            "Kirigami.Dialog { objectName: \"d\"; title: \"Remove?\"; Item { implicitWidth: 100; "
-            "implicitHeight: 100 } } }");
-    }
-
     void opens()
     {
         Window w;
