@@ -24,6 +24,7 @@ qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
         qml/ChangesTable.qml
+        qml/CharactersPage.qml
         qml/KeyField.qml
         qml/Main.qml
         qml/NumberField.qml

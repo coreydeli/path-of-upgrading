@@ -30,11 +30,19 @@ Kirigami.ApplicationWindow {
 
         actions: [
             Kirigami.Action {
+                objectName: "charactersAction"
+                text: qsTr("Characters")
+                icon.name: "user-identity"
+                checkable: true
+                checked: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(charactersPage)
+            },
+            Kirigami.Action {
                 objectName: "pobAction"
                 text: qsTr("Path of Building")
                 icon.name: "office-chart-line"
                 checkable: true
-                checked: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(pobPage)
             },
@@ -57,7 +65,7 @@ Kirigami.ApplicationWindow {
         ]
     }
 
-    pageStack.initialPage: pobPage
+    pageStack.initialPage: charactersPage
 
     QQC2.ActionGroup {
         id: pages
@@ -67,6 +75,11 @@ Kirigami.ApplicationWindow {
     // were on them.
     Item {
         visible: false
+
+        CharactersPage {
+            id: charactersPage
+            app: root.app
+        }
 
         PobPage {
             id: pobPage
