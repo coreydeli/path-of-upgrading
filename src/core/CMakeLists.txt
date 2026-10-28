@@ -37,6 +37,7 @@ add_library(pou_core STATIC
     tradesite.cpp tradesite.h
     verdict.h
     weights.cpp weights.h
+    wearing.cpp wearing.h
 )
 
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
