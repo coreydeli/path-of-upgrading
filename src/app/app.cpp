@@ -43,11 +43,13 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_trade(&m_tradeClient)
     , m_finder(&m_trade, &m_tradeData, &m_rates)
+    , m_characterList(&m_characters, &m_character, &m_settings)
+    , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_tradeOptions(&m_settings, &m_tradeData, &m_rates)
     , m_overlayOptions(&m_settings, &m_hotkeys)
     , m_pobOptions(&m_settings, &m_pob)
 {
-    m_characters.load();
+    m_characterList.load();
     connect(&m_character, &ActiveCharacter::changed, this, [this] {
         m_checker.setCharacter(m_character.character(), m_character.build());
         m_finder.setCharacter(m_character.character());

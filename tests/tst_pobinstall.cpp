@@ -249,6 +249,71 @@ private Q_SLOTS:
         QVERIFY(!findPob(computer.places, root, &why));
         QCOMPARE(why, u"The Path of Building in %1 is for Path of Exile 1."_s.arg(root));
     }
+
+    void buildsFolder()
+    {
+        Computer computer;
+        const PobInstall pob{.folder = computer.flatpakFolder()};
+        const QString user = computer.flatpakFolder() + u"/userdata/Path of Building (PoE2)"_s;
+        QCOMPARE(pobBuildsFolder(pob), user + u"/Builds"_s);
+
+        // with the rest of its settings, which aren't read
+        const QString elsewhere = computer.dir.filePath(u"home/Builds"_s);
+        const QByteArray settings = "<PathOfBuilding><Mode mode=\"LIST\"/><Accounts>"
+                                    "<Account accountName=\"Someone\" sessionID=\"fake\"/></Accounts>"
+                                    "<Misc buildSortMode=\"NAME\" buildPath=\"" +
+                                    elsewhere.toUtf8() + "/\"/></PathOfBuilding>";
+        QVERIFY(writeFile(user + u"/Settings.xml"_s, settings));
+        // which isn't there yet
+        QCOMPARE(pobBuildsFolder(pob), user + u"/Builds"_s);
+        QVERIFY(QDir().mkpath(elsewhere));
+        QCOMPARE(pobBuildsFolder(pob), elsewhere);
+    }
+
+    void buildsFolderNotChosen()
+    {
+        Computer computer;
+        const PobInstall pob{.folder = computer.flatpakFolder()};
+        const QString user = computer.flatpakFolder() + u"/userdata/Path of Building (PoE2)"_s;
+        // only its own options count
+        const QByteArray settings = "<PathOfBuilding><SharedItems><Misc buildPath=\"" +
+                                    computer.dir.path().toUtf8() +
+                                    "\"/></SharedItems><Misc buildSortMode=\"NAME\"/></PathOfBuilding>";
+        QVERIFY(writeFile(user + u"/Settings.xml"_s, settings));
+        QCOMPARE(pobBuildsFolder(pob), user + u"/Builds"_s);
+    }
+
+    void listsBuilds()
+    {
+        QTemporaryDir dir;
+        const QString folder = dir.filePath(u"Builds"_s);
+        const QDateTime now = QDateTime::currentDateTime();
+        const auto save = [&](const QString &name, int daysAgo) {
+            const QString path = folder + u'/' + name;
+            QFile file(path);
+            return writeFile(path, "<PathOfBuilding2/>") && file.open(QIODevice::ReadWrite) &&
+                   file.setFileTime(now.addDays(-daysAgo), QFileDevice::FileModificationTime);
+        };
+        QVERIFY(save(u"Witch.xml"_s, 3));
+        QVERIFY(save(u"Leveling/Monk.xml"_s, 1));
+        QVERIFY(save(u"Leveling/Old/Ranger.xml"_s, 9));
+        QVERIFY(save(u"Mercenary.xml"_s, 3));
+        // saved the same day, so by name
+        QVERIFY(save(u"Zealot.xml"_s, 3));
+        QVERIFY(save(u"Acolyte.xml"_s, 3));
+        QVERIFY(writeFile(folder + u"/notes.txt"_s, "not a build"));
+
+        const QList<SavedBuild> builds = savedBuilds(folder);
+        QStringList names;
+        for (const SavedBuild &build : builds)
+            names << build.name;
+        QCOMPARE(names, (QStringList{u"Leveling/Monk"_s, u"Acolyte"_s, u"Mercenary"_s, u"Witch"_s,
+                                     u"Zealot"_s, u"Leveling/Old/Ranger"_s}));
+        QCOMPARE(builds.first().path, folder + u"/Leveling/Monk.xml"_s);
+        QCOMPARE(builds.first().modified.toSecsSinceEpoch(), now.addDays(-1).toSecsSinceEpoch());
+
+        QVERIFY(savedBuilds(dir.filePath(u"nothing here"_s)).isEmpty());
+    }
 };
 
 QTEST_GUILESS_MAIN(TestPobInstall)

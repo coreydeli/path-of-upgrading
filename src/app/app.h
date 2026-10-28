@@ -2,6 +2,8 @@
 #pragma once
 
 #include "app/activecharacter.h"
+#include "app/buildimporter.h"
+#include "app/characterlist.h"
 #include "app/hotkeys.h"
 #include "app/itemchecker.h"
 #include "app/itemhistory.h"
@@ -40,7 +42,9 @@ class App : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("There's the one, made when the program starts.")
 
-    // The settings window's pages.
+    // The main window's pages.
+    Q_PROPERTY(pou::CharacterList *characterList READ characterList CONSTANT)
+    Q_PROPERTY(pou::BuildImporter *buildImporter READ buildImporter CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
@@ -82,6 +86,8 @@ public:
     // For the character you play.
     TradeFinder &finder() { return m_finder; }
 
+    CharacterList *characterList() { return &m_characterList; }
+    BuildImporter *buildImporter() { return &m_buildImporter; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
@@ -108,6 +114,8 @@ private:
     RatesStore m_rates;
     TradeSearcher m_trade;
     TradeFinder m_finder;
+    CharacterList m_characterList;
+    BuildImporter m_buildImporter;
     TradeOptions m_tradeOptions;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;

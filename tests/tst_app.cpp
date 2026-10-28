@@ -178,6 +178,35 @@ private Q_SLOTS:
         QCOMPARE(r.checked().versus, u"vs Grim Crown"_s);
     }
 
+    void charactersPage()
+    {
+        Folders folders;
+        Settings settings;
+        settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
+        const QString astrid = folders.add(wearing(u"Astrid"_s, itemtexts::helmetNew));
+        settings.pob.location = folders.pob.folder.path();
+        folders.set(settings);
+        Running r(folders);
+        CharacterList *list = r.app.characterList();
+        QCOMPARE(list->rowCount(), 2);
+        QCOMPARE(list->current(), settings.character);
+
+        // which you then play
+        list->setCurrent(astrid);
+        QCOMPARE(r.app.character().character().name, u"Astrid"_s);
+        QVERIFY(list->remove(astrid));
+        QCOMPARE(r.app.character().character().name, u"Torvald"_s);
+
+        // and its build, which items are then judged with
+        QVERIFY(!r.app.character().build());
+        r.app.buildImporter()->importText(build);
+        QVERIFY(!r.app.buildImporter()->hasFailed());
+        QVERIFY(r.app.character().build());
+        QVERIFY(r.checked().pobChecking);
+        QCOMPARE(r.app.buildImporter()->buildsFolder(),
+                 folders.pob.folder.path() + u"/userdata/Path of Building (PoE2)/Builds"_s);
+    }
+
     void yourSettings()
     {
         Folders folders;

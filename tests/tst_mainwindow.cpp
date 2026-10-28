@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
+#include "core/datafiles.h"
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
@@ -7,6 +8,8 @@
 #include "tradefixtures.h"
 
 #include <KLocalizedQmlContext>
+#include <QDateTime>
+#include <QFileInfo>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QJsonArray>
@@ -18,9 +21,11 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QSet>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <functional>
 #include <memory>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
@@ -50,11 +55,52 @@ FakeNetwork *online()
     return network;
 }
 
+// Through the children and the items in them both, as what a Repeater makes
+// is only in the items.
+QObject *search(QObject *object, const std::function<bool(QObject *)> &wanted, QSet<QObject *> &seen)
+{
+    if (seen.contains(object))
+        return nullptr;
+    seen.insert(object);
+    if (wanted(object))
+        return object;
+    QObjectList next = object->children();
+    if (const auto *item = qobject_cast<QQuickItem *>(object)) {
+        for (QQuickItem *child : item->childItems())
+            next << child;
+    }
+    for (QObject *child : std::as_const(next)) {
+        if (QObject *found = search(child, wanted, seen))
+            return found;
+    }
+    return nullptr;
+}
+
+QObject *search(QObject *object, const std::function<bool(QObject *)> &wanted)
+{
+    QSet<QObject *> seen;
+    return search(object, wanted, seen);
+}
+
+// one of a dialog's buttons, by what it says
+QObject *button(QObject *dialog, const QString &text)
+{
+    return dialog ? search(dialog,
+                           [&](QObject *o) {
+                               return o->inherits("QQuickAbstractButton") &&
+                                      o->property("text").toString() == text;
+                           })
+                  : nullptr;
+}
+
 bool makePob(const QString &folder)
 {
     QFile wrapper(folder + u"/HeadlessWrapper.lua"_s);
     return wrapper.open(QIODevice::WriteOnly);
 }
+
+// a build with nothing on
+const QString ranger = u"<PathOfBuilding2><Build level=\"40\" className=\"Ranger\"/></PathOfBuilding2>"_s;
 
 // The app with its window, and stand-ins for the game, the desktop and the
 // sites. Path of Building isn't in any of the usual places.
@@ -103,7 +149,7 @@ struct Window
 
     QObject *find(const QString &name) const
     {
-        QObject *found = page()->findChild<QObject *>(name);
+        QObject *found = search(page(), [&](QObject *o) { return o->objectName() == name; });
         if (!found)
             qWarning() << "There's no" << name;
         return found;
@@ -167,6 +213,16 @@ QString text(QObject *item)
     return item ? item->property("text").toString() : QString();
 }
 
+bool click(QObject *button)
+{
+    return button && QMetaObject::invokeMethod(button, "clicked");
+}
+
+bool isVisible(QObject *item)
+{
+    return item && item->property("visible").toBool();
+}
+
 } // namespace
 
 class TestMainWindow : public QObject
@@ -185,17 +241,251 @@ public:
 private Q_SLOTS:
     void init() { QTest::failOnWarning(); }
 
+    void bare_data()
+    {
+        QTest::addColumn<QByteArray>("qml");
+        QTest::newRow("window") << QByteArray(
+            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
+            "height: 500; visible: true\n"
+            "Kirigami.PromptDialog { objectName: \"d\"; title: \"Remove?\"; subtitle: \"Sure?\"; "
+            "standardButtons: Kirigami.Dialog.Cancel } }");
+        QTest::newRow("page") << QByteArray(
+            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
+            "height: 500; visible: true\n"
+            "pageStack.initialPage: Kirigami.Page { Kirigami.PromptDialog { objectName: \"d\"; title: "
+            "\"Remove?\"; subtitle: \"Sure?\"; standardButtons: Kirigami.Dialog.Cancel } } }");
+        QTest::newRow("noButtons") << QByteArray(
+            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
+            "height: 500; visible: true\n"
+            "Kirigami.PromptDialog { objectName: \"d\"; title: \"Remove?\"; subtitle: \"Sure?\" } }");
+        QTest::newRow("plainDialog") << QByteArray(
+            "import QtQuick\nimport org.kde.kirigami as Kirigami\nKirigami.ApplicationWindow { width: 600; "
+            "height: 500; visible: true\n"
+            "Kirigami.Dialog { objectName: \"d\"; title: \"Remove?\"; Item { implicitWidth: 100; "
+            "implicitHeight: 100 } } }");
+    }
+
     void opens()
     {
         Window w;
         QVERIFY(w.window);
         QCOMPARE(w.window->title(), u"Path of Upgrading"_s);
-        QCOMPARE(w.page()->property("title").toString(), u"Path of Building"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+    }
+
+    void noCharacters()
+    {
+        Window w;
+        QVERIFY(isVisible(w.find(u"noCharactersText"_s)));
+        QVERIFY(!isVisible(w.find(u"charactersError"_s)));
+        QVERIFY(!isVisible(w.find(u"problemsText"_s)));
+        QVERIFY(!isVisible(w.find(u"importMessage"_s)));
+        // without Path of Building
+        QVERIFY(!isVisible(w.find(u"savedBuilds"_s)));
+    }
+
+    void addCharacter()
+    {
+        Window w;
+        QObject *name = w.find(u"nameField"_s);
+        QObject *add = w.find(u"addButton"_s);
+        QVERIFY(!add->property("enabled").toBool());
+        QVERIFY(name->setProperty("text", u" Wren "_s));
+        QVERIFY(add->property("enabled").toBool());
+        QVERIFY(click(add));
+        const CharacterList *list = w.app->characterList();
+        QCOMPARE(list->rowCount(), 1);
+        QCOMPARE(w.settings().character, list->current());
+        QCOMPARE(text(name), QString());
+
+        QObject *wren = w.find(u"character:Wren"_s);
+        QVERIFY(wren->property("checked").toBool());
+        QCOMPARE(wren->property("description").toString(), u"No build imported"_s);
+        QVERIFY(!isVisible(w.find(u"noCharactersText"_s)));
+
+        // with Enter
+        QVERIFY(name->setProperty("text", u"Ash"_s));
+        QVERIFY(QMetaObject::invokeMethod(name, "accepted"));
+        QCOMPARE(list->rowCount(), 2);
+        QVERIFY(w.find(u"character:Ash"_s)->property("checked").toBool());
+        QVERIFY(!wren->property("checked").toBool());
+    }
+
+    void addWithoutName()
+    {
+        Window w;
+        QObject *name = w.find(u"nameField"_s);
+        QVERIFY(name->setProperty("text", u"  "_s));
+        QVERIFY(QMetaObject::invokeMethod(name, "accepted"));
+        QCOMPARE(w.app->characterList()->rowCount(), 0);
+        QObject *error = w.find(u"charactersError"_s);
+        QVERIFY(isVisible(error));
+        QCOMPARE(text(error), u"Give the character a name."_s);
+    }
+
+    void pickCharacter()
+    {
+        Window w;
+        CharacterList *list = w.app->characterList();
+        const QString wren = list->add(u"Wren"_s);
+        list->add(u"Ash"_s);
+        QVERIFY(click(w.find(u"character:Wren"_s)));
+        QCOMPARE(list->current(), wren);
+        QCOMPARE(w.settings().character, wren);
+        QVERIFY(w.find(u"character:Wren"_s)->property("checked").toBool());
+        QVERIFY(!w.find(u"character:Ash"_s)->property("checked").toBool());
+
+        // and again, which leaves it picked
+        QVERIFY(click(w.find(u"character:Wren"_s)));
+        QVERIFY(w.find(u"character:Wren"_s)->property("checked").toBool());
+    }
+
+    void renameCharacter()
+    {
+        Window w;
+        CharacterList *list = w.app->characterList();
+        const QString wren = list->add(u"Wren"_s);
+        QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"renameButton"_s)));
+        QObject *dialog = w.find(u"renameDialog"_s);
+        QVERIFY(isVisible(dialog));
+        QObject *field = w.find(u"renameField"_s);
+        QCOMPARE(text(field), u"Wren"_s);
+
+        QObject *rename = button(dialog, u"Rename"_s);
+        QVERIFY(rename);
+        QVERIFY(field->setProperty("text", u" "_s));
+        QVERIFY(!rename->property("enabled").toBool());
+        // which Enter doesn't do either
+        QVERIFY(QMetaObject::invokeMethod(field, "accepted"));
+        QVERIFY(isVisible(dialog));
+        QVERIFY(field->setProperty("text", u"Ashen Wren"_s));
+        QVERIFY(click(rename));
+        QCOMPARE(list->find(wren)->name, u"Ashen Wren"_s);
+        QVERIFY(w.find(u"character:Ashen Wren"_s));
+        QTRY_VERIFY(!isVisible(dialog));
+
+        // with Enter
+        QVERIFY(click(w.find(u"character:Ashen Wren"_s)->findChild<QObject *>(u"renameButton"_s)));
+        QVERIFY(field->setProperty("text", u"Wren"_s));
+        QVERIFY(QMetaObject::invokeMethod(field, "accepted"));
+        QCOMPARE(list->find(wren)->name, u"Wren"_s);
+        QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    void removeCharacter()
+    {
+        Window w;
+        CharacterList *list = w.app->characterList();
+        list->add(u"Wren"_s);
+        QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"removeButton"_s)));
+        QObject *dialog = w.find(u"removeDialog"_s);
+        QVERIFY(isVisible(dialog));
+        QCOMPARE(dialog->property("title").toString(), u"Remove Wren?"_s);
+        QVERIFY(click(button(dialog, u"Remove"_s)));
+        QCOMPARE(list->rowCount(), 0);
+        QVERIFY(isVisible(w.find(u"noCharactersText"_s)));
+        QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    void keepCharacter()
+    {
+        Window w;
+        CharacterList *list = w.app->characterList();
+        list->add(u"Wren"_s);
+        QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"removeButton"_s)));
+        QObject *dialog = w.find(u"removeDialog"_s);
+        QVERIFY(click(button(dialog, u"Cancel"_s)));
+        QCOMPARE(list->rowCount(), 1);
+        QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    void importBuild()
+    {
+        Window w;
+        QObject *code = w.find(u"codeField"_s);
+        QVERIFY(code->setProperty("text", ranger));
+        QVERIFY(click(w.find(u"importButton"_s)));
+        QObject *message = w.find(u"importMessage"_s);
+        QVERIFY(isVisible(message));
+        QCOMPARE(text(message), u"Imported the level 40 Ranger build for Ranger. It has no items on."_s);
+        QCOMPARE(text(code), QString());
+
+        // on a new one, as there was none to play
+        QObject *row = w.find(u"character:Ranger"_s);
+        QVERIFY(row->property("checked").toBool());
+        QCOMPARE(row->property("description").toString(), u"Level 40 Ranger"_s);
+    }
+
+    void importFails()
+    {
+        Window w;
+        QObject *code = w.find(u"codeField"_s);
+        QVERIFY(code->setProperty("text", u"nonsense"_s));
+        QVERIFY(QMetaObject::invokeMethod(code, "accepted"));
+        QCOMPARE(text(w.find(u"importMessage"_s)), u"That isn't a Path of Building code or a link to one."_s);
+        // to put right
+        QCOMPARE(text(code), u"nonsense"_s);
+        QCOMPARE(w.app->characterList()->rowCount(), 0);
+    }
+
+    void downloading()
+    {
+        Window w;
+        // with the sites answered first
+        QVERIFY(w.rated());
+        QObject *code = w.find(u"codeField"_s);
+        QObject *import = w.find(u"importButton"_s);
+        QVERIFY(code->setProperty("text", u"https://pobb.in/abc"_s));
+        QVERIFY(click(import));
+        QCOMPARE(text(import), u"Downloading the Build"_s);
+        QVERIFY(!import->property("enabled").toBool());
+        QVERIFY(!w.find(u"fileButton"_s)->property("enabled").toBool());
+
+        QTRY_VERIFY(import->property("enabled").toBool());
+        QCOMPARE(text(import), u"Import"_s);
+        QVERIFY(w.app->buildImporter()->hasFailed());
+        QCOMPARE(text(code), u"https://pobb.in/abc"_s);
+    }
+
+    void savedBuilds()
+    {
+        Window w;
+        const QString folder = w.pob.folder.path();
+        QVERIFY(makePob(folder));
+        w.app->pobOptions()->setLocation(folder);
+        QVERIFY(isVisible(w.find(u"savedBuilds"_s)));
+        const QString builds = w.app->buildImporter()->buildsFolder();
+        QCOMPARE(text(w.find(u"noSavedBuildsText"_s)), u"There are none in %1 yet."_s.arg(builds));
+
+        QVERIFY(writeFile(builds + u"/Leveling.xml"_s, ranger.toUtf8()));
+        QVERIFY(click(w.find(u"refreshBuildsButton"_s)));
+        QVERIFY(!isVisible(w.find(u"noSavedBuildsText"_s)));
+        QObject *saved = w.find(u"saved:Leveling"_s);
+        const QDateTime modified = QFileInfo(builds + u"/Leveling.xml"_s).lastModified();
+        QCOMPARE(saved->property("description").toString(),
+                 u"Saved %1"_s.arg(QLocale().toString(modified, QLocale::ShortFormat)));
+        QVERIFY(click(saved));
+        QCOMPARE(text(w.find(u"importMessage"_s)),
+                 u"Imported the level 40 Ranger build for Leveling. It has no items on."_s);
+    }
+
+    // as for one saved while you were on another page
+    void savedSince()
+    {
+        Window w;
+        const QString folder = w.pob.folder.path();
+        QVERIFY(makePob(folder));
+        w.app->pobOptions()->setLocation(folder);
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(writeFile(w.app->buildImporter()->buildsFolder() + u"/Leveling.xml"_s, ranger.toUtf8()));
+        QVERIFY(w.show(u"charactersAction"_s));
+        QVERIFY(w.find(u"saved:Leveling"_s));
     }
 
     void pobNotFound()
     {
         Window w;
+        QVERIFY(w.show(u"pobAction"_s));
         QObject *found = w.find(u"foundText"_s);
         QCOMPARE(text(found), u"Path of Building wasn't found."_s);
         QVERIFY(found->property("description").toString().startsWith(u"Path of Building isn't installed."_s));
@@ -204,6 +494,7 @@ private Q_SLOTS:
     void pobFolder()
     {
         Window w;
+        QVERIFY(w.show(u"pobAction"_s));
         const QString folder = w.pob.folder.path();
         QVERIFY(makePob(folder));
         QObject *field = w.find(u"folderField"_s);
@@ -217,6 +508,7 @@ private Q_SLOTS:
     void lookAgain()
     {
         Window w;
+        QVERIFY(w.show(u"pobAction"_s));
         const QString folder = w.pob.folder.path();
         w.app->pobOptions()->setLocation(folder);
         QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
@@ -230,6 +522,7 @@ private Q_SLOTS:
     void pobSettings()
     {
         Window w;
+        QVERIFY(w.show(u"pobAction"_s));
         QVERIFY(toggle(w.find(u"chaosSwitch"_s)));
         QVERIFY(toggle(w.find(u"keepDamageSwitch"_s)));
         QVERIFY(toggle(w.find(u"spiritSwitch"_s)));
@@ -255,6 +548,7 @@ private Q_SLOTS:
     void showsPobSettings()
     {
         Window w;
+        QVERIFY(w.show(u"pobAction"_s));
         Settings settings = w.settings();
         settings.pob.enabled = false;
         settings.pob.location = w.pob.folder.path();
@@ -278,6 +572,8 @@ private Q_SLOTS:
         QCOMPARE(w.page()->property("title").toString(), u"Popup and Hotkeys"_s);
         QVERIFY(w.show(u"pobAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Path of Building"_s);
+        QVERIFY(w.show(u"charactersAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
 
     void league()
