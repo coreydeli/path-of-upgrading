@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
 #include "core/datafiles.h"
+#include "core/parser.h"
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
 #include "fakepob.h"
+#include "itemtexts.h"
 #include "tradefixtures.h"
 
 #include <KLocalizedQmlContext>
 #include <QDateTime>
+#include <QDir>
 #include <QFileInfo>
 #include <QJSEngine>
 #include <QJSValue>
@@ -99,6 +102,13 @@ bool makePob(const QString &folder)
     return wrapper.open(QIODevice::WriteOnly);
 }
 
+Item item(const QString &text)
+{
+    return parseItem(text).value();
+}
+
+const QString jewel = u"Item Class: Jewels\nRarity: Rare\nPale Eye\nRuby\n--------\n+8% to Fire Resistance"_s;
+
 // a build with nothing on
 const QString ranger = u"<PathOfBuilding2><Build level=\"40\" className=\"Ranger\"/></PathOfBuilding2>"_s;
 
@@ -166,6 +176,29 @@ struct Window
     {
         QObject *row = find(field);
         return row ? row->findChild<QObject *>(u"recorder"_s) : nullptr;
+    }
+
+    // what a card has in it by that name
+    QObject *in(const QString &card, const QString &name) const
+    {
+        QObject *found = search(find(card), [&](QObject *o) { return o->objectName() == name; });
+        if (!found)
+            qWarning() << "There's no" << name << "in" << card;
+        return found;
+    }
+
+    // a character you play wearing them
+    QString play(std::initializer_list<std::pair<QString, Item>> gear, const QSet<QString> &fromPob = {})
+    {
+        Character character;
+        character.name = u"Wren"_s;
+        for (const auto &[slot, item] : gear)
+            character.gear.insert(slot, item);
+        character.fromPob = fromPob;
+        const QString id = app->characters().add(character).value_or(QString());
+        app->characterList()->load();
+        app->characterList()->setCurrent(id);
+        return id;
     }
 
     // once poe.ninja has said what currencies are worth
@@ -548,8 +581,99 @@ private Q_SLOTS:
         QCOMPARE(w.page()->property("title").toString(), u"Popup and Hotkeys"_s);
         QVERIFY(w.show(u"pobAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Path of Building"_s);
+        QVERIFY(w.show(u"gearAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"charactersAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+    }
+
+    void gearForNobody()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        QVERIFY(isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"gearError"_s)));
+        QVERIFY(!isVisible(w.find(u"extras"_s)));
+    }
+
+    void gear()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}, {u"Ring 1"_s, item(itemtexts::advancedRing)}},
+               {u"Ring 1"_s});
+        QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"extras"_s)));
+
+        QObject *helmet = w.find(u"slot:Helmet"_s);
+        QVERIFY(isVisible(helmet));
+        QCOMPARE(text(helmet), u"Helmet"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QObject *score = search(helmet, [](QObject *o) { return o->objectName() == u"gearScore"; });
+        QVERIFY(isVisible(score));
+        const QString number = w.app->gearList()->index(2).data(GearList::ScoreRole).toString();
+        const QString grade = w.app->gearList()->index(2).data(GearList::GradeRole).toString();
+        QVERIFY(!number.isEmpty());
+        QCOMPARE(text(score), u"Gear score %1 %2"_s.arg(number, grade));
+        QVERIFY(isVisible(helmet->findChild<QObject *>(u"takeOffButton"_s)));
+
+        QCOMPARE(w.find(u"slot:Ring 1"_s)->property("description").toString(),
+                 u"Storm Loop, Sapphire Ring, from Path of Building"_s);
+
+        QObject *gloves = w.find(u"slot:Gloves"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
+        QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
+        QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
+    }
+
+    void gearHeading()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        QObject *heading = search(w.page(), [](QObject *o) {
+            return o->inherits("QQuickItem") && o->property("title").toString().startsWith(u"Worn"_s);
+        });
+        QCOMPARE(heading->property("title").toString(), u"Worn"_s);
+        w.play({});
+        QCOMPARE(heading->property("title").toString(), u"Worn by Wren"_s);
+    }
+
+    void gearExtras()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        w.play({{u"Jewel 2"_s, item(jewel)}});
+        QVERIFY(isVisible(w.find(u"extras"_s)));
+        QObject *row = w.in(u"extras"_s, u"slot:Jewel 2"_s);
+        QVERIFY(isVisible(row));
+        QCOMPARE(row->property("description").toString(), u"Pale Eye, Ruby"_s);
+        // and only there
+        QVERIFY(!isVisible(w.find(u"slot:Jewel 2"_s)));
+        QVERIFY(!isVisible(w.in(u"extras"_s, u"slot:Helmet"_s)));
+    }
+
+    void takeOffGear()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(click(w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s)));
+        QVERIFY(w.app->character().character().gear.isEmpty());
+        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Nothing saved"_s);
+    }
+
+    void cantTakeOff()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        const QString id = w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        const QString file = w.dir.filePath(u"data/characters/"_s + id + u".json"_s);
+        QVERIFY(QFile::remove(file));
+        QVERIFY(QDir().mkdir(file));
+        QVERIFY(click(w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s)));
+        QObject *error = w.find(u"gearError"_s);
+        QVERIFY(isVisible(error));
+        QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
     }
 
     void league()

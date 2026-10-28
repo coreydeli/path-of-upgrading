@@ -119,6 +119,7 @@ pou_add_qml_test(tst_itemchecker fakegameinput.h fakenetwork.h itemtexts.h trade
 pou_use_fakepob(tst_itemchecker)
 pou_add_qml_test(tst_app fakegameinput.h fakenetwork.h itemtexts.h tradefixtures.h)
 pou_use_fakepob(tst_app)
-pou_add_qml_test(tst_mainwindow fakegameinput.h fakenetwork.h fakeglobalshortcuts.h tradefixtures.h)
+pou_add_qml_test(tst_mainwindow fakegameinput.h fakenetwork.h fakeglobalshortcuts.h itemtexts.h
+                 tradefixtures.h)
 pou_use_fakepob(tst_mainwindow)
 target_link_libraries(tst_mainwindow PRIVATE KF6::I18nQml)
