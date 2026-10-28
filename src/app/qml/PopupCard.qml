@@ -291,6 +291,44 @@ Rectangle {
             onClicked: card.popup.expanded = !card.popup.expanded
         }
 
+        // to save it as what you wear, which items are judged against
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.report.wearIn.length > 0
+            spacing: Kirigami.Units.smallSpacing
+
+            QQC2.Label {
+                opacity: 0.7
+                text: qsTr("Wear as")
+            }
+
+            Flow {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                Repeater {
+                    model: card.report.wearIn
+
+                    QQC2.ToolButton {
+                        required property string modelData
+
+                        text: modelData
+                        onClicked: card.popup.wear(modelData)
+                    }
+                }
+            }
+        }
+
+        ToneLabel {
+            Layout.fillWidth: true
+            visible: text !== ""
+            wrapMode: Text.Wrap
+            text: card.popup.wearError
+            tone: Tone.Bad
+            colorblind: card.popup.colorblind
+        }
+
         // searches on the trade site for gear like it
         ColumnLayout {
             Layout.fillWidth: true
