@@ -64,6 +64,10 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_checker.setFinder(&m_finder);
     m_checker.setSettings(settings);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
+    connect(&m_checker, &ItemChecker::wearAsked, this, [this](const Item &item, const QString &slot) {
+        m_character.wear(slot, item);
+        m_checker.popup().setWearError(m_character.errorString());
+    });
 
     // the league searches go to can change with the site's leagues, and the
     // rates are the league's
