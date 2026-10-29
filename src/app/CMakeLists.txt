@@ -27,6 +27,7 @@ qt_add_qml_module(pou_app
     QML_FILES
         qml/ChangesTable.qml
         qml/CharactersPage.qml
+        qml/FormRow.qml
         qml/GearPage.qml
         qml/KeyField.qml
         qml/Main.qml

@@ -649,6 +649,8 @@ private Q_SLOTS:
         QObject *row = w.in(u"extras"_s, u"slot:Jewel 2"_s);
         QVERIFY(isVisible(row));
         QCOMPARE(row->property("description").toString(), u"Pale Eye, Ruby"_s);
+        // as the card was hidden when it had nothing
+        QVERIFY(isVisible(row->findChild<QObject *>(u"takeOffButton"_s)));
         // and only there
         QVERIFY(!isVisible(w.find(u"slot:Jewel 2"_s)));
         QVERIFY(!isVisible(w.in(u"extras"_s, u"slot:Helmet"_s)));

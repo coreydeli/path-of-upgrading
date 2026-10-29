@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls as QQC2
-import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
@@ -16,7 +15,7 @@ FormCard.FormCardPage {
     title: qsTr("Your Gear")
 
     // A slot and what's in it.
-    component SlotRow: FormCard.FormTextDelegate {
+    component SlotRow: FormRow {
         id: slotRow
 
         required property string slot
@@ -39,26 +38,22 @@ FormCard.FormCardPage {
             return parts.join(", ");
         }
 
-        trailing: RowLayout {
-            spacing: Kirigami.Units.smallSpacing
+        QQC2.Label {
+            objectName: "gearScore"
+            visible: slotRow.score !== ""
+            text: qsTr("Gear score %1 %2").arg(slotRow.score).arg(slotRow.grade)
+        }
 
-            QQC2.Label {
-                objectName: "gearScore"
-                visible: slotRow.score !== ""
-                text: qsTr("Gear score %1 %2").arg(slotRow.score).arg(slotRow.grade)
-            }
-
-            QQC2.ToolButton {
-                objectName: "takeOffButton"
-                visible: slotRow.name !== ""
-                text: qsTr("Take Off")
-                icon.name: "list-remove"
-                display: QQC2.AbstractButton.IconOnly
-                QQC2.ToolTip.text: text
-                QQC2.ToolTip.visible: hovered
-                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-                onClicked: gearPage.gear.takeOff(slotRow.slot)
-            }
+        QQC2.ToolButton {
+            objectName: "takeOffButton"
+            visible: slotRow.name !== ""
+            text: qsTr("Take Off")
+            icon.name: "list-remove"
+            display: QQC2.AbstractButton.IconOnly
+            QQC2.ToolTip.text: text
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+            onClicked: gearPage.gear.takeOff(slotRow.slot)
         }
     }
 
