@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
+#include "app/commandline.h"
 #include "core/pobinstall.h"
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
@@ -53,6 +54,10 @@ int main(int argc, char *argv[])
     QApplication::setApplicationDisplayName(u"Path of Upgrading"_s);
     QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
     QApplication::setDesktopFileName(QStringLiteral(APP_ID));
+
+    // --help and --version print and exit here
+    pou::CommandLine commandLine;
+    commandLine.process(app.arguments());
 
     pickControlsStyle();
 
