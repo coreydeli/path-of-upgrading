@@ -36,6 +36,8 @@ public:
     // Why there are no stats, when there aren't.
     QString errorString() const { return m_errorString; }
 
+    // Reads the files, the first time, and asks the site nothing.
+    void load();
     // Reads the files the first time, then asks the site for what's missing
     // or a day old, or for all of it when forced.
     void refresh(bool force = false);
