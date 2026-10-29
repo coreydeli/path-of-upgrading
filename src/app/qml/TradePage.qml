@@ -137,7 +137,7 @@ FormCard.FormCardPage {
             textRole: "text"
             valueRole: "value"
             model: tradePage.sellers
-            currentIndex: tradePage.sellers.findIndex(sellers => sellers.value === tradePage.options.sellers)
+            currentIndex: tradePage.sellers.findIndex(seller => seller.value === tradePage.options.sellers)
             onActivated: tradePage.options.sellers = currentValue
         }
     }
