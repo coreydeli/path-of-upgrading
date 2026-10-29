@@ -300,6 +300,13 @@ bool isVisible(QObject *item)
     return item && item->property("visible").toBool();
 }
 
+// What a screen reader calls it.
+QString spoken(QObject *item)
+{
+    const QAccessibleInterface *accessible = QAccessible::queryAccessibleInterface(item);
+    return accessible ? accessible->text(QAccessible::Name) : QString();
+}
+
 } // namespace
 
 class TestMainWindow : public QObject
@@ -430,6 +437,16 @@ private Q_SLOTS:
                      ->findChild<QObject *>(u"pickButton"_s)
                      ->property("checked")
                      .toBool());
+    }
+
+    void characterButtonNames()
+    {
+        // which are icons that all look alike, so each says whose it is
+        Window w;
+        w.app->characterList()->add(u"Wren"_s);
+        QObject *row = w.find(u"character:Wren"_s);
+        QCOMPARE(spoken(row->findChild<QObject *>(u"renameButton"_s)), u"Rename Wren"_s);
+        QCOMPARE(spoken(row->findChild<QObject *>(u"removeButton"_s)), u"Remove Wren"_s);
     }
 
     void renameCharacter()
@@ -765,7 +782,9 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearAction"_s));
         w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
-        QVERIFY(click(w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s)));
+        QObject *takeOff = w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s);
+        QCOMPARE(spoken(takeOff), u"Take Off Helmet"_s);
+        QVERIFY(click(takeOff));
         QVERIFY(w.app->character().character().gear.isEmpty());
         QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Nothing saved"_s);
     }
