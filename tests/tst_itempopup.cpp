@@ -612,6 +612,25 @@ private Q_SLOTS:
         QVERIFY(!button(popup, u"Show Less"_s));
     }
 
+    void widestChange()
+    {
+        // which is in bold, and has room for it
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.changes = {ReportFigure{.label = u"Life"_s,
+                                       .change = u"+88,888%"_s,
+                                       .from = u"10,000%"_s,
+                                       .to = u"98,888%"_s,
+                                       .tone = Tone::Good}};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        const QQuickItem *change = shown(popup, u"+88,888%"_s);
+        QVERIFY(change);
+        QCOMPARE_LE(change->property("contentWidth").toDouble(), change->width());
+    }
+
     void foldedNotes()
     {
         QQmlEngine engine;

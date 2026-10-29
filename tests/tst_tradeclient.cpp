@@ -386,6 +386,9 @@ private Q_SLOTS:
             // which the network's cookie jar would send its own in place of
             QCOMPARE(sent.request.attribute(QNetworkRequest::CookieLoadControlAttribute).toInt(),
                      int(QNetworkRequest::Manual));
+            // and a redirect elsewhere would send it there as well
+            QCOMPARE(sent.request.attribute(QNetworkRequest::RedirectPolicyAttribute).toInt(),
+                     int(QNetworkRequest::SameOriginRedirectPolicy));
         }
 
         client.setSessionId(u"0123456789abcdef; other=1"_s);
@@ -395,6 +398,7 @@ private Q_SLOTS:
         for (const FakeNetwork::Sent &sent : network.sent.mid(3)) {
             QVERIFY(!sent.request.hasRawHeader("Cookie"));
             QVERIFY(!sent.request.attribute(QNetworkRequest::CookieLoadControlAttribute).isValid());
+            QVERIFY(!sent.request.attribute(QNetworkRequest::RedirectPolicyAttribute).isValid());
         }
     }
 };

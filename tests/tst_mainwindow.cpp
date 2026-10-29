@@ -300,6 +300,13 @@ bool isVisible(QObject *item)
     return item && item->property("visible").toBool();
 }
 
+// What a screen reader calls it.
+QString spoken(QObject *item)
+{
+    const QAccessibleInterface *accessible = QAccessible::queryAccessibleInterface(item);
+    return accessible ? accessible->text(QAccessible::Name) : QString();
+}
+
 } // namespace
 
 class TestMainWindow : public QObject
@@ -430,6 +437,16 @@ private Q_SLOTS:
                      ->findChild<QObject *>(u"pickButton"_s)
                      ->property("checked")
                      .toBool());
+    }
+
+    void characterButtonNames()
+    {
+        // which are icons that all look alike, so each says whose it is
+        Window w;
+        w.app->characterList()->add(u"Wren"_s);
+        QObject *row = w.find(u"character:Wren"_s);
+        QCOMPARE(spoken(row->findChild<QObject *>(u"renameButton"_s)), u"Rename Wren"_s);
+        QCOMPARE(spoken(row->findChild<QObject *>(u"removeButton"_s)), u"Remove Wren"_s);
     }
 
     void renameCharacter()
@@ -615,6 +632,10 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.show(u"pobAction"_s));
+        const QStringList weighing = {u"damageSlider"_s,     u"resistsSwitch"_s, u"chaosSwitch"_s,
+                                      u"keepDamageSwitch"_s, u"spiritSwitch"_s,  u"attributesSwitch"_s};
+        for (const QString &name : weighing)
+            QVERIFY2(w.find(name)->property("enabled").toBool(), qPrintable(name));
         QVERIFY(toggle(w.find(u"chaosSwitch"_s)));
         QVERIFY(toggle(w.find(u"keepDamageSwitch"_s)));
         QVERIFY(toggle(w.find(u"spiritSwitch"_s)));
@@ -627,8 +648,14 @@ private Q_SLOTS:
 
         QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
         QCOMPARE(w.settings().pob.enabled, false);
-        // which it needs
-        QCOMPARE(w.find(u"keepDamageSwitch"_s)->property("enabled").toBool(), false);
+        // which all of them need
+        for (const QString &name : weighing)
+            QVERIFY2(!w.find(name)->property("enabled").toBool(), qPrintable(name));
+        QVERIFY(w.find(u"folderField"_s)->property("enabled").toBool());
+        QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
+        for (const QString &name : weighing)
+            QVERIFY2(w.find(name)->property("enabled").toBool(), qPrintable(name));
+        QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
 
         QVERIFY(toggle(w.find(u"resistsSwitch"_s)));
         QCOMPARE(w.settings().pob.priorities.resistsFirst, false);
@@ -755,7 +782,9 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearAction"_s));
         w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
-        QVERIFY(click(w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s)));
+        QObject *takeOff = w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s);
+        QCOMPARE(spoken(takeOff), u"Take Off Helmet"_s);
+        QVERIFY(click(takeOff));
         QVERIFY(w.app->character().character().gear.isEmpty());
         QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Nothing saved"_s);
     }
@@ -1656,6 +1685,34 @@ private Q_SLOTS:
 
         QVERIFY(pressKey(recorder, QKeySequence(Qt::Key_F6)));
         QCOMPARE(w.find(u"refusedText"_s)->property("visible").toBool(), false);
+    }
+
+    void resultsKey()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QObject *recorder = w.recorder(u"resultsKey"_s);
+        QCOMPARE(recorder->property("keySequence").value<QKeySequence>(), QKeySequence(u"Ctrl+Shift+D"_s));
+        QVERIFY(pressKey(recorder, QKeySequence(Qt::Key_F7)));
+        QCOMPARE(w.shortcuts->keys.value(u"trade-results"_s), QKeySequence(Qt::Key_F7));
+        QCOMPARE(w.settings().overlay.resultsHotkey, u"F7"_s);
+        // and the other one stays where it was
+        QCOMPARE(w.shortcuts->keys.value(u"check-item"_s), QKeySequence(Qt::Key_F2));
+        QCOMPARE(w.settings().overlay.hotkey, u"F2"_s);
+        QCOMPARE(w.find(u"refusedText"_s)->property("visible").toBool(), false);
+    }
+
+    void resultsKeyTaken()
+    {
+        // by the check key, as a key can only do the one
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QObject *recorder = w.recorder(u"resultsKey"_s);
+        QVERIFY(pressKey(recorder, QKeySequence(Qt::Key_F2)));
+        QCOMPARE(w.find(u"refusedText"_s)->property("visible").toBool(), true);
+        QCOMPARE(recorder->property("keySequence").value<QKeySequence>(), QKeySequence(u"Ctrl+Shift+D"_s));
+        QCOMPARE(w.settings().overlay.resultsHotkey, u"Ctrl+Shift+D"_s);
+        QCOMPARE(w.shortcuts->keys.value(u"check-item"_s), QKeySequence(Qt::Key_F2));
     }
 
     void noHotkeys()

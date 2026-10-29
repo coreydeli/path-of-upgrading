@@ -78,6 +78,7 @@ FormCard.FormCardPage {
                     text: qsTr("Rename")
                     icon.name: "edit-rename"
                     display: QQC2.AbstractButton.IconOnly
+                    Accessible.name: qsTr("Rename %1").arg(characterRow.name)
                     QQC2.ToolTip.text: text
                     QQC2.ToolTip.visible: hovered
                     QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
@@ -89,6 +90,7 @@ FormCard.FormCardPage {
                     text: qsTr("Remove")
                     icon.name: "edit-delete"
                     display: QQC2.AbstractButton.IconOnly
+                    Accessible.name: qsTr("Remove %1").arg(characterRow.name)
                     QQC2.ToolTip.text: text
                     QQC2.ToolTip.visible: hovered
                     QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay

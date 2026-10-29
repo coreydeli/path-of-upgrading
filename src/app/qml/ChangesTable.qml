@@ -15,9 +15,11 @@ ColumnLayout {
 
     spacing: 0
 
+    // the widest a number gets, in bold like the change, so the columns line up
     TextMetrics {
         id: number
 
+        font.bold: true
         text: "+88,888%"
     }
 

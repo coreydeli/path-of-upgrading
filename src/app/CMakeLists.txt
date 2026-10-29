@@ -17,6 +17,7 @@ qt_add_library(pou_app STATIC
     itempopup.cpp itempopup.h
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
+    listingjudge.cpp listingjudge.h
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h

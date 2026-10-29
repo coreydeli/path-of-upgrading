@@ -17,6 +17,7 @@
 //   --crash          it stops before it has started
 //   --silent         it never says it has started
 //   --crash-on-eval  it stops when it's asked to judge items
+//   --kill-on-eval   it's killed when it's asked to judge items
 //   --garble         its answer to an eval isn't JSON
 //   --hang-on-eval   it doesn't answer one
 //   --linger         it takes ten seconds to stop once stdin is closed
@@ -28,6 +29,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <chrono>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -115,6 +117,10 @@ int main(int argc, char *argv[])
         if (command == u"eval" && goWrong && flags.contains("--crash-on-eval")) {
             std::fprintf(stderr, "The fake crashed\n");
             return 4;
+        }
+        if (command == u"eval" && goWrong && flags.contains("--kill-on-eval")) {
+            std::fprintf(stderr, "The fake was killed\n");
+            std::raise(SIGKILL);
         }
         if (command == u"eval" && goWrong && flags.contains("--hang-on-eval"))
             continue;

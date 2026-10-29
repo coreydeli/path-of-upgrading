@@ -50,6 +50,7 @@ FormCard.FormCardPage {
             text: qsTr("Take Off")
             icon.name: "list-remove"
             display: QQC2.AbstractButton.IconOnly
+            Accessible.name: qsTr("Take Off %1").arg(slotRow.slot)
             QQC2.ToolTip.text: text
             QQC2.ToolTip.visible: hovered
             QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
