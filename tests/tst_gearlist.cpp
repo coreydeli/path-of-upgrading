@@ -143,6 +143,57 @@ private Q_SLOTS:
         QCOMPARE(g.in(u"Belt"_s, GearList::GradeRole).toString(), QString());
     }
 
+    void overall()
+    {
+        // over the main slots, the weakest first
+        Gear g;
+        const Item gloves =
+            item(u"Gloves"_s, u"Rare"_s, u"Grim Grip"_s, u"Suede Bracers"_s, u"+10 to maximum Life"_s);
+        const Item boots =
+            item(u"Boots"_s, u"Rare"_s, u"Ash Tread"_s, u"Rawhide Boots"_s, u"+50 to maximum Life"_s);
+        const Character c = wearing({{u"Helmet"_s, helmet},
+                                     {u"Ring 1"_s, ring},
+                                     {u"Gloves"_s, gloves},
+                                     {u"Boots"_s, boots},
+                                     {u"Belt"_s, belt},
+                                     {u"Jewel 1"_s, jewel}});
+        g.play(c);
+        QMap<int, QString> bySlot;
+        QList<int> main;
+        for (const QString &slot : {u"Helmet"_s, u"Ring 1"_s, u"Gloves"_s, u"Boots"_s}) {
+            const int score = gearScore(c.gear.value(slot), gearScoreOptions(c, slot))->score;
+            bySlot.insert(score, slot);
+            main << score;
+        }
+        // they're all different, so the order is clear
+        QCOMPARE(bySlot.size(), 4);
+        QCOMPARE(bySlot.first(), u"Gloves"_s);
+
+        const double average = std::round((main[0] + main[1] + main[2] + main[3]) / 4.0);
+        QCOMPARE(g.list.overall(), QString::number(average));
+        QCOMPARE(g.list.overallGrade(), gearGrade(int(average)));
+        QStringList weakest;
+        for (auto it = bySlot.cbegin(); weakest.size() < 3; ++it)
+            weakest << it.value() + u' ' + QString::number(it.key());
+        QCOMPARE(g.list.weakest(), weakest.join(u", "_s));
+    }
+
+    void noOverall()
+    {
+        Gear g;
+        g.play(wearing({{u"Belt"_s, belt}, {u"Jewel 1"_s, jewel}}));
+        QCOMPARE(g.list.overall(), QString());
+        QCOMPARE(g.list.overallGrade(), QString());
+        QCOMPARE(g.list.weakest(), QString());
+
+        // nor by your weights alone
+        Character c = wearing({{u"Helmet"_s, helmet}});
+        c.buildProfile = noBuildProfile.toString();
+        g.play(c);
+        QCOMPARE(g.list.overall(), QString());
+        QCOMPARE(g.list.weakest(), QString());
+    }
+
     void sameName()
     {
         // a magic item, whose name is its base

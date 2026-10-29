@@ -59,4 +59,8 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
                                                 const LiveResists *resists = nullptr,
                                                 const GearScoreFn &gearScore = {});
 
+// The average gear score over the main slots, of the items that have one, as
+// `CharacterChange::overall` has it. Empty when none of them has one.
+std::optional<double> overallGearScore(const Equipped &equipped, const GearScoreFn &gearScore);
+
 } // namespace pou
