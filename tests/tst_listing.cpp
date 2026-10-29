@@ -146,6 +146,56 @@ private Q_SLOTS:
         QCOMPARE(listing.item.name, u"Grim Grasp"_s);
     }
 
+    void modLines()
+    {
+        const Listing listing = readListing(gloves(), u"Gloves"_s, rates);
+        const QList<ListingMod> expected = {
+            {u"+12% to Cold Resistance"_s, u"rune"_s},
+            {u"+80 to maximum Life"_s, u"explicit"_s},
+            {u"+40% to Fire Resistance"_s, u"explicit"_s},
+            {u"52% increased Energy Shield"_s, u"explicit"_s},
+        };
+        QCOMPARE(listing.mods, expected);
+    }
+
+    // in the game's order whatever order the site lists them, and with the
+    // mods the item doesn't keep
+    void modLinesInOrder()
+    {
+        QJsonObject item = rareItem(u"Empyrean Knot"_s, u"Iron Ring"_s, 82);
+        item.insert(u"explicitMods"_s, QJsonArray{u"+56 to maximum [Mana|Mana]"_s, u"Cannot be Frozen"_s,
+                                                  u"Gain 3 Life per enemy killed"_s,
+                                                  u"+5% to all Elemental "
+                                                  "Resistances"_s,
+                                                  u"+5 to Strength"_s, u"+5 to Dexterity"_s, u"Wild"_s});
+        item.insert(u"craftedMods"_s, QJsonArray{QJsonObject{{u"description"_s, u"Crafted line"_s}}});
+        item.insert(u"enchantMods"_s, QJsonArray{u"Enchant line"_s, QString()});
+        item.insert(u"desecratedMods"_s, QJsonArray{u"Desecrated line"_s});
+        item.insert(u"fracturedMods"_s, QJsonArray{u"Fractured line"_s});
+        item.insert(u"implicitMods"_s, QJsonArray{u"Implicit line"_s});
+        const QJsonObject listing{{u"price"_s, price(1, u"divine"_s)}};
+
+        const Listing l = readListing(result(u"x"_s, listing, item), u"Rings"_s, rates);
+        QStringList tags;
+        for (const ListingMod &mod : l.mods) {
+            if (!tags.contains(mod.tag))
+                tags << mod.tag;
+        }
+        QCOMPARE(tags, (QStringList{u"enchant"_s, u"implicit"_s, u"fractured"_s, u"explicit"_s,
+                                    u"desecrated"_s, u"crafted"_s}));
+        QCOMPARE(l.mods.size(), 12);
+        QCOMPARE(l.mods.at(0).text, u"Enchant line"_s);
+        // the ones without numbers are here, and in order
+        QVERIFY(l.mods.contains({u"Cannot be Frozen"_s, u"explicit"_s}));
+        QCOMPARE(l.mods.at(3).text, u"+56 to maximum Mana"_s);
+        QCOMPARE(l.mods.at(9).text, u"Wild"_s);
+        QCOMPARE(l.mods.last(), (ListingMod{u"Crafted line"_s, u"crafted"_s}));
+        // and a listing without mods has none
+        QVERIFY(
+            readListing(result(u"y"_s, listing, rareItem(u"Plain"_s, u"Iron Ring"_s, 1)), u"Rings"_s, rates)
+                .mods.isEmpty());
+    }
+
     void instantBuyout()
     {
         QJsonObject r = gloves();

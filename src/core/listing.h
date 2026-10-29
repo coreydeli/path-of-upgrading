@@ -43,10 +43,23 @@ QString formatPrice(const std::optional<ListingPrice> &price);
 // priceInExalts(), and what a divine is worth in them, or 0 when not known.
 QString formatConvertedPrice(const ListingPrice &price, double exalts, double divineRate);
 
+// One line of a listing's mods, as the site words it.
+struct ListingMod
+{
+    QString text;
+    // enchant, rune, implicit, fractured, explicit, desecrated or crafted
+    QString tag;
+
+    friend bool operator==(const ListingMod &, const ListingMod &) = default;
+};
+
 struct Listing
 {
     QString id;
     Item item;
+    // Every mod line, in the order the game shows them. The item leaves out
+    // some of those that aren't stats.
+    QList<ListingMod> mods;
     std::optional<ListingPrice> price;
     std::optional<double> exalts; // the price in Exalted Orbs, when there's a rate for it
     QString seller;               // the character they last played, or else the account
