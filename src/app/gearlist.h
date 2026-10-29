@@ -7,6 +7,7 @@
 #include <QList>
 #include <QString>
 #include <QtQmlIntegration/qqmlintegration.h>
+#include <optional>
 
 namespace pou {
 
@@ -27,6 +28,13 @@ class GearList : public QAbstractListModel
     Q_PROPERTY(QString character READ character NOTIFY changed)
     // It has some on besides the main slots.
     Q_PROPERTY(bool hasExtras READ hasExtras NOTIFY changed)
+    // The gear score over the main slots, "56", and its grade, "B". Empty
+    // when none of them has a gear score.
+    Q_PROPERTY(QString overall READ overall NOTIFY changed)
+    Q_PROPERTY(QString overallGrade READ overallGrade NOTIFY changed)
+    // The three main slots with the lowest gear scores, "Gloves 31, Boots 40,
+    // Belt 44".
+    Q_PROPERTY(QString weakest READ weakest NOTIFY changed)
     // Why the last change couldn't be made, empty when it could.
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
@@ -50,6 +58,9 @@ public:
 
     QString character() const;
     bool hasExtras() const;
+    QString overall() const { return m_overall; }
+    QString overallGrade() const { return m_overallGrade; }
+    QString weakest() const { return m_weakest; }
 
     Q_INVOKABLE bool takeOff(const QString &slot);
 
@@ -63,7 +74,7 @@ private:
     struct Row
     {
         QString slot;
-        QString score;
+        std::optional<int> score;
         QString grade;
     };
 
@@ -74,6 +85,9 @@ private:
     SettingsStore *m_settings;
     QList<Row> m_rows;
     PobPriorities m_priorities; // what the scores were worked out with
+    QString m_overall;
+    QString m_overallGrade;
+    QString m_weakest;
     QString m_error;
 };
 
