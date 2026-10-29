@@ -201,6 +201,27 @@ private Q_SLOTS:
         QVERIFY(p.site.network.sent.isEmpty());
     }
 
+    void saysWhatChanged()
+    {
+        Panel p;
+        QSignalSpy unavailable(&p.panel, &ResultsPanel::unavailableChanged);
+        QSignalSpy height(&p.panel, &ResultsPanel::maxHeightChanged);
+        const QString off = u"Trade searches are turned off in the settings."_s;
+        p.panel.setUnavailable(off);
+        p.panel.setUnavailable(off);
+        QCOMPARE(unavailable.size(), 1);
+        p.panel.setUnavailable({});
+        QCOMPARE(unavailable.size(), 2);
+
+        // the height is for the screen, so it's only new the first time
+        QCOMPARE(height.size(), 0);
+        p.panel.show();
+        QCOMPARE(height.size(), 1);
+        p.panel.close();
+        p.panel.show();
+        QCOMPARE(height.size(), 1);
+    }
+
     void showsTheListings()
     {
         Panel p;
