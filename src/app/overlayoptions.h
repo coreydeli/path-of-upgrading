@@ -10,11 +10,14 @@
 
 namespace pou {
 
+class Autostart;
 class Hotkeys;
 class SettingsStore;
 
 // The popup's settings and the hotkeys, as the settings window shows them,
 // saved as soon as they're changed. The position goes by its id, "cursor".
+// Whether the program starts with the desktop is the desktop's to keep, so
+// it's read from there.
 class OverlayOptions : public QObject
 {
     Q_OBJECT
@@ -32,10 +35,13 @@ class OverlayOptions : public QObject
     Q_PROPERTY(bool colorblind READ isColorblind WRITE setColorblind NOTIFY changed)
     Q_PROPERTY(int autoHideSeconds READ autoHideSeconds WRITE setAutoHideSeconds NOTIFY changed)
     Q_PROPERTY(bool paused READ isPaused WRITE setPaused NOTIFY changed)
+    Q_PROPERTY(bool startWithDesktop READ startsWithDesktop WRITE setStartWithDesktop NOTIFY changed)
+    Q_PROPERTY(QString startError READ startError NOTIFY changed)
 
 public:
     // They have to outlive it.
-    OverlayOptions(SettingsStore *settings, Hotkeys *hotkeys, QObject *parent = nullptr);
+    OverlayOptions(SettingsStore *settings, Hotkeys *hotkeys, Autostart *autostart,
+                   QObject *parent = nullptr);
 
     // None when it has no key.
     QKeySequence checkKey() const;
@@ -65,6 +71,13 @@ public:
     void setAutoHideSeconds(int seconds);
     bool isPaused() const { return overlay().paused; }
     void setPaused(bool paused);
+    bool startsWithDesktop() const;
+    void setStartWithDesktop(bool start);
+    // Why it couldn't be changed, or empty.
+    QString startError() const;
+    // Reads it again, as it can be changed by hand while the program waits
+    // in the tray.
+    Q_INVOKABLE void lookAtStart();
 
 Q_SIGNALS:
     // For any of them, as when a hotkey is changed in System Settings.
@@ -77,6 +90,7 @@ private:
 
     SettingsStore *m_settings;
     Hotkeys *m_hotkeys;
+    Autostart *m_autostart;
 };
 
 } // namespace pou

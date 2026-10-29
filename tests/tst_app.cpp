@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
+#include "app/commandline.h"
 #include "core/buildprofiles.h"
 #include "core/parser.h"
 #include "core/rates.h"
@@ -12,6 +13,7 @@
 #include "itemtexts.h"
 #include "tradefixtures.h"
 
+#include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QQmlEngine>
@@ -43,7 +45,8 @@ struct Folders
     QTemporaryDir dir;
     App::Paths paths{.settings = dir.filePath(u"settings.conf"_s),
                      .data = dir.filePath(u"data"_s),
-                     .cache = dir.filePath(u"cache"_s)};
+                     .cache = dir.filePath(u"cache"_s),
+                     .autostart = dir.filePath(u"autostart/made-up.desktop"_s)};
     CharacterStore characters{dir.filePath(u"data/characters"_s)};
     FakePob pob;
 
@@ -359,6 +362,50 @@ private Q_SLOTS:
         Running r(folders);
         r.shortcuts->change(u"trade-results"_s, QKeySequence(u"Ctrl+T"_s));
         QCOMPARE(r.app.settings().settings().overlay.resultsHotkey, u"Ctrl+T"_s);
+    }
+
+    void startsWithTheDesktop()
+    {
+        const QString name = QGuiApplication::applicationDisplayName();
+        const QString file = QGuiApplication::desktopFileName();
+        QGuiApplication::setApplicationDisplayName(u"Made-up Program"_s);
+        QGuiApplication::setDesktopFileName(u"io.example.MadeUp"_s);
+        Folders folders;
+        Running r(folders);
+        QVERIFY(!r.app.overlayOptions()->startsWithDesktop());
+        r.app.overlayOptions()->setStartWithDesktop(true);
+        QVERIFY(r.app.overlayOptions()->startsWithDesktop());
+
+        QFile entry(folders.paths.autostart);
+        QVERIFY(entry.open(QIODevice::ReadOnly));
+        const QString text = QString::fromUtf8(entry.readAll());
+        // which starts it the way the command line understands
+        QVERIFY(text.contains(QString(u"\nExec="_s + CommandLine::backgroundCommand() + u"\n"_s)));
+        QVERIFY(text.contains(u"\nName=Made-up Program\n"_s));
+        QVERIFY(text.contains(u"\nIcon=io.example.MadeUp\n"_s));
+        QGuiApplication::setApplicationDisplayName(name);
+        QGuiApplication::setDesktopFileName(file);
+    }
+
+    void withoutAFileToStartFrom()
+    {
+        Folders folders;
+        folders.paths.autostart.clear();
+        Running r(folders);
+        r.app.overlayOptions()->setStartWithDesktop(true);
+        QVERIFY(!r.app.overlayOptions()->startsWithDesktop());
+        QVERIFY(!r.app.overlayOptions()->startError().isEmpty());
+    }
+
+    void foldersOnTheDesktop()
+    {
+        QTemporaryDir config;
+        qputenv("XDG_CONFIG_HOME", config.path().toUtf8());
+        const QString file = QGuiApplication::desktopFileName();
+        QGuiApplication::setDesktopFileName(u"io.example.MadeUp"_s);
+        QCOMPARE(App::defaultPaths().autostart, config.filePath(u"autostart/io.example.MadeUp.desktop"_s));
+        QGuiApplication::setDesktopFileName(file);
+        qunsetenv("XDG_CONFIG_HOME");
     }
 
     void yourKey()
