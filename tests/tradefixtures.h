@@ -46,6 +46,16 @@ inline QJsonObject stats()
     });
 }
 
+// Like stats(), with so many for life that a search can't have them all.
+inline QJsonObject manyStats()
+{
+    QJsonArray explicits;
+    for (int n = 1; n <= 24; ++n)
+        explicits << stat(u"explicit.stat_life_%1"_s.arg(n), u"+# to maximum Life"_s, u"explicit"_s);
+    const QJsonArray implicits = {stat(u"implicit.stat_life"_s, u"+# to maximum Life"_s, u"implicit"_s)};
+    return response({group(u"explicit"_s, explicits), group(u"implicit"_s, implicits)});
+}
+
 inline QJsonObject categoryOption(const QJsonValue &id, const QString &text)
 {
     return {{u"id"_s, id}, {u"text"_s, text}};

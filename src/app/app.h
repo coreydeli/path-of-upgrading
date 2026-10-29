@@ -18,6 +18,7 @@
 #include "app/statweights.h"
 #include "app/tradefinder.h"
 #include "app/tradeoptions.h"
+#include "app/tradesession.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "services/pobengine.h"
@@ -38,6 +39,7 @@ namespace pou {
 
 class GameInput;
 class GlobalShortcuts;
+class SecretStore;
 
 // What the app runs while it's open: the hotkeys, the item checker with its
 // popup and the items you've checked, your characters, Path of Building and
@@ -58,6 +60,7 @@ class App : public QObject
     Q_PROPERTY(pou::IgnoredStats *ignoredStats READ ignoredStats CONSTANT)
     Q_PROPERTY(pou::CheckedItems *checkedItems READ checkedItems CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
+    Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
 
@@ -75,8 +78,8 @@ public:
     // The engine has to outlive it. Path of Building is looked for in the
     // places, see findPob().
     App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-        std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
-        QObject *parent = nullptr);
+        std::unique_ptr<SecretStore> secrets, std::unique_ptr<QNetworkAccessManager> network,
+        const PobPlaces &places, const Paths &paths, QObject *parent = nullptr);
     ~App() override;
 
     // Looks for Path of Building again, as once you've installed it.
@@ -107,6 +110,7 @@ public:
     IgnoredStats *ignoredStats() { return &m_ignoredStats; }
     CheckedItems *checkedItems() { return &m_checkedItems; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
+    TradeSession *tradeSession() { return &m_tradeSession; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
 
@@ -126,8 +130,10 @@ private:
     Hotkeys m_hotkeys;
     ItemHistory m_history;
     QString m_pobLocation; // where it was last looked for
+    std::unique_ptr<SecretStore> m_secrets;
     std::unique_ptr<QNetworkAccessManager> m_network;
     TradeClient m_tradeClient;
+    TradeSession m_tradeSession;
     TradeDataStore m_tradeData;
     RatesStore m_rates;
     TradeSearcher m_trade;

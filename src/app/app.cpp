@@ -3,6 +3,7 @@
 
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
+#include "platform/secretstore.h"
 
 #include <QCoreApplication>
 #include <QNetworkAccessManager>
@@ -25,8 +26,8 @@ App::Paths App::defaultPaths()
 }
 
 App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-         std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
-         QObject *parent)
+         std::unique_ptr<SecretStore> secrets, std::unique_ptr<QNetworkAccessManager> network,
+         const PobPlaces &places, const Paths &paths, QObject *parent)
     : QObject(parent)
     , m_places(places)
     , m_settings(paths.settings)
@@ -37,8 +38,10 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_shortcuts(std::move(shortcuts))
     , m_hotkeys(m_shortcuts.get())
     , m_history(paths.data + u"/history.json"_s)
+    , m_secrets(std::move(secrets))
     , m_network(std::move(network))
     , m_tradeClient(m_network.get())
+    , m_tradeSession(m_secrets.get(), &m_tradeClient)
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_trade(&m_tradeClient)
@@ -82,6 +85,9 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
         if (m_trade.unavailable().isEmpty())
             m_rates.refresh(m_trade.league().tradeId());
     });
+    // the site takes bigger searches signed in, so what it limited them to
+    // before isn't kept
+    connect(&m_tradeSession, &TradeSession::idChanged, &m_finder, &TradeFinder::forgetSize);
     followTrade();
 
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
@@ -135,9 +141,12 @@ void App::followTrade()
     m_finder.setSettings(m_settings.settings());
     m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
     m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());
-    // which does nothing while what there is is fresh
-    if (m_trade.unavailable().isEmpty())
+    if (m_trade.unavailable().isEmpty()) {
+        // which does nothing while what there is is fresh
         m_tradeData.refresh();
+        // and this asks the keyring once
+        m_tradeSession.load();
+    }
 }
 
 } // namespace pou

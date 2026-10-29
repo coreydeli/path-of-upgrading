@@ -8,6 +8,7 @@
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
 #include "fakepob.h"
+#include "fakesecretstore.h"
 #include "itemtexts.h"
 #include "tradefixtures.h"
 
@@ -87,40 +88,71 @@ QByteArray json(const QJsonObject &object)
 // The trade site and poe.ninja, with what they say as the app starts: the
 // site's data with its leagues, then what currencies are worth in one.
 // What the trade site and then poe.ninja say when the app starts.
-QList<FakeAnswer> siteAnswers()
+QList<FakeAnswer> siteAnswers(const QJsonObject &stats = tradefixtures::stats())
 {
     QJsonArray leagues;
     for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
         leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
-    return {{.body = json(tradefixtures::stats())},
+    return {{.body = json(stats)},
             {.body = json(tradefixtures::filters())},
             {.body = json(QJsonObject{{u"result"_s, leagues}})},
             {.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"}};
 }
 
-FakeNetwork *online()
+FakeNetwork *online(const QJsonObject &stats = tradefixtures::stats())
 {
     auto *network = new FakeNetwork;
-    network->answers = siteAnswers();
+    network->answers = siteAnswers(stats);
     return network;
 }
 
-// The app with stand-ins for the game, the desktop and the sites it asks.
+// Made up, and not a real one
+const QString fakeId = u"0123456789abcdef0123456789abcdef"_s;
+const QString otherId = u"fedcba9876543210fedcba9876543210"_s;
+
+// The keyring before the app starts, with a session id in it or without.
+FakeSecretStore *keyringWith(const QString &id = {})
+{
+    auto *keyring = new FakeSecretStore;
+    if (!id.isEmpty())
+        keyring->secrets.insert(u"POESESSID"_s, id);
+    return keyring;
+}
+
+// What the site says of a search with more filters than it takes.
+FakeAnswer tooComplex()
+{
+    return {.status = 400,
+            .body = R"({"error":{"message":"Query is too complex."}})",
+            .headers = {{"X-Rate-Limit-Ip", "30:10:0"}}};
+}
+
+// The app with stand-ins for the game, the desktop, the keyring and the sites
+// it asks.
 struct Running
 {
     QQmlEngine qml;
     FakeGameInput *input = new FakeGameInput;
     FakeGlobalShortcuts *shortcuts;
+    FakeSecretStore *keyring;
     FakeNetwork *network;
     App app;
 
     explicit Running(const Folders &folders, FakeGlobalShortcuts *theirs = desktop(),
-                     FakeNetwork *sites = online())
+                     FakeNetwork *sites = online(), FakeSecretStore *theirKeyring = keyringWith())
         : shortcuts(theirs)
+        , keyring(theirKeyring)
         , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
-              std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths)
+              std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
+              folders.places(), folders.paths)
     {}
+
+    // once the keyring has said, which it does a moment after the app starts
+    bool signedIn()
+    {
+        return QTest::qWaitFor([this] { return !app.tradeSession()->isBusy(); }, 1000);
+    }
 
     // once poe.ninja has said what currencies are worth
     bool rated()
@@ -642,6 +674,136 @@ private Q_SLOTS:
         const QJsonObject trade = query.value(u"filters").toObject().value(u"trade_filters").toObject();
         QCOMPARE(trade.value(u"filters").toObject().value(u"price").toObject(),
                  (QJsonObject{{u"max"_s, 400}, {u"option"_s, u"exalted"_s}}));
+    }
+
+    void signsInAtStart()
+    {
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        Running r(folders, desktop(), online(), keyringWith(fakeId));
+        QVERIFY(r.rated());
+        QVERIFY(r.signedIn());
+        QVERIFY(r.app.tradeSession()->isSaved());
+        QCOMPARE(r.keyring->reads, 1);
+
+        // so the searches have it
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        r.checked();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.network->sent.last().request.url(), tradeSearchUrl(u"Runes of Aldur"_s));
+        QCOMPARE(r.network->sent.last().request.rawHeader("Cookie"), "POESESSID=" + fakeId.toLatin1());
+    }
+
+    void keyringWhileTradeIsOn()
+    {
+        // which is only asked once, and not while there are no searches
+        Folders folders;
+        Settings settings;
+        settings.trade.enabled = false;
+        folders.set(settings);
+        Running r(folders, desktop(), online(), keyringWith(fakeId));
+        QVERIFY(r.signedIn());
+        QCOMPARE(r.keyring->reads, 0);
+        QVERIFY(!r.app.tradeSession()->isSaved());
+
+        settings.trade.enabled = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(r.signedIn());
+        QVERIFY(r.app.tradeSession()->isSaved());
+        QCOMPARE(r.keyring->reads, 1);
+
+        // and not again at the next change
+        settings.trade.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        settings.trade.enabled = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(r.signedIn());
+        QCOMPARE(r.keyring->reads, 1);
+    }
+
+    void noKeyringInSoloSelfFound()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.league.soloSelfFound = true;
+        folders.set(settings);
+        Running r(folders, desktop(), online(), keyringWith(fakeId));
+        QVERIFY(r.signedIn());
+        QCOMPARE(r.keyring->reads, 0);
+    }
+
+    void signingInSearchesBigger()
+    {
+        // as the site takes bigger searches signed in, so the size it
+        // limited them to before is forgotten
+        Folders folders;
+        Settings settings;
+        settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
+        folders.set(settings);
+        Running r(folders, desktop(), online(tradefixtures::manyStats()));
+        QVERIFY(r.rated());
+        QVERIFY(r.signedIn());
+        r.checked();
+        ItemPopup &popup = r.app.checker().popup();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        const qsizetype before = r.network->sent.size();
+        r.network->answers = {tooComplex(), {.body = R"({"id":"s1","total":3,"result":[]})"}};
+        popup.findOnTrade(TradeFinder::Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.network->sent.size(), before + 2);
+        const QByteArray full = r.network->sent.at(before).body;
+        QVERIFY(r.network->sent.at(before + 1).body != full);
+        QCOMPARE(r.network->sent.at(before).request.rawHeader("Cookie"), QByteArray());
+
+        // the next starts small
+        r.network->answers = {{.body = R"({"id":"s2","total":3,"result":[]})"}};
+        popup.findOnTrade(TradeFinder::Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.network->sent.size(), before + 3);
+        QCOMPARE(r.network->sent.last().body, r.network->sent.at(before + 1).body);
+
+        // until you sign in
+        r.app.tradeSession()->save(fakeId);
+        QVERIFY(r.signedIn());
+        QCOMPARE(r.keyring->secrets.value(u"POESESSID"_s), fakeId);
+        r.network->answers = {{.body = R"({"id":"s3","total":3,"result":[]})"}};
+        popup.findOnTrade(TradeFinder::Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.network->sent.size(), before + 4);
+        QCOMPARE(r.network->sent.last().body, full);
+        QCOMPARE(r.network->sent.last().request.rawHeader("Cookie"), "POESESSID=" + fakeId.toLatin1());
+    }
+
+    void signingOut()
+    {
+        Folders folders;
+        Running r(folders, desktop(), online(), keyringWith(fakeId));
+        QVERIFY(r.signedIn());
+        QVERIFY(r.app.tradeSession()->isSaved());
+        r.app.tradeSession()->forget();
+        QVERIFY(r.signedIn());
+        QVERIFY(!r.app.tradeSession()->isSaved());
+        QVERIFY(r.keyring->secrets.isEmpty());
+    }
+
+    void keyringIsLocked()
+    {
+        // which doesn't hold the app up, and is told on the trade page
+        Folders folders;
+        auto *locked = keyringWith(fakeId);
+        locked->failure = u"The keyring is locked."_s;
+        Running r(folders, desktop(), online(), locked);
+        QVERIFY(r.rated());
+        QVERIFY(r.signedIn());
+        QVERIFY(!r.app.tradeSession()->isSaved());
+        QCOMPARE(r.app.tradeSession()->error(), u"The keyring is locked."_s);
+        QVERIFY(r.app.trade().unavailable().isEmpty());
     }
 };
 

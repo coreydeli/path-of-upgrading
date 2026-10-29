@@ -7,6 +7,7 @@
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
 #include "fakepob.h"
+#include "fakesecretstore.h"
 #include "itemtexts.h"
 #include "tradefixtures.h"
 
@@ -41,6 +42,9 @@ using namespace Qt::Literals::StringLiterals;
 using namespace pou;
 
 namespace {
+
+// Made up, and not a real one
+const QString fakeId = u"0123456789abcdef0123456789abcdef"_s;
 
 QByteArray json(const QJsonObject &object)
 {
@@ -126,6 +130,7 @@ struct Window
     FakePob pob;
     QQmlEngine qml;
     FakeGlobalShortcuts *shortcuts = new FakeGlobalShortcuts;
+    FakeSecretStore *keyring = new FakeSecretStore;
     FakeNetwork *network = online();
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
@@ -135,7 +140,7 @@ struct Window
         shortcuts->available = hotkeys;
         app = std::make_unique<App>(
             &qml, std::make_unique<FakeGameInput>(), std::unique_ptr<GlobalShortcuts>(shortcuts),
-            std::unique_ptr<QNetworkAccessManager>(network),
+            std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
             PobPlaces{.home = dir.path(), .dataHome = dir.path(), .luajit = QStringLiteral(FAKEPOB)},
             App::Paths{.settings = dir.filePath(u"settings.conf"_s),
                        .data = dir.filePath(u"data"_s),
@@ -212,6 +217,12 @@ struct Window
     {
         QSignalSpy refreshed(&app->rates(), &RatesStore::refreshed);
         return refreshed.wait();
+    }
+
+    // once the keyring has answered what it was asked
+    bool keyringAnswered() const
+    {
+        return QTest::qWaitFor([this] { return !app->tradeSession()->isBusy(); }, 1000);
     }
 
     // On the offscreen screen, as a list only makes the rows it shows once
@@ -1489,6 +1500,112 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"autoRateSwitch"_s)->property("description").toString(),
                  u"It hasn't said yet, so it goes by yours."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
+    }
+
+    void sessionNotSaved()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        QCOMPARE(text(w.find(u"sessionStatus"_s)), u"No session ID is saved."_s);
+        QVERIFY(!isVisible(w.find(u"sessionError"_s)));
+        QVERIFY(text(w.find(u"sessionHelp"_s)).contains(u"system keyring"_s));
+        // typed in as a password, with nothing to save or forget
+        QCOMPARE(w.find(u"sessionField"_s)->property("echoMode").toInt(), 2);
+        QVERIFY(!w.find(u"saveButton"_s)->property("enabled").toBool());
+        QVERIFY(!w.find(u"forgetButton"_s)->property("enabled").toBool());
+    }
+
+    void saveSession()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        QObject *field = w.find(u"sessionField"_s);
+        QVERIFY(field->setProperty("text", fakeId));
+        QVERIFY(w.find(u"saveButton"_s)->property("enabled").toBool());
+        QVERIFY(click(w.find(u"saveButton"_s)));
+        // while the keyring is asked
+        QCOMPARE(text(w.find(u"sessionStatus"_s)), u"Waiting for the keyring."_s);
+        QVERIFY(!field->property("enabled").toBool());
+        QVERIFY(!w.find(u"saveButton"_s)->property("enabled").toBool());
+        QVERIFY(w.keyringAnswered());
+
+        QCOMPARE(w.keyring->secrets.value(u"POESESSID"_s), fakeId);
+        QCOMPARE(text(w.find(u"sessionStatus"_s)), u"A session ID is saved."_s);
+        QVERIFY(!isVisible(w.find(u"sessionError"_s)));
+        // which isn't shown again
+        QCOMPARE(text(field), QString());
+        QVERIFY(field->property("enabled").toBool());
+        QVERIFY(w.find(u"forgetButton"_s)->property("enabled").toBool());
+    }
+
+    void saveSessionWithEnter()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        QObject *field = w.find(u"sessionField"_s);
+        QVERIFY(field->setProperty("text", fakeId));
+        QVERIFY(QMetaObject::invokeMethod(field, "accepted"));
+        QVERIFY(w.keyringAnswered());
+        QCOMPARE(w.keyring->secrets.value(u"POESESSID"_s), fakeId);
+    }
+
+    void notASessionId()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        QObject *field = w.find(u"sessionField"_s);
+        QVERIFY(field->setProperty("text", u"not an id!"_s));
+        QVERIFY(click(w.find(u"saveButton"_s)));
+        QObject *error = w.find(u"sessionError"_s);
+        QVERIFY(isVisible(error));
+        QCOMPARE(text(error), u"That isn't a session ID. It's only letters and digits."_s);
+        QCOMPARE(w.keyring->writes, 0);
+        // which stays to be put right
+        QCOMPARE(text(field), u"not an id!"_s);
+
+        QVERIFY(field->setProperty("text", fakeId));
+        QVERIFY(click(w.find(u"saveButton"_s)));
+        QVERIFY(w.keyringAnswered());
+        QVERIFY(!isVisible(error));
+        QCOMPARE(w.keyring->secrets.value(u"POESESSID"_s), fakeId);
+    }
+
+    void keyringLocked()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        w.keyring->failure = u"The keyring is locked."_s;
+        QObject *field = w.find(u"sessionField"_s);
+        QVERIFY(field->setProperty("text", fakeId));
+        QVERIFY(click(w.find(u"saveButton"_s)));
+        QVERIFY(w.keyringAnswered());
+        QObject *error = w.find(u"sessionError"_s);
+        QVERIFY(isVisible(error));
+        QCOMPARE(text(error), u"The keyring is locked."_s);
+        QCOMPARE(text(w.find(u"sessionStatus"_s)), u"No session ID is saved."_s);
+        // so that it can be tried again
+        QCOMPARE(text(field), fakeId);
+    }
+
+    void forgetSession()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        QVERIFY(w.find(u"sessionField"_s)->setProperty("text", fakeId));
+        QVERIFY(click(w.find(u"saveButton"_s)));
+        QVERIFY(w.keyringAnswered());
+        QVERIFY(click(w.find(u"forgetButton"_s)));
+        QVERIFY(w.keyringAnswered());
+        QVERIFY(w.keyring->secrets.isEmpty());
+        QCOMPARE(text(w.find(u"sessionStatus"_s)), u"No session ID is saved."_s);
+        QVERIFY(!w.find(u"forgetButton"_s)->property("enabled").toBool());
+        QVERIFY(!isVisible(w.find(u"sessionError"_s)));
     }
 
     void checkKey()
