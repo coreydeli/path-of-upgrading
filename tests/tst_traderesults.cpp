@@ -83,11 +83,16 @@ private Q_SLOTS:
 
         QSignalSpy busy(&site.results, &TradeResults::busyChanged);
         QSignalSpy waiting(&site.results, &TradeResults::waitingChanged);
+        // what it says as it says so
+        QList<bool> busyThen;
+        connect(&site.results, &TradeResults::busyChanged, &site.results,
+                [&] { busyThen << site.results.isBusy(); });
         site.results.ask();
         QVERIFY(site.results.isBusy());
         QCOMPARE(busy.size(), 1);
         QVERIFY(site.waitsForIt());
         QCOMPARE(busy.size(), 2);
+        QCOMPARE(busyThen, (QList<bool>{true, false}));
         // it didn't have to wait
         QVERIFY(waiting.isEmpty());
 
@@ -200,6 +205,7 @@ private Q_SLOTS:
         QVERIFY(site.results.data(site.results.index(0), Role::OnlineRole).toBool());
         QCOMPARE(site.text(0, Role::ListedRole), u"5 minutes ago"_s);
         QCOMPARE(site.text(0, Role::NameRole), u"Grim Ward"_s);
+        QCOMPARE(site.text(0, Qt::DisplayRole), u"Grim Ward"_s);
         QCOMPARE(site.text(0, Role::BaseRole), u"Iron Hat"_s);
         const QList<ResultMod> mods =
             site.results.data(site.results.index(0), Role::ModsRole).value<QList<ResultMod>>();
