@@ -22,6 +22,10 @@ Kirigami.ApplicationWindow {
     visible: true
     title: qsTr("Path of Upgrading")
 
+    // the entry that starts it can be removed while it waits in the tray
+    onActiveChanged: if (active)
+        app.overlayOptions.lookAtStart()
+
     globalDrawer: Kirigami.GlobalDrawer {
         isMenu: false
         // a sidebar when there's room for one
