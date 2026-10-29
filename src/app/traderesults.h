@@ -36,8 +36,8 @@ public:
 };
 
 // The listings of the last trade search the popup ran, as the results window
-// shows them. A search that found some replaces the last ones, and one that
-// failed or was called off leaves them. Nothing is asked of the trade site
+// shows them. Each search replaces the last one's, even when it found none,
+// and one that failed or was called off leaves them. Nothing is asked of the trade site
 // until ask() says you want to see them, and then only the first page. The
 // next ones come with loadMore().
 class TradeResults : public QAbstractListModel

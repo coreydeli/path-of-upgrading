@@ -104,8 +104,7 @@ public:
     TradeSearcher &trade() { return m_trade; }
     // For the character you play.
     TradeFinder &finder() { return m_finder; }
-    // The listings of the last search that found some, and the window that
-    // shows them.
+    // The listings of the last search, and the window that shows them.
     TradeResults &results() { return m_results; }
     ResultsPanel &resultsPanel() { return m_resultsPanel; }
 
