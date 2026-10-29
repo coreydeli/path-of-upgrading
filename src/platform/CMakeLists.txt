@@ -7,6 +7,7 @@ find_package(Qt6 REQUIRED COMPONENTS DBus Widgets)
 find_package(KF6GlobalAccel 6.0 REQUIRED)
 find_package(KF6Notifications 6.0 REQUIRED)
 find_package(KF6StatusNotifierItem 6.0 REQUIRED)
+find_package(KF6WindowSystem 6.0 REQUIRED)
 find_package(LayerShellQt 6.0 REQUIRED)
 # for the keyring
 find_package(Qt6Keychain REQUIRED)
@@ -26,6 +27,7 @@ add_library(pou_platform STATIC
     overlay.cpp overlay.h
     screenmap.cpp screenmap.h
     secretstore.cpp secretstore.h
+    showwindow.cpp showwindow.h
     tray.cpp tray.h
     xcb/xconnection.cpp xcb/xconnection.h
     xcb/xgameinput.cpp xcb/xgameinput.h
@@ -39,5 +41,5 @@ target_include_directories(pou_platform PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(pou_platform
     PUBLIC Qt6::Gui PkgConfig::XCB Qt6Keychain::Qt6Keychain
     PRIVATE Qt6::DBus Qt6::Widgets KF6::GlobalAccel KF6::Notifications KF6::StatusNotifierItem
-           LayerShellQt::Interface
+           KF6::WindowSystem LayerShellQt::Interface
 )
