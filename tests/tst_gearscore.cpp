@@ -99,6 +99,7 @@ private Q_SLOTS:
         QVERIFY(ms->pattern.match(u"#% increased Movement Speed"_s).hasMatch());
         QVERIFY(!ms->pattern.match(u"#% increased Movement Speed if you've Hit Recently"_s).hasMatch());
 
+        QCOMPARE(resistLabel(Element::Cold), u"Cold res"_s);
         const ProfileStat *cold = statLabelled(*buildProfile(u"life-res"), u"Cold res"_s);
         QCOMPARE(cold->resist, Element::Cold);
         QCOMPARE(cold->key, u"#% to Cold Resistance"_s);

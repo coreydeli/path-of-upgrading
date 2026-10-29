@@ -22,8 +22,8 @@ ProfileStat exact(const QString &label, const QString &key, const PerSlot &impor
 
 ProfileStat resistance(Element e, double importance, double cap)
 {
-    ProfileStat s = exact(elementName(e) + u" res"_s, resistKey(e),
-                          PerSlot({{u"Weapon"_s, 0}, {u"Jewel"_s, 0}}, importance), cap);
+    ProfileStat s =
+        exact(resistLabel(e), resistKey(e), PerSlot({{u"Weapon"_s, 0}, {u"Jewel"_s, 0}}, importance), cap);
     s.resist = e;
     return s;
 }
@@ -248,6 +248,11 @@ BuildProfile minionSummoner()
 }
 
 } // namespace
+
+QString resistLabel(Element e)
+{
+    return elementName(e) + u" res"_s;
+}
 
 double PerSlot::at(const QString &slotGroup) const
 {

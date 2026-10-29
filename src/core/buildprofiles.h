@@ -64,6 +64,9 @@ inline constexpr QStringView defaultBuildProfile = u"life-res";
 // For scoring by your stat weights alone, as no profile has it.
 inline constexpr QStringView noBuildProfile = u"none";
 
+// What the profiles call a resistance, "Fire res".
+QString resistLabel(Element e);
+
 const QList<BuildProfile> &buildProfiles();
 // The profile with that id; the default one for an empty id. Null when no
 // profile has the id.
