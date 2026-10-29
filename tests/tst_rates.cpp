@@ -79,7 +79,7 @@ private Q_SLOTS:
         data.insert(u"items"_s, QJsonArray{currency(u"divine"_s, u"Divine Orb"_s),
                                            currency(u"exalted"_s, u"Exalted Orb"_s)});
         QCOMPARE(rateOf(data), 150.0);
-        QCOMPARE(currencyRatesInExalts(data).value(u"divine"_s), 150.0);
+        QCOMPARE(currencyRatesInExalts(data), CurrencyRates({{u"exalted"_s, 1}, {u"divine"_s, 150}}));
     }
 
     void idsByName()
@@ -97,6 +97,36 @@ private Q_SLOTS:
         // a Divine Orb worth half an exalt
         QVERIFY(!divineInExalts(overview(primary(u"exalted"_s), {line(u"divine"_s, 0.5)})));
         QVERIFY(currencyRatesInExalts(overview(primary(u"chaos"_s), {line(u"divine"_s, 30)})).isEmpty());
+    }
+
+    void believableRates()
+    {
+        const auto worth = [](double divine) {
+            return rateOf(overview(primary(u"exalted"_s), {line(u"divine"_s, divine)}));
+        };
+        QCOMPARE(worth(1), 1.0);
+        QCOMPARE(worth(100000), 100000.0);
+        QCOMPARE(worth(0.9), 0.0);
+        QCOMPARE(worth(100001), 0.0);
+    }
+
+    void needsBothCurrencies()
+    {
+        QVERIFY(!divineInExalts(overview(primary(u"chaos"_s), {line(u"divine"_s, 30)})));
+        QVERIFY(!divineInExalts(overview(primary(u"chaos"_s), {line(u"exalted"_s, 0.2)})));
+    }
+
+    void ratesLeaveOutWhatItCantUse()
+    {
+        const CurrencyRates rates = currencyRatesInExalts(overview(
+            primary(u"exalted"_s), {line(u"divine"_s, 700), line(u"mirror"_s, 0), line(QString(), 5)}));
+        QCOMPARE(rates, CurrencyRates({{u"exalted"_s, 1}, {u"divine"_s, 700}}));
+    }
+
+    void primaryWithoutALine()
+    {
+        const QJsonObject data = overview(primary(u"divine"_s), {line(u"exalted"_s, 0.0018)});
+        QCOMPARE(currencyRatesInExalts(data), CurrencyRates({{u"exalted"_s, 1}, {u"divine"_s, 555.5556}}));
     }
 
     void allCurrencies()
