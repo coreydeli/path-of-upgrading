@@ -1658,6 +1658,34 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"refusedText"_s)->property("visible").toBool(), false);
     }
 
+    void resultsKey()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QObject *recorder = w.recorder(u"resultsKey"_s);
+        QCOMPARE(recorder->property("keySequence").value<QKeySequence>(), QKeySequence(u"Ctrl+Shift+D"_s));
+        QVERIFY(pressKey(recorder, QKeySequence(Qt::Key_F7)));
+        QCOMPARE(w.shortcuts->keys.value(u"trade-results"_s), QKeySequence(Qt::Key_F7));
+        QCOMPARE(w.settings().overlay.resultsHotkey, u"F7"_s);
+        // and the other one stays where it was
+        QCOMPARE(w.shortcuts->keys.value(u"check-item"_s), QKeySequence(Qt::Key_F2));
+        QCOMPARE(w.settings().overlay.hotkey, u"F2"_s);
+        QCOMPARE(w.find(u"refusedText"_s)->property("visible").toBool(), false);
+    }
+
+    void resultsKeyTaken()
+    {
+        // by the check key, as a key can only do the one
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QObject *recorder = w.recorder(u"resultsKey"_s);
+        QVERIFY(pressKey(recorder, QKeySequence(Qt::Key_F2)));
+        QCOMPARE(w.find(u"refusedText"_s)->property("visible").toBool(), true);
+        QCOMPARE(recorder->property("keySequence").value<QKeySequence>(), QKeySequence(u"Ctrl+Shift+D"_s));
+        QCOMPARE(w.settings().overlay.resultsHotkey, u"Ctrl+Shift+D"_s);
+        QCOMPARE(w.shortcuts->keys.value(u"check-item"_s), QKeySequence(Qt::Key_F2));
+    }
+
     void noHotkeys()
     {
         Window w(false);

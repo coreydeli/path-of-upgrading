@@ -45,6 +45,16 @@ FormCard.FormCardPage {
             onChosen: key => overlayPage.refused = !overlayPage.options.setCheckKey(key)
         }
 
+        FormCard.FormDelegateSeparator {}
+
+        KeyField {
+            objectName: "resultsKey"
+            label: qsTr("Show the trade results")
+            description: qsTr("Opens the listings of your last trade search, and closes them again.")
+            key: overlayPage.options.resultsKey
+            onChosen: key => overlayPage.refused = !overlayPage.options.setResultsKey(key)
+        }
+
         FormCard.FormDelegateSeparator {
             visible: refusedText.visible
         }
@@ -93,7 +103,7 @@ FormCard.FormCardPage {
         FormCard.FormSwitchDelegate {
             objectName: "pausedSwitch"
             text: qsTr("Pause")
-            description: qsTr("The hotkey and the clipboard are ignored until you turn this off.")
+            description: qsTr("The hotkeys and the clipboard are ignored until you turn this off.")
             checked: overlayPage.options.paused
             onToggled: overlayPage.options.paused = checked
         }
