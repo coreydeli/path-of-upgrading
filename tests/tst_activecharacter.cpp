@@ -112,6 +112,7 @@ private Q_SLOTS:
         QSignalSpy changed(&c.active, &ActiveCharacter::changed);
         c.active.setId(id);
         QCOMPARE(c.active.id(), id);
+        QVERIFY(c.active.exists());
         QCOMPARE(changed.size(), 1);
         QCOMPARE(c.active.character().name, u"Torvald"_s);
         QVERIFY(c.active.build());
@@ -160,6 +161,7 @@ private Q_SLOTS:
         c.active.setId(c.add(inGrimCrown(), build));
         QSignalSpy changed(&c.active, &ActiveCharacter::changed);
         c.active.setId(u"nobody"_s);
+        QVERIFY(!c.active.exists());
         QCOMPARE(changed.size(), 1);
         QCOMPARE(c.active.character().name, QString());
         QVERIFY(c.active.character().gear.isEmpty());
@@ -232,6 +234,86 @@ private Q_SLOTS:
         QVERIFY(c.loads(true));
         // and it's used anyway
         QVERIFY(c.active.character().chaosInoculation);
+    }
+
+    void wear()
+    {
+        Characters c;
+        Character torvald = inGrimCrown();
+        torvald.fromPob = {u"Helmet"_s};
+        const QString id = c.add(torvald, build);
+        c.active.setId(id);
+        QSignalSpy changed(&c.active, &ActiveCharacter::changed);
+        QVERIFY(c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
+        QCOMPARE(changed.size(), 1);
+        QCOMPARE(c.active.character().gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QVERIFY(c.active.character().fromPob.isEmpty());
+        QCOMPARE(c.saved(id).gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QVERIFY(c.saved(id).fromPob.isEmpty());
+        // and Path of Building has it on
+        QCOMPARE(pobHas(c.engine).value(u"wearing").toArray(),
+                 wearing(item(itemtexts::helmetNew), u"Helmet"_s));
+    }
+
+    void wearElsewhere()
+    {
+        Characters c;
+        const QString id = c.add(inGrimCrown());
+        c.active.setId(id);
+        QSignalSpy changed(&c.active, &ActiveCharacter::changed);
+        QVERIFY(!c.active.wear(u"Ring 1"_s, item(itemtexts::helmetNew)));
+        QCOMPARE(c.active.errorString(), u"Doom Visage can't go in Ring 1."_s);
+        QCOMPARE(changed.size(), 0);
+        QCOMPARE(c.saved(id).gear.value(u"Helmet"_s).name, u"Grim Crown"_s);
+
+        // which is forgotten once it's worn
+        QVERIFY(c.active.wear(u"Ring 1"_s, item(itemtexts::advancedRing)));
+        QCOMPARE(c.active.errorString(), QString());
+    }
+
+    void wearForNobody()
+    {
+        Characters c;
+        QVERIFY(!c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
+        QCOMPARE(c.active.errorString(), u"There's no character to wear it. Add one first."_s);
+        QVERIFY(c.active.takeOff(u"Helmet"_s));
+    }
+
+    void takeOff()
+    {
+        Characters c;
+        Character torvald = inGrimCrown();
+        torvald.gear.insert(u"Ring 1"_s, item(itemtexts::advancedRing));
+        torvald.fromPob = {u"Ring 1"_s};
+        const QString id = c.add(torvald, build);
+        c.active.setId(id);
+        QSignalSpy changed(&c.active, &ActiveCharacter::changed);
+        QVERIFY(c.active.takeOff(u"Ring 1"_s));
+        QCOMPARE(changed.size(), 1);
+        QCOMPARE(c.active.character().gear.keys(), QStringList{u"Helmet"_s});
+        QVERIFY(c.active.character().fromPob.isEmpty());
+        QCOMPARE(c.saved(id).gear.keys(), QStringList{u"Helmet"_s});
+        QCOMPARE(pobHas(c.engine).value(u"wearing").toArray(),
+                 wearing(item(itemtexts::helmetOld), u"Helmet"_s));
+
+        // nothing's there now
+        QVERIFY(c.active.takeOff(u"Ring 1"_s));
+        QCOMPARE(changed.size(), 1);
+    }
+
+    void cantWear()
+    {
+        Characters c;
+        const QString id = c.add(inGrimCrown(), build);
+        c.active.setId(id);
+        QVERIFY(QFile::remove(c.dir.filePath(id + u".json"_s)));
+        QVERIFY(QDir(c.dir.path()).mkdir(id + u".json"_s));
+        QSignalSpy changed(&c.active, &ActiveCharacter::changed);
+        QVERIFY(!c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
+        QVERIFY(c.active.errorString().startsWith(u"Couldn't save Torvald: "_s));
+        QVERIFY(!c.active.takeOff(u"Helmet"_s));
+        QCOMPARE(changed.size(), 0);
+        QCOMPARE(c.active.character().gear.value(u"Helmet"_s).name, u"Grim Crown"_s);
     }
 
     void removed()

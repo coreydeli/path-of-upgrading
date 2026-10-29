@@ -46,6 +46,8 @@ class ItemPopup : public QObject
     Q_PROPERTY(bool tradeAvailable READ isTradeAvailable NOTIFY tradeChanged)
     // How the last one for the item went, see findOnTrade().
     Q_PROPERTY(pou::TradeReport trade READ trade NOTIFY tradeChanged)
+    // Why the item couldn't be saved as what you wear, see wear().
+    Q_PROPERTY(QString wearError READ wearError NOTIFY wearErrorChanged)
 
 public:
     // The engine and the input have to outlive the popup.
@@ -73,6 +75,12 @@ public:
     // For the buttons, see tradeAsked().
     Q_INVOKABLE void findOnTrade(pou::TradeFinder::Kind kind);
 
+    // For the buttons that say you wear the item, see wearAsked().
+    Q_INVOKABLE void wear(const QString &slot);
+    QString wearError() const { return m_wearError; }
+    // Each item starts with none.
+    void setWearError(const QString &why);
+
     bool isVisible() const;
     // Null until it's first shown, or when it couldn't be made.
     QQuickWindow *window() const { return m_window.get(); }
@@ -95,6 +103,9 @@ Q_SIGNALS:
     void tradeChanged();
     // When you ask for a search for the item it has.
     void tradeAsked(pou::TradeFinder::Kind kind);
+    void wearErrorChanged();
+    // When you say you wear the item it has in the slot.
+    void wearAsked(const QString &slot);
 
 private:
     bool makeWindow();
@@ -114,6 +125,7 @@ private:
     bool m_expanded = false;
     bool m_tradeAvailable = false;
     TradeReport m_trade;
+    QString m_wearError;
 };
 
 } // namespace pou

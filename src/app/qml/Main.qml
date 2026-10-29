@@ -39,6 +39,14 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(charactersPage)
             },
             Kirigami.Action {
+                objectName: "gearAction"
+                text: qsTr("Your Gear")
+                icon.name: "view-list-details"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(gearPage)
+            },
+            Kirigami.Action {
                 objectName: "pobAction"
                 text: qsTr("Path of Building")
                 icon.name: "office-chart-line"
@@ -78,6 +86,11 @@ Kirigami.ApplicationWindow {
 
         CharactersPage {
             id: charactersPage
+            app: root.app
+        }
+
+        GearPage {
+            id: gearPage
             app: root.app
         }
 

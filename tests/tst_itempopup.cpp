@@ -332,6 +332,83 @@ private Q_SLOTS:
         QVERIFY(!button(popup, u"Open on the Trade Site"_s));
     }
 
+    void wear()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport ring = aReport();
+        ring.wearIn = {u"Ring 1"_s, u"Ring 2"_s};
+        popup.showReport(ring, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(shown(popup, u"Wear as"_s));
+        QVERIFY(button(popup, u"Ring 1"_s));
+        QSignalSpy asked(&popup, &ItemPopup::wearAsked);
+        QVERIFY(click(popup, u"Ring 2"_s));
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(asked.first().first().toString(), u"Ring 2"_s);
+
+        // what you wear already
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(!shown(popup, u"Wear as"_s));
+        QVERIFY(!button(popup, u"Ring 2"_s));
+    }
+
+    void wearInRows()
+    {
+        // jewels, with too many slots for one row
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport jewel = aReport();
+        for (int n = 1; n <= 12; ++n)
+            jewel.wearIn << u"Jewel %1"_s.arg(n);
+        popup.showReport(jewel, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        const QQuickItem *first = button(popup, u"Jewel 1"_s);
+        const QQuickItem *last = button(popup, u"Jewel 12"_s);
+        const QQuickItem *label = shown(popup, u"Wear as"_s);
+        QVERIFY(first && last && label);
+        const auto middle = [](const QQuickItem *item) {
+            return item->mapToScene(item->boundingRect().center()).y();
+        };
+        QVERIFY(middle(last) > middle(first));
+        QCOMPARE(middle(label), middle(first));
+    }
+
+    void cantWear()
+    {
+        const QString why = u"Couldn't save Wren: the disk is full."_s;
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport ring = aReport();
+        ring.wearIn = {u"Ring 1"_s};
+        popup.showReport(ring, mouseAt(200, 300));
+        QVERIFY(!shown(popup, why));
+        QSignalSpy changed(&popup, &ItemPopup::wearErrorChanged);
+        popup.setWearError(why);
+        QCOMPARE(popup.wearError(), why);
+        QCOMPARE(changed.size(), 1);
+        const QQuickItem *shownWhy = shown(popup, why);
+        QVERIFY(shownWhy);
+        QCOMPARE(shownWhy->property("tone").toInt(), int(Tone::Bad));
+        popup.setWearError(why);
+        QCOMPARE(changed.size(), 1);
+
+        // which a newer report on it keeps
+        popup.updateReport(ring);
+        QCOMPARE(popup.wearError(), why);
+        // and the next item doesn't
+        popup.showReport(ring, mouseAt(200, 300));
+        QCOMPARE(popup.wearError(), QString());
+        QVERIFY(!shown(popup, why));
+        popup.setWearError(why);
+        popup.showMessage(u"That isn't an item."_s, mouseAt(200, 300));
+        QCOMPARE(popup.wearError(), QString());
+    }
+
     void sections_data()
     {
         QTest::addColumn<ItemReport>("report");

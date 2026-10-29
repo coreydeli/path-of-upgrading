@@ -21,6 +21,8 @@ ItemChecker::ItemChecker(QQmlEngine *engine, GameInput *input, QObject *parent)
     connect(&m_reader, &ItemReader::failed, &m_popup, &ItemPopup::showMessage);
     connect(&m_judge, &ItemJudge::checked, this, &ItemChecker::judged);
     connect(&m_popup, &ItemPopup::tradeAsked, this, &ItemChecker::findOnTrade);
+    connect(&m_popup, &ItemPopup::wearAsked, this,
+            [this](const QString &slot) { Q_EMIT wearAsked(m_judge.current().item, slot); });
 }
 
 void ItemChecker::setSettings(const Settings &settings)
@@ -42,6 +44,9 @@ void ItemChecker::setCharacter(const Character &character, const std::optional<P
 {
     m_judge.setCharacter(character);
     m_judge.setBuild(build);
+    // what the popup says is for the one you play, as once you wear the item
+    if (m_popup.isVisible())
+        m_judge.check(m_judge.current().item);
 }
 
 void ItemChecker::setPob(PobEngine *pob)

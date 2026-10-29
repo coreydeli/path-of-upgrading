@@ -354,6 +354,31 @@ private Q_SLOTS:
         QCOMPARE(again.app.history().recent().value(0).name, u"Doom Visage"_s);
     }
 
+    void wear()
+    {
+        // what you say in the popup you wear
+        Folders folders;
+        Settings settings;
+        settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
+        folders.set(settings);
+        Running r(folders);
+        QCOMPARE(r.checked().versus, u"vs Grim Crown"_s);
+        r.app.checker().popup().wear(u"Helmet"_s);
+        QCOMPARE(r.app.character().character().gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QCOMPARE(r.app.characters().find(settings.character)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(r.app.checker().popup().wearError(), QString());
+    }
+
+    void wearForNobody()
+    {
+        Folders folders;
+        Running r(folders);
+        r.checked();
+        r.app.checker().popup().wear(u"Helmet"_s);
+        QCOMPARE(r.app.checker().popup().wearError(), u"There's no character to wear it. Add one first."_s);
+    }
+
     void judgesWithPob()
     {
         Folders folders;
