@@ -12,6 +12,7 @@
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
 #include "app/settingsstore.h"
+#include "app/statpicker.h"
 #include "app/statweights.h"
 #include "app/tradefinder.h"
 #include "app/tradeoptions.h"
@@ -51,6 +52,7 @@ class App : public QObject
     Q_PROPERTY(pou::GearList *gearList READ gearList CONSTANT)
     Q_PROPERTY(pou::GearScoring *gearScoring READ gearScoring CONSTANT)
     Q_PROPERTY(pou::StatWeights *statWeights READ statWeights CONSTANT)
+    Q_PROPERTY(pou::StatPicker *statPicker READ statPicker CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
@@ -97,6 +99,7 @@ public:
     GearList *gearList() { return &m_gearList; }
     GearScoring *gearScoring() { return &m_gearScoring; }
     StatWeights *statWeights() { return &m_statWeights; }
+    StatPicker *statPicker() { return &m_statPicker; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
@@ -128,6 +131,7 @@ private:
     GearList m_gearList;
     GearScoring m_gearScoring;
     StatWeights m_statWeights;
+    StatPicker m_statPicker;
     TradeOptions m_tradeOptions;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
