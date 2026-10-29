@@ -177,6 +177,35 @@ QString formatPrice(const std::optional<ListingPrice> &price)
     return formatNumber(price->amount) + u' ' + currency;
 }
 
+QString formatConvertedPrice(const ListingPrice &price, double exalts, double divineRate)
+{
+    if (!std::isfinite(exalts))
+        return {};
+    const QString currency = price.currency.toLower();
+    if (currency != u"divine" && divineRate > 0 && exalts >= divineRate)
+        return u"about %1 div"_s.arg(formatNumber(roundTo(exalts / divineRate, 1)));
+    if (currency == u"exalted")
+        return {};
+    return u"about %1 ex"_s.arg(formatNumber(roundTo(exalts, exalts < 10 ? 1 : 0)));
+}
+
+QString listedAgo(const QDateTime &indexed, const QDateTime &now)
+{
+    if (!indexed.isValid() || !now.isValid())
+        return {};
+    const qint64 minutes = indexed.secsTo(now) / 60;
+    if (minutes < 1)
+        return u"just now"_s;
+    const auto ago = [](qint64 n, const QString &unit) {
+        return u"%1 %2%3 ago"_s.arg(n).arg(unit, n == 1 ? QString() : u"s"_s);
+    };
+    if (minutes < 60)
+        return ago(minutes, u"minute"_s);
+    if (minutes < 24 * 60)
+        return ago(minutes / 60, u"hour"_s);
+    return ago(minutes / (24 * 60), u"day"_s);
+}
+
 Listing readListing(const QJsonObject &result, const QString &itemClass, const CurrencyRates &rates)
 {
     const QJsonObject listing = result.value(u"listing").toObject();

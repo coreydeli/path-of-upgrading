@@ -37,6 +37,12 @@ std::optional<double> priceInExalts(const ListingPrice &price, const CurrencyRat
 // "3 div", "50 ex", "2 chaos", or "no price".
 QString formatPrice(const std::optional<ListingPrice> &price);
 
+// What a price comes to in the other main currency, for listings in another
+// one: "about 40 ex", or "about 1.4 div" from a divine's worth on. Empty when
+// that says no more than the price does. Needs the price in exalts, see
+// priceInExalts(), and what a divine is worth in them, or 0 when not known.
+QString formatConvertedPrice(const ListingPrice &price, double exalts, double divineRate);
+
 struct Listing
 {
     QString id;
@@ -53,6 +59,10 @@ struct Listing
     QString hideoutToken; // lets the site take you to an instant buyout seller's hideout
     QDateTime indexed;    // when the site last saw it listed
 };
+
+// "just now", "5 minutes ago", "1 hour ago", "3 days ago". Empty when the time
+// isn't known. A time ahead of now counts as just now.
+QString listedAgo(const QDateTime &indexed, const QDateTime &now);
 
 // One element of a fetch answer's "result".
 Listing readListing(const QJsonObject &result, const QString &itemClass, const CurrencyRates &rates);

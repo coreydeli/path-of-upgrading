@@ -367,6 +367,76 @@ private Q_SLOTS:
         QVERIFY(!priceInExalts({2, u"divine"_s}, {{u"divine"_s, 0}}));
     }
 
+    void convertedPrices_data()
+    {
+        QTest::addColumn<double>("amount");
+        QTest::addColumn<QString>("currency");
+        QTest::addColumn<double>("exalts");
+        QTest::addColumn<double>("divineRate");
+        QTest::addColumn<QString>("expected");
+
+        QTest::newRow("divines in exalts") << 3.0 << u"divine"_s << 2100.0 << 700.0 << u"about 2100 ex"_s;
+        QTest::newRow("a divine's worth on")
+            << 1000.0 << u"exalted"_s << 1000.0 << 700.0 << u"about 1.4 div"_s;
+        QTest::newRow("exactly a divine") << 700.0 << u"exalted"_s << 700.0 << 700.0 << u"about 1 div"_s;
+        QTest::newRow("chaos in exalts") << 4.0 << u"chaos"_s << 40.0 << 700.0 << u"about 40 ex"_s;
+        QTest::newRow("chaos in divines") << 100.0 << u"chaos"_s << 1000.0 << 700.0 << u"about 1.4 div"_s;
+        QTest::newRow("under ten keeps a decimal") << 1.0 << u"chaos"_s << 2.5 << 700.0 << u"about 2.5 ex"_s;
+        QTest::newRow("exalts say no more") << 50.0 << u"exalted"_s << 50.0 << 700.0 << QString();
+        QTest::newRow("no divine rate") << 3.0 << u"chaos"_s << 30.0 << 0.0 << u"about 30 ex"_s;
+        QTest::newRow("exalts without a rate") << 5000.0 << u"exalted"_s << 5000.0 << 0.0 << QString();
+        QTest::newRow("capitals") << 2.0 << u"Divine"_s << 1400.0 << 700.0 << u"about 1400 ex"_s;
+    }
+
+    void convertedPrices()
+    {
+        QFETCH(double, amount);
+        QFETCH(QString, currency);
+        QFETCH(double, exalts);
+        QFETCH(double, divineRate);
+        QFETCH(QString, expected);
+        QCOMPARE(formatConvertedPrice(ListingPrice{amount, currency}, exalts, divineRate), expected);
+    }
+
+    void unusableExalts()
+    {
+        QVERIFY(formatConvertedPrice({1, u"chaos"_s}, qQNaN(), 700).isEmpty());
+        QVERIFY(formatConvertedPrice({1, u"chaos"_s}, qInf(), 700).isEmpty());
+    }
+
+    void listedAgoTexts_data()
+    {
+        QTest::addColumn<qint64>("seconds");
+        QTest::addColumn<QString>("expected");
+
+        QTest::newRow("this second") << 0LL << u"just now"_s;
+        QTest::newRow("under a minute") << 59LL << u"just now"_s;
+        QTest::newRow("a minute") << 60LL << u"1 minute ago"_s;
+        QTest::newRow("minutes") << 5 * 60LL + 30 << u"5 minutes ago"_s;
+        QTest::newRow("under an hour") << 59 * 60LL + 59 << u"59 minutes ago"_s;
+        QTest::newRow("an hour") << 3600LL << u"1 hour ago"_s;
+        QTest::newRow("hours") << 5 * 3600LL << u"5 hours ago"_s;
+        QTest::newRow("under a day") << 24 * 3600LL - 1 << u"23 hours ago"_s;
+        QTest::newRow("a day") << 24 * 3600LL << u"1 day ago"_s;
+        QTest::newRow("days") << 40 * 24 * 3600LL << u"40 days ago"_s;
+        QTest::newRow("ahead of the clock") << -90LL << u"just now"_s;
+    }
+
+    void listedAgoTexts()
+    {
+        QFETCH(qint64, seconds);
+        QFETCH(QString, expected);
+        const QDateTime indexed = QDateTime(QDate(2026, 10, 20), QTime(8, 0), QTimeZone::utc());
+        QCOMPARE(listedAgo(indexed, indexed.addSecs(seconds)), expected);
+    }
+
+    void listedAgoNeedsTimes()
+    {
+        const QDateTime now = QDateTime(QDate(2026, 10, 20), QTime(8, 0), QTimeZone::utc());
+        QVERIFY(listedAgo({}, now).isEmpty());
+        QVERIFY(listedAgo(now, {}).isEmpty());
+    }
+
     // what came back for three ids, one sold in the meantime
     void fetchAnswer()
     {
