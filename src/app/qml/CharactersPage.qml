@@ -40,7 +40,8 @@ FormCard.FormCardPage {
             id: characterRows
             model: charactersPage.characters
 
-            delegate: FormCard.FormRadioDelegate {
+            // picked like a radio button
+            delegate: FormRow {
                 id: characterRow
 
                 required property string characterId
@@ -52,34 +53,46 @@ FormCard.FormCardPage {
                 description: build !== "" ? build : qsTr("No build imported")
                 // the list says which it is, so it stays right when that
                 // changes some other way
-                checkable: false
                 checked: characterId === charactersPage.characters.current
+                focusPolicy: Qt.StrongFocus
+                background: FormCard.FormDelegateBackground {
+                    control: characterRow
+                }
+                Accessible.role: Accessible.RadioButton
+                Accessible.checkable: true
+                Accessible.checked: checked
                 onClicked: charactersPage.characters.current = characterId
 
-                trailing: RowLayout {
-                    spacing: 0
+                leading: QQC2.RadioButton {
+                    objectName: "pickButton"
+                    Layout.rightMargin: Kirigami.Units.largeSpacing
+                    focusPolicy: Qt.NoFocus
+                    checkable: false
+                    checked: characterRow.checked
+                    Accessible.ignored: true
+                    onClicked: characterRow.clicked()
+                }
 
-                    QQC2.ToolButton {
-                        objectName: "renameButton"
-                        text: qsTr("Rename")
-                        icon.name: "edit-rename"
-                        display: QQC2.AbstractButton.IconOnly
-                        QQC2.ToolTip.text: text
-                        QQC2.ToolTip.visible: hovered
-                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-                        onClicked: renameDialog.ask(characterRow.characterId, characterRow.name)
-                    }
+                QQC2.ToolButton {
+                    objectName: "renameButton"
+                    text: qsTr("Rename")
+                    icon.name: "edit-rename"
+                    display: QQC2.AbstractButton.IconOnly
+                    QQC2.ToolTip.text: text
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    onClicked: renameDialog.ask(characterRow.characterId, characterRow.name)
+                }
 
-                    QQC2.ToolButton {
-                        objectName: "removeButton"
-                        text: qsTr("Remove")
-                        icon.name: "edit-delete"
-                        display: QQC2.AbstractButton.IconOnly
-                        QQC2.ToolTip.text: text
-                        QQC2.ToolTip.visible: hovered
-                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-                        onClicked: removeDialog.ask(characterRow.characterId, characterRow.name)
-                    }
+                QQC2.ToolButton {
+                    objectName: "removeButton"
+                    text: qsTr("Remove")
+                    icon.name: "edit-delete"
+                    display: QQC2.AbstractButton.IconOnly
+                    QQC2.ToolTip.text: text
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    onClicked: removeDialog.ask(characterRow.characterId, characterRow.name)
                 }
             }
         }

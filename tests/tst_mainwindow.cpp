@@ -320,6 +320,19 @@ private Q_SLOTS:
         QVERIFY(!wren->property("checked").toBool());
     }
 
+    void buttonsAfterLeaving()
+    {
+        // which the pages had while they were away
+        Window w;
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.show(u"gearAction"_s));
+        QVERIFY(w.show(u"charactersAction"_s));
+        QVERIFY(isVisible(w.find(u"character:Wren"_s)->findChild<QObject *>(u"renameButton"_s)));
+        QVERIFY(isVisible(w.find(u"character:Wren"_s)->findChild<QObject *>(u"removeButton"_s)));
+        QVERIFY(w.show(u"gearAction"_s));
+        QVERIFY(isVisible(w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s)));
+    }
+
     void addWithoutName()
     {
         Window w;
@@ -347,6 +360,16 @@ private Q_SLOTS:
         // and again, which leaves it picked
         QVERIFY(click(w.find(u"character:Wren"_s)));
         QVERIFY(w.find(u"character:Wren"_s)->property("checked").toBool());
+
+        // or by its radio button
+        QObject *ash = w.find(u"character:Ash"_s)->findChild<QObject *>(u"pickButton"_s);
+        QVERIFY(!ash->property("checked").toBool());
+        QVERIFY(click(ash));
+        QVERIFY(ash->property("checked").toBool());
+        QVERIFY(!w.find(u"character:Wren"_s)
+                     ->findChild<QObject *>(u"pickButton"_s)
+                     ->property("checked")
+                     .toBool());
     }
 
     void renameCharacter()
@@ -611,6 +634,9 @@ private Q_SLOTS:
         QVERIFY(isVisible(helmet));
         QCOMPARE(text(helmet), u"Helmet"_s);
         QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QObject *description = helmet->findChild<QObject *>(u"descriptionText"_s);
+        QVERIFY(isVisible(description));
+        QCOMPARE(text(description), u"Grim Crown, Visored Helm"_s);
         QObject *score = search(helmet, [](QObject *o) { return o->objectName() == u"gearScore"; });
         QVERIFY(isVisible(score));
         const QString number = w.app->gearList()->index(2).data(GearList::ScoreRole).toString();
