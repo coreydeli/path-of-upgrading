@@ -109,6 +109,12 @@ private Q_SLOTS:
         // an empty one is still empty
         const Comparison empty = compare(ring, {{u"Ring 1"_s, strong}}, defaultWeights(), {}, u"Ring 2"_s);
         QCOMPARE(empty.verdict, Verdict::New);
+
+        // the ring you wear in Ring 1 is only equipped there
+        QVERIFY(compare(strong, worn, defaultWeights(), {}, u"Ring 1"_s).isEquipped);
+        const Comparison other = compare(strong, worn, defaultWeights(), {}, u"Ring 2"_s);
+        QVERIFY(!other.isEquipped);
+        QCOMPARE(other.verdict, Verdict::Upgrade);
     }
 
     void emptyJewelSlotFirst()
@@ -173,6 +179,9 @@ private Q_SLOTS:
         QCOMPARE(r.targetSlot, u"Offhand"_s);
         QCOMPARE(r.replacing, QStringList{u"C"_s});
         QVERIFY(r.notes.isEmpty());
+        // it's worn in Weapon, but that isn't the slot you asked about
+        QVERIFY(!r.isEquipped);
+        QCOMPARE(r.verdict, Verdict::Downgrade);
     }
 
     void alreadyEquipped()
