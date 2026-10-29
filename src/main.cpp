@@ -9,6 +9,7 @@
 #include "platform/secretstore.h"
 #include "platform/tray.h"
 
+#include <KDBusService>
 #include <KLocalizedQmlContext>
 #include <QApplication>
 #include <QDir>
@@ -58,12 +59,18 @@ int main(int argc, char *argv[])
     QApplication::setApplicationDisplayName(u"Path of Upgrading"_s);
     QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
     QApplication::setDesktopFileName(QStringLiteral(APP_ID));
+    // with the application name, this makes the bus name io.github.coreydeli.path-of-upgrading
+    QApplication::setOrganizationDomain(u"coreydeli.github.io"_s);
     // closing the window leaves it in the tray
     QApplication::setQuitOnLastWindowClosed(false);
 
     // --help and --version print and exit here
     pou::CommandLine commandLine;
     commandLine.process(app.arguments());
+
+    // Started a second time, this hands over to the first and exits, before
+    // anything below is set up.
+    KDBusService service(KDBusService::Unique);
 
     pickControlsStyle();
 
@@ -75,6 +82,7 @@ int main(int argc, char *argv[])
     const std::unique_ptr<pou::Tray> tray = pou::createTray();
     const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier();
     pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());
+    QObject::connect(&service, &KDBusService::activateRequested, &desktop, &pou::Desktop::startedAgain);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);
