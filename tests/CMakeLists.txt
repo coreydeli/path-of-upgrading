@@ -86,6 +86,7 @@ pou_add_services_test(tst_installedpob itemtexts.h)
 
 pou_add_platform_test(tst_copykeys)
 pou_add_platform_test(tst_gamewindow)
+pou_add_platform_test(tst_keychainsecretstore)
 pou_add_platform_test(tst_screenmap)
 # with the X server in DISPLAY, when there's one
 pou_add_platform_test(tst_xconnection)
