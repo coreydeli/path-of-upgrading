@@ -143,6 +143,9 @@ private Q_SLOTS:
         const Comparison offhand =
             compare(shield, {{u"Weapon"_s, item(itemtexts::twoHandMace)}}, defaultWeights());
         QVERIFY(offhand.notes.first().contains(u"two-handed"));
+        // a one-handed weapon leaves it free
+        const Comparison withOneHand = compare(shield, {{u"Weapon"_s, oneHand}}, defaultWeights());
+        QVERIFY(!withOneHand.notes.contains(u"Your weapon is two-handed, so you can't use this with it."_s));
         // the weapon of its own set
         const Equipped swapMace = {{u"Weapon 2"_s, item(itemtexts::twoHandMace)}};
         const QString cantUse = u"Your weapon is two-handed, so you can't use this with it."_s;
@@ -239,6 +242,67 @@ private Q_SLOTS:
             compare(item(itemtexts::helmetNew), {{u"Helmet"_s, item(itemtexts::helmetOld)}}, {});
         QCOMPARE(r.verdict, Verdict::Same);
         QVERIFY(r.notes.last().contains(u"weight"));
+    }
+
+    void unweightedRowsSortBySize()
+    {
+        const Comparison r =
+            compare(item(itemtexts::helmetNew), {{u"Helmet"_s, item(itemtexts::helmetOld)}}, {});
+        QVERIFY(r.rows.size() > 2);
+        for (qsizetype i = 1; i < r.rows.size(); ++i)
+            QVERIFY(std::abs(r.rows.at(i - 1).diff) >= std::abs(r.rows.at(i).diff));
+    }
+
+    void percentOfTheOldScore()
+    {
+        const Item old = item(u"Item Class: Helmets\nRarity: Rare\nA\nB\n--------\n+50 to maximum Life"_s);
+        const Item better = item(u"Item Class: Helmets\nRarity: Rare\nC\nD\n--------\n+75 to maximum Life"_s);
+        const Weights life = {{u"# to maximum Life"_s, 1}};
+        const Comparison r = compare(better, {{u"Helmet"_s, old}}, life);
+        QCOMPARE(r.delta, 25.0);
+        QCOMPARE(r.percent.value_or(-1), 50.0);
+        // nothing worn, so there's no score to measure against
+        QVERIFY(!compare(better, {}, life).percent);
+    }
+
+    void corruptedAndUnidentifiedNotes()
+    {
+        const QString corruptedNote = u"Corrupted, so it can't be modified any further."_s;
+        const Item corrupted = item(
+            u"Item Class: Helmets\nRarity: Rare\nA\nB\n--------\n+50 to maximum Life\n--------\nCorrupted"_s);
+        QVERIFY(compare(corrupted, {}, defaultWeights()).notes.contains(corruptedNote));
+        QVERIFY(!compare(item(itemtexts::helmetNew), {}, defaultWeights()).notes.contains(corruptedNote));
+
+        const Item hidden = item(u"Item Class: Helmets\nRarity: Rare\nA\nB\n--------\nUnidentified"_s);
+        const QStringList notes = compare(hidden, {}, defaultWeights()).notes;
+        QVERIFY(!notes.isEmpty() && notes.first().startsWith(u"Unidentified"));
+        for (const QString &note : compare(item(itemtexts::helmetNew), {}, defaultWeights()).notes)
+            QVERIFY(!note.startsWith(u"Unidentified"));
+    }
+
+    void tinyDifferencesAreNotChanges()
+    {
+        const QString key = u"#% increased Movement Speed"_s;
+        QVERIFY(diffStats(StatMap{{key, 10.004}}, StatMap{{key, 10}}, {}).isEmpty());
+        const QList<StatRow> rows = diffStats(StatMap{{key, 0.3}}, StatMap{{key, 0.2}}, {});
+        QCOMPARE(rows.size(), 1);
+        QCOMPARE(rows.first().diff, 0.1);
+    }
+
+    void onlyTheSameTextIsTheSameItem()
+    {
+        const QString text = u"Item Class: Helmets\nRarity: Rare\nA\nB\n--------\n+50 to maximum Life"_s;
+        const Item helmet = item(text);
+        const Weights weights = defaultWeights();
+        QVERIFY(compare(helmet, {{u"Helmet"_s, item(text)}}, weights).isEquipped);
+
+        const auto wornIsEquipped = [&](const QString &saved) {
+            return compare(helmet, {{u"Helmet"_s, item(saved)}}, weights).isEquipped;
+        };
+        QVERIFY(!wornIsEquipped(QString(text).replace(u"\nA\n"_s, u"\nC\n"_s)));
+        QVERIFY(!wornIsEquipped(QString(text).replace(u"Helmets"_s, u"Boots"_s)));
+        QVERIFY(!wornIsEquipped(text + u"\n+5 to Strength"_s));
+        QVERIFY(!wornIsEquipped(QString(text).replace(u"+50"_s, u"+51"_s)));
     }
 };
 
