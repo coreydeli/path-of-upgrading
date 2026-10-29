@@ -171,10 +171,17 @@ private Q_SLOTS:
         engine.setInstall(pob.install());
         QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
         engine.setBuild(build);
-        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetNew}}));
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetNew}}));
         engine.setBuild({});
         QVERIFY(finishes(reply.get()));
         QVERIFY(loaded.isEmpty());
+
+        // and a running one isn't told to load an empty build
+        engine.setBuild(build);
+        reply.reset(engine.evaluate({{.text = helmetNew}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->answer().value(u"seen").toArray(),
+                 (QJsonArray{u"load"_s, u"eval"_s, u"load"_s, u"eval"_s}));
     }
 
     void notLoaded()
@@ -477,15 +484,25 @@ private Q_SLOTS:
         QCOMPARE(engine.state(), State::Failed);
     }
 
+    void crashes_data()
+    {
+        QTest::addColumn<QString>("flag");
+        QTest::addColumn<QByteArray>("printed");
+        QTest::newRow("stops") << u"--crash-on-eval"_s << QByteArray("The fake crashed");
+        QTest::newRow("is killed") << u"--kill-on-eval"_s << QByteArray("The fake was killed");
+    }
+
     void crashes()
     {
+        QFETCH(QString, flag);
+        QFETCH(QByteArray, printed);
         FakePob pob;
         PobEngine engine;
-        engine.setInstall(pob.install({u"--crash-on-eval"_s, u"--once"_s}));
+        engine.setInstall(pob.install({flag, u"--once"_s}));
         engine.setBuild(build);
-        QTest::ignoreMessage(
-            QtWarningMsg,
-            "Path of Building stopped unexpectedly. It printed:\nUniques loaded\nThe fake crashed");
+        const QByteArray warning =
+            "Path of Building stopped unexpectedly. It printed:\nUniques loaded\n" + printed;
+        QTest::ignoreMessage(QtWarningMsg, warning.constData());
         std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
         QVERIFY(finishes(reply.get()));
         QCOMPARE(reply->errorString(), u"Path of Building stopped unexpectedly."_s);
