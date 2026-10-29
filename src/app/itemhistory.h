@@ -30,6 +30,8 @@ public:
     // The same item again moves to the front.
     void add(const Item &item);
     const QList<Item> &recent() const { return m_recent; }
+    // Forgets the items but not the stats, which the stat picker keeps.
+    void clearRecent();
     const SeenStats &seenStats() const { return m_seen.stats(); }
 
     // Saves straight away what's waiting to be.

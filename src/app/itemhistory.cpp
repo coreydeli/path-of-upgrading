@@ -51,6 +51,15 @@ void ItemHistory::add(const Item &item)
     Q_EMIT changed();
 }
 
+void ItemHistory::clearRecent()
+{
+    if (m_recent.isEmpty())
+        return;
+    m_recent.clear();
+    m_saveTimer.start();
+    Q_EMIT changed();
+}
+
 bool ItemHistory::save()
 {
     m_saveTimer.stop();
