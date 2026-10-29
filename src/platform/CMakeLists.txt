@@ -10,6 +10,7 @@ find_package(LayerShellQt 6.0 REQUIRED)
 find_package(Qt6Keychain REQUIRED)
 
 add_library(pou_platform STATIC
+    autostart.cpp autostart.h
     copykeys.cpp copykeys.h
     gameinput.cpp gameinput.h
     gamewindow.cpp gamewindow.h
