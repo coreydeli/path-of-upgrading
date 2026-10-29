@@ -298,7 +298,11 @@ Rectangle {
             visible: card.report.wearIn.length > 0
             spacing: Kirigami.Units.smallSpacing
 
+            // in line with the first row when the buttons take two
             QQC2.Label {
+                Layout.alignment: Qt.AlignTop
+                Layout.preferredHeight: wearButtons.count > 0 ? wearButtons.itemAt(0).height : implicitHeight
+                verticalAlignment: Text.AlignVCenter
                 opacity: 0.7
                 text: qsTr("Wear as")
             }
@@ -308,6 +312,8 @@ Rectangle {
                 spacing: Kirigami.Units.smallSpacing
 
                 Repeater {
+                    id: wearButtons
+
                     model: card.report.wearIn
 
                     QQC2.ToolButton {

@@ -354,6 +354,29 @@ private Q_SLOTS:
         QVERIFY(!button(popup, u"Ring 2"_s));
     }
 
+    void wearInRows()
+    {
+        // jewels, with too many slots for one row
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport jewel = aReport();
+        for (int n = 1; n <= 12; ++n)
+            jewel.wearIn << u"Jewel %1"_s.arg(n);
+        popup.showReport(jewel, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        const QQuickItem *first = button(popup, u"Jewel 1"_s);
+        const QQuickItem *last = button(popup, u"Jewel 12"_s);
+        const QQuickItem *label = shown(popup, u"Wear as"_s);
+        QVERIFY(first && last && label);
+        const auto middle = [](const QQuickItem *item) {
+            return item->mapToScene(item->boundingRect().center()).y();
+        };
+        QVERIFY(middle(last) > middle(first));
+        QCOMPARE(middle(label), middle(first));
+    }
+
     void cantWear()
     {
         const QString why = u"Couldn't save Wren: the disk is full."_s;
