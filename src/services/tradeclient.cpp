@@ -171,6 +171,9 @@ void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
         request.setRawHeader(QByteArrayLiteral("Cookie"), QByteArrayLiteral("POESESSID=") + m_sessionId);
         // or the network's cookie jar sends its own in place of it
         request.setAttribute(QNetworkRequest::CookieLoadControlAttribute, QNetworkRequest::Manual);
+        // and a redirect to another site doesn't get it
+        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                             QNetworkRequest::SameOriginRedirectPolicy);
     }
     TradeReply *trade = waiting.trade;
     QNetworkReply *reply =
