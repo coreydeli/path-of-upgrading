@@ -26,6 +26,7 @@ qt_add_library(pou_app STATIC
     tradefinder.cpp tradefinder.h
     tradeoptions.cpp tradeoptions.h
     tradereport.cpp tradereport.h
+    traderesults.cpp traderesults.h
     tradesession.cpp tradesession.h
 )
 
