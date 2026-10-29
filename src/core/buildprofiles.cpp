@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "core/buildprofiles.h"
 
+#include <algorithm>
+
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
@@ -272,6 +274,35 @@ const BuildProfile *buildProfile(QStringView id)
             return &p;
     }
     return nullptr;
+}
+
+const QStringList &ratedGroups()
+{
+    static const QStringList groups = {
+        u"Weapon"_s, u"Offhand"_s, u"Helmet"_s, u"Body Armour"_s, u"Gloves"_s,
+        u"Boots"_s,  u"Belt"_s,    u"Amulet"_s, u"Ring"_s,        u"Jewel"_s,
+    };
+    return groups;
+}
+
+QList<TweakableStat> tweakableStats(const BuildProfile &profile)
+{
+    QList<TweakableStat> out;
+    for (const ProfileStat &s : profile.stats) {
+        if (std::ranges::any_of(out, [&s](const TweakableStat &t) { return t.label == s.label; }))
+            continue;
+        TweakableStat tweakable{.label = s.label, .groups = {}};
+        for (const QString &group : ratedGroups()) {
+            // where any of the stats with the label counts
+            const bool counts = std::ranges::any_of(profile.stats, [&](const ProfileStat &other) {
+                return other.label == s.label && other.importance.at(group) > 0;
+            });
+            if (counts)
+                tweakable.groups << group;
+        }
+        out << tweakable;
+    }
+    return out;
 }
 
 } // namespace pou

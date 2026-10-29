@@ -6,6 +6,7 @@
 #include <QList>
 #include <QRegularExpression>
 #include <QString>
+#include <QStringList>
 #include <initializer_list>
 #include <optional>
 #include <utility>
@@ -60,10 +61,26 @@ struct BuildProfile
 };
 
 inline constexpr QStringView defaultBuildProfile = u"life-res";
+// For scoring by your stat weights alone, as no profile has it.
+inline constexpr QStringView noBuildProfile = u"none";
 
 const QList<BuildProfile> &buildProfiles();
 // The profile with that id; the default one for an empty id. Null when no
 // profile has the id.
 const BuildProfile *buildProfile(QStringView id);
+
+// The slot groups the gear score rates, in the order of the slots.
+const QStringList &ratedGroups();
+
+// A profile's stat as you tweak it: once for each label, as tweaks go by
+// label, with the slot groups it counts in.
+struct TweakableStat
+{
+    QString label;
+    QStringList groups;
+};
+
+// In the order of the profile's stats.
+QList<TweakableStat> tweakableStats(const BuildProfile &profile);
 
 } // namespace pou
