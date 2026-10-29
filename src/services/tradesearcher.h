@@ -92,6 +92,8 @@ public:
     ~TradeFetch() override;
 
     bool isFinished() const { return m_finished; }
+    // Rejected, with the reason in errorString(), when there are no trade
+    // searches, see TradeSearcher::unavailable().
     TradeReply::Error error() const { return m_error; }
     QString errorString() const { return m_errorString; }
     std::chrono::seconds retryAfter() const { return m_retryAfter; }
@@ -115,6 +117,7 @@ private:
     TradeFetch(TradeClient *client, const QStringList &listingIds, const QString &searchId, QObject *parent);
     void next();
     void answered();
+    void fail(const QString &why);
     void finish();
 
     TradeClient *m_client;
@@ -152,7 +155,8 @@ public:
     // down the listing status it asks for, it's searched again for online
     // listings, as that status is from then on.
     TradeSearch *search(const QJsonObject &body);
-    // Listings a search found, a few at a time.
+    // Listings a search found, a few at a time. Nothing is asked of the site
+    // when searches are off.
     TradeFetch *fetch(const QStringList &listingIds, const QString &searchId);
 
 private:

@@ -212,6 +212,17 @@ private Q_SLOTS:
         QCOMPARE(search->errorString(), why);
         QVERIFY(search->url().isEmpty());
         QVERIFY(network.sent.isEmpty());
+
+        // and what an earlier search found isn't fetched either
+        TradeFetch *fetch = searcher.fetch(listingIds(3), u"Ab3dE9"_s);
+        QSignalSpy fetched(fetch, &TradeFetch::finished);
+        QCOMPARE(fetched.size(), 0);
+        QVERIFY(fetched.wait());
+        QCOMPARE(fetch->error(), TradeReply::Error::Rejected);
+        QCOMPARE(fetch->errorString(), why);
+        QCOMPARE(fetch->fetched(), 0);
+        QCOMPARE(fetch->answer(), listings({}));
+        QVERIFY(network.sent.isEmpty());
     }
 
     void takesNewSettings()
