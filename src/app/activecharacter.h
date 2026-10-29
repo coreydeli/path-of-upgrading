@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QString>
+#include <functional>
 #include <optional>
 
 namespace pou {
@@ -42,6 +43,9 @@ public:
     // it can't go there or it can't be saved, with why in errorString().
     bool wear(const QString &slot, const Item &item);
     bool takeOff(const QString &slot);
+    // Saves a change to how items are judged for it, like its weights. False
+    // when there's none or it can't be saved.
+    bool change(const std::function<void(Character &)> &edit);
     QString errorString() const { return m_error; }
 
 Q_SIGNALS:
