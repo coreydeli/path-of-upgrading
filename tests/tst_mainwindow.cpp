@@ -109,6 +109,8 @@ Item item(const QString &text)
 }
 
 const QString jewel = u"Item Class: Jewels\nRarity: Rare\nPale Eye\nRuby\n--------\n+8% to Fire Resistance"_s;
+const QString luckyJewel = u"Item Class: Jewels\nRarity: Rare\nGrim Spark\nEmerald\n--------\n"
+                           "+8% to Fire Resistance\n10% increased Rarity of Items found"_s;
 
 // a build with nothing on
 const QString ranger = u"<PathOfBuilding2><Build level=\"40\" className=\"Ranger\"/></PathOfBuilding2>"_s;
@@ -810,6 +812,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"weightsAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
         QVERIFY(!isVisible(w.find(u"noWeightsText"_s)));
+        QVERIFY(!isVisible(w.find(u"suggestButton"_s)));
         QVERIFY(!isVisible(w.find(u"resetButton"_s)));
         QVERIFY(!isVisible(w.find(u"weightsHelp"_s)));
         QVERIFY(!isVisible(w.find(u"weightsError"_s)));
@@ -912,6 +915,79 @@ private Q_SLOTS:
         QCOMPARE(w.app->character().character().weights.value(u"# to maximum Life"_s), 2.0);
         QCOMPARE(life->property("displayText").toString(), QLocale().toString(2));
         QVERIFY(!isVisible(message));
+    }
+
+    void nothingToSuggest()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QObject *suggest = w.find(u"suggestButton"_s);
+        QVERIFY(isVisible(suggest));
+        QVERIFY(!suggest->property("enabled").toBool());
+        QCOMPARE(suggest->property("description").toString(),
+                 u"Your gear has no stats to suggest weights for."_s);
+    }
+
+    void useSuggestedWeights()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({{u"Jewel 2"_s, item(jewel)}});
+        QObject *suggest = w.find(u"suggestButton"_s);
+        QVERIFY(suggest->property("enabled").toBool());
+        QCOMPARE(suggest->property("description").toString(), QString());
+        QVERIFY(click(suggest));
+        QObject *dialog = w.find(u"suggestDialog"_s);
+        QVERIFY(isVisible(dialog));
+
+        QObject *fire = w.find(u"suggestion:#% to Fire Resistance"_s);
+        QCOMPARE(text(fire), u"#% to Fire Resistance"_s);
+        QCOMPARE(fire->property("description").toString(),
+                 u"On one of your items, at 8. Your weight for it is 1.5"_s);
+        QCOMPARE(text(fire->findChild<QObject *>(u"suggestedWeight"_s)), QLocale().toString(3.8, 'f', 1));
+        // as it has a weight already
+        QVERIFY(!button(dialog, u"Add the Missing Ones"_s)->property("enabled").toBool());
+
+        QVERIFY(click(button(dialog, u"Use These"_s)));
+        QCOMPARE(w.app->character().character().weights, Weights({{u"#% to Fire Resistance"_s, 3.8}}));
+        QCOMPARE(text(w.find(u"undoMessage"_s)), u"Your weights are the suggested ones now."_s);
+        QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    void addSuggestedWeights()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({{u"Jewel 2"_s, item(luckyJewel)}});
+        QVERIFY(click(w.find(u"suggestButton"_s)));
+        QObject *dialog = w.find(u"suggestDialog"_s);
+        QVERIFY(isVisible(dialog));
+        QCOMPARE(
+            w.find(u"suggestion:#% increased Rarity of Items found"_s)->property("description").toString(),
+            u"On one of your items, at 10"_s);
+
+        QObject *add = button(dialog, u"Add the Missing Ones"_s);
+        QVERIFY(add->property("enabled").toBool());
+        QVERIFY(click(add));
+        const Weights &weights = w.app->character().character().weights;
+        QCOMPARE(weights.value(u"#% increased Rarity of Items found"_s), 3.0);
+        QCOMPARE(weights.value(u"#% to Fire Resistance"_s), 1.5);
+        QCOMPARE(text(w.find(u"undoMessage"_s)), u"Added a suggested weight to yours."_s);
+        QTRY_VERIFY(!isVisible(dialog));
+        QVERIFY(isVisible(w.find(u"weight:#% increased Rarity of Items found"_s)));
+    }
+
+    void keepWeights()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({{u"Jewel 2"_s, item(luckyJewel)}});
+        QVERIFY(click(w.find(u"suggestButton"_s)));
+        QObject *dialog = w.find(u"suggestDialog"_s);
+        QVERIFY(click(button(dialog, u"Cancel"_s)));
+        QCOMPARE(w.app->character().character().weights, defaultWeights());
+        QTRY_VERIFY(!isVisible(dialog));
     }
 
     void cantSaveWeights()
