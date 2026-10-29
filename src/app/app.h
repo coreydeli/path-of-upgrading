@@ -18,6 +18,7 @@
 #include "app/statweights.h"
 #include "app/tradefinder.h"
 #include "app/tradeoptions.h"
+#include "app/traderesults.h"
 #include "app/tradesession.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
@@ -102,6 +103,8 @@ public:
     TradeSearcher &trade() { return m_trade; }
     // For the character you play.
     TradeFinder &finder() { return m_finder; }
+    // The listings of the last search that found some.
+    TradeResults &results() { return m_results; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -140,6 +143,7 @@ private:
     RatesStore m_rates;
     TradeSearcher m_trade;
     TradeFinder m_finder;
+    TradeResults m_results;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;

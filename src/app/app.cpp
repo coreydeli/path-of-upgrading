@@ -49,6 +49,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_trade(&m_tradeClient)
     , m_finder(&m_trade, &m_tradeData, &m_rates)
+    , m_results(&m_trade, &m_rates)
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)
@@ -90,6 +91,12 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
         m_trade.setLeagues(m_tradeData.leagues());
         if (m_trade.unavailable().isEmpty())
             m_rates.refresh(m_trade.league().tradeId());
+    });
+    // what a search finds is what the results have, and they ask the site
+    // only once you want to see them
+    connect(&m_finder, &TradeFinder::finished, this, [this] {
+        if (const std::optional<TradeFinder::Found> &found = m_finder.found())
+            m_results.setSearch(*found);
     });
     // the site takes bigger searches signed in, so what it limited them to
     // before isn't kept
