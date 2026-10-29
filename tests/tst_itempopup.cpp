@@ -317,6 +317,53 @@ private Q_SLOTS:
         QCOMPARE(browser.opened, QList<QUrl>{found.url});
     }
 
+    void showResults()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.setTradeAvailable(true);
+        popup.showReport(aReport(), ScreenPoint{.screen = u"DP-1"_s, .position = {200, 300}});
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+
+        // nothing to show yet, or when the search failed
+        popup.setTrade(searchingReport());
+        QVERIFY(!button(popup, u"Show Results"_s));
+        popup.setTrade(failedReport(u"The trade site is down."_s));
+        QVERIFY(!button(popup, u"Show Results"_s));
+        // or found nothing, though the search is there to open
+        TradeFinder::Found found{
+            .league = u"Runes of Aldur"_s,
+            .url = QUrl(u"https://www.pathofexile.com/trade2/search/poe2/Runes%20of%20Aldur/Ab3dE9"_s),
+            .total = 0,
+        };
+        popup.setTrade(reportOf(found));
+        QVERIFY(button(popup, u"Open on the Trade Site"_s));
+        QVERIFY(!button(popup, u"Show Results"_s));
+
+        found.total = 12;
+        popup.setTrade(reportOf(found));
+        QVERIFY(button(popup, u"Open on the Trade Site"_s));
+        QSignalSpy asked(&popup, &ItemPopup::resultsAsked);
+        QVERIFY(click(popup, u"Show Results"_s));
+        QCOMPARE(asked.size(), 1);
+        // on the screen the popup is on
+        QCOMPARE(asked.first().first().toString(), u"DP-1"_s);
+    }
+
+    void showResultsFromAMessage()
+    {
+        // where the mouse wasn't known, there's no screen to name
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), std::nullopt);
+        QSignalSpy asked(&popup, &ItemPopup::resultsAsked);
+        popup.showResults();
+        QCOMPARE(asked.size(), 1);
+        QVERIFY(asked.first().first().toString().isEmpty());
+    }
+
     void tradeFailed()
     {
         QQmlEngine engine;

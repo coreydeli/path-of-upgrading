@@ -429,12 +429,24 @@ Rectangle {
                 }
             }
 
-            QQC2.Button {
+            Flow {
+                Layout.fillWidth: true
                 visible: card.trade.url.toString() !== ""
-                text: qsTr("Open on the Trade Site")
-                icon.name: "internet-web-browser"
-                // in your browser, where you can sign in to buy
-                onClicked: Qt.openUrlExternally(card.trade.url)
+                spacing: Kirigami.Units.smallSpacing
+
+                QQC2.Button {
+                    visible: card.trade.listed
+                    text: qsTr("Show Results")
+                    icon.name: "view-list-details"
+                    onClicked: card.popup.showResults()
+                }
+
+                QQC2.Button {
+                    text: qsTr("Open on the Trade Site")
+                    icon.name: "internet-web-browser"
+                    // in your browser, where you can sign in to buy
+                    onClicked: Qt.openUrlExternally(card.trade.url)
+                }
             }
         }
     }

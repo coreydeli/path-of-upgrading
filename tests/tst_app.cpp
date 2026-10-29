@@ -419,6 +419,34 @@ private Q_SLOTS:
         QVERIFY(panel.unavailable().isEmpty());
     }
 
+    void resultsFromThePopup()
+    {
+        // on the screen the item was read on, whatever the mouse does since
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        r.app.checker().check();
+        Q_EMIT r.input->itemCopied(itemtexts::helmetNew,
+                                   ScreenPoint{.screen = u"DP-1"_s, .position = {20, 20}});
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}, twoListings()};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QVERIFY(r.app.checker().popup().trade().listed);
+        QVERIFY(!r.app.resultsPanel().isVisible());
+
+        r.input->mouseAt = ScreenPoint{.screen = u"DP-9"_s, .position = {5, 5}};
+        r.app.checker().popup().showResults();
+        QVERIFY(r.app.resultsPanel().isVisible());
+        QCOMPARE(r.app.resultsPanel().screenName(), u"DP-1"_s);
+        QTRY_COMPARE(r.app.results().rowCount(), 2);
+    }
+
     void resultsKeyShowsTheLastSearch()
     {
         // the listings are asked for as the window opens

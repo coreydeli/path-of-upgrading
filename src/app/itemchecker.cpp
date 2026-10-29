@@ -21,6 +21,7 @@ ItemChecker::ItemChecker(QQmlEngine *engine, GameInput *input, QObject *parent)
     connect(&m_reader, &ItemReader::failed, &m_popup, &ItemPopup::showMessage);
     connect(&m_judge, &ItemJudge::checked, this, &ItemChecker::judged);
     connect(&m_popup, &ItemPopup::tradeAsked, this, &ItemChecker::findOnTrade);
+    connect(&m_popup, &ItemPopup::resultsAsked, this, &ItemChecker::resultsAsked);
     connect(&m_popup, &ItemPopup::wearAsked, this,
             [this](const QString &slot) { Q_EMIT wearAsked(m_judge.current().item, slot); });
 }

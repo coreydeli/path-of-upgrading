@@ -74,6 +74,8 @@ public:
     void setTrade(const TradeReport &trade);
     // For the buttons, see tradeAsked().
     Q_INVOKABLE void findOnTrade(pou::TradeFinder::Kind kind);
+    // For the button that shows the listings, see resultsAsked().
+    Q_INVOKABLE void showResults();
 
     // For the buttons that say you wear the item, see wearAsked().
     Q_INVOKABLE void wear(const QString &slot);
@@ -103,6 +105,9 @@ Q_SIGNALS:
     void tradeChanged();
     // When you ask for a search for the item it has.
     void tradeAsked(pou::TradeFinder::Kind kind);
+    // When you ask to see the listings it found, with the name of the screen the
+    // popup is on, or none when it is on the main one.
+    void resultsAsked(const QString &screen);
     void wearErrorChanged();
     // When you say you wear the item it has in the slot.
     void wearAsked(const QString &slot);

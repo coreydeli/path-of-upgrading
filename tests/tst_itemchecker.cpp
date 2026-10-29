@@ -188,6 +188,21 @@ private Q_SLOTS:
         QCOMPARE(asked.first().at(1).toString(), u"Helmet"_s);
     }
 
+    void resultsAsked()
+    {
+        // as the popup's button does, from the screen the item was read on
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew,
+                                ScreenPoint{.screen = u"DP-1"_s, .position = {200, 300}});
+        QSignalSpy asked(&checker, &ItemChecker::resultsAsked);
+        checker.popup().showResults();
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(asked.first().first().toString(), u"DP-1"_s);
+    }
+
     void judgedAgain()
     {
         // for the character you play now, as once you wear it

@@ -89,6 +89,11 @@ void ItemPopup::findOnTrade(TradeFinder::Kind kind)
     Q_EMIT tradeAsked(kind);
 }
 
+void ItemPopup::showResults()
+{
+    Q_EMIT resultsAsked(m_mouse ? m_mouse->screen : QString());
+}
+
 void ItemPopup::wear(const QString &slot)
 {
     Q_EMIT wearAsked(slot);

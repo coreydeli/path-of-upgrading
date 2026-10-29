@@ -81,6 +81,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_checker.setSettings(settings);
     m_resultsPanel.setSettings(settings.overlay);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
+    connect(&m_checker, &ItemChecker::resultsAsked, &m_resultsPanel, &ResultsPanel::show);
     connect(&m_checkedItems, &CheckedItems::checkAgainAsked, &m_checker, &ItemChecker::checkItem);
     connect(&m_checker, &ItemChecker::wearAsked, this, [this](const Item &item, const QString &slot) {
         m_character.wear(slot, item);

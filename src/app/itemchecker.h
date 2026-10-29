@@ -49,6 +49,9 @@ public:
 Q_SIGNALS:
     // Each item read, gear or not.
     void itemRead(const Item &item);
+    // When you ask in the popup to see the listings of the search, on the screen
+    // it is on.
+    void resultsAsked(const QString &screen);
     // When you say in the popup you wear the item in the slot.
     void wearAsked(const Item &item, const QString &slot);
 
