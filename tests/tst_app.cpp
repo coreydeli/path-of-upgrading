@@ -86,16 +86,22 @@ QByteArray json(const QJsonObject &object)
 
 // The trade site and poe.ninja, with what they say as the app starts: the
 // site's data with its leagues, then what currencies are worth in one.
-FakeNetwork *online()
+// What the trade site and then poe.ninja say when the app starts.
+QList<FakeAnswer> siteAnswers()
 {
     QJsonArray leagues;
     for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
         leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
+    return {{.body = json(tradefixtures::stats())},
+            {.body = json(tradefixtures::filters())},
+            {.body = json(QJsonObject{{u"result"_s, leagues}})},
+            {.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"}};
+}
+
+FakeNetwork *online()
+{
     auto *network = new FakeNetwork;
-    network->answers = {{.body = json(tradefixtures::stats())},
-                        {.body = json(tradefixtures::filters())},
-                        {.body = json(QJsonObject{{u"result"_s, leagues}})},
-                        {.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"}};
+    network->answers = siteAnswers();
     return network;
 }
 
@@ -472,6 +478,44 @@ private Q_SLOTS:
         QCOMPARE(r.asked().size(), 4);
         QVERIFY(r.app.trade().unavailable().isEmpty());
         QVERIFY(r.app.checker().popup().isTradeAvailable());
+    }
+
+    void statPicker()
+    {
+        // which only asks the trade site for its stats while there are
+        // trade searches
+        Folders folders;
+        Settings settings;
+        settings.trade.league.soloSelfFound = true;
+        folders.set(settings);
+        // empty, with room for more requests than it guesses there is
+        auto *empty = new FakeNetwork;
+        const FakeAnswer nothing{.headers = {{"x-rate-limit-ip", "20:10:0"}}};
+        empty->answers = {nothing, nothing, nothing};
+        Running r(folders, desktop(), empty);
+        StatPicker *picker = r.app.statPicker();
+        picker->refresh();
+        QVERIFY(r.asked().isEmpty());
+        QCOMPARE(picker->rowCount(), equipmentKeys().size());
+
+        settings.trade.league.soloSelfFound = false;
+        QVERIFY(r.app.settings().set(settings));
+        QTest::ignoreMessage(QtWarningMsg, "The trade site's stats came back empty");
+        QTest::ignoreMessage(QtWarningMsg, "The trade site's filters came back empty");
+        QTest::ignoreMessage(QtWarningMsg, "The trade site's leagues came back empty");
+        // which with no leagues are for Standard
+        QTest::ignoreMessage(QtWarningMsg, "Couldn't get currency rates for Standard from poe.ninja: "
+                                           "poe.ninja has no Divine Orb price for Standard.");
+        QSignalSpy refreshed(&r.app.tradeData(), &TradeDataStore::refreshed);
+        QVERIFY(refreshed.wait());
+        QVERIFY(r.app.tradeData().data().stats.isEmpty());
+
+        // and again when it didn't get them
+        r.network->answers = siteAnswers();
+        QSignalSpy reset(picker, &StatPicker::modelReset);
+        picker->refresh();
+        QVERIFY(reset.wait());
+        QCOMPARE(picker->rowCount(), equipmentKeys().size() + 4);
     }
 
     void offMeanwhile()

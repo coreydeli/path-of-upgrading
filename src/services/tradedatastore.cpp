@@ -39,24 +39,31 @@ TradeDataStore::~TradeDataStore()
         delete source.reply;
 }
 
+void TradeDataStore::load()
+{
+    if (m_read)
+        return;
+    for (Source &source : m_sources) {
+        const QString file = path(source);
+        if (const std::optional<QJsonObject> json = readJsonFile(file); json && take(source, *json))
+            source.fetched = QFileInfo(file).lastModified().toUTC();
+    }
+    m_read = true;
+}
+
 void TradeDataStore::refresh(bool force)
 {
     // that one's done when what's asked for comes in
     if (isRefreshing())
         return;
+    load();
     const QDateTime now = QDateTime::currentDateTimeUtc();
     for (Source &source : m_sources) {
-        if (!m_read) {
-            const QString file = path(source);
-            if (const std::optional<QJsonObject> json = readJsonFile(file); json && take(source, *json))
-                source.fetched = QFileInfo(file).lastModified().toUTC();
-        }
         if (!force && fresh(source.fetched, now))
             continue;
         source.reply = m_client->data(source.name);
         connect(source.reply, &TradeReply::finished, this, [this, &source] { answered(source); });
     }
-    m_read = true;
     if (!isRefreshing())
         QMetaObject::invokeMethod(this, &TradeDataStore::finish, Qt::QueuedConnection);
 }

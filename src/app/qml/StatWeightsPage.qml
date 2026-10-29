@@ -12,6 +12,7 @@ FormCard.FormCardPage {
     id: weightsPage
 
     required property StatWeights weights
+    required property StatPicker picker
 
     title: qsTr("Stat Weights")
 
@@ -88,12 +89,20 @@ FormCard.FormCardPage {
             objectName: "noWeightsText"
             visible: weightsPage.weights.character !== "" && weightRows.count === 0
             text: qsTr("You have no weights.")
-            description: qsTr("Every item comes to 0 by them. Suggest some from your gear, or go back to the defaults.")
+            description: qsTr("Every item comes to 0 by them. Add some, suggest some from your gear, or go back to the defaults.")
             textItem.wrapMode: Text.Wrap
         }
 
         FormCard.FormDelegateSeparator {
             visible: weightsPage.weights.character !== ""
+        }
+
+        FormCard.FormButtonDelegate {
+            objectName: "addStatButton"
+            visible: weightsPage.weights.character !== ""
+            text: qsTr("Add a Stat")
+            icon.name: "list-add"
+            onClicked: statPicker.open()
         }
 
         FormCard.FormButtonDelegate {
@@ -133,6 +142,16 @@ FormCard.FormCardPage {
         objectName: "weightsHelp"
         visible: weightsPage.weights.character !== ""
         text: qsTr("A weight is what one of a stat is worth to you, in points. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 life. The popup judges items by them when the gear score has no build profile, and so does searching the trade site by your weights.")
+    }
+
+    StatPickerDialog {
+        id: statPicker
+
+        objectName: "statPicker"
+        picker: weightsPage.picker
+        taken: weightsPage.weights.keys
+        takenNote: qsTr("It has a weight already")
+        onPicked: key => weightsPage.weights.add(key)
     }
 
     FormCard.FormCardDialog {

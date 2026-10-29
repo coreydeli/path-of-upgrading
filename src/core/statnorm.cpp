@@ -39,4 +39,13 @@ QString statName(const QString &key)
     return isItemProperty(key) ? key.sliced(key.indexOf(u"] ") + 2) : key;
 }
 
+QString propertyNote(QStringView key)
+{
+    if (key.startsWith(u"[Weapon] "))
+        return u"The weapon's own, with its mods"_s;
+    if (isItemProperty(key))
+        return u"The item's own, with its mods"_s;
+    return {};
+}
+
 } // namespace pou

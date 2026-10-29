@@ -17,6 +17,7 @@ qt_add_library(pou_app STATIC
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
     settingsstore.cpp settingsstore.h
+    statpicker.cpp statpicker.h
     statweights.cpp statweights.h
     tradefinder.cpp tradefinder.h
     tradeoptions.cpp tradeoptions.h
@@ -39,6 +40,7 @@ qt_add_qml_module(pou_app
         qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
+        qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
         qml/ToneLabel.qml
         qml/TradePage.qml

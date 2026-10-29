@@ -48,6 +48,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_gearList(&m_character, &m_settings)
     , m_gearScoring(&m_character)
     , m_statWeights(&m_character)
+    , m_statPicker(&m_tradeData, &m_history)
     , m_tradeOptions(&m_settings, &m_tradeData, &m_rates)
     , m_overlayOptions(&m_settings, &m_hotkeys)
     , m_pobOptions(&m_settings, &m_pob)
@@ -130,6 +131,7 @@ void App::followTrade()
     m_trade.setSettings(m_settings.settings().trade);
     m_finder.setSettings(m_settings.settings());
     m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
+    m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());
     // which does nothing while what there is is fresh
     if (m_trade.unavailable().isEmpty())
         m_tradeData.refresh();

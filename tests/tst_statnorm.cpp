@@ -52,6 +52,13 @@ private Q_SLOTS:
         QVERIFY(pou::isItemProperty(u"[Base] Spirit"));
         QVERIFY(!pou::isItemProperty(u"#% increased Spirit"));
     }
+
+    void propertyNotes()
+    {
+        QCOMPARE(pou::propertyNote(u"[Base] Armour"), u"The item's own, with its mods"_s);
+        QCOMPARE(pou::propertyNote(u"[Weapon] Total DPS"), u"The weapon's own, with its mods"_s);
+        QCOMPARE(pou::propertyNote(u"# to maximum Life"), QString());
+    }
 };
 
 QTEST_GUILESS_MAIN(TestStatNorm)

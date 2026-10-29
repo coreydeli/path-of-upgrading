@@ -143,6 +143,32 @@ private Q_SLOTS:
         QCOMPARE(store.leagues(), QStringList{u"Runes of Aldur"_s});
     }
 
+    void onlyReads()
+    {
+        QTemporaryDir dir;
+        // which refresh() would ask for again
+        QVERIFY(keepAll(dir.path(), 25h, u"Runes of Aldur"_s));
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeDataStore store(&client, dir.path());
+
+        QSignalSpy refreshed(&store, &TradeDataStore::refreshed);
+        store.load();
+        QCOMPARE(store.data().stats.all().size(), 7);
+        QCOMPARE(store.leagues(), QStringList{u"Runes of Aldur"_s});
+        QVERIFY(!store.isRefreshing());
+        QCoreApplication::processEvents();
+        QVERIFY(network.sent.isEmpty());
+        QCOMPARE(refreshed.size(), 0);
+
+        // and only once
+        for (const QString &name : {u"stats"_s, u"filters"_s, u"leagues"_s})
+            QVERIFY(QFile::remove(dir.filePath(name + u".json"_s)));
+        QVERIFY(keep(dir.path(), u"stats"_s, oneStat(u"explicit.stat_spirit"_s), 1h));
+        store.load();
+        QCOMPARE(store.data().stats.all().size(), 7);
+    }
+
     void readsPastBadFiles_data()
     {
         QTest::addColumn<QByteArray>("file");
