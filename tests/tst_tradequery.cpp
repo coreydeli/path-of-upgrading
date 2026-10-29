@@ -109,6 +109,29 @@ StatPick pick(const QString &key, double min)
     return p;
 }
 
+// A site with an explicit "+# to <name>" for each name.
+TradeData tradeDataFor(const QStringList &names)
+{
+    using namespace tradefixtures;
+    QJsonArray entries;
+    for (const QString &name : names)
+        entries << stat(u"explicit."_s + name.toLower(), u"+# to "_s + name, u"explicit"_s);
+    return {StatIndex::fromJson(response({group(u"explicit"_s, entries)})), {}};
+}
+
+// The "equipment_filters" ids of a search.
+QStringList equipmentIds(const TradeQuery &q)
+{
+    return queryOf(q)
+        .value(u"filters")
+        .toObject()
+        .value(u"equipment_filters")
+        .toObject()
+        .value(u"filters")
+        .toObject()
+        .keys();
+}
+
 } // namespace
 
 class TestTradeQuery : public QObject
@@ -394,6 +417,112 @@ private Q_SLOTS:
         const SimilarSearch nameOnly = similarSearch(belt, tradeData(), last);
         QCOMPARE(nameOnly.need, 0);
         QCOMPARE(statGroups(nameOnly), QJsonArray());
+    }
+
+    void looserSearchesMayMissMore()
+    {
+        const QStringList names = {u"Alpha"_s, u"Bravo"_s,   u"Charlie"_s, u"Delta"_s,
+                                   u"Echo"_s,  u"Foxtrot"_s, u"Golf"_s,    u"Hotel"_s};
+        const TradeData data = tradeDataFor(names);
+        QCOMPARE(similarSearchLevels(), 4);
+
+        // how many of n stats a listing has to have, at each level
+        const int needed[4][8] = {
+            {1, 2, 3, 3, 4, 5, 6, 7},
+            {1, 1, 2, 2, 3, 4, 5, 6},
+            {1, 1, 2, 2, 3, 4, 4, 5},
+            {1, 1, 1, 2, 2, 3, 3, 4},
+        };
+        for (int level = 0; level < similarSearchLevels(); ++level) {
+            for (int n = 1; n <= 8; ++n) {
+                StatMap stats;
+                for (int i = 0; i < n; ++i)
+                    stats.add(u"# to "_s + names.at(i), 100);
+                SimilarSearchOptions options;
+                options.level = level;
+                const SimilarSearch q = similarSearch(withStats(u"Helmets"_s, stats), data, options);
+                QCOMPARE(q.total, n);
+                QVERIFY2(q.need == needed[level][n - 1],
+                         qPrintable(u"level %1, %2 stats: %3 needed"_s.arg(level).arg(n).arg(q.need)));
+            }
+        }
+    }
+
+    void looserSearchesAskForLess()
+    {
+        const Item helmet = withStats(u"Helmets"_s, {{u"# to maximum Life"_s, 100}});
+        const double shares[] = {100, 90, 80, 65};
+        for (int level = 0; level < similarSearchLevels(); ++level) {
+            SimilarSearchOptions options;
+            options.level = level;
+            QCOMPARE(firstValue(similarSearch(helmet, tradeData(), options)), minimum(shares[level]));
+        }
+
+        SimilarSearchOptions below;
+        below.level = -3;
+        QCOMPARE(similarSearch(helmet, tradeData(), below).level, 0);
+    }
+
+    void smallValuesKeepTheirDecimals()
+    {
+        const auto minFor = [](double value, int level) {
+            SimilarSearchOptions options;
+            options.level = level;
+            return firstValue(similarSearch(withStats(u"Helmets"_s, {{u"# to maximum Life"_s, value}}),
+                                            tradeData(), options));
+        };
+        QCOMPARE(minFor(2.5, 0), minimum(2.5));
+        QCOMPARE(minFor(3.5, 0), minimum(3));
+        // only a whole point or more is kept from rounding down to nothing
+        QCOMPARE(minFor(0.4, 3), minimum(0.26));
+    }
+
+    void noStatsToSearchFor()
+    {
+        const SimilarSearch q = similarSearch(withStats(u"Helmets"_s, {{u"mystery #"_s, 3}}), tradeData());
+        QCOMPARE(q.total, 0);
+        QCOMPARE(statGroups(q), QJsonArray());
+    }
+
+    void weaponPropertiesBesidesDps()
+    {
+        const Item mace = withStats(u"Two Hand Maces"_s, {{u"[Weapon] Total DPS"_s, 200},
+                                                          {u"[Weapon] Physical DPS"_s, 150},
+                                                          {u"[Weapon] Elemental DPS"_s, 50},
+                                                          {u"[Weapon] Attacks per Second"_s, 1.2},
+                                                          {u"[Weapon] Critical Hit Chance"_s, 5},
+                                                          {u"[Base] Runic Ward"_s, 100},
+                                                          {u"[Base] Block Chance"_s, 25},
+                                                          {u"[Base] Armour"_s, 300}});
+        const SimilarSearch q = similarSearch(mace, tradeData());
+        QCOMPARE(equipmentIds(q), QStringList({u"ar"_s, u"dps"_s}));
+        QCOMPARE(filterOf(q, u"equipment_filters", u"dps"), minimum(180));
+    }
+
+    void uniquesAreSearchedByName()
+    {
+        // no base type of its own, so none to ask for
+        const Item ring =
+            parseItem(u"Item Class: Rings\nRarity: Unique\nSeal of Gold\n--------\n+10 to maximum Life"_s)
+                .value();
+        const SimilarSearch byName = similarSearch(ring, tradeData());
+        QCOMPARE(queryOf(byName).value(u"name").toString(), u"Seal of Gold"_s);
+        QVERIFY(!queryOf(byName).contains(u"type"));
+
+        Item nameless;
+        nameless.itemClass = u"Rings"_s;
+        nameless.rarity = u"Unique"_s;
+        nameless.slot = u"Ring"_s;
+        nameless.stats = {{u"# to maximum Life"_s, 10}};
+        const SimilarSearch bare = similarSearch(nameless, tradeData());
+        QVERIFY(bare.unique);
+        QVERIFY(!queryOf(bare).contains(u"name"));
+
+        // the base's defences depend on the roll, not on what makes it that item
+        const Item cap = parseItem(u"Item Class: Helmets\nRarity: Unique\nGoldrim\nLeather Cap\n--------\n"
+                                   "Evasion Rating: 100\n--------\n+30 to maximum Life"_s)
+                             .value();
+        QVERIFY(equipmentIds(similarSearch(cap, tradeData())).isEmpty());
     }
 
     void similarSkipsIgnoredStats()
