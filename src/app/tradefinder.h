@@ -62,6 +62,9 @@ public:
     // The character you play, whose build profile and weights say what's
     // better and whose ignored stats are left out.
     void setCharacter(const Character &character);
+    // Upgrade searches start at their full size again, as the site takes
+    // bigger ones signed in than signed out.
+    void forgetSize() { m_size = 0; }
 
     // Calls off the one it's busy with. While the trade site's stats are
     // still to come, it waits for them, but it goes by the rates it has.

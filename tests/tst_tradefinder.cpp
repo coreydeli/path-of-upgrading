@@ -577,6 +577,26 @@ private Q_SLOTS:
         QCOMPARE(site.finder.found()->searchId, u"s2"_s);
     }
 
+    void forgetsTheSize()
+    {
+        // so that a search signed in is tried at full size
+        const Character character = inGrimCrown();
+        Site site;
+        QVERIFY(site.hasData(manyStats()));
+        site.finder.setCharacter(character);
+        site.network.answers = {tooManyFilters(), found(u"s1"_s, 3)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 2);
+        QVERIFY(site.searched(1) != site.searched(0));
+
+        site.finder.forgetSize();
+        site.network.answers = {found(u"s2"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 3);
+        QCOMPARE(site.searched(2), site.searched(0));
+        QCOMPARE(site.finder.found()->searchId, u"s2"_s);
+    }
+
     void smallerAndLooser()
     {
         const Character character = inGrimCrown();
