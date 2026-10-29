@@ -135,7 +135,7 @@ struct Window
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
 
-    explicit Window(bool hotkeys = true)
+    explicit Window(bool hotkeys = true, bool startHidden = false)
     {
         shortcuts->available = hotkeys;
         app = std::make_unique<App>(
@@ -148,7 +148,11 @@ struct Window
                        .autostart = dir.filePath(u"autostart/made-up.desktop"_s)});
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
-        QObject *made = main.createWithInitialProperties({{u"app"_s, QVariant::fromValue(app.get())}});
+        QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
+        // which it isn't unless it's said to be
+        if (startHidden)
+            properties.insert(u"startHidden"_s, true);
+        QObject *made = main.createWithInitialProperties(properties);
         if (!made)
             qWarning() << main.errorString();
         window.reset(qobject_cast<QQuickWindow *>(made));
@@ -320,6 +324,22 @@ private Q_SLOTS:
         QVERIFY(w.window);
         QCOMPARE(w.window->title(), u"Path of Upgrading"_s);
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+    }
+
+    void showsItself()
+    {
+        Window w;
+        QVERIFY(w.window->isVisible());
+    }
+
+    void startsHidden()
+    {
+        Window w(true, true);
+        QVERIFY(w.window);
+        QVERIFY(!w.window->isVisible());
+        // and is there when the tray asks
+        w.window->show();
+        QVERIFY(w.window->isVisible());
     }
 
     void noCharacters()
