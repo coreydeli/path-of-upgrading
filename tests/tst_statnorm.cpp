@@ -41,6 +41,17 @@ private Q_SLOTS:
         // whole words only
         QVERIFY(!pou::isConditionalStat(u"#% increased Damage with Whips"_s));
     }
+
+    void names()
+    {
+        QCOMPARE(pou::statName(u"[Base] Armour"_s), u"Armour"_s);
+        QCOMPARE(pou::statName(u"[Weapon] Total DPS"_s), u"Total DPS"_s);
+        QCOMPARE(pou::statName(u"# to maximum Life"_s), u"# to maximum Life"_s);
+        // a mod that only starts with a bracket
+        QCOMPARE(pou::statName(u"[Totem] #% increased Life"_s), u"[Totem] #% increased Life"_s);
+        QVERIFY(pou::isItemProperty(u"[Base] Spirit"));
+        QVERIFY(!pou::isItemProperty(u"#% increased Spirit"));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestStatNorm)

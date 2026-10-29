@@ -29,4 +29,14 @@ bool isConditionalStat(const QString &text)
     return conditional.match(text).hasMatch();
 }
 
+bool isItemProperty(QStringView key)
+{
+    return key.startsWith(u"[Base] ") || key.startsWith(u"[Weapon] ");
+}
+
+QString statName(const QString &key)
+{
+    return isItemProperty(key) ? key.sliced(key.indexOf(u"] ") + 2) : key;
+}
+
 } // namespace pou
