@@ -108,6 +108,7 @@ private Q_SLOTS:
     {
         Weighing w;
         QCOMPARE(w.weights.rowCount(), 0);
+        QVERIFY(w.weights.keys().isEmpty());
         QCOMPARE(w.weights.character(), QString());
         QVERIFY(w.weights.suggestions().isEmpty());
         QVERIFY(!w.weights.suggestsNew());
@@ -131,6 +132,7 @@ private Q_SLOTS:
         // the item's own first
         QCOMPARE(w.keys(), QStringList({armour, u"[Weapon] Total DPS"_s, u"# to Dexterity"_s, life,
                                         u"#% to Fire Resistance"_s}));
+        QCOMPARE(w.weights.keys(), w.keys());
         QCOMPARE(w.of(armour, StatWeights::NameRole).toString(), u"Armour"_s);
         QCOMPARE(w.of(armour, StatWeights::NoteRole).toString(), u"The item's own, with its mods"_s);
         QCOMPARE(w.of(armour, StatWeights::WeightRole).toDouble(), 0.05);
@@ -226,7 +228,7 @@ private Q_SLOTS:
 
         w.weights.remove(life);
         QCOMPARE(w.saved(), Weights({{rarity, 1}}));
-        QCOMPARE(w.keys(), QStringList({rarity}));
+        QCOMPARE(w.weights.keys(), QStringList({rarity}));
     }
 
     void resetAndUndo()

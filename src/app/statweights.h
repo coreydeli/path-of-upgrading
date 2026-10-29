@@ -47,6 +47,8 @@ class StatWeights : public QAbstractListModel
     // The name of the one you play, empty while you play nobody and there
     // are no rows.
     Q_PROPERTY(QString character READ character NOTIFY changed)
+    // The stats with a weight, in the order of the rows.
+    Q_PROPERTY(QStringList keys READ keys NOTIFY changed)
     // The weights every character starts with.
     Q_PROPERTY(bool defaults READ isDefault NOTIFY changed)
     // From the gear the character wears, the stats on the most items first.
@@ -74,6 +76,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     QString character() const;
+    QStringList keys() const { return m_keys; }
     bool isDefault() const;
     QList<WeightSuggestion> suggestions() const { return m_suggestions; }
     bool suggestsNew() const;
