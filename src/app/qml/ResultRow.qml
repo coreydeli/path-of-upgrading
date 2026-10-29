@@ -157,6 +157,16 @@ Item {
                 }
             }
 
+            ToneLabel {
+                Layout.fillWidth: true
+                visible: text !== ""
+                wrapMode: Text.Wrap
+                font: Kirigami.Theme.smallFont
+                text: row.verdict.caps
+                tone: Tone.Good
+                colorblind: row.colorblind
+            }
+
             QQC2.Label {
                 Layout.fillWidth: true
                 visible: text !== ""
