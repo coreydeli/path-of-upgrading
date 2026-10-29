@@ -118,6 +118,7 @@ Kirigami.ApplicationWindow {
         StatWeightsPage {
             id: weightsPage
             weights: root.app.statWeights
+            picker: root.app.statPicker
         }
 
         PobPage {

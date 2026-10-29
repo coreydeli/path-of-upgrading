@@ -18,6 +18,7 @@
 #include <QJSValue>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QKeyEvent>
 #include <QKeySequence>
 #include <QLocale>
 #include <QQmlComponent>
@@ -29,6 +30,7 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QtQuickTest/quicktest.h>
 #include <functional>
 #include <memory>
 
@@ -210,6 +212,18 @@ struct Window
         QSignalSpy refreshed(&app->rates(), &RatesStore::refreshed);
         return refreshed.wait();
     }
+
+    // On the offscreen screen, as a list only makes the rows it shows once
+    // it's laid out.
+    bool shown() const
+    {
+        window->resize(1000, 700);
+        window->show();
+        return QTest::qWaitForWindowExposed(window.get());
+    }
+
+    // once what changed is laid out
+    bool settled() const { return QQuickTest::qWaitForPolish(window.get()); }
 };
 
 // What clicking a switch does.
@@ -252,6 +266,16 @@ QString text(QObject *item)
 bool click(QObject *button)
 {
     return button && QMetaObject::invokeMethod(button, "clicked");
+}
+
+// A key pressed in a field, as though it had the focus.
+bool press(QObject *field, Qt::Key key)
+{
+    if (!field)
+        return false;
+    QKeyEvent event(QEvent::KeyPress, key, Qt::NoModifier);
+    QCoreApplication::sendEvent(field, &event);
+    return true;
 }
 
 bool isVisible(QObject *item)
@@ -812,6 +836,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"weightsAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
         QVERIFY(!isVisible(w.find(u"noWeightsText"_s)));
+        QVERIFY(!isVisible(w.find(u"addStatButton"_s)));
         QVERIFY(!isVisible(w.find(u"suggestButton"_s)));
         QVERIFY(!isVisible(w.find(u"resetButton"_s)));
         QVERIFY(!isVisible(w.find(u"weightsHelp"_s)));
@@ -915,6 +940,97 @@ private Q_SLOTS:
         QCOMPARE(w.app->character().character().weights.value(u"# to maximum Life"_s), 2.0);
         QCOMPARE(life->property("displayText").toString(), QLocale().toString(2));
         QVERIFY(!isVisible(message));
+    }
+
+    void addWeight()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        // once the trade site has said what stats there are
+        QVERIFY(w.rated());
+        QVERIFY(click(w.find(u"addStatButton"_s)));
+        QObject *dialog = w.find(u"statPicker"_s);
+        QVERIFY(isVisible(dialog));
+        QVERIFY(!isVisible(w.find(u"pickerMessage"_s)));
+        QVERIFY(!isVisible(w.find(u"noStats"_s)));
+
+        QVERIFY(w.find(u"statSearch"_s)->setProperty("text", u"increased"_s));
+        QVERIFY(w.settled());
+        QObject *speed = w.find(u"stat:#% increased Movement Speed"_s);
+        QVERIFY(!speed->property("enabled").toBool());
+        QCOMPARE(text(speed->findChild<QObject *>(u"statNote"_s)), u"It has a weight already"_s);
+        QObject *armour = w.find(u"stat:#% increased Armour"_s);
+        QVERIFY(armour->property("enabled").toBool());
+        QCOMPARE(text(armour->findChild<QObject *>(u"statNote"_s)), u"Explicit"_s);
+
+        QVERIFY(click(armour));
+        QCOMPARE(w.app->character().character().weights.value(u"#% increased Armour"_s), 1.0);
+        QTRY_VERIFY(!isVisible(dialog));
+        QVERIFY(isVisible(w.find(u"weight:#% increased Armour"_s)));
+    }
+
+    void addWeightByKeys()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QVERIFY(w.rated());
+        QVERIFY(click(w.find(u"addStatButton"_s)));
+        QObject *dialog = w.find(u"statPicker"_s);
+        QObject *search = w.find(u"statSearch"_s);
+        // Armour first, which has a weight already
+        QVERIFY(search->setProperty("text", u"armour"_s));
+        QVERIFY(w.settled());
+        const auto weight = [&w](const QString &key) {
+            return w.app->character().character().weights.value(key, -1);
+        };
+        QVERIFY(press(search, Qt::Key_Return));
+        QVERIFY(press(search, Qt::Key_Down));
+        QVERIFY(press(search, Qt::Key_Up));
+        QVERIFY(press(search, Qt::Key_Return));
+        QCOMPARE(weight(u"#% increased Armour"_s), -1.0);
+        QVERIFY(isVisible(dialog));
+
+        QVERIFY(press(search, Qt::Key_Down));
+        QVERIFY(press(search, Qt::Key_Return));
+        QCOMPARE(weight(u"#% increased Armour"_s), 1.0);
+        QTRY_VERIFY(!isVisible(dialog));
+
+        // and searching again from the start
+        QVERIFY(click(w.find(u"addStatButton"_s)));
+        QCOMPARE(text(search), QString());
+        QCOMPARE(w.app->statPicker()->query(), QString());
+        QVERIFY(search->setProperty("text", u"block"_s));
+        QVERIFY(w.settled());
+        QVERIFY(press(search, Qt::Key_Enter));
+        QCOMPARE(weight(u"[Base] Block Chance"_s), 1.0);
+    }
+
+    void noStatFound()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QVERIFY(click(w.find(u"addStatButton"_s)));
+        QVERIFY(w.find(u"statSearch"_s)->setProperty("text", u"fire life"_s));
+        QVERIFY(isVisible(w.find(u"noStats"_s)));
+    }
+
+    void pickerWaitsForTheSite()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QVERIFY(click(w.find(u"addStatButton"_s)));
+        QObject *message = w.find(u"pickerMessage"_s);
+        QVERIFY(isVisible(message));
+        QCOMPARE(text(message), u"Getting the list of stats from the trade site."_s);
+        QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size());
+        QTRY_VERIFY(!isVisible(message));
+        QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size() + 4);
     }
 
     void nothingToSuggest()
