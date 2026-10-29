@@ -31,6 +31,9 @@ from source.
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
   one that finds nothing is tried again a little looser.
+- Shows the listings a search found in a window over the game, opened from the
+  popup or with the Results hotkey. Each has its price, what that comes to in
+  exalts or divines, the seller and how long ago it was listed.
 - Trade searches can be turned off, and set to the right league, including
   hardcore. Solo self-found turns them off, as there is no trading in it.
 - Keeps several characters, each with its own gear, build and weights, and can
