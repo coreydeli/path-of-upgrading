@@ -14,6 +14,35 @@
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
+namespace {
+
+// how many figures a listing shows
+constexpr qsizetype figuresShown = 4;
+
+} // namespace
+
+ResultVerdict resultVerdict(const ItemCheck &check)
+{
+    const ItemReport report = reportOf(check);
+    ResultVerdict out{.verdict = report.verdict,
+                      .tone = report.verdictTone,
+                      .losses = report.losses,
+                      .risks = report.risks,
+                      .checking = report.pobChecking,
+                      .pobError = check.pobError};
+    if (!report.score.isEmpty())
+        out.score = report.score + u' ' + report.scoreLabel;
+    if (!report.headline.isEmpty()) {
+        out.figures = report.headline;
+    } else {
+        for (const ReportFigure &figure : report.changes) {
+            if (!figure.minor)
+                out.figures << figure;
+        }
+    }
+    out.figures = out.figures.first(std::min(out.figures.size(), figuresShown));
+    return out;
+}
 
 TradeResults::TradeResults(TradeSearcher *searcher, RatesStore *rates, QObject *parent)
     : QAbstractListModel(parent)
@@ -24,6 +53,9 @@ TradeResults::TradeResults(TradeSearcher *searcher, RatesStore *rates, QObject *
     connect(rates, &RatesStore::refreshed, this, [this] {
         if (!m_listings.isEmpty())
             Q_EMIT dataChanged(index(0), index(int(m_listings.size()) - 1), {ConvertedRole});
+    });
+    connect(&m_judge, &ListingJudge::checked, this, [this](qsizetype first, qsizetype last) {
+        Q_EMIT dataChanged(index(int(first)), index(int(last)), {VerdictRole});
     });
 }
 
@@ -71,6 +103,8 @@ QVariant TradeResults::data(const QModelIndex &index, int role) const
             mods << ResultMod{mod.text, mod.tag};
         return QVariant::fromValue(mods);
     }
+    case VerdictRole:
+        return QVariant::fromValue(resultVerdict(m_judge.checks().at(index.row())));
     }
     return {};
 }
@@ -80,7 +114,7 @@ QHash<int, QByteArray> TradeResults::roleNames() const
     return {
         {PriceRole, "price"},   {ConvertedRole, "converted"}, {AccountRole, "account"},
         {OnlineRole, "online"}, {ListedRole, "listed"},       {NameRole, "name"},
-        {BaseRole, "base"},     {ModsRole, "mods"},
+        {BaseRole, "base"},     {ModsRole, "mods"},           {VerdictRole, "verdict"},
     };
 }
 
@@ -94,12 +128,14 @@ void TradeResults::setSearch(const TradeFinder::Found &found)
 
     beginResetModel();
     m_listings.clear();
+    m_judge.clear();
     m_searched = true;
     m_title = found.title;
     m_league = found.league;
     m_total = found.total;
     m_url = found.url;
     m_searchId = found.searchId;
+    m_itemClass = found.item.itemClass;
     m_listingIds = found.listingIds;
     m_next = 0;
     m_error.clear();
@@ -147,13 +183,16 @@ void TradeResults::answered()
     if (fetch->error() != TradeReply::Error::None) {
         setError(fetch->errorString());
     } else {
-        // without the item class, which only decides the slot, and the prices
-        // are worked out when they're shown
-        const QList<Listing> page = listingsFromJson(fetch->answer(), {}, {});
+        // the prices are worked out when they're shown
+        const QList<Listing> page = listingsFromJson(fetch->answer(), m_itemClass, {});
         if (!page.isEmpty()) {
             const int first = int(m_listings.size());
             beginInsertRows({}, first, first + int(page.size()) - 1);
             m_listings += page;
+            QList<Item> items;
+            for (const Listing &listing : page)
+                items << listing.item;
+            m_judge.add(items);
             endInsertRows();
         }
         m_next = std::min<qsizetype>(m_next + tradeFetchLimit, m_listingIds.size());

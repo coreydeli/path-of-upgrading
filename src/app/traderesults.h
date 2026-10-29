@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "app/itemreport.h"
+#include "app/listingjudge.h"
 #include "app/tradefinder.h"
 #include "core/listing.h"
 
@@ -35,11 +37,45 @@ public:
     friend bool operator==(const ResultMod &, const ResultMod &) = default;
 };
 
+// How a listing does for the character you play, the way the popup says it
+// of an item you check, with only the numbers.
+struct ResultVerdict
+{
+    Q_GADGET
+    QML_VALUE_TYPE(resultVerdict)
+
+    Q_PROPERTY(QString verdict MEMBER verdict)
+    Q_PROPERTY(pou::Tone::Tone tone MEMBER tone)
+    Q_PROPERTY(QString score MEMBER score)
+    Q_PROPERTY(QList<pou::ReportFigure> figures MEMBER figures)
+    Q_PROPERTY(QStringList losses MEMBER losses)
+    Q_PROPERTY(QStringList risks MEMBER risks)
+    Q_PROPERTY(bool checking MEMBER checking)
+    Q_PROPERTY(QString pobError MEMBER pobError)
+
+public:
+    QString verdict; // "Upgrade", empty when it can't be compared
+    Tone::Tone tone = Tone::Plain;
+    QString score; // "+4% for your build", empty with nothing to compare it with
+    // What Path of Building says it does to your damage and effective HP, or
+    // without it what it changes on your character. Four at most.
+    QList<ReportFigure> figures;
+    QStringList losses;
+    QStringList risks;
+    bool checking = false; // Path of Building is still to say
+    QString pobError;      // why Path of Building couldn't judge it
+
+    friend bool operator==(const ResultVerdict &, const ResultVerdict &) = default;
+};
+
+ResultVerdict resultVerdict(const ItemCheck &check);
+
 // The listings of the last trade search the popup ran, as the results window
 // shows them. Each search replaces the last one's, even when it found none,
 // and one that failed or was called off leaves them. Nothing is asked of the trade site
 // until ask() says you want to see them, and then only the first page. The
-// next ones come with loadMore().
+// next ones come with loadMore(). Each is judged for the character you play,
+// see judge().
 class TradeResults : public QAbstractListModel
 {
     Q_OBJECT
@@ -70,10 +106,11 @@ public:
         ConvertedRole,                // "about 2100 ex", empty without a rate or when it says no more
         AccountRole,                  // "name#1234"
         OnlineRole,
-        ListedRole, // "5 minutes ago"
-        NameRole,   // its base type for one without a name
-        BaseRole,   // empty when that's its name
-        ModsRole,   // a list of resultMod
+        ListedRole,  // "5 minutes ago"
+        NameRole,    // its base type for one without a name
+        BaseRole,    // empty when that's its name
+        ModsRole,    // a list of resultMod
+        VerdictRole, // a resultVerdict
     };
 
     // They have to outlive it. The rates turn prices into exalts or divines.
@@ -105,6 +142,10 @@ public:
     QString error() const { return m_error; }
     bool hasMore() const { return m_next < m_listingIds.size(); }
 
+    // Which has to be told the character you play, Path of Building and the
+    // settings for it.
+    ListingJudge &judge() { return m_judge; }
+
 Q_SIGNALS:
     void searchChanged();
     void busyChanged();
@@ -125,9 +166,11 @@ private:
     int m_total = 0;
     QUrl m_url;
     QString m_searchId;
+    QString m_itemClass; // what it searched for, which listings don't say
     QStringList m_listingIds;
     qsizetype m_next = 0; // the first of them not asked for
     QList<Listing> m_listings;
+    ListingJudge m_judge; // with the same rows
     QPointer<TradeFetch> m_fetch;
     int m_waiting = 0;
     QString m_error;

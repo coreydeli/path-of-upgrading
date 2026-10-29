@@ -887,6 +887,42 @@ private Q_SLOTS:
         QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(), u"about 1200 ex"_s);
     }
 
+    void tradeResultsJudged()
+    {
+        // for the character you play, with Path of Building while it's on
+        Folders folders;
+        Character torvald = wearing(u"Torvald"_s, itemtexts::helmetOld);
+        torvald.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(torvald, build);
+        const QString astrid = folders.add(wearing(u"Astrid"_s, itemtexts::helmetNew));
+        settings.pob.location = folders.pob.folder.path();
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        r.checked();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        TradeResults &results = r.app.results();
+        r.network->answers = {twoListings()};
+        results.ask();
+        QTRY_VERIFY(!results.isBusy());
+
+        const QList<ItemCheck> &checks = results.judge().checks();
+        QCOMPARE(checks.size(), 2);
+        QCOMPARE(checks.at(0).evaluation.comparison.replacing, QStringList{u"Grim Crown"_s});
+        QVERIFY(checks.at(0).pob != ItemCheck::Pob::Unused);
+        settings.pob.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        QCOMPARE(checks.at(0).pob, ItemCheck::Pob::Unused);
+
+        settings.character = astrid;
+        QVERIFY(r.app.settings().set(settings));
+        QCOMPARE(checks.at(0).evaluation.comparison.replacing, QStringList{u"Doom Visage"_s});
+    }
+
     void resultsStayWhenASearchFails()
     {
         Folders folders;

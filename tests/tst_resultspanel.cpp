@@ -2,8 +2,11 @@
 #include "app/itemreport.h"
 #include "app/resultspanel.h"
 #include "core/placement.h"
+#include "core/resists.h"
 #include "fakegameinput.h"
+#include "fakepob.h"
 #include "resultsite.h"
+#include "services/pobengine.h"
 
 #include <QColor>
 #include <QDateTime>
@@ -122,6 +125,23 @@ QScreen *screen()
     return QGuiApplication::primaryScreen();
 }
 
+// In a helmet with less life than the listed ones, and these mods.
+Character wearing(const QString &mods)
+{
+    const QString helmet =
+        u"Item Class: Helmets\nRarity: Rare\nGrim Crown\nIron Hat\n--------\nItem Level: 80\n--------\n"_s;
+    Character c;
+    c.gear = {{u"Helmet"_s, parseItem(helmet + mods).value()}};
+    return c;
+}
+
+const QString build = u"<PathOfBuilding2><Build level=\"90\" className=\"Warrior\"/></PathOfBuilding2>"_s;
+
+int toneOf(const QQuickItem *label)
+{
+    return label->property("tone").toInt();
+}
+
 } // namespace
 
 class TestResultsPanel : public QObject
@@ -135,10 +155,13 @@ public:
 private Q_SLOTS:
     void initTestCase()
     {
-        // what they say when the site lets them down, which the tests make it do
+        // what they say when the site or Path of Building lets them down,
+        // which the tests make them do
         QLoggingCategory::setFilterRules(u"pathofupgrading.trade.warning=false\n"
                                          u"pathofupgrading.trade.info=false\n"
-                                         u"pathofupgrading.ninja.debug=false"_s);
+                                         u"pathofupgrading.ninja.debug=false\n"
+                                         u"pathofupgrading.pob.warning=false\n"
+                                         u"pathofupgrading.pob.info=false"_s);
     }
 
     void init()
@@ -578,6 +601,113 @@ private Q_SLOTS:
         QVERIFY(!inside.isEmpty());
         QCOMPARE(inside.first()->scale(), 1.5);
         QCOMPARE(p.window()->height(), qCeil(inside.first()->height() * 1.5));
+    }
+
+    void howEachDoes()
+    {
+        // for the character you play
+        Panel p;
+        p.site.results.judge().setCharacter(wearing(u"+30 to maximum Life"_s), std::nullopt);
+        p.site.network.answers = {fetched(listingIds(1))};
+        p.site.results.setSearch(foundBy(1));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 1);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+        const QQuickItem *verdict = shown(p.window(), u"Upgrade"_s);
+        QVERIFY(verdict);
+        QCOMPARE(toneOf(verdict), int(Tone::Good));
+        QVERIFY(shown(p.window(), u"+8 gear score"_s));
+        const QQuickItem *life = shown(p.window(), u"Life +50"_s);
+        QVERIFY(life);
+        QCOMPARE(toneOf(life), int(Tone::Good));
+        QVERIFY(!shown(p.window(), u"Checking with Path of Building"_s));
+    }
+
+    void whatItCosts()
+    {
+        // the cold res it takes off, and the fire res it leaves little over the cap
+        Panel p;
+        Character c = wearing(u"+30 to maximum Life\n+40% to Cold Resistance\n+10% to Fire Resistance"_s);
+        ResistEntry entry;
+        for (const Element e : allElements)
+            entry.values[e] = 0.0;
+        entry.values[Element::Cold] = 80.0;
+        entry.values[Element::Fire] = 90.0;
+        c.resists = snapshotResists(entry, c.gear, ResistSource::Manual);
+        p.site.results.judge().setCharacter(c, std::nullopt);
+        p.site.network.answers = {fetched(listingIds(1))};
+        p.site.results.setSearch(foundBy(1));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 1);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+
+        QCOMPARE(toneOf(shown(p.window(), u"Loses resistance"_s)), int(Tone::Bad));
+        const QQuickItem *loss = shown(p.window(), u"Cold res drops below the cap (40% of 75%)"_s);
+        QVERIFY(loss);
+        QCOMPARE(toneOf(loss), int(Tone::Bad));
+        const auto verdict = p.site.results.data(p.site.results.index(0), TradeResults::VerdictRole);
+        const QString risk = verdict.value<ResultVerdict>().risks.value(0);
+        QVERIFY(risk.startsWith(u"Fire res would be only 5% over the cap"));
+        const QQuickItem *risky = shown(p.window(), risk);
+        QVERIFY(risky);
+        QCOMPARE(toneOf(risky), int(Tone::Warning));
+    }
+
+    void nothingToCompare()
+    {
+        // which leaves no gap where the verdict would be
+        Panel p;
+        TradeFinder::Found found = foundBy(1);
+        found.item.itemClass = u"Stackable Currency"_s;
+        const QString now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+        const QJsonObject listing = helmet(u"x1"_s, price(3, u"divine"_s), now);
+        p.site.network.answers = {{.body = json({{u"result"_s, QJsonArray{listing}}})}};
+        p.site.results.setSearch(found);
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 1);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+        QVERIFY(shown(p.window(), u"Grim Ward"_s));
+        QVERIFY(!shown(p.window(), u""_s, "QQuickLabel"));
+    }
+
+    void whilePathOfBuildingChecks()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install({u"--hang-on-eval"_s}));
+        engine.setBuild(build);
+        Panel p;
+        p.site.results.judge().setPob(&engine);
+        p.site.results.judge().setCharacter(wearing(u"+30 to maximum Life"_s), PobBuild());
+        p.site.network.answers = {fetched(listingIds(1))};
+        p.site.results.setSearch(foundBy(1));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 1);
+        QTRY_VERIFY(shown(p.window(), u"Checking with Path of Building"_s));
+    }
+
+    void whenPathOfBuildingCant()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install({u"--crash-on-eval"_s}));
+        engine.setBuild(build);
+        Panel p;
+        p.site.results.judge().setPob(&engine);
+        p.site.results.judge().setCharacter(wearing(u"+30 to maximum Life"_s), PobBuild());
+        p.site.network.answers = {fetched(listingIds(1))};
+        p.site.results.setSearch(foundBy(1));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 1);
+        QTRY_VERIFY(shown(p.window(), u"Path of Building stopped unexpectedly."_s));
+        QVERIFY(!shown(p.window(), u"Checking with Path of Building"_s));
+        // and the gear score says what it can
+        QVERIFY(shown(p.window(), u"+8 gear score"_s));
     }
 
     void colours()

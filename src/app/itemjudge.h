@@ -16,6 +16,7 @@ namespace pou {
 
 class PobEngine;
 class PobReply;
+struct PobItemEval;
 
 // An item you checked and what it means for the character you play.
 struct ItemCheck
@@ -34,6 +35,28 @@ struct ItemCheck
     Pob pob = Pob::Unused;
     QString pobError;
 };
+
+// What items are judged by.
+struct Judging
+{
+    Character character;
+    // The character's build, none when it has none. The engine should have it
+    // with the gear the character wears, see pobWearing().
+    std::optional<PobBuild> build;
+    // Path of Building, or none to judge items without it.
+    PobEngine *engine = nullptr;
+    // What matters to you, for the gear scores too. Chaos Inoculation goes
+    // by the character.
+    PobVerdictOptions options;
+};
+
+// How the item does by its gear scores or your weights. It's Checking when
+// Path of Building is to be asked about it.
+ItemCheck firstCheck(const Item &item, const Judging &judging);
+// The check with what Path of Building said of the item, from the places it
+// tried it in, or why it couldn't say.
+ItemCheck withPobAnswer(ItemCheck check, const PobStats &before, const PobItemEval &tried,
+                        const Judging &judging);
 
 // Judges the items you check for the character you play, by its gear scores
 // or your weights straight away, then by Path of Building once it answers.
@@ -68,10 +91,7 @@ private:
     void answered();
     void fail(const QString &why);
 
-    Character m_character;
-    std::optional<PobBuild> m_build;
-    PobEngine *m_engine = nullptr;
-    PobVerdictOptions m_options;
+    Judging m_judging;
     ItemCheck m_check;
     QPointer<PobReply> m_reply; // for the item being checked
 };

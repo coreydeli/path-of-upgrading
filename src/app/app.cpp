@@ -70,6 +70,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     connect(&m_character, &ActiveCharacter::changed, this, [this] {
         m_checker.setCharacter(m_character.character(), m_character.build());
         m_finder.setCharacter(m_character.character());
+        m_results.judge().setCharacter(m_character.character(), m_character.build());
     });
     connect(&m_settings, &SettingsStore::changed, this, &App::followSettings);
 
@@ -79,6 +80,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_checker.setPob(&m_pob);
     m_checker.setFinder(&m_finder);
     m_checker.setSettings(settings);
+    m_results.judge().setPob(&m_pob);
+    m_results.judge().setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
     connect(&m_checker, &ItemChecker::resultsAsked, &m_resultsPanel, &ResultsPanel::show);
@@ -135,6 +138,7 @@ void App::followSettings()
 {
     const Settings &settings = m_settings.settings();
     m_checker.setSettings(settings);
+    m_results.judge().setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
     if (settings.character != m_character.id())
         m_character.setId(settings.character);
