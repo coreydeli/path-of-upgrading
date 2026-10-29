@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
 
+#include "app/commandline.h"
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
 #include "platform/secretstore.h"
 
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QNetworkAccessManager>
 #include <QStandardPaths>
 
@@ -15,13 +17,14 @@ namespace pou {
 
 App::Paths App::defaultPaths()
 {
-    // ~/.config/path-of-upgradingrc, ~/.local/share/path-of-upgrading and
-    // ~/.cache/path-of-upgrading
+    // ~/.config/path-of-upgradingrc, ~/.local/share/path-of-upgrading,
+    // ~/.cache/path-of-upgrading and the entry in ~/.config/autostart
     return {
         .settings = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + u'/' +
                     QCoreApplication::applicationName() + u"rc"_s,
         .data = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation),
         .cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation),
+        .autostart = Autostart::fileFor(QGuiApplication::desktopFileName()),
     };
 }
 
@@ -55,7 +58,10 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_ignoredStats(&m_character)
     , m_checkedItems(&m_history)
     , m_tradeOptions(&m_settings, &m_tradeData, &m_rates)
-    , m_overlayOptions(&m_settings, &m_hotkeys)
+    , m_autostart(paths.autostart, {.name = QGuiApplication::applicationDisplayName(),
+                                    .exec = CommandLine::backgroundCommand(),
+                                    .icon = QGuiApplication::desktopFileName()})
+    , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
     , m_pobOptions(&m_settings, &m_pob)
 {
     m_characterList.load();

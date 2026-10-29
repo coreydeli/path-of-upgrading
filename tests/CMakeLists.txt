@@ -1,4 +1,5 @@
 find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
+find_package(KF6Config 6.0 REQUIRED)
 
 function(pou_add_test name)
     qt_add_executable(${name} ${name}.cpp ${ARGN})
@@ -84,10 +85,16 @@ pou_use_fakepob(tst_pobengine)
 # with the Path of Building on this computer, when there's one
 pou_add_services_test(tst_installedpob itemtexts.h)
 
+pou_add_platform_test(tst_autostart)
 pou_add_platform_test(tst_copykeys)
 pou_add_platform_test(tst_gamewindow)
 pou_add_platform_test(tst_keychainsecretstore)
+pou_add_platform_test(tst_notifyrc)
+target_link_libraries(tst_notifyrc PRIVATE KF6::ConfigCore)
+target_compile_definitions(tst_notifyrc PRIVATE APP_ID="${APP_ID}"
+    NOTIFYRC="${PROJECT_SOURCE_DIR}/data/path-of-upgrading.notifyrc")
 pou_add_platform_test(tst_screenmap)
+pou_add_platform_test(tst_showwindow)
 # with the X server in DISPLAY, when there's one
 pou_add_platform_test(tst_xconnection)
 pou_add_platform_test(tst_xgameinput)
@@ -99,6 +106,8 @@ pou_add_platform_test(tst_xwindows)
 pou_add_app_test(tst_activecharacter itemtexts.h)
 pou_use_fakepob(tst_activecharacter)
 pou_add_app_test(tst_characterlist itemtexts.h)
+pou_add_app_test(tst_commandline)
+pou_add_app_test(tst_desktop fakeglobalshortcuts.h fakenotifier.h faketray.h)
 pou_add_app_test(tst_gearlist)
 pou_add_app_test(tst_gearscoring)
 pou_add_app_test(tst_statweights)

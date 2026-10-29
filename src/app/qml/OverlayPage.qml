@@ -181,4 +181,31 @@ FormCard.FormCardPage {
             onEdited: value => overlayPage.options.autoHideSeconds = value
         }
     }
+
+    FormCard.FormHeader {
+        title: qsTr("General")
+    }
+
+    FormCard.FormCard {
+        FormCard.FormSwitchDelegate {
+            objectName: "startSwitch"
+            text: qsTr("Start with the desktop")
+            description: qsTr("Waits in the tray when you log in, without the window.")
+            checked: overlayPage.options.startWithDesktop
+            onToggled: overlayPage.options.startWithDesktop = checked
+        }
+
+        FormCard.FormDelegateSeparator {
+            objectName: "startErrorSeparator"
+            visible: startError.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: startError
+            objectName: "startError"
+            visible: text !== ""
+            text: overlayPage.options.startError
+            textItem.wrapMode: Text.Wrap
+        }
+    }
 }

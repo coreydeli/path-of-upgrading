@@ -21,6 +21,7 @@
 #include "app/tradesession.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
+#include "platform/autostart.h"
 #include "services/pobengine.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
@@ -68,9 +69,10 @@ public:
     // Where it keeps what it has between runs.
     struct Paths
     {
-        QString settings; // the file
-        QString data;     // the folder for your characters and the items you've checked
-        QString cache;    // and for what the trade site and poe.ninja said
+        QString settings;  // the file
+        QString data;      // the folder for your characters and the items you've checked
+        QString cache;     // and for what the trade site and poe.ninja said
+        QString autostart; // the file that starts it with the desktop, or none
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
@@ -147,6 +149,7 @@ private:
     IgnoredStats m_ignoredStats;
     CheckedItems m_checkedItems;
     TradeOptions m_tradeOptions;
+    Autostart m_autostart;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
 };

@@ -1,6 +1,8 @@
 install(FILES ${APP_ID}.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(FILES ${APP_ID}.metainfo.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
 install(FILES icons/${APP_ID}.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+# the notifications, which Plasma finds by the application's name
+install(FILES path-of-upgrading.notifyrc DESTINATION ${CMAKE_INSTALL_DATADIR}/knotifications6)
 
 # The desktop file and the metainfo are checked when their checkers are
 # installed.

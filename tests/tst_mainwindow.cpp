@@ -135,7 +135,7 @@ struct Window
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
 
-    explicit Window(bool hotkeys = true)
+    explicit Window(bool hotkeys = true, bool startHidden = false)
     {
         shortcuts->available = hotkeys;
         app = std::make_unique<App>(
@@ -144,10 +144,15 @@ struct Window
             PobPlaces{.home = dir.path(), .dataHome = dir.path(), .luajit = QStringLiteral(FAKEPOB)},
             App::Paths{.settings = dir.filePath(u"settings.conf"_s),
                        .data = dir.filePath(u"data"_s),
-                       .cache = dir.filePath(u"cache"_s)});
+                       .cache = dir.filePath(u"cache"_s),
+                       .autostart = dir.filePath(u"autostart/made-up.desktop"_s)});
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
-        QObject *made = main.createWithInitialProperties({{u"app"_s, QVariant::fromValue(app.get())}});
+        QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
+        // which it isn't unless it's said to be
+        if (startHidden)
+            properties.insert(u"startHidden"_s, true);
+        QObject *made = main.createWithInitialProperties(properties);
         if (!made)
             qWarning() << main.errorString();
         window.reset(qobject_cast<QQuickWindow *>(made));
@@ -319,6 +324,22 @@ private Q_SLOTS:
         QVERIFY(w.window);
         QCOMPARE(w.window->title(), u"Path of Upgrading"_s);
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+    }
+
+    void showsItself()
+    {
+        Window w;
+        QVERIFY(w.window->isVisible());
+    }
+
+    void startsHidden()
+    {
+        Window w(true, true);
+        QVERIFY(w.window);
+        QVERIFY(!w.window->isVisible());
+        // and is there when the tray asks
+        w.window->show();
+        QVERIFY(w.window->isVisible());
     }
 
     void noCharacters()
@@ -1673,6 +1694,80 @@ private Q_SLOTS:
         QCOMPARE(overlay.advancedCopy, true);
         QCOMPARE(overlay.watchClipboard, false);
         QCOMPARE(overlay.paused, true);
+    }
+
+    void startWithDesktop()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QObject *start = w.find(u"startSwitch"_s);
+        QCOMPARE(start->property("checked").toBool(), false);
+        QVERIFY(!isVisible(w.find(u"startError"_s)));
+        QVERIFY(!isVisible(w.find(u"startErrorSeparator"_s)));
+
+        QVERIFY(toggle(start));
+        QVERIFY(w.app->overlayOptions()->startsWithDesktop());
+        QVERIFY(QFile::exists(w.dir.filePath(u"autostart/made-up.desktop"_s)));
+        QCOMPARE(start->property("checked").toBool(), true);
+
+        QVERIFY(toggle(start));
+        QVERIFY(!QFile::exists(w.dir.filePath(u"autostart/made-up.desktop"_s)));
+        QCOMPARE(start->property("checked").toBool(), false);
+    }
+
+    void startsWithDesktopAlready()
+    {
+        Window w;
+        w.app->overlayOptions()->setStartWithDesktop(true);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(w.find(u"startSwitch"_s)->property("checked").toBool(), true);
+    }
+
+    void startFailed()
+    {
+        Window w;
+        // a file where the folder should be
+        QFile blocker(w.dir.filePath(u"autostart"_s));
+        QVERIFY(blocker.open(QIODevice::WriteOnly));
+        blocker.close();
+        QVERIFY(w.show(u"overlayAction"_s));
+
+        QObject *start = w.find(u"startSwitch"_s);
+        QVERIFY(toggle(start));
+        // which then goes back, and says why
+        QCOMPARE(start->property("checked").toBool(), false);
+        QObject *error = w.find(u"startError"_s);
+        QVERIFY(isVisible(error));
+        QVERIFY(isVisible(w.find(u"startErrorSeparator"_s)));
+        QCOMPARE(text(error), w.app->overlayOptions()->startError());
+        QVERIFY(!text(error).isEmpty());
+
+        QVERIFY(QFile::remove(w.dir.filePath(u"autostart"_s)));
+        QVERIFY(toggle(start));
+        QCOMPARE(start->property("checked").toBool(), true);
+        QVERIFY(!isVisible(error));
+        QVERIFY(!isVisible(w.find(u"startErrorSeparator"_s)));
+    }
+
+    void startRemovedByHand()
+    {
+        Window w;
+        w.app->overlayOptions()->setStartWithDesktop(true);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(w.shown());
+        QObject *start = w.find(u"startSwitch"_s);
+        QCOMPARE(start->property("checked").toBool(), true);
+
+        // while it's behind another window, which it then comes back from
+        QWindow other;
+        other.show();
+        other.requestActivate();
+        QTRY_VERIFY(other.isActive());
+        QVERIFY(QFile::remove(w.dir.filePath(u"autostart/made-up.desktop"_s)));
+        QCOMPARE(start->property("checked").toBool(), true);
+        w.window->requestActivate();
+        QTRY_VERIFY(w.window->isActive());
+        QCOMPARE(start->property("checked").toBool(), false);
     }
 
     void showsPopupSettings()

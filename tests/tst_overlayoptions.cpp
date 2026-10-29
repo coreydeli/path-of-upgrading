@@ -3,7 +3,9 @@
 #include "app/overlayoptions.h"
 #include "app/settingsstore.h"
 #include "fakeglobalshortcuts.h"
+#include "platform/autostart.h"
 
+#include <QFile>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -14,14 +16,17 @@ using namespace pou;
 
 namespace {
 
-// The settings, and the hotkeys with the keys they start with.
+// The settings, the hotkeys with the keys they start with, and where the
+// program would start with the desktop from.
 struct Options
 {
     QTemporaryDir dir;
     SettingsStore settings{dir.filePath(u"settings.conf"_s)};
     FakeGlobalShortcuts shortcuts;
     Hotkeys hotkeys{&shortcuts};
-    OverlayOptions options{&settings, &hotkeys};
+    Autostart autostart{dir.filePath(u"autostart/made-up.desktop"_s),
+                        {.name = u"Made-up Program"_s, .exec = u"made-up --background"_s}};
+    OverlayOptions options{&settings, &hotkeys, &autostart};
 
     Options() { hotkeys.add({}); }
 
@@ -206,6 +211,66 @@ private Q_SLOTS:
         o.shortcuts.available = false;
         QCOMPARE(o.options.hotkeysError(), u"It's off."_s);
         QCOMPARE(o.options.checkKey(), QKeySequence());
+    }
+
+    void startWithDesktop()
+    {
+        Options o;
+        QVERIFY(!o.options.startsWithDesktop());
+        QVERIFY(o.options.startError().isEmpty());
+
+        QSignalSpy changed(&o.options, &OverlayOptions::changed);
+        o.options.setStartWithDesktop(true);
+        QCOMPARE(changed.size(), 1);
+        QVERIFY(o.options.startsWithDesktop());
+        QVERIFY(o.autostart.isEnabled());
+        QVERIFY(QFile::exists(o.dir.filePath(u"autostart/made-up.desktop"_s)));
+
+        o.options.setStartWithDesktop(false);
+        QCOMPARE(changed.size(), 2);
+        QVERIFY(!o.options.startsWithDesktop());
+        QVERIFY(!QFile::exists(o.dir.filePath(u"autostart/made-up.desktop"_s)));
+    }
+
+    void startingIsNotASetting()
+    {
+        Options o;
+        o.options.setStartWithDesktop(true);
+        QCOMPARE(o.settings.settings(), Settings());
+    }
+
+    void startFailed()
+    {
+        Options o;
+        // a file where the folder should be
+        QFile blocker(o.dir.filePath(u"autostart"_s));
+        QVERIFY(blocker.open(QIODevice::WriteOnly));
+        blocker.close();
+
+        QSignalSpy changed(&o.options, &OverlayOptions::changed);
+        o.options.setStartWithDesktop(true);
+        // which the switch is told of, to go back
+        QCOMPARE(changed.size(), 1);
+        QVERIFY(!o.options.startsWithDesktop());
+        QVERIFY(!o.options.startError().isEmpty());
+
+        QVERIFY(QFile::remove(o.dir.filePath(u"autostart"_s)));
+        o.options.setStartWithDesktop(true);
+        QVERIFY(o.options.startsWithDesktop());
+        QVERIFY(o.options.startError().isEmpty());
+    }
+
+    void startRemovedByHand()
+    {
+        Options o;
+        o.options.setStartWithDesktop(true);
+        QVERIFY(QFile::remove(o.dir.filePath(u"autostart/made-up.desktop"_s)));
+        QVERIFY(!o.options.startsWithDesktop());
+
+        // which the window is told of when it comes back
+        QSignalSpy changed(&o.options, &OverlayOptions::changed);
+        o.options.lookAtStart();
+        QCOMPARE(changed.size(), 1);
     }
 };
 

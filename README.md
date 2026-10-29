@@ -37,6 +37,12 @@ from source.
   put the item you checked on your character.
 - Can sign in to the trade site with your session ID, which lets the site take
   bigger searches. It is kept in your system keyring.
+- Stays in the system tray when you close the window. The tray icon shows the
+  window, pauses the hotkeys and quits. Starting the program again shows the
+  window that is already running, rather than opening a second one.
+- Can start with your desktop, from a switch on the Popup and Hotkeys page. It
+  then starts with only the tray icon, as `path-of-upgrading --background`
+  does. It tells you with a notification if the hotkeys couldn't be set up.
 
 ## Requirements
 
@@ -48,7 +54,9 @@ To build it:
 - a C++20 compiler, CMake 3.21 and Ninja
 - Qt 6.8 or newer, with Core, Gui, Network, Widgets, Qml, Quick, Quick
   Controls 2, DBus, Test and QuickTest
-- KDE Frameworks 6.13 or newer: Kirigami, Declarative, I18n and GlobalAccel
+- KDE Frameworks 6.13 or newer: Kirigami, Declarative, I18n, GlobalAccel,
+  Notifications, StatusNotifierItem, WindowSystem and DBusAddons, and Config
+  for the tests
 - Kirigami Addons 1.7 or newer
 - LayerShellQt 6
 - Qt6Keychain
@@ -60,6 +68,8 @@ To use it:
 
 - a secret service for the keyring, such as KWallet, if you want to save a
   session ID
+- a system tray that shows StatusNotifierItem icons, which Plasma does, for
+  the tray icon
 - [Path of Building Community](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2)
   for Path of Exile 2, if you want to import builds. The easiest way is the
   Flatpak: `flatpak install flathub community.pathofbuilding.PathOfBuilding`.
@@ -98,6 +108,9 @@ fail while the screens are off.
 - `~/.cache/path-of-upgrading` has what it learned from the trade site and
   poe.ninja
 
+If you turn on Start with the desktop, there is also an entry in
+`~/.config/autostart`, which you can turn off in System Settings too.
+
 The session ID is not in any of them. It is in the system keyring.
 
 ## Other desktops
@@ -107,6 +120,10 @@ compositor that has layer shell, like KWin. GNOME's Wayland session doesn't
 have it, so the popup can't be shown over the game there. On an X11 session the
 popup is an override-redirect window instead. The hotkey is a global shortcut
 from KDE, so it can be changed in System Settings as well as in the app.
+
+Closing the window leaves the program running in the tray. On a desktop with
+no tray, such as GNOME without an extension for it, nothing shows that it is
+still running. Starting it again brings the window back.
 
 ## Credits
 

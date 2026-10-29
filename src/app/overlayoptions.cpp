@@ -3,6 +3,7 @@
 
 #include "app/hotkeys.h"
 #include "app/settingsstore.h"
+#include "platform/autostart.h"
 
 #include <algorithm>
 #include <cmath>
@@ -22,10 +23,12 @@ QString textOf(const QKeySequence &key)
 
 } // namespace
 
-OverlayOptions::OverlayOptions(SettingsStore *settings, Hotkeys *hotkeys, QObject *parent)
+OverlayOptions::OverlayOptions(SettingsStore *settings, Hotkeys *hotkeys, Autostart *autostart,
+                               QObject *parent)
     : QObject(parent)
     , m_settings(settings)
     , m_hotkeys(hotkeys)
+    , m_autostart(autostart)
 {
     connect(settings, &SettingsStore::changed, this, &OverlayOptions::changed);
     connect(hotkeys, &Hotkeys::keyChanged, this, &OverlayOptions::changed);
@@ -114,6 +117,28 @@ void OverlayOptions::setAutoHideSeconds(int seconds)
 void OverlayOptions::setPaused(bool paused)
 {
     change([&](OverlaySettings &overlay) { overlay.paused = paused; });
+}
+
+bool OverlayOptions::startsWithDesktop() const
+{
+    return m_autostart->isEnabled();
+}
+
+void OverlayOptions::setStartWithDesktop(bool start)
+{
+    m_autostart->setEnabled(start);
+    // even when it didn't work, for the switch to go back and say why
+    Q_EMIT changed();
+}
+
+QString OverlayOptions::startError() const
+{
+    return m_autostart->errorString();
+}
+
+void OverlayOptions::lookAtStart()
+{
+    Q_EMIT changed();
 }
 
 } // namespace pou

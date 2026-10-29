@@ -9,6 +9,8 @@ Kirigami.ApplicationWindow {
     id: root
 
     required property App app
+    // Starts with the window hidden, as when it starts with the desktop
+    property bool startHidden: false
 
     function show(page: Kirigami.Page) {
         pageStack.clear();
@@ -19,8 +21,12 @@ Kirigami.ApplicationWindow {
     height: Kirigami.Units.gridUnit * 34
     minimumWidth: Kirigami.Units.gridUnit * 20
     minimumHeight: Kirigami.Units.gridUnit * 20
-    visible: true
+    visible: !startHidden
     title: qsTr("Path of Upgrading")
+
+    // the entry that starts it can be removed while it waits in the tray
+    onActiveChanged: if (active)
+        app.overlayOptions.lookAtStart()
 
     globalDrawer: Kirigami.GlobalDrawer {
         isMenu: false

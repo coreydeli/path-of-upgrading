@@ -1,0 +1,10 @@
+[Global]
+IconName=io.github.coreydeli.PathOfUpgrading
+Name=Path of Upgrading
+Comment=Check Path of Exile 2 items against your build
+DesktopEntry=io.github.coreydeli.PathOfUpgrading
+
+[Event/hotkeysUnavailable]
+Name=The hotkeys couldn't be set up
+Comment=The desktop wouldn't take the program's hotkeys
+Action=Popup
