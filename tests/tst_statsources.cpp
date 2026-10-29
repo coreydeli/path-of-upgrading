@@ -39,6 +39,8 @@ private Q_SLOTS:
         QCOMPARE(valueOf(s, u"#% to Fire Resistance"_s, StatOrigin::Socket), 12.0);
         QCOMPARE(valueOf(s, u"# to maximum Life"_s, StatOrigin::Mod), 50.0);
         QCOMPARE(valueOf(s, u"[Base] Armour"_s, StatOrigin::Base), 300.0);
+        // the base is listed once, not again as a mod
+        QVERIFY(!valueOf(s, u"[Base] Armour"_s, StatOrigin::Mod));
     }
 
     void implicitsAndSplitMods()
@@ -70,10 +72,11 @@ private Q_SLOTS:
             parseItem(u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSorcerer Gloves\n--------\n"
                       "Energy Shield: 280 (augmented)\n--------\n"
                       "18% increased Armour, Evasion and Energy Shield (rune)\n--------\n"
-                      "113% increased Energy Shield\n+33 to maximum Life"_s)
+                      "113% increased Energy Shield\n20% increased Energy Shield Recharge Rate\n"
+                      "+33 to maximum Life"_s)
                 .value();
         const QList<StatSource> s = statSources(gloves);
-        // 280 * (100 + 113) / (100 + 113 + 18)
+        // 280 * (100 + 113) / (100 + 113 + 18), and the recharge rate isn't part of it
         QCOMPARE(qRound(baseWithoutSockets(u"[Base] Energy Shield"_s, 280, s) * 100), 25818);
         // DPS isn't scaled by defence mods, and without runes nothing comes off
         QCOMPARE(baseWithoutSockets(u"[Weapon] Total DPS"_s, 150, s), 150.0);
@@ -100,6 +103,22 @@ private Q_SLOTS:
                                        "Spirit: 100\n--------\n30% increased Spirit"_s)
                                  .value();
         QVERIFY(isInBase(sceptre, u"#% increased Spirit"_s));
+        QVERIFY(!isInBase(sceptre, u"# to maximum Life"_s));
+        QVERIFY(!isInBase(gloves, u"#% increased Spirit"_s));
+    }
+
+    void anyKindOfBaseDefence()
+    {
+        const Item armour = parseItem(u"Item Class: Body Armours\nRarity: Rare\nA\nPlate Vest\n--------\n"
+                                      "Armour: 300\n--------\n30% increased Armour"_s)
+                                .value();
+        QVERIFY(isInBase(armour, u"#% increased Armour"_s));
+        const Item evasion = parseItem(u"Item Class: Boots\nRarity: Rare\nA\nLeather Boots\n--------\n"
+                                       "Evasion Rating: 200\n--------\n30% increased Evasion Rating"_s)
+                                 .value();
+        QVERIFY(isInBase(evasion, u"#% increased Evasion Rating"_s));
+        // and it needs one to be in
+        QVERIFY(!isInBase(armour, u"#% increased Spirit"_s));
     }
 };
 
