@@ -143,6 +143,7 @@ Kirigami.ApplicationWindow {
         TradePage {
             id: tradePage
             options: root.app.tradeOptions
+            session: root.app.tradeSession
         }
 
         OverlayPage {

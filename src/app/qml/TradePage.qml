@@ -1,14 +1,16 @@
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Whether the popup searches the trade site, in which league, and for what
-// you'll pay.
+// Whether the popup searches the trade site, in which league, for what
+// you'll pay, and whether you're signed in to it.
 FormCard.FormCardPage {
     id: tradePage
 
     required property TradeOptions options
+    required property TradeSession session
     readonly property var sellers: [
         {
             value: "available",
@@ -201,5 +203,77 @@ FormCard.FormCardPage {
             value: tradePage.options.divineRate
             onEdited: value => tradePage.options.divineRate = value
         }
+    }
+
+    FormCard.FormHeader {
+        title: qsTr("Signed In")
+    }
+
+    FormCard.FormCard {
+        FormCard.FormTextDelegate {
+            objectName: "sessionStatus"
+            text: tradePage.session.status
+            textItem.wrapMode: Text.Wrap
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormRow {
+            text: qsTr("Session ID")
+            enabled: !tradePage.session.busy
+
+            QQC2.TextField {
+                id: sessionField
+                objectName: "sessionField"
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                echoMode: TextInput.Password
+                inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
+                placeholderText: qsTr("Paste it here")
+                Accessible.name: qsTr("Session ID")
+                onAccepted: saveButton.clicked()
+
+                // it isn't kept in the page once it's saved
+                Connections {
+                    target: tradePage.session
+
+                    function onStored() {
+                        sessionField.clear();
+                    }
+                }
+            }
+
+            QQC2.Button {
+                id: saveButton
+                objectName: "saveButton"
+                text: qsTr("Save")
+                enabled: sessionField.text.trim() !== ""
+                onClicked: tradePage.session.save(sessionField.text)
+            }
+
+            QQC2.Button {
+                objectName: "forgetButton"
+                text: qsTr("Forget")
+                enabled: tradePage.session.saved
+                onClicked: tradePage.session.forget()
+            }
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: sessionError.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: sessionError
+            objectName: "sessionError"
+            visible: text !== ""
+            text: tradePage.session.error
+            textItem.wrapMode: Text.Wrap
+            textItem.color: Kirigami.Theme.negativeTextColor
+        }
+    }
+
+    FormCard.FormSectionText {
+        objectName: "sessionHelp"
+        text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. Signed in, the site takes bigger searches.")
     }
 }
