@@ -7,6 +7,7 @@ qt_add_library(pou_app STATIC
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
     hotkeys.cpp hotkeys.h
+    ignoredstats.cpp ignoredstats.h
     itemchecker.cpp itemchecker.h
     itemhistory.cpp itemhistory.h
     itemjudge.cpp itemjudge.h
