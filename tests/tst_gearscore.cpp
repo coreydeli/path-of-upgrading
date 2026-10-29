@@ -57,6 +57,38 @@ private Q_SLOTS:
         }
     }
 
+    void noProfile()
+    {
+        QVERIFY(!buildProfile(noBuildProfile));
+        const GearScoreOptions weightsOnly{.build = noBuildProfile.toString()};
+        QVERIFY(!gearScore(item(greatHelm), weightsOnly));
+    }
+
+    void tweakableStats()
+    {
+        const QList<TweakableStat> stats = pou::tweakableStats(*buildProfile(u"es-caster"));
+        QStringList labels;
+        for (const TweakableStat &s : stats)
+            labels << s.label;
+        QCOMPARE(labels.first(), u"Spell skill levels"_s);
+        QCOMPARE(labels.size(), 16);
+        QCOMPARE(labels.removeDuplicates(), 0);
+
+        const auto groupsOf = [&stats](const QString &label) {
+            for (const TweakableStat &s : stats) {
+                if (s.label == label)
+                    return s.groups;
+            }
+            return QStringList{u"none"_s};
+        };
+        QCOMPARE(groupsOf(u"Movement speed"_s), QStringList{u"Boots"_s});
+        // armour's Energy Shield and jewellery's, in the order of the slots
+        QCOMPARE(groupsOf(u"Energy Shield"_s),
+                 (QStringList{u"Offhand"_s, u"Helmet"_s, u"Body Armour"_s, u"Gloves"_s, u"Boots"_s, u"Belt"_s,
+                              u"Amulet"_s, u"Ring"_s}));
+        QCOMPARE(groupsOf(u"Life"_s), ratedGroups().mid(1, 8));
+    }
+
     void perSlotValues()
     {
         const ProfileStat *ms = statLabelled(*buildProfile(u"life-res"), u"Movement speed"_s);
@@ -67,6 +99,7 @@ private Q_SLOTS:
         QVERIFY(ms->pattern.match(u"#% increased Movement Speed"_s).hasMatch());
         QVERIFY(!ms->pattern.match(u"#% increased Movement Speed if you've Hit Recently"_s).hasMatch());
 
+        QCOMPARE(resistLabel(Element::Cold), u"Cold res"_s);
         const ProfileStat *cold = statLabelled(*buildProfile(u"life-res"), u"Cold res"_s);
         QCOMPARE(cold->resist, Element::Cold);
         QCOMPARE(cold->key, u"#% to Cold Resistance"_s);

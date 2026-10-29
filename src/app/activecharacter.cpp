@@ -57,6 +57,16 @@ bool ActiveCharacter::takeOff(const QString &slot)
     return save(pou::takeOff(*saved, slot));
 }
 
+bool ActiveCharacter::change(const std::function<void(Character &)> &edit)
+{
+    const Character *saved = m_store->find(m_id);
+    if (!saved)
+        return fail(u"There's no character to change. Add one first."_s);
+    Character character = *saved;
+    edit(character);
+    return save(character);
+}
+
 bool ActiveCharacter::save(const Character &character)
 {
     if (!m_store->save(m_id, character))

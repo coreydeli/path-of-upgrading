@@ -316,6 +316,36 @@ private Q_SLOTS:
         QCOMPARE(c.active.character().gear.value(u"Helmet"_s).name, u"Grim Crown"_s);
     }
 
+    void change()
+    {
+        Characters c;
+        const QString id = c.add(inGrimCrown(), build);
+        c.active.setId(id);
+        QSignalSpy changed(&c.active, &ActiveCharacter::changed);
+        QVERIFY(c.active.change([](Character &torvald) { torvald.buildProfile = u"es-caster"_s; }));
+        QCOMPARE(changed.size(), 1);
+        QCOMPARE(c.active.character().buildProfile, u"es-caster"_s);
+        QCOMPARE(c.saved(id).buildProfile, u"es-caster"_s);
+        QCOMPARE(c.active.errorString(), QString());
+    }
+
+    void cantChange()
+    {
+        Characters c;
+        QVERIFY(!c.active.change([](Character &) {}));
+        QCOMPARE(c.active.errorString(), u"There's no character to change. Add one first."_s);
+
+        const QString id = c.add(inGrimCrown(), build);
+        c.active.setId(id);
+        QVERIFY(QFile::remove(c.dir.filePath(id + u".json"_s)));
+        QVERIFY(QDir(c.dir.path()).mkdir(id + u".json"_s));
+        QSignalSpy changed(&c.active, &ActiveCharacter::changed);
+        QVERIFY(!c.active.change([](Character &torvald) { torvald.buildProfile = u"es-caster"_s; }));
+        QVERIFY(c.active.errorString().startsWith(u"Couldn't save Torvald: "_s));
+        QCOMPARE(changed.size(), 0);
+        QCOMPARE(c.active.character().buildProfile, QString());
+    }
+
     void removed()
     {
         // before it's read again

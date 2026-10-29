@@ -28,12 +28,6 @@ Verdict gearVerdict(int delta)
     return Verdict::Same;
 }
 
-// what the build profiles call it
-QString profileLabel(Element e)
-{
-    return elementName(e) + u" res"_s;
-}
-
 double capOf(const LiveResists &resists, Element e)
 {
     return resists.caps[e] != 0 ? resists.caps[e] : resists.cap;
@@ -89,8 +83,8 @@ GearScoreOptions gearScoreOptions(const Character &character, const QString &slo
     options.ignore = [rules = character.ignored](const QString &key) {
         return isIgnored(rules, key);
     };
-    if (character.chaosInoculation && !options.tweaks.contains(profileLabel(Element::Chaos)))
-        options.tweaks.insert(profileLabel(Element::Chaos), 0);
+    if (character.chaosInoculation && !options.tweaks.contains(resistLabel(Element::Chaos)))
+        options.tweaks.insert(resistLabel(Element::Chaos), 0);
 
     if (!character.resists)
         return options;
@@ -108,8 +102,8 @@ GearScoreOptions gearScoreOptions(const Character &character, const QString &slo
         options.resistNeed[e] = std::max(0.0, cap + resists->buffer - (*total - fromSlot));
 
         const bool counts = e != Element::Chaos || (priorities.chaos && !character.chaosInoculation);
-        if (priorities.resistsFirst && counts && *total < cap && !options.tweaks.contains(profileLabel(e)))
-            options.tweaks.insert(profileLabel(e), 2);
+        if (priorities.resistsFirst && counts && *total < cap && !options.tweaks.contains(resistLabel(e)))
+            options.tweaks.insert(resistLabel(e), 2);
     }
     return options;
 }

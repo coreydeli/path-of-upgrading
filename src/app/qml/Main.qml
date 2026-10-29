@@ -47,6 +47,14 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(gearPage)
             },
             Kirigami.Action {
+                objectName: "gearScoreAction"
+                text: qsTr("Gear Score")
+                icon.name: "rating"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(gearScorePage)
+            },
+            Kirigami.Action {
                 objectName: "pobAction"
                 text: qsTr("Path of Building")
                 icon.name: "office-chart-line"
@@ -92,6 +100,11 @@ Kirigami.ApplicationWindow {
         GearPage {
             id: gearPage
             app: root.app
+        }
+
+        GearScorePage {
+            id: gearScorePage
+            scoring: root.app.gearScoring
         }
 
         PobPage {

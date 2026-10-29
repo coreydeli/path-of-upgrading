@@ -379,6 +379,20 @@ private Q_SLOTS:
         QCOMPARE(r.app.checker().popup().wearError(), u"There's no character to wear it. Add one first."_s);
     }
 
+    void gearScoring()
+    {
+        // which the item in the popup is judged again by
+        Folders folders;
+        Settings settings;
+        settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
+        folders.set(settings);
+        Running r(folders);
+        QCOMPARE(r.checked().gearBuild, u"Life and resistances"_s);
+        r.app.gearScoring()->setProfile(1);
+        QCOMPARE(r.app.characters().find(settings.character)->buildProfile, u"es-caster"_s);
+        QCOMPARE(r.app.checker().popup().report().gearBuild, u"Energy Shield spellcaster"_s);
+    }
+
     void judgesWithPob()
     {
         Folders folders;
