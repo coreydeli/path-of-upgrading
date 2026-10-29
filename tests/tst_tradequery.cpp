@@ -181,6 +181,23 @@ private Q_SLOTS:
         QCOMPARE(queryOf(q).value(u"status").toObject().value(u"option").toString(), u"online"_s);
     }
 
+    void thisBaseNeedsAName()
+    {
+        CustomSearchOptions options;
+        options.itemClass = u"Helmets"_s;
+        options.matchBase = true;
+        const TradeQuery q = customSearch({}, tradeData(), options);
+        QVERIFY(!queryOf(q).contains(u"type"));
+    }
+
+    void pseudoTotalsCoverEveryKindOfMod()
+    {
+        StatPick p = pick(u"# to maximum Life"_s, 80);
+        p.origin = StatOrigin::Mod;
+        const TradeQuery q = customSearch({p}, tradeData(), {});
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()), QStringList{u"pseudo.pseudo_total_life"_s});
+    }
+
     void handPickedStat()
     {
         StatPick p = pick(u"whatever"_s, 5);
@@ -281,6 +298,31 @@ private Q_SLOTS:
         QCOMPARE(filterOf(q, u"equipment_filters", u"dps"), minimum(176));
         QCOMPARE(filterOf(q, u"type_filters", u"category").value(u"option").toString(), u"weapon.twomace"_s);
         QCOMPARE(statGroups(q), QJsonArray());
+    }
+
+    void weaponDpsNeedsYourOwnAndAPositiveWeight()
+    {
+        const Item mace = withStats(u"Two Hand Maces"_s, {{u"[Weapon] Total DPS"_s, 176.4}});
+        const WeightedSearch against = weightedSearch(mace, {{u"[Weapon] Total DPS"_s, -1}}, tradeData());
+        QVERIFY(equipmentIds(against).isEmpty());
+
+        const Item bare = withStats(u"Two Hand Maces"_s, {{u"# to maximum Life"_s, 5}});
+        const WeightedSearch without = weightedSearch(bare, {{u"[Weapon] Total DPS"_s, 1}}, tradeData());
+        QVERIFY(equipmentIds(without).isEmpty());
+    }
+
+    void weightedSearchNeedsRealWeights()
+    {
+        const QString armour = u"#% increased Armour"_s;
+        const QString speed = u"#% increased Movement Speed"_s;
+        const Item helmet = withStats(
+            u"Helmets"_s,
+            {{u"# to maximum Life"_s, 50}, {u"#% to Fire Resistance"_s, 20}, {armour, 40}, {speed, 10}});
+        const Weights weights = {
+            {u"# to maximum Life"_s, 1}, {u"#% to Fire Resistance"_s, 0}, {armour, qQNaN()}, {speed, qInf()}};
+        const WeightedSearch q = weightedSearch(helmet, weights, tradeData());
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()), QStringList{u"pseudo.pseudo_total_life"_s});
+        QCOMPARE(q.current, 50.0);
     }
 
     void runesDontCount()
@@ -591,6 +633,49 @@ private Q_SLOTS:
         const CraftBaseSearch plain = craftBaseSearch(boots, keyStats, tradeData());
         QVERIFY(!plain.emptyAffixFilter);
         QCOMPARE(statGroups(plain).size(), 1);
+    }
+
+    void craftBaseRollsAreAboutHalfOfTheBest()
+    {
+        const TradeData data = tradeDataFor({u"Alpha"_s, u"Bravo"_s, u"Charlie"_s, u"Delta"_s});
+        const QList<KeyStat> keyStats = {
+            {u"# to Alpha"_s, u"Alpha"_s, 9, 1},
+            {u"# to Bravo"_s, u"Bravo"_s, 9, 4},
+            {u"# to Charlie"_s, u"Charlie"_s, 9, 10},
+            {u"# to Delta"_s, u"Delta"_s, 9, 20},
+        };
+        const CraftBaseSearch q = craftBaseSearch(withStats(u"Boots"_s, {}), keyStats, data);
+        const QJsonObject wanted = statGroups(q).at(0).toObject();
+        // never nothing, and a little over half from 5 up
+        QCOMPARE(valueOf(wanted, u"explicit.alpha"_s), minimum(1));
+        QCOMPARE(valueOf(wanted, u"explicit.bravo"_s), minimum(2));
+        QCOMPARE(valueOf(wanted, u"explicit.charlie"_s), minimum(5));
+        QCOMPARE(valueOf(wanted, u"explicit.delta"_s), minimum(11));
+    }
+
+    void craftBaseWithoutKeyStats()
+    {
+        const CraftBaseSearch q = craftBaseSearch(withStats(u"Boots"_s, {}), {}, tradeData());
+        QCOMPARE(statGroups(q), QJsonArray());
+        QVERIFY(q.keyStats.isEmpty());
+    }
+
+    void craftBaseKeyStatsAreMods()
+    {
+        const KeyStat armour{u"[Base] Armour"_s, u"Armour"_s, 9, 100};
+        const CraftBaseSearch q = craftBaseSearch(withStats(u"Boots"_s, {}), {armour}, tradeData());
+        QCOMPARE(q.unmatched, QStringList{u"[Base] Armour"_s});
+        QCOMPARE(statGroups(q), QJsonArray());
+    }
+
+    void craftBaseLeavesWhatComesWithTheBase()
+    {
+        const Item mace = withStats(u"Two Hand Maces"_s, {{u"[Weapon] Total DPS"_s, 200},
+                                                          {u"[Weapon] Physical DPS"_s, 150},
+                                                          {u"[Base] Runic Ward"_s, 100},
+                                                          {u"[Base] Block Chance"_s, 25},
+                                                          {u"[Base] Armour"_s, 300}});
+        QCOMPARE(equipmentIds(craftBaseSearch(mace, {}, tradeData())), QStringList{u"ar"_s});
     }
 
     void gearSearchForTheBuild()
