@@ -36,7 +36,8 @@ FormCard.FormCardPage {
         }
     }
 
-    // A stat ignored by itself, which can't be counted again but removed.
+    // A stat ignored by itself, which can be ignored or excluded, or taken off
+    // the list.
     component StatRow: FormRow {
         id: statRow
 

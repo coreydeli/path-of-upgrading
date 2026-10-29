@@ -11,7 +11,7 @@ Rectangle {
 
     required property ItemPopup popup
     readonly property itemReport report: popup.report
-    // compact, with what hardly matters waiting behind More
+    // compact, with what hardly matters waiting behind Show More
     readonly property bool folded: popup.compact && !popup.expanded
     // Under a verdict the notes are extras. Without one they say why it has
     // none.
