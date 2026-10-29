@@ -3,8 +3,9 @@
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-keysyms xcb-randr xcb-xfixes xcb-xtest)
 
-find_package(Qt6 REQUIRED COMPONENTS DBus)
+find_package(Qt6 REQUIRED COMPONENTS DBus Widgets)
 find_package(KF6GlobalAccel 6.0 REQUIRED)
+find_package(KF6StatusNotifierItem 6.0 REQUIRED)
 find_package(LayerShellQt 6.0 REQUIRED)
 # for the keyring
 find_package(Qt6Keychain REQUIRED)
@@ -16,11 +17,13 @@ add_library(pou_platform STATIC
     gamewindow.cpp gamewindow.h
     globalshortcuts.cpp globalshortcuts.h
     kde/kdeglobalshortcuts.cpp kde/kdeglobalshortcuts.h
+    kde/kdetray.cpp kde/kdetray.h
     keychain/keychainsecretstore.cpp keychain/keychainsecretstore.h
     logging.cpp logging.h
     overlay.cpp overlay.h
     screenmap.cpp screenmap.h
     secretstore.cpp secretstore.h
+    tray.cpp tray.h
     xcb/xconnection.cpp xcb/xconnection.h
     xcb/xgameinput.cpp xcb/xgameinput.h
     xcb/xkeysender.cpp xcb/xkeysender.h
@@ -32,5 +35,5 @@ add_library(pou_platform STATIC
 target_include_directories(pou_platform PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(pou_platform
     PUBLIC Qt6::Gui PkgConfig::XCB Qt6Keychain::Qt6Keychain
-    PRIVATE Qt6::DBus KF6::GlobalAccel LayerShellQt::Interface
+    PRIVATE Qt6::DBus Qt6::Widgets KF6::GlobalAccel KF6::StatusNotifierItem LayerShellQt::Interface
 )
