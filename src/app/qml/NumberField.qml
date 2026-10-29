@@ -4,8 +4,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// A form row for a number, with a decimal when it has decimals: 1, like 2.5
-// Divine Orbs.
+// A form row for a number, see NumberBox.
 FormCard.AbstractFormDelegate {
     id: row
 
@@ -18,8 +17,6 @@ FormCard.AbstractFormDelegate {
     property int decimals: 0
     // what 0 shows as, when it means there's none
     property string noneText
-    // as the spin box counts in whole numbers
-    readonly property real factor: Math.pow(10, decimals)
 
     signal edited(real value)
 
@@ -49,35 +46,15 @@ FormCard.AbstractFormDelegate {
             }
         }
 
-        QQC2.SpinBox {
-            id: spinBox
+        NumberBox {
             objectName: "spinBox"
-            from: Math.round(row.minimum * row.factor)
-            to: Math.round(row.maximum * row.factor)
-            stepSize: Math.round(row.step * row.factor)
-            editable: true
-            value: Math.round(row.value * row.factor)
-            textFromValue: (value, locale) => {
-                if (value === 0 && row.noneText !== "")
-                    return row.noneText;
-                return Number(value / row.factor).toLocaleString(locale, "f", value % row.factor === 0 ? 0 : row.decimals);
-            }
-            valueFromText: (text, locale) => {
-                try {
-                    return Math.round(Number.fromLocaleString(locale, text) * row.factor);
-                } catch (error) {
-                    // the none text
-                    return 0;
-                }
-            }
-            validator: DoubleValidator {
-                bottom: row.minimum
-                top: row.maximum
-                decimals: row.decimals
-                notation: DoubleValidator.StandardNotation
-                locale: spinBox.locale.name
-            }
-            onValueModified: row.edited(value / row.factor)
+            number: row.value
+            minimum: row.minimum
+            maximum: row.maximum
+            step: row.step
+            decimals: row.decimals
+            noneText: row.noneText
+            onEdited: number => row.edited(number)
             Accessible.name: row.label
         }
     }

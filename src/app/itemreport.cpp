@@ -3,6 +3,7 @@
 
 #include "core/numbers.h"
 #include "core/resists.h"
+#include "core/statnorm.h"
 #include "core/wearing.h"
 
 #include <QHash>
@@ -249,8 +250,7 @@ QString statLine(const QString &key, double change)
     if (const qsizetype at = key.indexOf(u'#'); at >= 0)
         return QString(key).replace(at, 1, number);
     // the item's own, "[Base] Armour"
-    const qsizetype end = key.indexOf(u"] ");
-    return number + u' ' + (end < 0 ? key : key.sliced(end + 2));
+    return number + u' ' + statName(key);
 }
 
 QList<ReportFigure> statsOf(const QList<StatRow> &rows)

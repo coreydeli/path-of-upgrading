@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
+#include "core/buildprofiles.h"
 #include "core/parser.h"
 #include "core/rates.h"
 #include "core/tradesite.h"
@@ -391,6 +392,23 @@ private Q_SLOTS:
         r.app.gearScoring()->setProfile(1);
         QCOMPARE(r.app.characters().find(settings.character)->buildProfile, u"es-caster"_s);
         QCOMPARE(r.app.checker().popup().report().gearBuild, u"Energy Shield spellcaster"_s);
+    }
+
+    void statWeights()
+    {
+        // which judge the item in the popup when there's no build profile
+        Folders folders;
+        Settings settings;
+        Character c = wearing(u"Torvald"_s, itemtexts::helmetOld);
+        c.buildProfile = noBuildProfile.toString();
+        settings.character = folders.add(c);
+        folders.set(settings);
+        Running r(folders);
+        const ItemReport before = r.checked();
+        QVERIFY(before.scoreLabel.startsWith(u"by your weights"_s));
+        r.app.statWeights()->setWeight(u"# to maximum Life"_s, 2);
+        QCOMPARE(r.app.characters().find(settings.character)->weights.value(u"# to maximum Life"_s), 2.0);
+        QCOMPARE_NE(r.app.checker().popup().report().score, before.score);
     }
 
     void judgesWithPob()

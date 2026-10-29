@@ -14,4 +14,12 @@ QString normalizeStat(const QString &text);
 // Low Life", "per Power Charge". Not "per second", which is always on.
 bool isConditionalStat(const QString &text);
 
+// The item's own, like "[Base] Armour" or "[Weapon] Total DPS", rather than
+// one of its mods.
+bool isItemProperty(QStringView key);
+
+// What a stat is called in the window: "Armour" for "[Base] Armour", and the
+// key as it is for a mod.
+QString statName(const QString &key);
+
 } // namespace pou
