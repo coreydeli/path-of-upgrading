@@ -17,6 +17,7 @@ qt_add_library(pou_app STATIC
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
     settingsstore.cpp settingsstore.h
+    statweights.cpp statweights.h
     tradefinder.cpp tradefinder.h
     tradeoptions.cpp tradeoptions.h
     tradereport.cpp tradereport.h
