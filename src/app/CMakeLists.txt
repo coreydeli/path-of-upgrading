@@ -29,6 +29,7 @@ qt_add_qml_module(pou_app
         qml/CharactersPage.qml
         qml/FormRow.qml
         qml/GearPage.qml
+        qml/GearScorePage.qml
         qml/KeyField.qml
         qml/Main.qml
         qml/NumberField.qml

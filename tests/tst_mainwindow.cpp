@@ -606,6 +606,8 @@ private Q_SLOTS:
         QCOMPARE(w.page()->property("title").toString(), u"Path of Building"_s);
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QVERIFY(w.show(u"gearScoreAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
         QVERIFY(w.show(u"charactersAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
@@ -702,6 +704,99 @@ private Q_SLOTS:
         QVERIFY(QDir().mkdir(file));
         QVERIFY(click(w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s)));
         QObject *error = w.find(u"gearError"_s);
+        QVERIFY(isVisible(error));
+        QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
+    }
+
+    void gearScoreForNobody()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearScoreAction"_s));
+        QVERIFY(isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"profileBox"_s)));
+        QVERIFY(!isVisible(w.find(u"scoreHelp"_s)));
+        QVERIFY(!isVisible(w.find(u"stats"_s)));
+        QVERIFY(!isVisible(w.find(u"scoreError"_s)));
+    }
+
+    void gearScore()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearScoreAction"_s));
+        w.play({});
+        QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QObject *heading = search(w.page(), [](QObject *o) {
+            return o->inherits("QQuickItem") && o->property("title").toString() == u"For Wren";
+        });
+        QVERIFY(isVisible(heading));
+
+        QObject *profile = w.find(u"profileBox"_s);
+        QVERIFY(isVisible(profile));
+        QCOMPARE(profile->property("currentText").toString(), u"Life and resistances"_s);
+        QCOMPARE(profile->property("description").toString(), w.app->gearScoring()->summary());
+        QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
+        QVERIFY(isVisible(w.find(u"stats"_s)));
+
+        QObject *life = w.in(u"stats"_s, u"stat:Life"_s);
+        QCOMPARE(text(life), u"Life"_s);
+        QCOMPARE(life->property("description").toString(), u"Counts in every slot but Weapon and Jewel"_s);
+        QObject *level = life->findChild<QObject *>(u"levelBox"_s);
+        QVERIFY(isVisible(level));
+        QCOMPARE(level->property("currentText").toString(), u"As usual"_s);
+        QCOMPARE(w.find(u"resetButton"_s)->property("enabled").toBool(), false);
+
+        // and one picked elsewhere
+        w.app->gearScoring()->setProfile(2);
+        QCOMPARE(profile->property("currentText").toString(), u"Minion summoner on Energy Shield"_s);
+    }
+
+    void statLevels()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearScoreAction"_s));
+        w.play({});
+        QObject *life = w.in(u"stats"_s, u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
+        QVERIFY(activate(life, 4));
+        QCOMPARE(w.app->character().character().tweaks, ProfileTweaks({{u"Life"_s, 2.0}}));
+        QCOMPARE(life->property("currentText").toString(), u"Twice as much"_s);
+
+        QObject *reset = w.find(u"resetButton"_s);
+        QCOMPARE(reset->property("enabled").toBool(), true);
+        QVERIFY(click(reset));
+        QCOMPARE(w.app->character().character().tweaks, ProfileTweaks());
+        QCOMPARE(life->property("currentText").toString(), u"As usual"_s);
+        QCOMPARE(reset->property("enabled").toBool(), false);
+    }
+
+    void pickBuildProfile()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearScoreAction"_s));
+        w.play({});
+        QObject *profile = w.find(u"profileBox"_s);
+        QVERIFY(activate(profile, 1));
+        QCOMPARE(w.app->character().character().buildProfile, u"es-caster"_s);
+        QVERIFY(isVisible(w.in(u"stats"_s, u"stat:Spell skill levels"_s)));
+
+        // and none, by your stat weights alone
+        QVERIFY(activate(profile, 3));
+        QCOMPARE(w.app->character().character().buildProfile, u"none"_s);
+        QCOMPARE(profile->property("description").toString(),
+                 u"Items are judged by your stat weights alone, with no gear score."_s);
+        QVERIFY(!isVisible(w.find(u"stats"_s)));
+        QVERIFY(!isVisible(w.find(u"scoreHelp"_s)));
+    }
+
+    void cantSaveGearScore()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearScoreAction"_s));
+        const QString id = w.play({});
+        const QString file = w.dir.filePath(u"data/characters/"_s + id + u".json"_s);
+        QVERIFY(QFile::remove(file));
+        QVERIFY(QDir().mkdir(file));
+        QVERIFY(activate(w.find(u"profileBox"_s), 1));
+        QObject *error = w.find(u"scoreError"_s);
         QVERIFY(isVisible(error));
         QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
     }
