@@ -102,8 +102,7 @@ double judgeResists(const PobStats &before, const PobStats &after, const PobVerd
         // Chaos resistance only counts when you say so, though dropping off a
         // cap you had always does.
         const bool counts = e != Element::Chaos || options.priorities.chaos;
-        // Under the cap isn't enough: an item that raises one you're at leaves
-        // you under it with what you had.
+        // Being under the cap isn't a loss by itself, the resistance has to go down.
         const bool drops = r.to < r.from - slack;
         if (counts)
             gain += std::min(r.to, r.max) - std::min(r.from, maxFrom);
