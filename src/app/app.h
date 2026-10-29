@@ -7,6 +7,7 @@
 #include "app/gearlist.h"
 #include "app/gearscoring.h"
 #include "app/hotkeys.h"
+#include "app/ignoredstats.h"
 #include "app/itemchecker.h"
 #include "app/itemhistory.h"
 #include "app/overlayoptions.h"
@@ -53,6 +54,7 @@ class App : public QObject
     Q_PROPERTY(pou::GearScoring *gearScoring READ gearScoring CONSTANT)
     Q_PROPERTY(pou::StatWeights *statWeights READ statWeights CONSTANT)
     Q_PROPERTY(pou::StatPicker *statPicker READ statPicker CONSTANT)
+    Q_PROPERTY(pou::IgnoredStats *ignoredStats READ ignoredStats CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
@@ -100,6 +102,7 @@ public:
     GearScoring *gearScoring() { return &m_gearScoring; }
     StatWeights *statWeights() { return &m_statWeights; }
     StatPicker *statPicker() { return &m_statPicker; }
+    IgnoredStats *ignoredStats() { return &m_ignoredStats; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
@@ -132,6 +135,7 @@ private:
     GearScoring m_gearScoring;
     StatWeights m_statWeights;
     StatPicker m_statPicker;
+    IgnoredStats m_ignoredStats;
     TradeOptions m_tradeOptions;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;

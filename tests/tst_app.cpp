@@ -417,6 +417,22 @@ private Q_SLOTS:
         QCOMPARE_NE(r.app.checker().popup().report().score, before.score);
     }
 
+    void ignoredStats()
+    {
+        // which the item in the popup is judged again without
+        Folders folders;
+        Settings settings;
+        Character c = wearing(u"Torvald"_s, itemtexts::helmetOld);
+        c.buildProfile = noBuildProfile.toString();
+        settings.character = folders.add(c);
+        folders.set(settings);
+        Running r(folders);
+        const ItemReport before = r.checked();
+        r.app.ignoredStats()->add(u"# to maximum Life"_s);
+        QCOMPARE(r.app.characters().find(settings.character)->ignored.size(), 1);
+        QCOMPARE_NE(r.app.checker().popup().report().score, before.score);
+    }
+
     void judgesWithPob()
     {
         Folders folders;
