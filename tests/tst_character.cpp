@@ -138,6 +138,28 @@ private Q_SLOTS:
         QCOMPARE(changeIfEquipped({}, withStats({{flat, 30}}), {u"Amulet"_s})->totals.first().delta, 30.0);
         QVERIFY(changeIfEquipped({}, withStats({{flat, 30}}), {u"Helmet"_s})->totals.isEmpty());
     }
+
+    void overallScore()
+    {
+        // of the main slots with a gear score
+        const Equipped worn = {
+            {u"Helmet"_s, Item()},
+            {u"Ring 1"_s, Item()},
+            {u"Belt"_s, Item()},
+            {u"Jewel 1"_s, Item()},
+        };
+        const QHash<QString, double> scores = {{u"Helmet"_s, 41}, {u"Ring 1"_s, 50}, {u"Jewel 1"_s, 10}};
+        const auto score = [&scores](const Item &, const QString &slot) -> std::optional<double> {
+            if (!scores.contains(slot))
+                return std::nullopt;
+            return scores.value(slot);
+        };
+        QCOMPARE(overallGearScore(worn, score), 46.0);
+
+        // and none
+        QCOMPARE(overallGearScore({{u"Belt"_s, Item()}, {u"Jewel 1"_s, Item()}}, score), std::nullopt);
+        QCOMPARE(overallGearScore({}, score), std::nullopt);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestCharacter)
