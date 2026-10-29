@@ -137,6 +137,20 @@ private Q_SLOTS:
         QVERIFY(hide.isEmpty());
     }
 
+    void leavingAfterItWasHidden()
+    {
+        FakeGameInput input;
+        PopupHider hider(&input);
+        hider.setTimeouts(quick());
+        QSignalSpy hide(&hider, &PopupHider::timeToHide);
+        hider.shown(u"DP-1"_s, popup, true);
+        hider.hidden();
+        hider.setHovered(true);
+        hider.setHovered(false);
+        QTest::qWait(300);
+        QVERIFY(hide.isEmpty());
+    }
+
     void awayFromIt_data()
     {
         QTest::addColumn<ScreenPoint>("mouse");
@@ -192,6 +206,24 @@ private Q_SLOTS:
         QTRY_COMPARE(hide.size(), 1);
     }
 
+    void shownAgainWaitsForTheMouseAgain()
+    {
+        FakeGameInput input;
+        PopupHider hider(&input);
+        PopupHider::Timeouts timeouts = noShownTimeout();
+        timeouts.away = 300ms;
+        hider.setTimeouts(timeouts);
+        QSignalSpy hide(&hider, &PopupHider::timeToHide);
+        input.mouseAt = at(0, 0);
+        hider.shown(u"DP-1"_s, popup, true);
+        QTest::qWait(200);
+        // so the time the mouse has been away starts over for the new one
+        hider.shown(u"DP-1"_s, popup, true);
+        QTest::qWait(200);
+        QVERIFY(hide.isEmpty());
+        QTRY_COMPARE(hide.size(), 1);
+    }
+
     void mouseUnknown()
     {
         // as over a window that isn't the game's
@@ -218,6 +250,30 @@ private Q_SLOTS:
 
         hider.shown(u"DP-1"_s, popup, true);
         QTRY_COMPARE(hide.size(), 1);
+    }
+
+    // not all the time
+    void looksAtTheMouseNowAndThen()
+    {
+        FakeGameInput input;
+        PopupHider hider(&input);
+        // 10 times a second, as it is until it's told otherwise
+        hider.shown(u"DP-1"_s, popup, true);
+        QTest::qWait(250);
+        QCOMPARE_LE(input.mouseLooks, 3);
+    }
+
+    void looksAsOftenAsItsTold()
+    {
+        FakeGameInput input;
+        PopupHider hider(&input);
+        PopupHider::Timeouts timeouts = noShownTimeout();
+        timeouts.look = 60ms;
+        hider.setTimeouts(timeouts);
+        hider.shown(u"DP-1"_s, popup, true);
+        QTest::qWait(250);
+        QCOMPARE_GT(input.mouseLooks, 0);
+        QCOMPARE_LE(input.mouseLooks, 5);
     }
 
     void hiddenAnotherWay()
