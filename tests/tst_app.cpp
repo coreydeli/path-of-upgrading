@@ -433,6 +433,56 @@ private Q_SLOTS:
         QCOMPARE_NE(r.app.checker().popup().report().score, before.score);
     }
 
+    void checkedItems()
+    {
+        Folders folders;
+        Settings settings;
+        settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
+        folders.set(settings);
+        Running r(folders);
+        CheckedItems &checked = *r.app.checkedItems();
+        QCOMPARE(checked.rowCount(), 0);
+        r.checked();
+        QCOMPARE(checked.rowCount(), 1);
+        QCOMPARE(checked.index(0).data(CheckedItems::NameRole), u"Doom Visage"_s);
+
+        // another one, then the first again
+        r.app.checker().check();
+        Q_EMIT r.input->itemCopied(itemtexts::advancedRing, std::nullopt);
+        QCOMPARE(checked.index(0).data(CheckedItems::NameRole), u"Storm Loop"_s);
+        r.app.checker().popup().close();
+        checked.checkAgain(1);
+        QVERIFY(r.app.checker().popup().isVisible());
+        QCOMPARE(r.app.checker().popup().report().name, u"Doom Visage"_s);
+        QCOMPARE(r.app.checker().popup().report().versus, u"vs Grim Crown"_s);
+        // which moves it to the top
+        QCOMPARE(checked.index(0).data(CheckedItems::NameRole), u"Doom Visage"_s);
+        QCOMPARE(checked.rowCount(), 2);
+
+        // for what you wear now
+        r.app.checker().popup().wear(u"Helmet"_s);
+        r.app.checker().popup().close();
+        checked.checkAgain(0);
+        QVERIFY(r.app.checker().popup().isVisible());
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+    }
+
+    void forgetCheckedItems()
+    {
+        Folders folders;
+        {
+            Running r(folders);
+            r.checked();
+            r.app.checkedItems()->forget();
+            QCOMPARE(r.app.checkedItems()->rowCount(), 0);
+            QVERIFY(r.app.history().recent().isEmpty());
+        }
+        // and next time
+        Running again(folders);
+        QCOMPARE(again.app.checkedItems()->rowCount(), 0);
+        QVERIFY(!again.app.history().seenStats().isEmpty());
+    }
+
     void judgesWithPob()
     {
         Folders folders;
