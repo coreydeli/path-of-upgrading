@@ -13,6 +13,7 @@
 #include "app/itemhistory.h"
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
+#include "app/resultspanel.h"
 #include "app/settingsstore.h"
 #include "app/statpicker.h"
 #include "app/statweights.h"
@@ -103,8 +104,10 @@ public:
     TradeSearcher &trade() { return m_trade; }
     // For the character you play.
     TradeFinder &finder() { return m_finder; }
-    // The listings of the last search that found some.
+    // The listings of the last search that found some, and the window that
+    // shows them.
     TradeResults &results() { return m_results; }
+    ResultsPanel &resultsPanel() { return m_resultsPanel; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -144,6 +147,7 @@ private:
     TradeSearcher m_trade;
     TradeFinder m_finder;
     TradeResults m_results;
+    ResultsPanel m_resultsPanel;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;

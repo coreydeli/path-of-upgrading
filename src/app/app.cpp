@@ -50,6 +50,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_trade(&m_tradeClient)
     , m_finder(&m_trade, &m_tradeData, &m_rates)
     , m_results(&m_trade, &m_rates)
+    , m_resultsPanel(qml, m_input.get(), &m_results)
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)
@@ -78,6 +79,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_checker.setPob(&m_pob);
     m_checker.setFinder(&m_finder);
     m_checker.setSettings(settings);
+    m_resultsPanel.setSettings(settings.overlay);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
     connect(&m_checkedItems, &CheckedItems::checkAgainAsked, &m_checker, &ItemChecker::checkItem);
     connect(&m_checker, &ItemChecker::wearAsked, this, [this](const Item &item, const QString &slot) {
@@ -106,6 +108,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
         if (hotkey == Hotkeys::Hotkey::Check)
             m_checker.check();
+        else if (hotkey == Hotkeys::Hotkey::Results && !m_settings.settings().overlay.paused)
+            m_resultsPanel.toggle();
     });
     connect(&m_hotkeys, &Hotkeys::keyChanged, this, &App::followKeys);
     m_hotkeys.add(settings.overlay);
@@ -130,6 +134,7 @@ void App::followSettings()
 {
     const Settings &settings = m_settings.settings();
     m_checker.setSettings(settings);
+    m_resultsPanel.setSettings(settings.overlay);
     if (settings.character != m_character.id())
         m_character.setId(settings.character);
     if (settings.pob.location != m_pobLocation)
@@ -153,6 +158,7 @@ void App::followTrade()
     m_trade.setSettings(m_settings.settings().trade);
     m_finder.setSettings(m_settings.settings());
     m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
+    m_resultsPanel.setUnavailable(m_trade.unavailable());
     m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());
     if (m_trade.unavailable().isEmpty()) {
         // which does nothing while what there is is fresh
