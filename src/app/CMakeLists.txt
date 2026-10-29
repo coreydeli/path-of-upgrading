@@ -39,6 +39,7 @@ qt_add_qml_module(pou_app
         qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
+        qml/StatWeightsPage.qml
         qml/ToneLabel.qml
         qml/TradePage.qml
 )

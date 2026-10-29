@@ -2,6 +2,7 @@
 #include "app/app.h"
 #include "core/datafiles.h"
 #include "core/parser.h"
+#include "core/weights.h"
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
@@ -608,6 +609,8 @@ private Q_SLOTS:
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"gearScoreAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
+        QVERIFY(w.show(u"weightsAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
         QVERIFY(w.show(u"charactersAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
@@ -797,6 +800,131 @@ private Q_SLOTS:
         QVERIFY(QDir().mkdir(file));
         QVERIFY(activate(w.find(u"profileBox"_s), 1));
         QObject *error = w.find(u"scoreError"_s);
+        QVERIFY(isVisible(error));
+        QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
+    }
+
+    void weightsForNobody()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        QVERIFY(isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"noWeightsText"_s)));
+        QVERIFY(!isVisible(w.find(u"resetButton"_s)));
+        QVERIFY(!isVisible(w.find(u"weightsHelp"_s)));
+        QVERIFY(!isVisible(w.find(u"weightsError"_s)));
+        QVERIFY(!isVisible(w.find(u"undoMessage"_s)));
+    }
+
+    void weights()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"noWeightsText"_s)));
+        QVERIFY(isVisible(w.find(u"weightsHelp"_s)));
+        QObject *heading = search(w.page(), [](QObject *o) {
+            return o->inherits("QQuickItem") && o->property("title").toString() == u"For Wren";
+        });
+        QVERIFY(isVisible(heading));
+
+        QObject *armour = w.find(u"weight:[Base] Armour"_s);
+        QVERIFY(isVisible(armour));
+        QCOMPARE(text(armour), u"Armour"_s);
+        QCOMPARE(armour->property("description").toString(), u"The item's own, with its mods"_s);
+        QObject *box = armour->findChild<QObject *>(u"weightBox"_s);
+        QCOMPARE(box->property("displayText").toString(), QLocale().toString(0.05, 'f', 2));
+
+        QObject *life = w.find(u"weight:# to maximum Life"_s);
+        QCOMPARE(text(life), u"# to maximum Life"_s);
+        QVERIFY(!isVisible(life->findChild<QObject *>(u"descriptionText"_s)));
+        QCOMPARE(life->findChild<QObject *>(u"weightBox"_s)->property("displayText").toString(),
+                 QLocale().toString(1));
+        // with no zeros after it
+        QCOMPARE(w.find(u"weight:#% to Fire Resistance"_s)
+                     ->findChild<QObject *>(u"weightBox"_s)
+                     ->property("displayText")
+                     .toString(),
+                 QLocale().toString(1.5, 'f', 1));
+        QVERIFY(!w.find(u"resetButton"_s)->property("enabled").toBool());
+        QVERIFY(!isVisible(w.find(u"undoMessage"_s)));
+    }
+
+    void editWeight()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QObject *life = w.find(u"weight:# to maximum Life"_s)->findChild<QObject *>(u"weightBox"_s);
+        // in thousandths
+        QVERIFY(setValue(life, 2500, "valueModified"));
+        QCOMPARE(w.app->character().character().weights.value(u"# to maximum Life"_s), 2.5);
+        QCOMPARE(life->property("displayText").toString(), QLocale().toString(2.5, 'f', 1));
+        QCOMPARE(typed(life, QLocale().toString(0.125, 'f', 3)), 125);
+        QCOMPARE(typed(life, QLocale().toString(-2)), -2000);
+        QCOMPARE(life->property("stepSize").toInt(), 100);
+        QVERIFY(w.find(u"resetButton"_s)->property("enabled").toBool());
+        // as you can change it back yourself
+        QVERIFY(!isVisible(w.find(u"undoMessage"_s)));
+    }
+
+    void removeWeight()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QVERIFY(click(w.find(u"weight:# to maximum Mana"_s)->findChild<QObject *>(u"removeButton"_s)));
+        QVERIFY(!w.app->character().character().weights.contains(u"# to maximum Mana"_s));
+        QTRY_VERIFY(
+            !search(w.page(), [](QObject *o) { return o->objectName() == u"weight:# to maximum Mana"; }));
+        QVERIFY(isVisible(w.find(u"weight:# to maximum Life"_s)));
+    }
+
+    void noWeights()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        for (const QString &key : defaultWeights().keys())
+            w.app->statWeights()->remove(key);
+        QVERIFY(isVisible(w.find(u"noWeightsText"_s)));
+        QVERIFY(w.find(u"resetButton"_s)->property("enabled").toBool());
+    }
+
+    void resetWeights()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        w.play({});
+        QObject *life = w.find(u"weight:# to maximum Life"_s)->findChild<QObject *>(u"weightBox"_s);
+        QVERIFY(setValue(life, 2000, "valueModified"));
+        QObject *reset = w.find(u"resetButton"_s);
+        QVERIFY(click(reset));
+        QCOMPARE(w.app->character().character().weights, defaultWeights());
+        QCOMPARE(life->property("displayText").toString(), QLocale().toString(1));
+        QVERIFY(!reset->property("enabled").toBool());
+
+        QObject *message = w.find(u"undoMessage"_s);
+        QVERIFY(isVisible(message));
+        QCOMPARE(text(message), u"Your weights are back to the defaults."_s);
+        QVERIFY(QMetaObject::invokeMethod(w.find(u"undoAction"_s), "trigger"));
+        QCOMPARE(w.app->character().character().weights.value(u"# to maximum Life"_s), 2.0);
+        QCOMPARE(life->property("displayText").toString(), QLocale().toString(2));
+        QVERIFY(!isVisible(message));
+    }
+
+    void cantSaveWeights()
+    {
+        Window w;
+        QVERIFY(w.show(u"weightsAction"_s));
+        const QString id = w.play({});
+        const QString file = w.dir.filePath(u"data/characters/"_s + id + u".json"_s);
+        QVERIFY(QFile::remove(file));
+        QVERIFY(QDir().mkdir(file));
+        QVERIFY(setValue(w.find(u"weight:# to maximum Life"_s)->findChild<QObject *>(u"weightBox"_s), 2000,
+                         "valueModified"));
+        QObject *error = w.find(u"weightsError"_s);
         QVERIFY(isVisible(error));
         QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
     }
