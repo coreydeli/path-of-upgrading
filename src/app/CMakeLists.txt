@@ -33,6 +33,7 @@ qt_add_qml_module(pou_app
         qml/FormRow.qml
         qml/GearPage.qml
         qml/GearScorePage.qml
+        qml/IgnoredStatsPage.qml
         qml/KeyField.qml
         qml/Main.qml
         qml/NumberBox.qml
