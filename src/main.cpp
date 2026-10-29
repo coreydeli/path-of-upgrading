@@ -92,5 +92,8 @@ int main(int argc, char *argv[])
     desktop.setWindow(qobject_cast<QWindow *>(engine.rootObjects().value(0)));
     desktop.reportProblems();
 
-    return app.exec();
+    const int exitCode = app.exec();
+    // The window reads from the app, which goes before the engine does.
+    qDeleteAll(engine.rootObjects());
+    return exitCode;
 }
