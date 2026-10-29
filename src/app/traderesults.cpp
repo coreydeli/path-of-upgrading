@@ -125,7 +125,7 @@ void TradeResults::loadMore()
 {
     if (isBusy() || !hasMore())
         return;
-    // and the trade site isn't asked for anything
+    // trade searches might have been turned off since the search
     if (const QString why = m_searcher->unavailable(); !why.isEmpty())
         return setError(why);
     setError({});
