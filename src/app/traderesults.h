@@ -50,6 +50,7 @@ struct ResultVerdict
     Q_PROPERTY(QList<pou::ReportFigure> figures MEMBER figures)
     Q_PROPERTY(QStringList losses MEMBER losses)
     Q_PROPERTY(QStringList risks MEMBER risks)
+    Q_PROPERTY(QString caps MEMBER caps)
     Q_PROPERTY(bool checking MEMBER checking)
     Q_PROPERTY(QString pobError MEMBER pobError)
 
@@ -62,6 +63,7 @@ public:
     QList<ReportFigure> figures;
     QStringList losses;
     QStringList risks;
+    QString caps;          // "Caps your fire resistance"
     bool checking = false; // Path of Building is still to say
     QString pobError;      // why Path of Building couldn't judge it
 
