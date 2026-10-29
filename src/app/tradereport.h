@@ -19,6 +19,7 @@ struct TradeReport
     Q_PROPERTY(bool asked MEMBER asked)
     Q_PROPERTY(bool busy MEMBER busy)
     Q_PROPERTY(bool failed MEMBER failed)
+    Q_PROPERTY(bool listed MEMBER listed)
     Q_PROPERTY(QString title MEMBER title)
     Q_PROPERTY(QString status MEMBER status)
     Q_PROPERTY(QString note MEMBER note)
@@ -28,7 +29,8 @@ public:
     bool asked = false; // whether there's been one for the item
     bool busy = false;  // and it's still going
     bool failed = false;
-    QString title; // "Same stats or better than Doom Visage"
+    bool listed = false; // some were found, so there are listings to show
+    QString title;       // "Same stats or better than Doom Visage"
     // How many it found and where, "12 listed in Runes of Aldur", how it's
     // getting on, or why it found nothing.
     QString status;

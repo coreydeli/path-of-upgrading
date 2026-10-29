@@ -18,6 +18,7 @@ private Q_SLOTS:
         QVERIFY(report.asked);
         QVERIFY(report.busy);
         QVERIFY(!report.failed);
+        QVERIFY(!report.listed);
         QCOMPARE(report.status, u"Searching the trade site"_s);
         QVERIFY(report.note.isEmpty());
     }
@@ -54,6 +55,7 @@ private Q_SLOTS:
         };
         const TradeReport report = reportOf(found);
         QCOMPARE(report, (TradeReport{.asked = true,
+                                      .listed = true,
                                       .title = found.title,
                                       .status = u"1,234 listed in HC Runes of Aldur"_s,
                                       .note = found.note,
@@ -64,8 +66,10 @@ private Q_SLOTS:
     {
         TradeFinder::Found found{.league = u"Runes of Aldur"_s, .total = 0};
         QCOMPARE(reportOf(found).status, u"None listed in Runes of Aldur right now"_s);
+        QVERIFY(!reportOf(found).listed);
         found.total = 1;
         QCOMPARE(reportOf(found).status, u"1 listed in Runes of Aldur"_s);
+        QVERIFY(reportOf(found).listed);
     }
 
     void failed()
