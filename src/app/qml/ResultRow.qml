@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
@@ -15,6 +17,7 @@ Item {
     required property bool online
     required property string listed
     required property var mods
+    required property resultVerdict verdict
     property bool colorblind: false
 
     width: ListView.view.width
@@ -74,6 +77,93 @@ Item {
                     font: Kirigami.Theme.smallFont
                     text: row.converted
                 }
+            }
+        }
+
+        // what it does for the character you play
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.bottomMargin: Kirigami.Units.smallSpacing
+            visible: row.verdict.verdict !== ""
+            spacing: 0
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.largeSpacing
+
+                ToneLabel {
+                    font.bold: true
+                    text: row.verdict.verdict
+                    tone: row.verdict.tone
+                    colorblind: row.colorblind
+                }
+
+                ToneLabel {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    text: row.verdict.score
+                    tone: row.verdict.tone
+                    colorblind: row.colorblind
+                }
+            }
+
+            Flow {
+                Layout.fillWidth: true
+                visible: row.verdict.figures.length > 0
+                spacing: Kirigami.Units.largeSpacing
+
+                Repeater {
+                    model: row.verdict.figures
+
+                    ToneLabel {
+                        required property reportFigure modelData
+
+                        font: Kirigami.Theme.smallFont
+                        text: modelData.label + " " + modelData.change
+                        tone: modelData.tone
+                        colorblind: row.colorblind
+                    }
+                }
+            }
+
+            Repeater {
+                model: row.verdict.losses
+
+                ToneLabel {
+                    required property string modelData
+
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    font: Kirigami.Theme.smallFont
+                    text: modelData
+                    tone: Tone.Bad
+                    colorblind: row.colorblind
+                }
+            }
+
+            Repeater {
+                model: row.verdict.risks
+
+                ToneLabel {
+                    required property string modelData
+
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    font: Kirigami.Theme.smallFont
+                    text: modelData
+                    tone: Tone.Warning
+                    colorblind: row.colorblind
+                }
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                visible: text !== ""
+                wrapMode: Text.Wrap
+                opacity: 0.7
+                font: Kirigami.Theme.smallFont
+                text: row.verdict.checking ? qsTr("Checking with Path of Building") : row.verdict.pobError
             }
         }
 
