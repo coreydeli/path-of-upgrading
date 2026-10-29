@@ -10,8 +10,8 @@
 namespace pou {
 
 // Presses keys for the window that has the keyboard, as if they were typed.
-// That's XTest, which Xwayland hands on to KWin, and KWin asks the user once
-// whether to allow it.
+// That's XTest, which Xwayland hands on to KWin, and KWin may ask the user to
+// allow it.
 class XKeySender : public QObject
 {
     Q_OBJECT

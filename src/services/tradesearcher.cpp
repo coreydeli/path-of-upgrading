@@ -68,9 +68,7 @@ TradeFetch::TradeFetch(TradeClient *client, const QStringList &listingIds, const
     , m_client(client)
     , m_listingIds(listingIds)
     , m_searchId(searchId)
-{
-    next();
-}
+{}
 
 TradeFetch::~TradeFetch()
 {
@@ -113,6 +111,13 @@ void TradeFetch::answered()
         m_results << result;
     m_fetched = std::min(m_fetched + tradeFetchLimit, int(m_listingIds.size()));
     next();
+}
+
+void TradeFetch::fail(const QString &why)
+{
+    m_error = TradeReply::Error::Rejected;
+    m_errorString = why;
+    finish();
 }
 
 void TradeFetch::finish()
@@ -160,7 +165,12 @@ TradeSearch *TradeSearcher::search(const QJsonObject &body)
 
 TradeFetch *TradeSearcher::fetch(const QStringList &listingIds, const QString &searchId)
 {
-    return new TradeFetch(m_client, listingIds, searchId, this);
+    auto *fetch = new TradeFetch(m_client, listingIds, searchId, this);
+    if (const QString why = unavailable(); !why.isEmpty())
+        fetch->fail(why);
+    else
+        fetch->next();
+    return fetch;
 }
 
 void TradeSearcher::send(TradeSearch *search, const QJsonObject &body)
