@@ -7,6 +7,7 @@
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
 #include "fakepob.h"
+#include "fakesecretstore.h"
 #include "itemtexts.h"
 #include "tradefixtures.h"
 
@@ -125,6 +126,7 @@ struct Window
     FakePob pob;
     QQmlEngine qml;
     FakeGlobalShortcuts *shortcuts = new FakeGlobalShortcuts;
+    FakeSecretStore *keyring = new FakeSecretStore;
     FakeNetwork *network = online();
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
@@ -134,7 +136,7 @@ struct Window
         shortcuts->available = hotkeys;
         app = std::make_unique<App>(
             &qml, std::make_unique<FakeGameInput>(), std::unique_ptr<GlobalShortcuts>(shortcuts),
-            std::unique_ptr<QNetworkAccessManager>(network),
+            std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
             PobPlaces{.home = dir.path(), .dataHome = dir.path(), .luajit = QStringLiteral(FAKEPOB)},
             App::Paths{.settings = dir.filePath(u"settings.conf"_s),
                        .data = dir.filePath(u"data"_s),

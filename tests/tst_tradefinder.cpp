@@ -64,18 +64,6 @@ FakeAnswer tooManyFilters()
             .headers = {{"X-Rate-Limit-Ip", "30:10:0"}}};
 }
 
-// So many trade stats for life that each smaller search leaves some out,
-// and none for the other stats a helmet wants.
-QJsonObject manyStats()
-{
-    using namespace tradefixtures;
-    QJsonArray explicits;
-    for (int n = 1; n <= 24; ++n)
-        explicits << stat(u"explicit.stat_life_%1"_s.arg(n), u"+# to maximum Life"_s, u"explicit"_s);
-    const QJsonArray implicits = {stat(u"implicit.stat_life"_s, u"+# to maximum Life"_s, u"implicit"_s)};
-    return response({group(u"explicit"_s, explicits), group(u"implicit"_s, implicits)});
-}
-
 // What poe.ninja says currencies are worth, with a Divine Orb at that many
 // Exalted Orbs.
 QJsonObject ninjaRates(double exalts)
@@ -582,7 +570,7 @@ private Q_SLOTS:
         // so that a search signed in is tried at full size
         const Character character = inGrimCrown();
         Site site;
-        QVERIFY(site.hasData(manyStats()));
+        QVERIFY(site.hasData(tradefixtures::manyStats()));
         site.finder.setCharacter(character);
         site.network.answers = {tooManyFilters(), found(u"s1"_s, 3)};
         QVERIFY(site.finds(helmet, Kind::Upgrades));
@@ -616,7 +604,7 @@ private Q_SLOTS:
     {
         const Character character = inGrimCrown();
         Site site;
-        QVERIFY(site.hasData(manyStats()));
+        QVERIFY(site.hasData(tradefixtures::manyStats()));
         site.finder.setCharacter(character);
         site.network.answers = {tooManyFilters(), tooManyFilters(), tooManyFilters(), tooManyFilters(),
                                 tooManyFilters()};

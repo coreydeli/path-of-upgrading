@@ -3,6 +3,7 @@
 #include "core/pobinstall.h"
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
+#include "platform/secretstore.h"
 
 #include <KLocalizedQmlContext>
 #include <QApplication>
@@ -58,7 +59,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     KLocalization::setupLocalizedContext(&engine);
     // which goes before the engine its popup is from
-    pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(),
+    pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::createSecretStore(),
                   std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
