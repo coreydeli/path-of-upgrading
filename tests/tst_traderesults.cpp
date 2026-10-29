@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "app/traderesults.h"
 #include "core/parser.h"
+#include "core/pobeval.h"
 #include "core/tradesite.h"
 #include "fakenetwork.h"
 #include "resultsite.h"
@@ -18,6 +19,52 @@
 using namespace Qt::Literals::StringLiterals;
 using namespace pou;
 using namespace resultsite;
+
+namespace {
+
+Item item(const QString &text)
+{
+    return parseItem(text).value();
+}
+
+// with less life than the listed helmets, and none of their other mods
+const Item worseHelmet =
+    item(u"Item Class: Helmets\nRarity: Rare\nGrim Crown\nIron Hat\n--------\nItem Level: 80\n--------\n"
+         "+30 to maximum Life"_s);
+// with more
+const Item betterHelmet =
+    item(u"Item Class: Helmets\nRarity: Rare\nDusk Crown\nIron Hat\n--------\nItem Level: 80\n--------\n"
+         "+150 to maximum Life\nCannot be Frozen"_s);
+
+Character wearing(const Item &helmet)
+{
+    Character c;
+    c.gear = {{u"Helmet"_s, helmet}};
+    return c;
+}
+
+ResultVerdict verdictIn(const Site &site, int row)
+{
+    return site.results.data(site.results.index(row), TradeResults::VerdictRole).value<ResultVerdict>();
+}
+
+// One of the listed helmets with these mods.
+QJsonObject helmetWith(const QString &id, const QJsonArray &mods)
+{
+    QJsonObject listing = helmet(id, price(3, u"divine"_s));
+    QJsonObject item = listing.value(u"item"_s).toObject();
+    item.insert(u"explicitMods"_s, mods);
+    listing.insert(u"item"_s, item);
+    return listing;
+}
+
+// The listed helmet, judged by the gear score.
+ItemCheck checkOf(const Judging &judging)
+{
+    return firstCheck(listingToItem(helmet(u"x1"_s, price(3, u"divine"_s)), u"Helmets"_s), judging);
+}
+
+} // namespace
 
 class TestTradeResults : public QObject
 {
@@ -558,6 +605,178 @@ private Q_SLOTS:
         QVERIFY(!site.results.isBusy());
         QCOMPARE(site.results.waiting(), 0);
         QCOMPARE(waiting.size(), 2);
+    }
+
+    void judgesEachListing()
+    {
+        Site site;
+        site.results.judge().setCharacter(wearing(worseHelmet), std::nullopt);
+        QJsonArray result;
+        result << helmet(u"x1"_s, price(3, u"divine"_s));
+        result << helmetWith(u"x2"_s, {u"+10 to maximum Life"_s});
+        site.network.answers = {{.body = json({{u"result"_s, result}})}};
+        site.results.setSearch(foundBy(2));
+        QVERIFY(site.loads());
+        QCOMPARE(site.results.judge().checks().size(), 2);
+
+        // as the helmets they are, which the listings don't say
+        const ResultVerdict better = verdictIn(site, 0);
+        QCOMPARE(better.verdict, u"Upgrade"_s);
+        QCOMPARE(better.tone, Tone::Good);
+        QCOMPARE(better.score, u"+8 gear score"_s);
+        QCOMPARE(better.figures.size(), 2);
+        QCOMPARE(better.figures.at(0).label, u"Life"_s);
+        QCOMPARE(better.figures.at(0).change, u"+50"_s);
+        QCOMPARE(better.figures.at(1).label, u"Average gear score"_s);
+        QVERIFY(better.losses.isEmpty());
+        QVERIFY(better.risks.isEmpty());
+        QVERIFY(!better.checking);
+        QVERIFY(better.pobError.isEmpty());
+
+        const ResultVerdict worse = verdictIn(site, 1);
+        QCOMPARE(worse.verdict, u"Downgrade"_s);
+        QCOMPARE(worse.tone, Tone::Bad);
+        QCOMPARE(worse.score, u"-3 gear score"_s);
+        QCOMPARE(site.results.roleNames().value(TradeResults::VerdictRole), "verdict"_ba);
+    }
+
+    void judgesTheNextPagesToo()
+    {
+        Site site;
+        site.results.judge().setCharacter(wearing(worseHelmet), std::nullopt);
+        const TradeFinder::Found found = foundBy(15);
+        site.network.answers = {fetched(found.listingIds.first(10)), fetched(found.listingIds.sliced(10))};
+        site.results.setSearch(found);
+        QVERIFY(site.loads());
+        QVERIFY(site.loads());
+        QCOMPARE(site.results.judge().checks().size(), 15);
+        QCOMPARE(verdictIn(site, 14).verdict, u"Upgrade"_s);
+
+        // and a new search starts again
+        site.results.setSearch(foundBy(3, u"Qw8rT2"_s));
+        QVERIFY(site.results.judge().checks().isEmpty());
+    }
+
+    void judgesThemAgainForAnotherCharacter()
+    {
+        Site site;
+        site.results.judge().setCharacter(wearing(worseHelmet), std::nullopt);
+        site.network.answers = {fetched({u"x1"_s, u"x2"_s})};
+        site.results.setSearch(foundBy(2));
+        QVERIFY(site.loads());
+
+        QSignalSpy changed(&site.results, &QAbstractItemModel::dataChanged);
+        site.results.judge().setCharacter(wearing(betterHelmet), std::nullopt);
+        QCOMPARE(changed.size(), 1);
+        QCOMPARE(changed.first().at(0).toModelIndex().row(), 0);
+        QCOMPARE(changed.first().at(1).toModelIndex().row(), 1);
+        QCOMPARE(changed.first().at(2).value<QList<int>>(), (QList<int>{TradeResults::VerdictRole}));
+        QCOMPARE(verdictIn(site, 1).verdict, u"Downgrade"_s);
+    }
+
+    // there's room for four, and resistance over the cap either way doesn't
+    // take one
+    void theFiguresThatMatter()
+    {
+        Site site;
+        Character c = wearing(worseHelmet);
+        ResistEntry entry;
+        for (const Element e : allElements)
+            entry.values[e] = 0.0;
+        entry.values[Element::Fire] = 120.0;
+        c.resists = snapshotResists(entry, c.gear, ResistSource::Manual);
+        site.results.judge().setCharacter(c, std::nullopt);
+        const QJsonArray mods{u"+90 to maximum Life"_s, u"+30% to Fire Resistance"_s,
+                              u"+30% to Cold Resistance"_s, u"+30% to Lightning Resistance"_s,
+                              u"+20% to Chaos Resistance"_s};
+        site.network.answers = {{.body = json({{u"result"_s, QJsonArray{helmetWith(u"x1"_s, mods)}}})}};
+        site.results.setSearch(foundBy(1));
+        QVERIFY(site.loads());
+
+        QStringList labels;
+        for (const ReportFigure &figure : verdictIn(site, 0).figures)
+            labels << figure.label;
+        QCOMPARE(labels, (QStringList{u"Cold res"_s, u"Lightning res"_s, u"Chaos res"_s, u"Life"_s}));
+    }
+
+    // with cold and fire resistance on the helmet you wear
+    void lossesAndRisks()
+    {
+        Site site;
+        Character c = wearing(item(
+            u"Item Class: Helmets\nRarity: Rare\nGrim Crown\nIron Hat\n--------\nItem Level: 80\n--------\n+30 to maximum Life\n+40% to Cold Resistance\n+10% to Fire Resistance"_s));
+        ResistEntry entry;
+        for (const Element e : allElements)
+            entry.values[e] = 0.0;
+        entry.values[Element::Cold] = 80.0;
+        entry.values[Element::Fire] = 90.0;
+        c.resists = snapshotResists(entry, c.gear, ResistSource::Manual);
+        site.results.judge().setCharacter(c, std::nullopt);
+        QJsonArray result;
+        result << helmet(u"x1"_s, price(3, u"divine"_s));
+        result << helmetWith(u"x2"_s, {u"+80 to maximum Life"_s, u"+40% to Cold Resistance"_s});
+        site.network.answers = {{.body = json({{u"result"_s, result}})}};
+        site.results.setSearch(foundBy(2));
+        QVERIFY(site.loads());
+        const ResultVerdict loses = verdictIn(site, 0);
+        QCOMPARE(loses.verdict, u"Loses resistance"_s);
+        QCOMPARE(loses.tone, Tone::Bad);
+        QCOMPARE(loses.losses, QStringList{u"Cold res drops below the cap (40% of 75%)"_s});
+        // what it takes off fire leaves little over the cap
+        QCOMPARE(loses.risks.size(), 1);
+        QVERIFY(loses.risks.first().startsWith(u"Fire res would be only 5% over the cap"));
+
+        const ResultVerdict risky = verdictIn(site, 1);
+        QCOMPARE(risky.verdict, u"Risky upgrade"_s);
+        QCOMPARE(risky.tone, Tone::Warning);
+        QVERIFY(risky.losses.isEmpty());
+        QCOMPARE(risky.risks, loses.risks);
+    }
+
+    void whatPathOfBuildingSays()
+    {
+        Judging judging{.character = wearing(worseHelmet), .build = PobBuild()};
+        ItemCheck check = checkOf(judging);
+        check.pob = ItemCheck::Pob::Checking;
+        QVERIFY(resultVerdict(check).checking);
+
+        const QJsonObject stats{{u"FullDPS"_s, 104}, {u"TotalEHP"_s, 1100}};
+        const QJsonObject slot{{u"slot"_s, u"Helmet"_s},
+                               {u"label"_s, u"Helmet"_s},
+                               {u"replacing"_s, u"Grim Crown, Iron Hat"_s},
+                               {u"stats"_s, stats}};
+        const QJsonObject before{{u"FullDPS"_s, 100}, {u"TotalEHP"_s, 1000}};
+        const PobEval eval = readPobEval(
+            {{u"before"_s, before},
+             {u"results"_s, QJsonArray{QJsonObject{{u"ok"_s, true}, {u"slots"_s, QJsonArray{slot}}}}}});
+        const ResultVerdict v =
+            resultVerdict(withPobAnswer(check, eval.before, eval.items.value(0), judging));
+        QVERIFY(!v.checking);
+        QCOMPARE(v.verdict, u"Upgrade"_s);
+        QVERIFY(v.score.endsWith(u"% for your build"));
+        // which it says instead of the changes on your character
+        QCOMPARE(v.figures.size(), 2);
+        QCOMPARE(v.figures.at(0).label, u"DPS"_s);
+        QCOMPARE(v.figures.at(0).change, u"+4%"_s);
+        QCOMPARE(v.figures.at(1).label, u"Effective HP"_s);
+        QCOMPARE(v.figures.at(1).change, u"+10%"_s);
+    }
+
+    void whenPathOfBuildingCant()
+    {
+        const Judging judging{.character = wearing(worseHelmet), .build = PobBuild()};
+        const QString why = u"There is nowhere in the build this item can go."_s;
+        const ResultVerdict v = resultVerdict(withPobAnswer(checkOf(judging), {}, {.error = why}, judging));
+        QCOMPARE(v.pobError, why);
+        QVERIFY(!v.checking);
+        // by the gear score still
+        QCOMPARE(v.verdict, u"Upgrade"_s);
+        QCOMPARE(v.score, u"+8 gear score"_s);
+
+        // and nothing about a build it doesn't have
+        ItemCheck noBuild = checkOf({.character = wearing(worseHelmet)});
+        noBuild.pob = ItemCheck::Pob::NoBuild;
+        QVERIFY(resultVerdict(noBuild).pobError.isEmpty());
     }
 
     void callsOffWhatItAsksForWhenItGoes()
