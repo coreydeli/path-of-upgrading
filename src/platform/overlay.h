@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QPoint>
+#include <QString>
 
 class QScreen;
 class QWindow;
@@ -12,6 +13,9 @@ namespace pou {
 // keyboard from it. On Wayland they're layer shell surfaces in the
 // compositor's overlay layer, which is above fullscreen windows, so this
 // needs a compositor with layer shell, like KWin.
+
+// The screen with that name, or else the main one.
+QScreen *screenNamed(const QString &name);
 
 // Before the window is first shown.
 void makeOverlay(QWindow *window);

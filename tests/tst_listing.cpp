@@ -146,6 +146,56 @@ private Q_SLOTS:
         QCOMPARE(listing.item.name, u"Grim Grasp"_s);
     }
 
+    void modLines()
+    {
+        const Listing listing = readListing(gloves(), u"Gloves"_s, rates);
+        const QList<ListingMod> expected = {
+            {u"+12% to Cold Resistance"_s, u"rune"_s},
+            {u"+80 to maximum Life"_s, u"explicit"_s},
+            {u"+40% to Fire Resistance"_s, u"explicit"_s},
+            {u"52% increased Energy Shield"_s, u"explicit"_s},
+        };
+        QCOMPARE(listing.mods, expected);
+    }
+
+    // in the game's order whatever order the site lists them, and with the
+    // mods the item doesn't keep
+    void modLinesInOrder()
+    {
+        QJsonObject item = rareItem(u"Empyrean Knot"_s, u"Iron Ring"_s, 82);
+        item.insert(u"explicitMods"_s, QJsonArray{u"+56 to maximum [Mana|Mana]"_s, u"Cannot be Frozen"_s,
+                                                  u"Gain 3 Life per enemy killed"_s,
+                                                  u"+5% to all Elemental "
+                                                  "Resistances"_s,
+                                                  u"+5 to Strength"_s, u"+5 to Dexterity"_s, u"Wild"_s});
+        item.insert(u"craftedMods"_s, QJsonArray{QJsonObject{{u"description"_s, u"Crafted line"_s}}});
+        item.insert(u"enchantMods"_s, QJsonArray{u"Enchant line"_s, QString()});
+        item.insert(u"desecratedMods"_s, QJsonArray{u"Desecrated line"_s});
+        item.insert(u"fracturedMods"_s, QJsonArray{u"Fractured line"_s});
+        item.insert(u"implicitMods"_s, QJsonArray{u"Implicit line"_s});
+        const QJsonObject listing{{u"price"_s, price(1, u"divine"_s)}};
+
+        const Listing l = readListing(result(u"x"_s, listing, item), u"Rings"_s, rates);
+        QStringList tags;
+        for (const ListingMod &mod : l.mods) {
+            if (!tags.contains(mod.tag))
+                tags << mod.tag;
+        }
+        QCOMPARE(tags, (QStringList{u"enchant"_s, u"implicit"_s, u"fractured"_s, u"explicit"_s,
+                                    u"desecrated"_s, u"crafted"_s}));
+        QCOMPARE(l.mods.size(), 12);
+        QCOMPARE(l.mods.at(0).text, u"Enchant line"_s);
+        // the ones without numbers are here, and in order
+        QVERIFY(l.mods.contains({u"Cannot be Frozen"_s, u"explicit"_s}));
+        QCOMPARE(l.mods.at(3).text, u"+56 to maximum Mana"_s);
+        QCOMPARE(l.mods.at(9).text, u"Wild"_s);
+        QCOMPARE(l.mods.last(), (ListingMod{u"Crafted line"_s, u"crafted"_s}));
+        // and a listing without mods has none
+        QVERIFY(
+            readListing(result(u"y"_s, listing, rareItem(u"Plain"_s, u"Iron Ring"_s, 1)), u"Rings"_s, rates)
+                .mods.isEmpty());
+    }
+
     void instantBuyout()
     {
         QJsonObject r = gloves();
@@ -365,6 +415,76 @@ private Q_SLOTS:
         QVERIFY(!priceInExalts({3, u"divine"_s}, {}));
         QVERIFY(!priceInExalts({2, u"mystery"_s}, rates));
         QVERIFY(!priceInExalts({2, u"divine"_s}, {{u"divine"_s, 0}}));
+    }
+
+    void convertedPrices_data()
+    {
+        QTest::addColumn<double>("amount");
+        QTest::addColumn<QString>("currency");
+        QTest::addColumn<double>("exalts");
+        QTest::addColumn<double>("divineRate");
+        QTest::addColumn<QString>("expected");
+
+        QTest::newRow("divines in exalts") << 3.0 << u"divine"_s << 2100.0 << 700.0 << u"about 2100 ex"_s;
+        QTest::newRow("a divine's worth on")
+            << 1000.0 << u"exalted"_s << 1000.0 << 700.0 << u"about 1.4 div"_s;
+        QTest::newRow("exactly a divine") << 700.0 << u"exalted"_s << 700.0 << 700.0 << u"about 1 div"_s;
+        QTest::newRow("chaos in exalts") << 4.0 << u"chaos"_s << 40.0 << 700.0 << u"about 40 ex"_s;
+        QTest::newRow("chaos in divines") << 100.0 << u"chaos"_s << 1000.0 << 700.0 << u"about 1.4 div"_s;
+        QTest::newRow("under ten keeps a decimal") << 1.0 << u"chaos"_s << 2.5 << 700.0 << u"about 2.5 ex"_s;
+        QTest::newRow("exalts say no more") << 50.0 << u"exalted"_s << 50.0 << 700.0 << QString();
+        QTest::newRow("no divine rate") << 3.0 << u"chaos"_s << 30.0 << 0.0 << u"about 30 ex"_s;
+        QTest::newRow("exalts without a rate") << 5000.0 << u"exalted"_s << 5000.0 << 0.0 << QString();
+        QTest::newRow("capitals") << 2.0 << u"Divine"_s << 1400.0 << 700.0 << u"about 1400 ex"_s;
+    }
+
+    void convertedPrices()
+    {
+        QFETCH(double, amount);
+        QFETCH(QString, currency);
+        QFETCH(double, exalts);
+        QFETCH(double, divineRate);
+        QFETCH(QString, expected);
+        QCOMPARE(formatConvertedPrice(ListingPrice{amount, currency}, exalts, divineRate), expected);
+    }
+
+    void unusableExalts()
+    {
+        QVERIFY(formatConvertedPrice({1, u"chaos"_s}, qQNaN(), 700).isEmpty());
+        QVERIFY(formatConvertedPrice({1, u"chaos"_s}, qInf(), 700).isEmpty());
+    }
+
+    void listedAgoTexts_data()
+    {
+        QTest::addColumn<qint64>("seconds");
+        QTest::addColumn<QString>("expected");
+
+        QTest::newRow("this second") << 0LL << u"just now"_s;
+        QTest::newRow("under a minute") << 59LL << u"just now"_s;
+        QTest::newRow("a minute") << 60LL << u"1 minute ago"_s;
+        QTest::newRow("minutes") << 5 * 60LL + 30 << u"5 minutes ago"_s;
+        QTest::newRow("under an hour") << 59 * 60LL + 59 << u"59 minutes ago"_s;
+        QTest::newRow("an hour") << 3600LL << u"1 hour ago"_s;
+        QTest::newRow("hours") << 5 * 3600LL << u"5 hours ago"_s;
+        QTest::newRow("under a day") << 24 * 3600LL - 1 << u"23 hours ago"_s;
+        QTest::newRow("a day") << 24 * 3600LL << u"1 day ago"_s;
+        QTest::newRow("days") << 40 * 24 * 3600LL << u"40 days ago"_s;
+        QTest::newRow("ahead of the clock") << -90LL << u"just now"_s;
+    }
+
+    void listedAgoTexts()
+    {
+        QFETCH(qint64, seconds);
+        QFETCH(QString, expected);
+        const QDateTime indexed = QDateTime(QDate(2026, 10, 20), QTime(8, 0), QTimeZone::utc());
+        QCOMPARE(listedAgo(indexed, indexed.addSecs(seconds)), expected);
+    }
+
+    void listedAgoNeedsTimes()
+    {
+        const QDateTime now = QDateTime(QDate(2026, 10, 20), QTime(8, 0), QTimeZone::utc());
+        QVERIFY(listedAgo({}, now).isEmpty());
+        QVERIFY(listedAgo(now, {}).isEmpty());
     }
 
     // what came back for three ids, one sold in the meantime

@@ -24,6 +24,7 @@ TradeReport searchingReport(std::chrono::milliseconds wait)
 TradeReport reportOf(const TradeFinder::Found &found)
 {
     TradeReport report{.asked = true, .title = found.title, .note = found.note, .url = found.url};
+    report.listed = found.total > 0;
     report.status =
         found.total == 0
             ? u"None listed in %1 right now"_s.arg(found.league)

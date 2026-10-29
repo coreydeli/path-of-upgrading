@@ -4,7 +4,6 @@
 #include "core/placement.h"
 #include "platform/overlay.h"
 
-#include <QGuiApplication>
 #include <QQmlComponent>
 #include <QQuickWindow>
 #include <QScreen>
@@ -13,20 +12,6 @@
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
-namespace {
-
-// The screen with that name, or else the main one.
-QScreen *screenNamed(const QString &name)
-{
-    const QList<QScreen *> screens = QGuiApplication::screens();
-    for (QScreen *screen : screens) {
-        if (screen->name() == name)
-            return screen;
-    }
-    return QGuiApplication::primaryScreen();
-}
-
-} // namespace
 
 ItemPopup::ItemPopup(QQmlEngine *engine, GameInput *input, QObject *parent)
     : QObject(parent)
@@ -102,6 +87,11 @@ void ItemPopup::setTrade(const TradeReport &trade)
 void ItemPopup::findOnTrade(TradeFinder::Kind kind)
 {
     Q_EMIT tradeAsked(kind);
+}
+
+void ItemPopup::showResults()
+{
+    Q_EMIT resultsAsked(m_mouse ? m_mouse->screen : QString());
 }
 
 void ItemPopup::wear(const QString &slot)

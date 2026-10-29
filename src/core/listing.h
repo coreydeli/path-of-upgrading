@@ -37,10 +37,29 @@ std::optional<double> priceInExalts(const ListingPrice &price, const CurrencyRat
 // "3 div", "50 ex", "2 chaos", or "no price".
 QString formatPrice(const std::optional<ListingPrice> &price);
 
+// What a price comes to in the other main currency, for listings in another
+// one: "about 40 ex", or "about 1.4 div" from a divine's worth on. Empty when
+// that says no more than the price does. Needs the price in exalts, see
+// priceInExalts(), and what a divine is worth in them, or 0 when not known.
+QString formatConvertedPrice(const ListingPrice &price, double exalts, double divineRate);
+
+// One line of a listing's mods, as the site words it.
+struct ListingMod
+{
+    QString text;
+    // enchant, rune, implicit, fractured, explicit, desecrated or crafted
+    QString tag;
+
+    friend bool operator==(const ListingMod &, const ListingMod &) = default;
+};
+
 struct Listing
 {
     QString id;
     Item item;
+    // Every mod line, in the order the game shows them. The item leaves out
+    // some of those that aren't stats.
+    QList<ListingMod> mods;
     std::optional<ListingPrice> price;
     std::optional<double> exalts; // the price in Exalted Orbs, when there's a rate for it
     QString seller;               // the character they last played, or else the account
@@ -53,6 +72,10 @@ struct Listing
     QString hideoutToken; // lets the site take you to an instant buyout seller's hideout
     QDateTime indexed;    // when the site last saw it listed
 };
+
+// "just now", "5 minutes ago", "1 hour ago", "3 days ago". Empty when the time
+// isn't known. A time ahead of now counts as just now.
+QString listedAgo(const QDateTime &indexed, const QDateTime &now);
 
 // One element of a fetch answer's "result".
 Listing readListing(const QJsonObject &result, const QString &itemClass, const CurrencyRates &rates);

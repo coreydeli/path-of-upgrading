@@ -80,6 +80,17 @@ QString modText(const QJsonValue &mod)
     return cleanListingText(mod.toString());
 }
 
+// The texts of one of the site's lists of mods.
+QStringList modTexts(const QJsonObject &item, QStringView field)
+{
+    QStringList texts;
+    for (const QJsonValue &mod : item.value(field).toArray()) {
+        if (const QString text = modText(mod); !text.isEmpty())
+            texts << text;
+    }
+    return texts;
+}
+
 // {"type": "~price", "amount": 3, "currency": "divine"}
 std::optional<ListingPrice> priceOf(const QJsonObject &price)
 {
@@ -134,15 +145,14 @@ Item listingToItem(const QJsonObject &result, const QString &itemClass)
         blocks << u"Item Level: "_s + QString::number(level);
 
     for (const ModGroup &group : modGroups) {
-        QStringList lines;
-        for (const QJsonValue &mod : item.value(group.field).toArray()) {
-            const QString text = modText(mod);
-            if (text.isEmpty())
-                continue;
-            lines << (group.tag.isEmpty() ? text : u"%1 (%2)"_s.arg(text, group.tag));
+        QStringList lines = modTexts(item, group.field);
+        if (lines.isEmpty())
+            continue;
+        if (!group.tag.isEmpty()) {
+            for (QString &line : lines)
+                line = u"%1 (%2)"_s.arg(line, group.tag);
         }
-        if (!lines.isEmpty())
-            blocks << lines.join(u'\n');
+        blocks << lines.join(u'\n');
     }
 
     if (item.value(u"corrupted").toBool())
@@ -177,6 +187,35 @@ QString formatPrice(const std::optional<ListingPrice> &price)
     return formatNumber(price->amount) + u' ' + currency;
 }
 
+QString formatConvertedPrice(const ListingPrice &price, double exalts, double divineRate)
+{
+    if (!std::isfinite(exalts))
+        return {};
+    const QString currency = price.currency.toLower();
+    if (currency != u"divine" && divineRate > 0 && exalts >= divineRate)
+        return u"about %1 div"_s.arg(formatNumber(roundTo(exalts / divineRate, 1)));
+    if (currency == u"exalted")
+        return {};
+    return u"about %1 ex"_s.arg(formatNumber(roundTo(exalts, exalts < 10 ? 1 : 0)));
+}
+
+QString listedAgo(const QDateTime &indexed, const QDateTime &now)
+{
+    if (!indexed.isValid() || !now.isValid())
+        return {};
+    const qint64 minutes = indexed.secsTo(now) / 60;
+    if (minutes < 1)
+        return u"just now"_s;
+    const auto ago = [](qint64 n, const QString &unit) {
+        return u"%1 %2%3 ago"_s.arg(n).arg(unit, n == 1 ? QString() : u"s"_s);
+    };
+    if (minutes < 60)
+        return ago(minutes, u"minute"_s);
+    if (minutes < 24 * 60)
+        return ago(minutes / 60, u"hour"_s);
+    return ago(minutes / (24 * 60), u"day"_s);
+}
+
 Listing readListing(const QJsonObject &result, const QString &itemClass, const CurrencyRates &rates)
 {
     const QJsonObject listing = result.value(u"listing").toObject();
@@ -185,6 +224,11 @@ Listing readListing(const QJsonObject &result, const QString &itemClass, const C
     Listing out;
     out.id = result.value(u"id").toString();
     out.item = listingToItem(result, itemClass);
+    const QJsonObject item = result.value(u"item").toObject();
+    for (const ModGroup &group : modGroups) {
+        for (const QString &text : modTexts(item, group.field))
+            out.mods << ListingMod{text, group.tag.isEmpty() ? u"explicit"_s : group.tag.toString()};
+    }
     out.price = priceOf(listing.value(u"price").toObject());
     if (out.price)
         out.exalts = priceInExalts(*out.price, rates);

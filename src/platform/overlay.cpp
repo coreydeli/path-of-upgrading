@@ -18,6 +18,16 @@ bool isWayland()
 
 } // namespace
 
+QScreen *screenNamed(const QString &name)
+{
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    for (QScreen *screen : screens) {
+        if (screen->name() == name)
+            return screen;
+    }
+    return QGuiApplication::primaryScreen();
+}
+
 void makeOverlay(QWindow *window)
 {
     window->setFlags(window->flags() | Qt::Tool | Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus);

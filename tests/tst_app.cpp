@@ -130,6 +130,24 @@ FakeAnswer tooComplex()
             .headers = {{"X-Rate-Limit-Ip", "30:10:0"}}};
 }
 
+// Two listings, as the site's fetch answers have them.
+FakeAnswer twoListings()
+{
+    QJsonArray result;
+    for (const QString &id : {u"a"_s, u"b"_s}) {
+        const QJsonObject account{{u"name"_s, u"Seller%1#1234"_s.arg(id)}};
+        const QJsonObject price{{u"type"_s, u"~price"_s}, {u"amount"_s, 3}, {u"currency"_s, u"divine"_s}};
+        const QJsonObject item{{u"rarity"_s, u"Rare"_s},
+                               {u"name"_s, u"Grim Ward"_s},
+                               {u"typeLine"_s, u"Iron Hat"_s},
+                               {u"explicitMods"_s, QJsonArray{u"+80 to maximum Life"_s}}};
+        result << QJsonObject{{u"id"_s, id},
+                              {u"listing"_s, QJsonObject{{u"account"_s, account}, {u"price"_s, price}}},
+                              {u"item"_s, item}};
+    }
+    return {.body = json({{u"result"_s, result}})};
+}
+
 // The app with stand-ins for the game, the desktop, the keyring and the sites
 // it asks.
 struct Running
@@ -341,6 +359,115 @@ private Q_SLOTS:
         QCOMPARE(r.input->copies, 0);
         Q_EMIT r.shortcuts->activated(u"check-item"_s);
         QCOMPARE(r.input->copies, 1);
+    }
+
+    void resultsKey()
+    {
+        Folders folders;
+        Running r(folders);
+        ResultsPanel &panel = r.app.resultsPanel();
+        QVERIFY(!panel.isVisible());
+        // which the check key doesn't
+        Q_EMIT r.shortcuts->activated(u"check-item"_s);
+        QVERIFY(!panel.isVisible());
+        Q_EMIT r.shortcuts->activated(u"trade-results"_s);
+        QVERIFY(panel.isVisible());
+        Q_EMIT r.shortcuts->activated(u"trade-results"_s);
+        QVERIFY(!panel.isVisible());
+    }
+
+    void resultsKeyWhilePaused()
+    {
+        Folders folders;
+        Settings settings;
+        settings.overlay.paused = true;
+        folders.set(settings);
+        Running r(folders);
+        Q_EMIT r.shortcuts->activated(u"trade-results"_s);
+        QVERIFY(!r.app.resultsPanel().isVisible());
+
+        settings.overlay.paused = false;
+        QVERIFY(r.app.settings().set(settings));
+        Q_EMIT r.shortcuts->activated(u"trade-results"_s);
+        QVERIFY(r.app.resultsPanel().isVisible());
+    }
+
+    void resultsWindowFollowsTheSettings()
+    {
+        // as they are when the app starts, and as they change
+        Folders folders;
+        Settings settings;
+        settings.overlay.scale = 1.25;
+        settings.overlay.colorblind = true;
+        folders.set(settings);
+        Running r(folders);
+        ResultsPanel &panel = r.app.resultsPanel();
+        QCOMPARE(panel.scale(), 1.25);
+        QVERIFY(panel.isColorblind());
+        QVERIFY(panel.unavailable().isEmpty());
+
+        settings.overlay.scale = 1.5;
+        settings.overlay.colorblind = false;
+        settings.trade.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        QCOMPARE(panel.scale(), 1.5);
+        QVERIFY(!panel.isColorblind());
+        QCOMPARE(panel.unavailable(), u"Trade searches are turned off in the settings."_s);
+
+        settings.trade.enabled = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(panel.unavailable().isEmpty());
+    }
+
+    void resultsFromThePopup()
+    {
+        // on the screen the item was read on, whatever the mouse does since
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        r.app.checker().check();
+        Q_EMIT r.input->itemCopied(itemtexts::helmetNew,
+                                   ScreenPoint{.screen = u"DP-1"_s, .position = {20, 20}});
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}, twoListings()};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QVERIFY(r.app.checker().popup().trade().listed);
+        QVERIFY(!r.app.resultsPanel().isVisible());
+
+        r.input->mouseAt = ScreenPoint{.screen = u"DP-9"_s, .position = {5, 5}};
+        r.app.checker().popup().showResults();
+        QVERIFY(r.app.resultsPanel().isVisible());
+        QCOMPARE(r.app.resultsPanel().screenName(), u"DP-1"_s);
+        QTRY_COMPARE(r.app.results().rowCount(), 2);
+    }
+
+    void resultsKeyShowsTheLastSearch()
+    {
+        // the listings are asked for as the window opens
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        r.checked();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}, twoListings()};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.app.results().rowCount(), 0);
+
+        Q_EMIT r.shortcuts->activated(u"trade-results"_s);
+        QTRY_COMPARE(r.app.results().rowCount(), 2);
+        QVERIFY(r.app.resultsPanel().isVisible());
     }
 
     void desktopsKeys()
@@ -721,6 +848,106 @@ private Q_SLOTS:
         const QJsonObject trade = query.value(u"filters").toObject().value(u"trade_filters").toObject();
         QCOMPARE(trade.value(u"filters").toObject().value(u"price").toObject(),
                  (QJsonObject{{u"max"_s, 400}, {u"option"_s, u"exalted"_s}}));
+    }
+
+    void tradeResults()
+    {
+        // the listings of what the popup searched for, which the site is only
+        // asked for once you want to see them
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        TradeResults &results = r.app.results();
+        QVERIFY(!results.hasSearched());
+
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        r.checked();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QVERIFY(results.hasSearched());
+        QCOMPARE(results.total(), 2);
+        QCOMPARE(results.league(), u"Runes of Aldur"_s);
+        QCOMPARE(results.url(), r.app.finder().found()->url);
+        QCOMPARE(results.rowCount(), 0);
+        const QUrl fetch = tradeFetchUrl({u"a"_s, u"b"_s}, u"Ab3dE9"_s);
+        QVERIFY(!r.asked().contains(fetch));
+
+        r.network->answers = {twoListings()};
+        results.ask();
+        QTRY_VERIFY(!results.isBusy());
+        QVERIFY(r.asked().contains(fetch));
+        QCOMPARE(results.rowCount(), 2);
+        QCOMPARE(results.data(results.index(0), TradeResults::PriceRole).toString(), u"3 div"_s);
+        QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(), u"about 1200 ex"_s);
+    }
+
+    void resultsStayWhenASearchFails()
+    {
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        r.checked();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+
+        // a search that finds nothing is what they have
+        r.network->answers = {{.body = R"({"id":"Qw8rT2","total":0,"result":[]})"}};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.app.results().total(), 0);
+        QVERIFY(!r.app.results().hasMore());
+
+        // but one that fails isn't
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.app.results().total(), 2);
+        r.network->answers = {{.status = 400, .body = R"({"error":{"message":"Nope."}})"}};
+        QTest::ignoreMessage(QtWarningMsg, "Couldn't search the trade site: The trade site says: Nope.");
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QVERIFY(!r.app.finder().found());
+        QCOMPARE(r.app.results().total(), 2);
+        QVERIFY(r.app.results().hasMore());
+    }
+
+    void noResultsWhileTradeIsOff()
+    {
+        // so the site isn't asked for the listings, however you ask
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(r.rated());
+        r.checked();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.network->answers = {{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"}};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+
+        settings.trade.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        const qsizetype before = r.network->sent.size();
+        r.app.results().ask();
+        QVERIFY(!r.app.results().isBusy());
+        QCOMPARE(r.app.results().error(), r.app.trade().unavailable());
+        QCOMPARE(r.network->sent.size(), before);
     }
 
     void signsInAtStart()

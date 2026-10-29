@@ -22,4 +22,12 @@ PopupPosition popupPositionFromId(QStringView id);
 QPoint placePopup(PopupPosition where, const QSize &popup, const QSize &screen,
                   const std::optional<QPoint> &mouse);
 
+// Where the results window's top left goes: at the right as far down as the
+// popup is when it's at a side, or at the left when the popup is at the
+// right. It stays a few pixels in from the edges.
+QPoint placeResults(PopupPosition popup, const QSize &window, const QSize &screen);
+// The most height the results window can have, which leaves room above and
+// below it.
+int maxResultsHeight(const QSize &screen);
+
 } // namespace pou
