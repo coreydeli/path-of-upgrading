@@ -52,6 +52,8 @@ class TradeResults : public QAbstractListModel
     Q_PROPERTY(QString league READ league NOTIFY searchChanged)
     // How many the search found, which can be more than there are to load.
     Q_PROPERTY(int total READ total NOTIFY searchChanged)
+    // How many of them the site lists, which is the first hundred at most.
+    Q_PROPERTY(int available READ available NOTIFY searchChanged)
     // The search on the trade site, to open in the browser.
     Q_PROPERTY(QUrl url READ url NOTIFY searchChanged)
     Q_PROPERTY(bool busy READ isBusy NOTIFY busyChanged)
@@ -96,6 +98,7 @@ public:
     QString title() const { return m_title; }
     QString league() const { return m_league; }
     int total() const { return m_total; }
+    int available() const { return int(m_listingIds.size()); }
     QUrl url() const { return m_url; }
     bool isBusy() const { return !m_fetch.isNull(); }
     int waiting() const { return m_waiting; }

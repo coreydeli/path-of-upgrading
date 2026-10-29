@@ -186,6 +186,8 @@ private Q_SLOTS:
         QCOMPARE(site.results.title(), u"Same stats or better than Doom Visage"_s);
         QCOMPARE(site.results.league(), league);
         QCOMPARE(site.results.total(), 250);
+        // of which the site lists the first hundred
+        QCOMPARE(site.results.available(), 100);
         QCOMPARE(site.results.url(), found.url);
         QVERIFY(site.results.hasMore());
         QCOMPARE(site.results.rowCount(), 0);
