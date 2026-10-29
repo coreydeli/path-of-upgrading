@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
 #include "app/commandline.h"
+#include "app/desktop.h"
 #include "core/pobinstall.h"
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
+#include "platform/notifier.h"
 #include "platform/secretstore.h"
+#include "platform/tray.h"
 
 #include <KLocalizedQmlContext>
 #include <QApplication>
@@ -15,6 +18,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
+#include <QWindow>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
@@ -54,6 +58,8 @@ int main(int argc, char *argv[])
     QApplication::setApplicationDisplayName(u"Path of Upgrading"_s);
     QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
     QApplication::setDesktopFileName(QStringLiteral(APP_ID));
+    // closing the window leaves it in the tray
+    QApplication::setQuitOnLastWindowClosed(false);
 
     // --help and --version print and exit here
     pou::CommandLine commandLine;
@@ -66,11 +72,17 @@ int main(int argc, char *argv[])
     // which goes before the engine its popup is from
     pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::createSecretStore(),
                   std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
+    const std::unique_ptr<pou::Tray> tray = pou::createTray();
+    const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier();
+    pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);
-    engine.setInitialProperties({{u"app"_s, QVariant::fromValue(&root)}});
+    engine.setInitialProperties(
+        {{u"app"_s, QVariant::fromValue(&root)}, {u"startHidden"_s, commandLine.background()}});
     engine.loadFromModule("PathOfUpgrading", "Main");
+    desktop.setWindow(qobject_cast<QWindow *>(engine.rootObjects().value(0)));
+    desktop.reportProblems();
 
     return app.exec();
 }
