@@ -11,6 +11,7 @@
 #include "tradefixtures.h"
 
 #include <KLocalizedQmlContext>
+#include <QAccessible>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
@@ -639,6 +640,8 @@ private Q_SLOTS:
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
         QVERIFY(w.show(u"ignoredAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
+        QVERIFY(w.show(u"checkedAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Checked Items"_s);
         QVERIFY(w.show(u"charactersAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
@@ -1232,6 +1235,147 @@ private Q_SLOTS:
         QObject *error = w.find(u"ignoredError"_s);
         QVERIFY(isVisible(error));
         QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
+    }
+
+    void nothingChecked()
+    {
+        Window w;
+        QVERIFY(w.show(u"checkedAction"_s));
+        QObject *none = w.find(u"noItemsText"_s);
+        QVERIFY(isVisible(none));
+        QCOMPARE(text(none), u"You haven't checked any items yet."_s);
+        QCOMPARE(none->property("description").toString(), u"Hover over an item in the game and press F2."_s);
+        QCOMPARE(w.find(u"checkedHeader"_s)->property("title").toString(), u"Newest First"_s);
+        QVERIFY(!isVisible(w.find(u"forgetSeparator"_s)));
+        QVERIFY(!isVisible(w.find(u"forgetButton"_s)));
+        QVERIFY(!isVisible(w.find(u"checkedHelp"_s)));
+        QVERIFY(!search(w.page(), [](QObject *o) { return o->objectName().startsWith(u"checked:"); }));
+
+        // with the key it has now
+        QVERIFY(w.app->overlayOptions()->setCheckKey(QKeySequence(Qt::Key_F6)));
+        QCOMPARE(none->property("description").toString(), u"Hover over an item in the game and press F6."_s);
+    }
+
+    void nothingCheckedWithoutHotkeys()
+    {
+        Window w(false);
+        QVERIFY(w.show(u"checkedAction"_s));
+        QCOMPARE(w.find(u"noItemsText"_s)->property("description").toString(),
+                 u"Hover over an item in the game and press the hotkey for checking one. You can set it on "
+                 "the Popup and Hotkeys page."_s);
+    }
+
+    void checkedItems()
+    {
+        Window w;
+        // checked while you were on another page
+        w.app->history().add(item(itemtexts::helmetOld));
+        w.app->history().add(item(itemtexts::advancedRing));
+        QVERIFY(w.show(u"checkedAction"_s));
+        QVERIFY(!isVisible(w.find(u"noItemsText"_s)));
+        QVERIFY(isVisible(w.find(u"forgetSeparator"_s)));
+        QVERIFY(isVisible(w.find(u"forgetButton"_s)));
+        QVERIFY(isVisible(w.find(u"checkedHelp"_s)));
+
+        // the newest first
+        QObject *ring = w.find(u"checked:0"_s);
+        QVERIFY(isVisible(ring));
+        QCOMPARE(text(ring), u"Storm Loop"_s);
+        QCOMPARE(ring->property("description").toString(), u"Rare, Sapphire Ring, Rings, item level 75"_s);
+        QObject *again = ring->findChild<QObject *>(u"checkAgainButton"_s);
+        QVERIFY(isVisible(again));
+        // the buttons look alike, so each says which item it checks
+        const QAccessibleInterface *reads = QAccessible::queryAccessibleInterface(again);
+        QVERIFY(reads);
+        QCOMPARE(reads->text(QAccessible::Name), u"Check Storm Loop Again"_s);
+        QObject *helmet = w.find(u"checked:1"_s);
+        QCOMPARE(text(helmet), u"Grim Crown"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Rare, Visored Helm, Helmets, item level 50"_s);
+        QVERIFY(!search(w.page(), [](QObject *o) { return o->objectName() == u"checked:2"; }));
+
+        // and one more at the front
+        w.app->history().add(item(itemtexts::helmetNew));
+        QCOMPARE(text(w.find(u"checked:0"_s)), u"Doom Visage"_s);
+        QCOMPARE(text(w.find(u"checked:2"_s)), u"Grim Crown"_s);
+    }
+
+    void checkedItemLevels()
+    {
+        // an item without a level says what it needs, and a magic one has no base type
+        Window w;
+        QVERIFY(w.show(u"checkedAction"_s));
+        w.app->history().add(item(u"Item Class: Boots\nRarity: Magic\nSturdy Leather Boots of the Fox\n"
+                                  "--------\nRequirements:\nLevel: 12\n--------\n+10 to Dexterity"_s));
+        QObject *boots = w.find(u"checked:0"_s);
+        QCOMPARE(text(boots), u"Sturdy Leather Boots of the Fox"_s);
+        QCOMPARE(boots->property("description").toString(), u"Magic, Boots, needs level 12"_s);
+
+        w.app->history().add(item(u"Item Class: Belts\nRarity: Normal\nLeather Belt\n--------\n"
+                                  "+5 to Strength"_s));
+        QObject *belt = w.find(u"checked:0"_s);
+        QCOMPARE(text(belt), u"Leather Belt"_s);
+        QCOMPARE(belt->property("description").toString(), u"Normal, Belts"_s);
+    }
+
+    void checkAnItemAgain()
+    {
+        Window w;
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.show(u"checkedAction"_s));
+        w.app->history().add(item(itemtexts::helmetNew));
+        w.app->history().add(item(itemtexts::advancedRing));
+        ItemPopup &popup = w.app->checker().popup();
+        QVERIFY(!popup.isVisible());
+
+        QVERIFY(click(w.find(u"checked:1"_s)->findChild<QObject *>(u"checkAgainButton"_s)));
+        QVERIFY(popup.isVisible());
+        QCOMPARE(popup.report().name, u"Doom Visage"_s);
+        QCOMPARE(popup.report().versus, u"vs Grim Crown"_s);
+        // which is the one you checked last now
+        QCOMPARE(text(w.find(u"checked:0"_s)), u"Doom Visage"_s);
+        QCOMPARE(text(w.find(u"checked:1"_s)), u"Storm Loop"_s);
+        QCOMPARE(w.app->history().recent().size(), 2);
+    }
+
+    void forgetCheckedItems()
+    {
+        Window w;
+        QVERIFY(w.show(u"checkedAction"_s));
+        w.app->history().add(item(itemtexts::helmetOld));
+        const SeenStats seen = w.app->history().seenStats();
+        QVERIFY(!seen.isEmpty());
+
+        QVERIFY(click(w.find(u"forgetButton"_s)));
+        QObject *dialog = w.find(u"forgetDialog"_s);
+        QVERIFY(isVisible(dialog));
+        QCOMPARE(dialog->property("title").toString(), u"Forget the Items?"_s);
+        // nothing yet
+        QCOMPARE(w.app->history().recent().size(), 1);
+
+        QVERIFY(click(button(dialog, u"Forget Them"_s)));
+        QCOMPARE(w.app->history().recent().size(), 0);
+        QVERIFY(isVisible(w.find(u"noItemsText"_s)));
+        QVERIFY(!isVisible(w.find(u"forgetSeparator"_s)));
+        QVERIFY(!isVisible(w.find(u"forgetButton"_s)));
+        QVERIFY(!isVisible(w.find(u"checkedHelp"_s)));
+        QTRY_VERIFY(!isVisible(dialog));
+        QTRY_VERIFY(!search(w.page(), [](QObject *o) { return o->objectName() == u"checked:0"; }));
+        // and the stat picker still has their stats
+        QCOMPARE(w.app->history().seenStats(), seen);
+    }
+
+    void keepCheckedItems()
+    {
+        Window w;
+        QVERIFY(w.show(u"checkedAction"_s));
+        w.app->history().add(item(itemtexts::helmetOld));
+        QVERIFY(click(w.find(u"forgetButton"_s)));
+        QObject *dialog = w.find(u"forgetDialog"_s);
+        QVERIFY(click(button(dialog, u"Cancel"_s)));
+        QCOMPARE(w.app->history().recent().size(), 1);
+        QVERIFY(!isVisible(w.find(u"noItemsText"_s)));
+        QCOMPARE(text(w.find(u"checked:0"_s)), u"Grim Crown"_s);
+        QTRY_VERIFY(!isVisible(dialog));
     }
 
     void league()
