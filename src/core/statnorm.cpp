@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 #include "core/statnorm.h"
 
+#include <QCollator>
+#include <QLocale>
 #include <QRegularExpression>
+#include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -46,6 +49,17 @@ QString propertyNote(QStringView key)
     if (isItemProperty(key))
         return u"The item's own, with its mods"_s;
     return {};
+}
+
+void sortStats(QStringList &keys)
+{
+    // stat texts are English whatever language the app is in
+    const QCollator collator{QLocale(QLocale::English)};
+    std::ranges::sort(keys, [&collator](const QString &a, const QString &b) {
+        if (isItemProperty(a) != isItemProperty(b))
+            return isItemProperty(a);
+        return collator.compare(statName(a), statName(b)) < 0;
+    });
 }
 
 } // namespace pou

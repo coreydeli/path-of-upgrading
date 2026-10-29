@@ -6,8 +6,6 @@
 #include "core/numbers.h"
 #include "core/statnorm.h"
 
-#include <QCollator>
-#include <QLocale>
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -16,19 +14,6 @@ using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
 namespace {
-
-QStringList sortedKeys(const Weights &weights)
-{
-    QStringList keys = weights.keys();
-    // stat texts are English whatever language the app is in
-    const QCollator collator{QLocale(QLocale::English)};
-    std::ranges::sort(keys, [&collator](const QString &a, const QString &b) {
-        if (isItemProperty(a) != isItemProperty(b))
-            return isItemProperty(a);
-        return collator.compare(statName(a), statName(b)) < 0;
-    });
-    return keys;
-}
 
 QString noteFor(const QString &key, const Character &character)
 {
@@ -175,7 +160,8 @@ void StatWeights::refresh()
     if (m_undo && (m_undo->id != m_active->id() || !m_active->exists()))
         m_undo.reset();
 
-    const QStringList keys = m_active->exists() ? sortedKeys(character.weights) : QStringList();
+    QStringList keys = m_active->exists() ? character.weights.keys() : QStringList();
+    sortStats(keys);
     if (keys == m_keys) {
         if (!m_keys.isEmpty())
             Q_EMIT dataChanged(index(0), index(int(m_keys.size()) - 1), {NoteRole, WeightRole});
