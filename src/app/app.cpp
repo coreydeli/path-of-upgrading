@@ -49,6 +49,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_gearScoring(&m_character)
     , m_statWeights(&m_character)
     , m_statPicker(&m_tradeData, &m_history)
+    , m_ignoredStats(&m_character)
     , m_tradeOptions(&m_settings, &m_tradeData, &m_rates)
     , m_overlayOptions(&m_settings, &m_hotkeys)
     , m_pobOptions(&m_settings, &m_pob)

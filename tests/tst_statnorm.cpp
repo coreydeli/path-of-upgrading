@@ -59,6 +59,16 @@ private Q_SLOTS:
         QCOMPARE(pou::propertyNote(u"[Weapon] Total DPS"), u"The weapon's own, with its mods"_s);
         QCOMPARE(pou::propertyNote(u"# to maximum Life"), QString());
     }
+
+    void sorted()
+    {
+        QStringList keys = {u"# to maximum Life"_s, u"[Base] Spirit"_s, u"#% increased Armour"_s,
+                            u"[Weapon] Attacks per Second"_s, u"# to Dexterity"_s};
+        pou::sortStats(keys);
+        // by the name, not the key
+        QCOMPARE(keys, QStringList({u"[Weapon] Attacks per Second"_s, u"[Base] Spirit"_s, u"# to Dexterity"_s,
+                                    u"# to maximum Life"_s, u"#% increased Armour"_s}));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestStatNorm)

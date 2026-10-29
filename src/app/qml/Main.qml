@@ -63,6 +63,14 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(weightsPage)
             },
             Kirigami.Action {
+                objectName: "ignoredAction"
+                text: qsTr("Ignored Stats")
+                icon.name: "view-hidden"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(ignoredPage)
+            },
+            Kirigami.Action {
                 objectName: "pobAction"
                 text: qsTr("Path of Building")
                 icon.name: "office-chart-line"
@@ -118,6 +126,12 @@ Kirigami.ApplicationWindow {
         StatWeightsPage {
             id: weightsPage
             weights: root.app.statWeights
+            picker: root.app.statPicker
+        }
+
+        IgnoredStatsPage {
+            id: ignoredPage
+            ignored: root.app.ignoredStats
             picker: root.app.statPicker
         }
 

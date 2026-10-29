@@ -637,6 +637,8 @@ private Q_SLOTS:
         QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
         QVERIFY(w.show(u"weightsAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
+        QVERIFY(w.show(u"ignoredAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
         QVERIFY(w.show(u"charactersAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
@@ -1117,6 +1119,117 @@ private Q_SLOTS:
         QVERIFY(setValue(w.find(u"weight:# to maximum Life"_s)->findChild<QObject *>(u"weightBox"_s), 2000,
                          "valueModified"));
         QObject *error = w.find(u"weightsError"_s);
+        QVERIFY(isVisible(error));
+        QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
+    }
+
+    void ignoredForNobody()
+    {
+        Window w;
+        QVERIFY(w.show(u"ignoredAction"_s));
+        QVERIFY(isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"ignoredHelp"_s)));
+        QVERIFY(!isVisible(w.find(u"singleStats"_s)));
+        QVERIFY(!isVisible(w.find(u"ignoredError"_s)));
+        QVERIFY(!search(w.page(), [](QObject *o) { return o->objectName().startsWith(u"group:"); }));
+    }
+
+    void ignoreGroups()
+    {
+        Window w;
+        QVERIFY(w.show(u"ignoredAction"_s));
+        w.play({});
+        QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(isVisible(w.find(u"ignoredHelp"_s)));
+        QVERIFY(isVisible(w.find(u"noSingleText"_s)));
+        QObject *eleres = w.find(u"group:eleres"_s);
+        QVERIFY(isVisible(eleres));
+        QCOMPARE(text(eleres), u"Elemental resistances"_s);
+        QCOMPARE(eleres->property("description").toString(),
+                 u"#% to Fire Resistance, #% to Cold Resistance, #% to Lightning Resistance"_s);
+        QObject *box = eleres->findChild<QObject *>(u"modeBox"_s);
+        QCOMPARE(box->property("count").toInt(), 3);
+        QCOMPARE(box->property("currentIndex").toInt(), 0);
+
+        QVERIFY(activate(box, 2));
+        const IgnoreRule excluded{.preset = u"eleres"_s, .key = {}, .mode = IgnoreRule::Mode::Exclude};
+        QCOMPARE(w.app->character().character().ignored, QList<IgnoreRule>({excluded}));
+        QCOMPARE(
+            w.find(u"group:eleres"_s)->findChild<QObject *>(u"modeBox"_s)->property("currentIndex").toInt(),
+            2);
+        QVERIFY(activate(w.find(u"group:eleres"_s)->findChild<QObject *>(u"modeBox"_s), 0));
+        QVERIFY(w.app->character().character().ignored.isEmpty());
+
+        // and one by itself, excluded elsewhere
+        w.app->ignoredStats()->add(u"# to maximum Life"_s);
+        w.app->ignoredStats()->setMode(u"# to maximum Life"_s, IgnoredStats::Excluded);
+        QTRY_COMPARE(w.find(u"ignored:# to maximum Life"_s)
+                         ->findChild<QObject *>(u"modeBox"_s)
+                         ->property("currentIndex")
+                         .toInt(),
+                     1);
+    }
+
+    void ignoreAStat()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"ignoredAction"_s));
+        w.play({});
+        QVERIFY(w.rated());
+        QVERIFY(activate(w.find(u"group:eleres"_s)->findChild<QObject *>(u"modeBox"_s), 1));
+        QVERIFY(click(w.find(u"ignoreStatButton"_s)));
+        QObject *dialog = w.find(u"ignorePicker"_s);
+        QVERIFY(isVisible(dialog));
+        QCOMPARE(dialog->property("title").toString(), u"Ignore a Stat"_s);
+
+        QObject *search = w.find(u"statSearch"_s);
+        QVERIFY(search->setProperty("text", u"fire"_s));
+        QVERIFY(w.settled());
+        QObject *fire = w.find(u"stat:#% to Fire Resistance"_s);
+        QVERIFY(!fire->property("enabled").toBool());
+        QCOMPARE(text(fire->findChild<QObject *>(u"statNote"_s)), u"You ignore it already"_s);
+
+        QVERIFY(search->setProperty("text", u"armour"_s));
+        QVERIFY(w.settled());
+        QVERIFY(click(w.find(u"stat:#% increased Armour"_s)));
+        QTRY_VERIFY(!isVisible(dialog));
+        const QString armour = u"#% increased Armour"_s;
+        QCOMPARE(w.app->character().character().ignored.size(), 2);
+        QCOMPARE(w.app->character().character().ignored.last().key, armour);
+        QVERIFY(!isVisible(w.find(u"noSingleText"_s)));
+
+        QObject *row = w.find(u"ignored:#% increased Armour"_s);
+        QVERIFY(isVisible(row));
+        QCOMPARE(text(row), armour);
+        QObject *box = row->findChild<QObject *>(u"modeBox"_s);
+        QCOMPARE(box->property("count").toInt(), 2);
+        QCOMPARE(box->property("currentIndex").toInt(), 0);
+        QVERIFY(activate(box, 1));
+        QCOMPARE(w.app->character().character().ignored.last().mode, IgnoreRule::Mode::Exclude);
+        QCOMPARE(w.find(u"ignored:#% increased Armour"_s)
+                     ->findChild<QObject *>(u"modeBox"_s)
+                     ->property("currentIndex")
+                     .toInt(),
+                 1);
+
+        QVERIFY(click(w.find(u"ignored:#% increased Armour"_s)->findChild<QObject *>(u"removeButton"_s)));
+        QCOMPARE(w.app->character().character().ignored.size(), 1);
+        QTRY_VERIFY(!::search(w.page(),
+                              [](QObject *o) { return o->objectName() == u"ignored:#% increased Armour"; }));
+        QVERIFY(isVisible(w.find(u"noSingleText"_s)));
+    }
+
+    void cantSaveIgnored()
+    {
+        Window w;
+        QVERIFY(w.show(u"ignoredAction"_s));
+        const QString id = w.play({});
+        const QString file = w.dir.filePath(u"data/characters/"_s + id + u".json"_s);
+        QVERIFY(QFile::remove(file));
+        QVERIFY(QDir().mkdir(file));
+        QVERIFY(activate(w.find(u"group:life"_s)->findChild<QObject *>(u"modeBox"_s), 1));
+        QObject *error = w.find(u"ignoredError"_s);
         QVERIFY(isVisible(error));
         QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
     }
