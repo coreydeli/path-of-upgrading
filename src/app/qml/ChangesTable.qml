@@ -15,7 +15,7 @@ ColumnLayout {
 
     spacing: 0
 
-    // the widest a number gets, which the change is in bold
+    // the widest a number gets, in bold like the change, so the columns line up
     TextMetrics {
         id: number
 
