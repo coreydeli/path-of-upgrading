@@ -164,7 +164,7 @@ FormCard.FormCardPage {
         FormCard.FormSwitchDelegate {
             objectName: "compactSwitch"
             text: qsTr("Compact")
-            description: qsTr("With what hardly matters behind More.")
+            description: qsTr("Puts what hardly matters behind Show More.")
             checked: overlayPage.options.compact
             onToggled: overlayPage.options.compact = checked
         }
