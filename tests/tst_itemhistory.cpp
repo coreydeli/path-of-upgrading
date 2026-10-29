@@ -141,6 +141,70 @@ private Q_SLOTS:
         QVERIFY(!QFile::exists(path));
     }
 
+    void forgetting()
+    {
+        QTemporaryDir dir;
+        ItemHistory history(dir.filePath(u"history.json"_s));
+        history.add(helmetNew);
+        history.add(ring(5));
+        const SeenStats seen = history.seenStats();
+        QVERIFY(!seen.isEmpty());
+        QSignalSpy changed(&history, &ItemHistory::changed);
+        history.clearRecent();
+        QVERIFY(history.recent().isEmpty());
+        QCOMPARE(changed.size(), 1);
+        // but not the stats it has seen
+        QCOMPARE(history.seenStats(), seen);
+
+        // and the next one starts the list again
+        history.add(helmetOld);
+        QCOMPARE(names(history.recent()), QStringList{u"Grim Crown"_s});
+    }
+
+    void forgettingNothing()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        {
+            ItemHistory history(path);
+            QSignalSpy changed(&history, &ItemHistory::changed);
+            history.clearRecent();
+            QCOMPARE(changed.size(), 0);
+        }
+        // which isn't saved either
+        QVERIFY(!QFile::exists(path));
+    }
+
+    void forgottenAfterAMoment()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        ItemHistory history(path);
+        history.setSaveDelay(50ms);
+        history.add(helmetNew);
+        QVERIFY(history.save());
+        history.clearRecent();
+        // the file has them until then
+        QCOMPARE(names(ItemHistory(path).recent()), QStringList{u"Doom Visage"_s});
+        QTRY_VERIFY(ItemHistory(path).recent().isEmpty());
+        QCOMPARE(ItemHistory(path).seenStats(), history.seenStats());
+    }
+
+    void forgottenAtTheEnd()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        {
+            ItemHistory history(path);
+            history.add(helmetNew);
+            QVERIFY(history.save());
+            history.clearRecent();
+        }
+        const ItemHistory again(path);
+        QVERIFY(again.recent().isEmpty());
+        QVERIFY(!again.seenStats().isEmpty());
+    }
+
     void unreadable()
     {
         QTemporaryDir dir;

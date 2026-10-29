@@ -4,6 +4,7 @@
 #include "app/activecharacter.h"
 #include "app/buildimporter.h"
 #include "app/characterlist.h"
+#include "app/checkeditems.h"
 #include "app/gearlist.h"
 #include "app/gearscoring.h"
 #include "app/hotkeys.h"
@@ -55,6 +56,7 @@ class App : public QObject
     Q_PROPERTY(pou::StatWeights *statWeights READ statWeights CONSTANT)
     Q_PROPERTY(pou::StatPicker *statPicker READ statPicker CONSTANT)
     Q_PROPERTY(pou::IgnoredStats *ignoredStats READ ignoredStats CONSTANT)
+    Q_PROPERTY(pou::CheckedItems *checkedItems READ checkedItems CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
@@ -103,6 +105,7 @@ public:
     StatWeights *statWeights() { return &m_statWeights; }
     StatPicker *statPicker() { return &m_statPicker; }
     IgnoredStats *ignoredStats() { return &m_ignoredStats; }
+    CheckedItems *checkedItems() { return &m_checkedItems; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
@@ -136,6 +139,7 @@ private:
     StatWeights m_statWeights;
     StatPicker m_statPicker;
     IgnoredStats m_ignoredStats;
+    CheckedItems m_checkedItems;
     TradeOptions m_tradeOptions;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;

@@ -68,6 +68,11 @@ void ItemChecker::check()
     m_reader.read();
 }
 
+void ItemChecker::checkItem(const Item &item)
+{
+    read(item, std::nullopt);
+}
+
 void ItemChecker::read(const Item &item, const std::optional<ScreenPoint> &mouse)
 {
     Q_EMIT itemRead(item);

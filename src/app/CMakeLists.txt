@@ -4,6 +4,7 @@ qt_add_library(pou_app STATIC
     app.cpp app.h
     buildimporter.cpp buildimporter.h
     characterlist.cpp characterlist.h
+    checkeditems.cpp checkeditems.h
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
     hotkeys.cpp hotkeys.h
@@ -30,6 +31,7 @@ qt_add_qml_module(pou_app
     QML_FILES
         qml/ChangesTable.qml
         qml/CharactersPage.qml
+        qml/CheckedItemsPage.qml
         qml/FormRow.qml
         qml/GearPage.qml
         qml/GearScorePage.qml

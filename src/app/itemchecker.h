@@ -39,6 +39,10 @@ public:
 
     // For the hotkey.
     void check();
+    // Judges an item you have already, as when you pick it from the ones you
+    // checked. Nothing says where the mouse is, so the popup goes where it does
+    // then.
+    void checkItem(const Item &item);
 
     ItemPopup &popup() { return m_popup; }
 

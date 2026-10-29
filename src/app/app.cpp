@@ -50,6 +50,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_statWeights(&m_character)
     , m_statPicker(&m_tradeData, &m_history)
     , m_ignoredStats(&m_character)
+    , m_checkedItems(&m_history)
     , m_tradeOptions(&m_settings, &m_tradeData, &m_rates)
     , m_overlayOptions(&m_settings, &m_hotkeys)
     , m_pobOptions(&m_settings, &m_pob)
@@ -68,6 +69,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_checker.setFinder(&m_finder);
     m_checker.setSettings(settings);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
+    connect(&m_checkedItems, &CheckedItems::checkAgainAsked, &m_checker, &ItemChecker::checkItem);
     connect(&m_checker, &ItemChecker::wearAsked, this, [this](const Item &item, const QString &slot) {
         m_character.wear(slot, item);
         m_checker.popup().setWearError(m_character.errorString());

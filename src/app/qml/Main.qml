@@ -71,6 +71,14 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(ignoredPage)
             },
             Kirigami.Action {
+                objectName: "checkedAction"
+                text: qsTr("Checked Items")
+                icon.name: "view-history"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(checkedPage)
+            },
+            Kirigami.Action {
                 objectName: "pobAction"
                 text: qsTr("Path of Building")
                 icon.name: "office-chart-line"
@@ -133,6 +141,12 @@ Kirigami.ApplicationWindow {
             id: ignoredPage
             ignored: root.app.ignoredStats
             picker: root.app.statPicker
+        }
+
+        CheckedItemsPage {
+            id: checkedPage
+            checkedItems: root.app.checkedItems
+            options: root.app.overlayOptions
         }
 
         PobPage {

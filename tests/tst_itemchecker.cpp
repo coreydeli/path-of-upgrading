@@ -423,6 +423,89 @@ private Q_SLOTS:
                  placed(checker.popup(), PopupPosition::Top, std::nullopt));
     }
 
+    void checkedAgain()
+    {
+        // an item you have already, with no mouse to go by
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.setCharacter(inGrimCrown(), std::nullopt);
+        QSignalSpy read(&checker, &ItemChecker::itemRead);
+        checker.checkItem(parseItem(itemtexts::helmetNew).value());
+        QCOMPARE(input.copies, 0);
+        QVERIFY(checker.popup().isVisible());
+        QCOMPARE(checker.popup().report().name, u"Doom Visage"_s);
+        QCOMPARE(checker.popup().report().versus, u"vs Grim Crown"_s);
+        QCOMPARE(checker.popup().window()->position(),
+                 placed(checker.popup(), PopupPosition::Top, std::nullopt));
+        // as an item read, for the history
+        QCOMPARE(read.size(), 1);
+        QCOMPARE(read.first().at(0).value<Item>().name, u"Doom Visage"_s);
+
+        // for the character you play now, and wearable as it is
+        Character worn;
+        worn.gear = {{u"Helmet"_s, parseItem(itemtexts::helmetNew).value()}};
+        checker.setCharacter(worn, std::nullopt);
+        checker.checkItem(parseItem(itemtexts::helmetOld).value());
+        QCOMPARE(checker.popup().report().name, u"Grim Crown"_s);
+        QCOMPARE(checker.popup().report().versus, u"vs Doom Visage"_s);
+        QSignalSpy asked(&checker, &ItemChecker::wearAsked);
+        checker.popup().wear(u"Helmet"_s);
+        QCOMPARE(asked.first().at(0).value<Item>().name, u"Grim Crown"_s);
+    }
+
+    void checkedAgainAway()
+    {
+        // from where the mouse was, or is, to where your settings put it
+        QQmlEngine qml;
+        FakeGameInput input;
+        input.mouseAt = mouseAt(500, 400);
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        const QPoint byMouse = checker.popup().window()->position();
+        QCOMPARE(byMouse, placed(checker.popup(), PopupPosition::Cursor, QPoint(200, 300)));
+
+        checker.checkItem(parseItem(itemtexts::helmetOld).value());
+        QCOMPARE(checker.popup().window()->position(),
+                 placed(checker.popup(), PopupPosition::Top, std::nullopt));
+        QCOMPARE_NE(checker.popup().window()->position(), byMouse);
+
+        Settings settings;
+        settings.overlay.position = PopupPosition::Right;
+        checker.setSettings(settings);
+        checker.checkItem(parseItem(itemtexts::helmetNew).value());
+        QCOMPARE(checker.popup().window()->position(),
+                 placed(checker.popup(), PopupPosition::Right, std::nullopt));
+    }
+
+    void checkedAgainWithPob()
+    {
+        WithPob p;
+        p.pob.answers(withHelmet({{u"FullDPS"_s, 100}, {u"TotalEHP"_s, 1100}}));
+        p.checker.checkItem(parseItem(itemtexts::helmetNew).value());
+        QVERIFY(p.checker.popup().report().pobChecking);
+        QTRY_VERIFY(!p.checker.popup().report().pobChecking);
+        // and its answer leaves the popup where it was
+        QCOMPARE(p.checker.popup().window()->position(),
+                 placed(p.checker.popup(), PopupPosition::Top, std::nullopt));
+    }
+
+    void checkedAgainCallsOffTheSearch()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        checker.checkItem(parseItem(itemtexts::helmetNew).value());
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(trading.finder.isBusy());
+        checker.checkItem(parseItem(itemtexts::helmetOld).value());
+        QVERIFY(!trading.finder.isBusy());
+        QCOMPARE(checker.popup().trade(), TradeReport());
+    }
+
     void notWatching()
     {
         QQmlEngine qml;
