@@ -1,4 +1,5 @@
 find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
+find_package(KF6Config 6.0 REQUIRED)
 
 function(pou_add_test name)
     qt_add_executable(${name} ${name}.cpp ${ARGN})
@@ -88,6 +89,10 @@ pou_add_platform_test(tst_autostart)
 pou_add_platform_test(tst_copykeys)
 pou_add_platform_test(tst_gamewindow)
 pou_add_platform_test(tst_keychainsecretstore)
+pou_add_platform_test(tst_notifyrc)
+target_link_libraries(tst_notifyrc PRIVATE KF6::ConfigCore)
+target_compile_definitions(tst_notifyrc PRIVATE APP_ID="${APP_ID}"
+    NOTIFYRC="${PROJECT_SOURCE_DIR}/data/path-of-upgrading.notifyrc")
 pou_add_platform_test(tst_screenmap)
 # with the X server in DISPLAY, when there's one
 pou_add_platform_test(tst_xconnection)
