@@ -9,7 +9,7 @@
 namespace pou {
 
 // Addresses on the official trade site. Leagues are named as the site names
-// them: "Standard", "Rise of the Abyssal", "HC Rise of the Abyssal".
+// them: "Standard", "Runes of Aldur", "HC Runes of Aldur".
 
 // One of the site's data endpoints: "stats", "filters" or "leagues".
 QUrl tradeDataUrl(const QString &name);

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<component type="desktop-application">
+  <id>io.github.coreydeli.PathOfUpgrading</id>
+
+  <name>Path of Upgrading</name>
+  <summary>Check Path of Exile 2 items against your build</summary>
+  <developer id="io.github.coreydeli">
+    <name>Corey Deli</name>
+  </developer>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      Path of Upgrading tells you whether an item in Path of Exile 2 is an upgrade for your build.
+      Press a hotkey over an item in the game and a popup shows how it compares with what you wear.
+    </p>
+    <ul>
+      <li>Rates items by a gear score, by your own stat weights, or by Path of Building once you have imported a build</li>
+      <li>Imports builds from Path of Building, including the Flatpak, from a code, a link or a file</li>
+      <li>Searches the trade site for upgrades or similar items, in your league, including hardcore</li>
+      <li>Prices an item and finds bases to craft on</li>
+    </ul>
+    <p>
+      The popup is drawn over the game, so it needs a desktop with layer shell support, such as KDE Plasma on Wayland.
+      Path of Building for Path of Exile 2 has to be installed to import builds.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.coreydeli.PathOfUpgrading.desktop</launchable>
+  <provides>
+    <binary>path-of-upgrading</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/coreydeli/path-of-upgrading</url>
+  <url type="bugtracker">https://github.com/coreydeli/path-of-upgrading/issues</url>
+  <url type="vcs-browser">https://github.com/coreydeli/path-of-upgrading</url>
+
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.1.0" date="2026-10-29"/>
+  </releases>
+</component>
