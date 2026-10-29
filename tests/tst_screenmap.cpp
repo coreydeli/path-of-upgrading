@@ -28,6 +28,12 @@ private Q_SLOTS:
                                 << QPoint(1920, 1080)
                                 << std::optional(ScreenPoint{u"DP-1"_s, QPoint(1280, 720)});
 
+        // each way by its own size
+        QTest::newRow("squeezed") << QList<NamedScreen>{{u"DP-1"_s, QRect(0, 0, 1000, 500)}}
+                                  << QList<NamedScreen>{{u"DP-1"_s, QRect(0, 0, 500, 500)}}
+                                  << QPoint(100, 250)
+                                  << std::optional(ScreenPoint{u"DP-1"_s, QPoint(50, 250)});
+
         // a laptop at 200% with a monitor at 100% to its right
         const QList<NamedScreen> monitors = {{u"eDP-1"_s, QRect(0, 0, 2880, 1800)},
                                              {u"DP-2"_s, QRect(2880, 0, 3840, 2160)}};
