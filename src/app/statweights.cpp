@@ -34,11 +34,7 @@ QString noteFor(const QString &key, const Character &character)
 {
     if (isIgnored(character.ignored, key))
         return u"You ignore it, so it doesn't count"_s;
-    if (key.startsWith(u"[Weapon] "))
-        return u"The weapon's own, with its mods"_s;
-    if (isItemProperty(key))
-        return u"The item's own, with its mods"_s;
-    return {};
+    return propertyNote(key);
 }
 
 QString whyFor(const SuggestedWeight &s, const Weights &weights)

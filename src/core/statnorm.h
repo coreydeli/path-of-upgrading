@@ -21,5 +21,7 @@ bool isItemProperty(QStringView key);
 // What a stat is called in the window: "Armour" for "[Base] Armour", and the
 // key as it is for a mod.
 QString statName(const QString &key);
+// What the window says of one of the item's own, and nothing for a mod.
+QString propertyNote(QStringView key);
 
 } // namespace pou
