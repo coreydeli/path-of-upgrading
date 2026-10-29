@@ -88,6 +88,30 @@ private Q_SLOTS:
         QVERIFY(!live->values[Element::Cold]);
     }
 
+    void maximumToAllElementsLeavesChaos()
+    {
+        const Item gem = withStats({{u"#% to all Maximum Elemental Resistances"_s, 2}});
+        ResistEntry entry;
+        entry.values[Element::Fire] = 70;
+        const auto live = liveResists(snapshotResists(entry, {}, ResistSource::Game), {{u"Amulet"_s, gem}});
+        QCOMPARE(live->caps[Element::Fire], 77.0);
+        QCOMPARE(live->caps[Element::Cold], 77.0);
+        QCOMPARE(live->caps[Element::Lightning], 77.0);
+        QCOMPARE(live->caps[Element::Chaos], 75.0);
+    }
+
+    void aCapOfNothingIsTheUsualOne()
+    {
+        ResistRecord record;
+        record.entered[Element::Fire] = 70;
+        for (const double cap : {0.0, -5.0}) {
+            record.cap = cap;
+            QCOMPARE(liveResists(record, {})->cap, 75.0);
+        }
+        record.cap = 80;
+        QCOMPARE(liveResists(record, {})->cap, 80.0);
+    }
+
     void nothingEntered() { QVERIFY(!liveResists(snapshotResists({}, {}, ResistSource::Manual), {})); }
 
     void chosenBufferIsKept()
