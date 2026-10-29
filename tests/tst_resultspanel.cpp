@@ -608,7 +608,9 @@ private Q_SLOTS:
         // for the character you play
         Panel p;
         p.site.results.judge().setCharacter(wearing(u"+30 to maximum Life"_s), std::nullopt);
-        p.site.network.answers = {fetched(listingIds(1))};
+        const QString now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+        const QJsonObject listing = helmet(u"x1"_s, price(3, u"divine"_s), now);
+        p.site.network.answers = {{.body = json({{u"result"_s, QJsonArray{listing}}})}};
         p.site.results.setSearch(foundBy(1));
         p.panel.show();
         QVERIFY(p.loaded());
@@ -622,6 +624,8 @@ private Q_SLOTS:
         QVERIFY(life);
         QCOMPARE(toneOf(life), int(Tone::Good));
         QVERIFY(!shown(p.window(), u"Checking with Path of Building"_s));
+        // and no empty lines for what it doesn't do
+        QVERIFY(!shown(p.window(), u""_s, "QQuickLabel"));
     }
 
     void whatItCosts()
@@ -671,6 +675,33 @@ private Q_SLOTS:
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
         QVERIFY(shown(p.window(), u"Grim Ward"_s));
         QVERIFY(!shown(p.window(), u""_s, "QQuickLabel"));
+    }
+
+    void whatItCaps()
+    {
+        // as Path of Building says
+        FakePob pob;
+        const QJsonObject capped{{u"FireResist"_s, 75}, {u"MissingFireResist"_s, 0}};
+        const QJsonObject slot{{u"slot"_s, u"Helmet"_s},
+                               {u"label"_s, u"Helmet"_s},
+                               {u"replacing"_s, u"Grim Crown, Iron Hat"_s},
+                               {u"stats"_s, capped}};
+        const QJsonObject under{{u"FireResist"_s, 60}, {u"MissingFireResist"_s, 15}};
+        QVERIFY(pob.answers(
+            {{u"before"_s, under},
+             {u"results"_s, QJsonArray{QJsonObject{{u"ok"_s, true}, {u"slots"_s, QJsonArray{slot}}}}}}));
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        Panel p;
+        p.site.results.judge().setPob(&engine);
+        p.site.results.judge().setCharacter(wearing(u"+30 to maximum Life"_s), PobBuild());
+        p.site.network.answers = {fetched(listingIds(1))};
+        p.site.results.setSearch(foundBy(1));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_VERIFY(shown(p.window(), u"Caps your fire resistance"_s));
+        QCOMPARE(toneOf(shown(p.window(), u"Caps your fire resistance"_s)), int(Tone::Good));
     }
 
     void whilePathOfBuildingChecks()
