@@ -12,6 +12,7 @@
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
 #include "app/settingsstore.h"
+#include "app/statweights.h"
 #include "app/tradefinder.h"
 #include "app/tradeoptions.h"
 #include "core/characterstore.h"
@@ -49,6 +50,7 @@ class App : public QObject
     Q_PROPERTY(pou::BuildImporter *buildImporter READ buildImporter CONSTANT)
     Q_PROPERTY(pou::GearList *gearList READ gearList CONSTANT)
     Q_PROPERTY(pou::GearScoring *gearScoring READ gearScoring CONSTANT)
+    Q_PROPERTY(pou::StatWeights *statWeights READ statWeights CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
@@ -94,6 +96,7 @@ public:
     BuildImporter *buildImporter() { return &m_buildImporter; }
     GearList *gearList() { return &m_gearList; }
     GearScoring *gearScoring() { return &m_gearScoring; }
+    StatWeights *statWeights() { return &m_statWeights; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
@@ -124,6 +127,7 @@ private:
     BuildImporter m_buildImporter;
     GearList m_gearList;
     GearScoring m_gearScoring;
+    StatWeights m_statWeights;
     TradeOptions m_tradeOptions;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
