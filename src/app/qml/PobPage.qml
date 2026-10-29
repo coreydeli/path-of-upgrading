@@ -72,7 +72,10 @@ FormCard.FormCardPage {
         title: qsTr("What Matters Most")
     }
 
+    // These only weigh Path of Building's numbers, so they wait for it to be on.
     FormCard.FormCard {
+        enabled: pobPage.options.enabled
+
         FormCard.AbstractFormDelegate {
             background: null
             focusPolicy: Qt.NoFocus
@@ -138,7 +141,6 @@ FormCard.FormCardPage {
             objectName: "keepDamageSwitch"
             text: qsTr("Never lose damage")
             description: qsTr("An item that costs a good part of your damage is never an upgrade.")
-            enabled: pobPage.options.enabled
             checked: pobPage.options.keepDamage
             onToggled: pobPage.options.keepDamage = checked
         }
@@ -149,7 +151,6 @@ FormCard.FormCardPage {
             objectName: "spiritSwitch"
             text: qsTr("Never run short of Spirit")
             description: qsTr("For your minions and auras.")
-            enabled: pobPage.options.enabled
             checked: pobPage.options.spirit
             onToggled: pobPage.options.spirit = checked
         }
@@ -160,7 +161,6 @@ FormCard.FormCardPage {
             objectName: "attributesSwitch"
             text: qsTr("Keep attribute requirements met")
             description: qsTr("The Strength, Dexterity and Intelligence your gear and skills need.")
-            enabled: pobPage.options.enabled
             checked: pobPage.options.attributes
             onToggled: pobPage.options.attributes = checked
         }

@@ -615,6 +615,10 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.show(u"pobAction"_s));
+        const QStringList weighing = {u"damageSlider"_s,     u"resistsSwitch"_s, u"chaosSwitch"_s,
+                                      u"keepDamageSwitch"_s, u"spiritSwitch"_s,  u"attributesSwitch"_s};
+        for (const QString &name : weighing)
+            QVERIFY2(w.find(name)->property("enabled").toBool(), qPrintable(name));
         QVERIFY(toggle(w.find(u"chaosSwitch"_s)));
         QVERIFY(toggle(w.find(u"keepDamageSwitch"_s)));
         QVERIFY(toggle(w.find(u"spiritSwitch"_s)));
@@ -627,8 +631,14 @@ private Q_SLOTS:
 
         QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
         QCOMPARE(w.settings().pob.enabled, false);
-        // which it needs
-        QCOMPARE(w.find(u"keepDamageSwitch"_s)->property("enabled").toBool(), false);
+        // which all of them need
+        for (const QString &name : weighing)
+            QVERIFY2(!w.find(name)->property("enabled").toBool(), qPrintable(name));
+        QVERIFY(w.find(u"folderField"_s)->property("enabled").toBool());
+        QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
+        for (const QString &name : weighing)
+            QVERIFY2(w.find(name)->property("enabled").toBool(), qPrintable(name));
+        QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
 
         QVERIFY(toggle(w.find(u"resistsSwitch"_s)));
         QCOMPARE(w.settings().pob.priorities.resistsFirst, false);
