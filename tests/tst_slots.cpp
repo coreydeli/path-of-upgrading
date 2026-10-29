@@ -59,6 +59,9 @@ private Q_SLOTS:
         QCOMPARE(slotGroup(u"Ring"_s), QStringList({u"Ring 1"_s, u"Ring 2"_s}));
         QCOMPARE(slotGroup(u"Helmet"_s), QStringList({u"Helmet"_s}));
         QVERIFY(comparesWithWeakest(u"Jewel"_s));
+        QVERIFY(comparesWithWeakest(u"Ring"_s));
+        QVERIFY(comparesWithWeakest(u"Charm"_s));
+        QVERIFY(!comparesWithWeakest(u"Life Flask"_s));
         QVERIFY(!comparesWithWeakest(u"Weapon"_s));
         QCOMPARE(allSlots().size(), mainSlots().size() + extraSlots().size());
         QCOMPARE(mainSlots().first(), u"Weapon"_s);
