@@ -64,6 +64,18 @@ FormCard.FormCardPage {
 
     FormCard.FormCard {
         FormCard.FormTextDelegate {
+            id: overall
+            objectName: "overallScore"
+            visible: gearPage.gear.overall !== ""
+            text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
+            description: qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: overall.visible
+        }
+
+        FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
             text: qsTr("You play nobody yet.")

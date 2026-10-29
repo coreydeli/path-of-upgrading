@@ -710,6 +710,7 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
+        QVERIFY(!isVisible(w.find(u"overallScore"_s)));
         QVERIFY(!isVisible(w.find(u"gearHelp"_s)));
         QVERIFY(!isVisible(w.find(u"gearError"_s)));
         QVERIFY(!isVisible(w.find(u"extras"_s)));
@@ -747,6 +748,14 @@ private Q_SLOTS:
         QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
         QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
+
+        QObject *overall = w.find(u"overallScore"_s);
+        QVERIFY(isVisible(overall));
+        const GearList *list = w.app->gearList();
+        QVERIFY(!list->overall().isEmpty());
+        QCOMPARE(text(overall), u"Overall gear score %1 %2"_s.arg(list->overall(), list->overallGrade()));
+        QVERIFY(!list->weakest().isEmpty());
+        QCOMPARE(overall->property("description").toString(), u"Upgrade first: "_s + list->weakest());
     }
 
     void gearHeading()
