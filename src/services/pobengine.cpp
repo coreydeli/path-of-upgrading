@@ -222,6 +222,7 @@ void PobEngine::send(QJsonObject request, PobReply *reply)
     m_sent << Sent{.id = m_lastId,
                    .items = request.value(u"items").toArray().size(),
                    .eval = reply != nullptr,
+                   .load = request.value(u"cmd").toString() == u"load",
                    .reply = reply};
     // when it's the one it's waiting on
     if (m_sent.size() == 1)
@@ -355,6 +356,15 @@ void PobEngine::warn(const QString &why) const
         qCWarning(lcPob, "%s It printed:\n%s", qUtf8Printable(why), printed.constData());
 }
 
+// How long it has to answer a request, which is longer for the build than for
+// anything else, and longer for each item.
+std::chrono::milliseconds PobEngine::timeToAnswer(const Sent &sent) const
+{
+    if (sent.load)
+        return m_timeouts.load;
+    return m_timeouts.request + m_timeouts.perItem * sent.items;
+}
+
 // Gives it a while for what it's doing, which is starting or answering the
 // oldest request, before it's given up on, or a while with nothing to do
 // before it's stopped.
@@ -363,7 +373,7 @@ void PobEngine::watch()
     if (m_state == State::Starting)
         m_timer.start(m_timeouts.start);
     else if (m_state == State::Ready && !m_sent.isEmpty())
-        m_timer.start(m_timeouts.request + m_timeouts.perItem * m_sent.first().items);
+        m_timer.start(timeToAnswer(m_sent.first()));
     else if (m_state == State::Ready)
         m_timer.start(m_timeouts.idle);
     else
