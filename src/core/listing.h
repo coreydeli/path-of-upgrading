@@ -64,8 +64,8 @@ struct ListingProperty
 
 // The defences and weapon damage the item has of its own, as the game shows
 // them on the item, with the weapon's damage per second after them. Those the
-// item hasn't got, or has none of, are left out. A weapon's damage is split
-// into physical and elemental only when it has both.
+// item hasn't got, or has none of, are left out. A weapon's damage per second
+// is split by kind only when it has more than one kind.
 QList<ListingProperty> baseProperties(const Item &item);
 
 struct Listing
