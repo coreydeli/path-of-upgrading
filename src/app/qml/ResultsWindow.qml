@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 import QtQuick
 
 // The window over the game with the trade results, see ResultsPanel.
