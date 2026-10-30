@@ -66,6 +66,22 @@ QStringList jewelNames(const PobBuild &build)
     return out;
 }
 
+using Stats = QList<std::pair<QString, QString>>;
+
+// A build that saved these numbers for the player and for its minions, as
+// they are in the XML.
+PobBuild saving(const Stats &player, const Stats &minion = {})
+{
+    QStringList lines = {u"<PathOfBuilding2>"_s,
+                         u"<Build level=\"3\" className=\"Monk\" ascendClassName=\"None\">"_s};
+    for (const auto &[stat, value] : player)
+        lines << u"<PlayerStat stat=\"%1\" value=\"%2\"/>"_s.arg(stat, value);
+    for (const auto &[stat, value] : minion)
+        lines << u"<MinionStat stat=\"%1\" value=\"%2\"/>"_s.arg(stat, value);
+    lines << u"</Build>"_s << u"</PathOfBuilding2>"_s;
+    return parsePobBuild(joined(lines)).value();
+}
+
 } // namespace
 
 class TestPobBuild : public QObject
@@ -487,6 +503,10 @@ private Q_SLOTS:
         QCOMPARE(build->resists[Element::Cold].value(), 62.0);
         QCOMPARE(build->resists[Element::Lightning].value(), 79.0);
         QCOMPARE(build->resists[Element::Chaos].value(), -10.0);
+        QCOMPARE(build->life, 1630.0);
+        // it doesn't say, and its minions have no damage to show
+        QCOMPARE(build->energyShield, 0.0);
+        QCOMPARE(build->minionDps, 0.0);
     }
 
     void gearOfTheActiveSet()
@@ -638,6 +658,37 @@ private Q_SLOTS:
         QVERIFY(!build->resists[Element::Chaos]);
         QVERIFY(build->gear.isEmpty());
         QVERIFY(build->jewels.isEmpty());
+    }
+
+    void lifeAndEnergyShield()
+    {
+        const PobBuild build = saving({{u"Life"_s, u"1250"_s}, {u"EnergyShield"_s, u"3400.5"_s}},
+                                      {{u"Life"_s, u"9000"_s}, {u"EnergyShield"_s, u"7000"_s}});
+        QCOMPARE(build.life, 1250.0);
+        QCOMPARE(build.energyShield, 3400.5);
+
+        const PobBuild silent = saving({{u"FireResist"_s, u"12"_s}});
+        QCOMPARE(silent.life, 0.0);
+        QCOMPARE(silent.energyShield, 0.0);
+
+        // numbers that aren't
+        const PobBuild broken = saving({{u"Life"_s, u"nan"_s}, {u"EnergyShield"_s, u"lots"_s}});
+        QCOMPARE(broken.life, 0.0);
+        QCOMPARE(broken.energyShield, 0.0);
+    }
+
+    void minionDamage()
+    {
+        // the combined damage when it has it, else the hits
+        QCOMPARE(saving({}, {{u"TotalDPS"_s, u"300"_s}, {u"CombinedDPS"_s, u"450"_s}}).minionDps, 450.0);
+        QCOMPARE(saving({}, {{u"CombinedDPS"_s, u"450"_s}, {u"TotalDPS"_s, u"300"_s}}).minionDps, 450.0);
+        QCOMPARE(saving({}, {{u"TotalDPS"_s, u"300"_s}}).minionDps, 300.0);
+        QCOMPARE(saving({}, {{u"TotalDPS"_s, u"300"_s}, {u"CombinedDPS"_s, u"nan"_s}}).minionDps, 300.0);
+
+        // not the player's own, or the other numbers of the minions
+        QCOMPARE(saving({{u"TotalDPS"_s, u"900"_s}, {u"CombinedDPS"_s, u"950"_s}}).minionDps, 0.0);
+        QCOMPARE(saving({}, {{u"Life"_s, u"900"_s}, {u"Speed"_s, u"2"_s}}).minionDps, 0.0);
+        QCOMPARE(saving({}).minionDps, 0.0);
     }
 
     void notABuild()

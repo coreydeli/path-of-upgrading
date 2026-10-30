@@ -55,6 +55,7 @@ QJsonObject toJson(const Character &character)
         {u"weights"_s, numbersToJson(character.weights)},
         {u"ignored"_s, toJson(character.ignored)},
         {u"buildProfile"_s, character.buildProfile},
+        {u"profilePicked"_s, character.profilePicked},
         {u"tweaks"_s, numbersToJson(character.tweaks)},
         {u"chaosInoculation"_s, character.chaosInoculation},
     };
@@ -86,6 +87,8 @@ std::optional<Character> characterFromJson(const QJsonObject &o)
         c.weights = numbersFromJson(o.value(u"weights").toObject());
     c.ignored = ignoreRulesFromJson(o.value(u"ignored").toArray());
     c.buildProfile = o.value(u"buildProfile").toString();
+    // before this was kept, only you could have set a profile
+    c.profilePicked = o.value(u"profilePicked").toBool(!c.buildProfile.isEmpty());
     c.tweaks = numbersFromJson(o.value(u"tweaks").toObject());
     if (o.value(u"resists").isObject())
         c.resists = resistRecordFromJson(o.value(u"resists").toObject());

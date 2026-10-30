@@ -35,6 +35,7 @@ private Q_SLOTS:
         ember.weights = {{u"# to maximum Life"_s, 1.5}, {u"#% to Fire Resistance"_s, 1}};
         ember.ignored = {{u"chaosres"_s, {}, IgnoreRule::Mode::Exclude}};
         ember.buildProfile = u"minion-es"_s;
+        ember.profilePicked = true;
         ember.tweaks = {{u"Spirit"_s, 2}};
         ResistEntry entry;
         entry.values[Element::Fire] = 78;
@@ -55,6 +56,7 @@ private Q_SLOTS:
         QCOMPARE(back.weights, ember.weights);
         QCOMPARE(back.ignored, ember.ignored);
         QCOMPARE(back.buildProfile, ember.buildProfile);
+        QVERIFY(back.profilePicked);
         QCOMPARE(back.tweaks, ember.tweaks);
         QCOMPARE(back.resists, ember.resists);
         QVERIFY(back.chaosInoculation);
@@ -67,7 +69,43 @@ private Q_SLOTS:
         QCOMPARE(fresh.weights, defaultWeights());
         QVERIFY(!fresh.resists);
         QVERIFY(!fresh.chaosInoculation);
+        QVERIFY(!fresh.profilePicked);
         QVERIFY(!toJson(fresh).contains(u"resists"));
+    }
+
+    void profileChoiceKept()
+    {
+        // an import's profile isn't a choice, and the default can be
+        Character imported;
+        imported.buildProfile = u"es-caster"_s;
+        QVERIFY(!characterFromJson(toJson(imported)).value().profilePicked);
+        Character chosen;
+        chosen.profilePicked = true;
+        QVERIFY(characterFromJson(toJson(chosen)).value().profilePicked);
+    }
+
+    void profileChosen_data()
+    {
+        QTest::addColumn<QJsonObject>("saved");
+        QTest::addColumn<bool>("picked");
+        const QString profile = u"es-caster"_s;
+        QTest::newRow("nothing") << QJsonObject() << false;
+        // saved before the choice was kept
+        QTest::newRow("old file with a profile") << QJsonObject{{u"buildProfile"_s, profile}} << true;
+        QTest::newRow("old file without") << QJsonObject{{u"buildProfile"_s, QString()}} << false;
+        QTest::newRow("chosen") << QJsonObject{{u"buildProfile"_s, profile}, {u"profilePicked"_s, true}}
+                                << true;
+        QTest::newRow("chosen the default") << QJsonObject{{u"profilePicked"_s, true}} << true;
+        // what an import set
+        QTest::newRow("set by an import")
+            << QJsonObject{{u"buildProfile"_s, profile}, {u"profilePicked"_s, false}} << false;
+    }
+
+    void profileChosen()
+    {
+        QFETCH(QJsonObject, saved);
+        QFETCH(bool, picked);
+        QCOMPARE(characterFromJson(saved).value().profilePicked, picked);
     }
 
     void noWeightsAtAll()

@@ -29,6 +29,8 @@ class GearScoring : public QAbstractListModel
     Q_PROPERTY(QString character READ character NOTIFY changed)
     // The build profiles' names, then none, for your stat weights alone.
     Q_PROPERTY(QStringList profiles READ profiles CONSTANT)
+    // Choosing one yourself, even the one it has, stops importing a build from
+    // changing it.
     Q_PROPERTY(int profile READ profile WRITE setProfile NOTIFY changed)
     // What the profile is for.
     Q_PROPERTY(QString summary READ summary NOTIFY changed)
