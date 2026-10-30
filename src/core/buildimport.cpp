@@ -9,6 +9,43 @@
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
+namespace {
+
+// The build's items by slot, the jewels in the order of their sockets.
+QHash<QString, PobItemText> itemsOf(const PobBuild &build)
+{
+    QHash<QString, PobItemText> items = build.gear;
+    const QStringList jewelSlots = slotGroup(u"Jewel"_s);
+    for (qsizetype i = 0; i < build.jewels.size() && i < jewelSlots.size(); ++i)
+        items.insert(jewelSlots.at(i), build.jewels.at(i));
+    return items;
+}
+
+// What the build's numbers were worked out with.
+Equipped gearOf(const QHash<QString, PobItemText> &items)
+{
+    Equipped gear;
+    for (const QString &slot : allSlots()) {
+        const auto text = items.constFind(slot);
+        if (text == items.cend())
+            continue;
+        if (std::optional<Item> item = parseItem(text->text))
+            gear.insert(slot, std::move(*item));
+    }
+    return gear;
+}
+
+std::optional<ResistRecord> resistsOf(const PobBuild &build, const Equipped &gear,
+                                      const ResistRecord *previous)
+{
+    const bool any = std::any_of(build.resists.values.cbegin(), build.resists.values.cend(),
+                                 [](const std::optional<double> &r) { return r.has_value(); });
+    if (!any)
+        return std::nullopt;
+    return snapshotResists({.values = build.resists}, gear, ResistSource::Pob, previous);
+}
+
+} // namespace
 
 BuildImport importBuild(const Character &character, const PobBuild &build)
 {
@@ -18,43 +55,37 @@ BuildImport importBuild(const Character &character, const PobBuild &build)
         c.gear.remove(slot);
     c.fromPob.clear();
 
-    QHash<QString, PobItemText> theirs = build.gear;
-    const QStringList jewelSlots = slotGroup(u"Jewel"_s);
-    for (qsizetype i = 0; i < build.jewels.size() && i < jewelSlots.size(); ++i)
-        theirs.insert(jewelSlots.at(i), build.jewels.at(i));
-
-    // what the build's numbers were worked out with
-    Equipped buildGear;
+    const QHash<QString, PobItemText> items = itemsOf(build);
+    const Equipped theirs = gearOf(items);
     for (const QString &slot : allSlots()) {
-        const auto text = theirs.constFind(slot);
-        if (text == theirs.cend())
+        const auto item = theirs.constFind(slot);
+        if (item == theirs.cend())
             continue;
-        std::optional<Item> item = parseItem(text->text);
-        if (!item)
-            continue;
-        buildGear.insert(slot, *item);
-
         const auto worn = c.gear.constFind(slot);
         if (worn != c.gear.cend() && worn->name == item->name && worn->baseType == item->baseType) {
             ++out.kept;
             continue;
         }
-        c.gear.insert(slot, std::move(*item));
+        c.gear.insert(slot, *item);
         c.fromPob.insert(slot);
         ++out.items;
-        if (text->missingDamage)
+        if (items.value(slot).missingDamage)
             ++out.withoutDamage;
     }
 
-    const bool anyResist = std::any_of(build.resists.values.cbegin(), build.resists.values.cend(),
-                                       [](const std::optional<double> &r) { return r.has_value(); });
     const bool fromSheet = c.resists && c.resists->source == ResistSource::Game;
-    if (anyResist && !fromSheet) {
-        c.resists = snapshotResists({.values = build.resists}, buildGear, ResistSource::Pob,
-                                    c.resists ? &*c.resists : nullptr);
+    if (fromSheet)
+        return out;
+    if (std::optional<ResistRecord> resists = resistsOf(build, theirs, c.resists ? &*c.resists : nullptr)) {
+        c.resists = std::move(resists);
         out.resists = true;
     }
     return out;
+}
+
+std::optional<ResistRecord> buildResists(const PobBuild &build, const ResistRecord *previous)
+{
+    return resistsOf(build, gearOf(itemsOf(build)), previous);
 }
 
 } // namespace pou

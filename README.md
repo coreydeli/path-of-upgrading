@@ -41,6 +41,8 @@ from source.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and the three slots to upgrade first.
+  It also has your resistances, from your build or typed in off the character
+  sheet, so an item that leaves one under the cap says so.
 - Can sign in to the trade site with your session ID, which lets the site take
   bigger searches. It is kept in your system keyring.
 - Stays in the system tray when you close the window. The tray icon shows the
