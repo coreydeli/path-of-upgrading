@@ -669,6 +669,8 @@ private Q_SLOTS:
         QCOMPARE(site.finder.errorString(),
                  u"The trade site says this search has too many filters even at its smallest."_s);
         QVERIFY(!site.finder.found());
+        // there's no use trying it on the site
+        QVERIFY(site.finder.errorUrl().isEmpty());
 
         // which may find nothing, and isn't any looser
         site.network.answers = {found(u"s1"_s, 0)};
@@ -690,6 +692,7 @@ private Q_SLOTS:
         QVERIFY(site.finds(helmet));
         QCOMPARE(site.network.sent.size(), 1);
         QCOMPARE(site.finder.errorString(), u"The trade site says the search has too many filters."_s);
+        QVERIFY(site.finder.errorUrl().isEmpty());
     }
 
     void sameOrBetter()
@@ -1113,6 +1116,7 @@ private Q_SLOTS:
             parseItem(u"Item Class: Rings\nRarity: Normal\nGold Ring\n--------\nItem Level: 50"_s).value()));
         QCOMPARE(site.finder.errorString(),
                  u"None of this item's stats could be matched on the trade site."_s);
+        QVERIFY(site.finder.errorUrl().isEmpty());
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -1126,6 +1130,41 @@ private Q_SLOTS:
         QVERIFY(site.finds(helmet));
         QCOMPARE(site.finder.errorString(), u"The trade site says: Unknown item base"_s);
         QVERIFY(!site.finder.found());
+        // the search to try on the site, which fills it in
+        QCOMPARE(site.finder.errorUrl(), tradePrefilledUrl(u"Runes of Aldur"_s, site.searched(0)));
+        QVERIFY(!site.finder.errorUrl().isEmpty());
+
+        // and which is gone with the next one
+        site.network.answers = {found(u"s1"_s, 4)};
+        QVERIFY(site.finds(helmet));
+        QVERIFY(site.finder.errorString().isEmpty());
+        QVERIFY(site.finder.errorUrl().isEmpty());
+        QCOMPARE(site.finder.found()->total, 4);
+    }
+
+    void siteIsDown()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {{.error = QNetworkReply::HostNotFoundError}};
+        QVERIFY(site.finds(helmet));
+        QVERIFY(!site.finder.found());
+        QVERIFY(!site.finder.errorString().isEmpty());
+        QCOMPARE(site.finder.errorUrl(), tradePrefilledUrl(u"Runes of Aldur"_s, site.searched(0)));
+    }
+
+    // an upgrade search that got smaller before the site failed it
+    void failsAfterShrinking()
+    {
+        Character character = inGrimCrown();
+        Site site;
+        QVERIFY(site.hasData(tradefixtures::manyStats()));
+        site.finder.setCharacter(character);
+        site.network.answers = {tooManyFilters(), {.error = QNetworkReply::HostNotFoundError}};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 2);
+        QCOMPARE(site.finder.errorUrl(), tradePrefilledUrl(u"Runes of Aldur"_s, site.searched(1)));
+        QVERIFY(site.finder.errorUrl() != tradePrefilledUrl(u"Runes of Aldur"_s, site.searched(0)));
     }
 
     void askedAgain()

@@ -113,7 +113,7 @@ void ItemChecker::findOnTrade(TradeFinder::Kind kind)
 void ItemChecker::found()
 {
     const std::optional<TradeFinder::Found> &found = m_finder->found();
-    m_popup.setTrade(found ? reportOf(*found) : failedReport(m_finder->errorString()));
+    m_popup.setTrade(found ? reportOf(*found) : failedReport(m_finder->errorString(), m_finder->errorUrl()));
 }
 
 } // namespace pou

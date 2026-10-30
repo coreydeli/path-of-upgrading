@@ -32,9 +32,9 @@ TradeReport reportOf(const TradeFinder::Found &found)
     return report;
 }
 
-TradeReport failedReport(const QString &why)
+TradeReport failedReport(const QString &why, const QUrl &url)
 {
-    return {.asked = true, .failed = true, .status = why};
+    return {.asked = true, .failed = true, .status = why, .url = url};
 }
 
 } // namespace pou

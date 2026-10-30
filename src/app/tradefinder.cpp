@@ -127,6 +127,7 @@ void TradeFinder::find(const Item &item, Kind kind)
     m_level = 0;
     m_found.reset();
     m_errorString.clear();
+    m_errorUrl.clear();
     m_busy = true;
     // while trade searches are off, the site isn't asked for its stats either
     if (m_data->data().stats.isEmpty() && m_searcher->unavailable().isEmpty()) {
@@ -352,7 +353,7 @@ void TradeFinder::answered()
         return send();
     }
     if (search->error() != TradeSearch::Error::None)
-        return fail(search->errorString());
+        return fail(search->errorString(), search->url());
     if (search->total() == 0 && m_plan.looser) {
         ++m_level;
         return send();
@@ -372,9 +373,10 @@ void TradeFinder::answered()
     Q_EMIT finished();
 }
 
-void TradeFinder::fail(const QString &why)
+void TradeFinder::fail(const QString &why, const QUrl &url)
 {
     m_errorString = why;
+    m_errorUrl = url;
     m_busy = false;
     Q_EMIT finished();
 }
