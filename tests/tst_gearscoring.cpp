@@ -102,6 +102,18 @@ private Q_SLOTS:
         QCOMPARE(changed.size(), 1);
     }
 
+    void alreadyPlaying()
+    {
+        Scoring s;
+        s.play(tester(u"es-caster"_s));
+        GearScoring later(&s.active);
+        QCOMPARE(later.character(), u"Tester"_s);
+        QCOMPARE(later.rowCount(), s.scoring.rowCount());
+        QVERIFY(later.rowCount() > 0);
+        QCOMPARE(later.index(0).data(GearScoring::LabelRole),
+                 s.scoring.index(0).data(GearScoring::LabelRole));
+    }
+
     void pickProfile()
     {
         Scoring s;
@@ -192,6 +204,8 @@ private Q_SLOTS:
         QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), 4);
         QVERIFY(s.scoring.isTweaked());
         QCOMPARE(dataChanged.size(), 1);
+        QCOMPARE(dataChanged.at(0).at(2).value<QList<int>>(),
+                 QList<int>({GearScoring::WhereRole, GearScoring::LevelRole}));
         QCOMPARE(reset.size(), 0);
 
         s.scoring.setLevel(u"Life"_s, 0);

@@ -329,6 +329,17 @@ private Q_SLOTS:
         QCOMPARE(message.size(), 0);
     }
 
+    void fileNamedWithSpaces()
+    {
+        Importer i;
+        const QString path = i.dir.filePath(u" .xml"_s);
+        QVERIFY(writeFile(path, ranger({}).toUtf8()));
+        i.importer.importFile(path);
+        QVERIFY2(!i.importer.hasFailed(), qUtf8Printable(i.importer.message()));
+        // so it's named after the build
+        QCOMPARE(i.store.find(i.list.current())->name, u"Ranger"_s);
+    }
+
     void badFiles()
     {
         Importer i;
@@ -339,6 +350,7 @@ private Q_SLOTS:
         QVERIFY(writeFile(i.dir.filePath(u"notes.txt"_s), "Swap to the staff for clearing."));
         i.importer.importFile(i.dir.filePath(u"notes.txt"_s));
         QCOMPARE(i.importer.message(), u"notes.txt isn't a Path of Building build."_s);
+        QVERIFY(i.importer.hasFailed());
 
         QVERIFY(writeFile(i.dir.filePath(u"Old.xml"_s), "<PathOfBuilding><Build/></PathOfBuilding>"));
         i.importer.importFile(i.dir.filePath(u"Old.xml"_s));
@@ -416,6 +428,16 @@ private Q_SLOTS:
         QCOMPARE(changed.size(), 4);
         QCOMPARE(i.importer.buildsFolder(), QString());
         QVERIFY(i.importer.builds().isEmpty());
+    }
+
+    void savedBuildsFromTheStart()
+    {
+        Importer i;
+        i.engine.setInstall({.folder = i.dir.filePath(u"pob"_s), .program = u"luajit"_s});
+        QVERIFY(writeFile(i.builds() + u"/Witch.xml"_s, "<PathOfBuilding2/>"));
+        BuildImporter later(&i.list, &i.engine, &i.network);
+        QCOMPARE(later.buildsFolder(), i.builds());
+        QCOMPARE(later.builds().size(), 1);
     }
 };
 

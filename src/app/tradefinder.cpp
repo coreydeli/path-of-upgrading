@@ -82,12 +82,16 @@ TradeFinder::TradeFinder(TradeSearcher *searcher, TradeDataStore *data, RatesSto
     , m_data(data)
     , m_rates(rates)
 {
-    connect(m_data, &TradeDataStore::refreshed, this, [this] {
-        if (m_waiting) {
-            m_waiting = false;
-            start();
-        }
-    });
+    // queued, so the app has taken the site's leagues from the data by then
+    connect(
+        m_data, &TradeDataStore::refreshed, this,
+        [this] {
+            if (m_waiting) {
+                m_waiting = false;
+                start();
+            }
+        },
+        Qt::QueuedConnection);
 }
 
 TradeFinder::~TradeFinder()
@@ -115,13 +119,8 @@ void TradeFinder::find(const Item &item, Kind kind)
     m_found.reset();
     m_errorString.clear();
     m_busy = true;
-    // and the site isn't asked for its stats either
-    if (const QString why = m_searcher->unavailable(); !why.isEmpty())
-        return failSoon(why);
-    // which come from their file the first time, and from poe.ninja again
-    // once they're an hour old
-    m_rates->refresh(m_searcher->league().tradeId());
-    if (m_data->data().stats.isEmpty()) {
+    // while trade searches are off, the site isn't asked for its stats either
+    if (m_data->data().stats.isEmpty() && m_searcher->unavailable().isEmpty()) {
         m_waiting = true;
         m_data->refresh();
         return;
@@ -139,10 +138,16 @@ void TradeFinder::cancel()
 
 void TradeFinder::start()
 {
+    // trade searches can be turned off while it waits for the stats
+    if (const QString why = m_searcher->unavailable(); !why.isEmpty())
+        return failSoon(why);
     if (m_data->data().stats.isEmpty()) {
         const QString why = m_data->errorString();
         return failSoon(why.isEmpty() ? u"Searches need the trade site's list of stats."_s : why);
     }
+    // which come from their file the first time, and from poe.ninja again
+    // once they're an hour old
+    m_rates->refresh(m_searcher->league().tradeId());
     send();
 }
 

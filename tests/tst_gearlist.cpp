@@ -4,6 +4,7 @@
 #include "app/settingsstore.h"
 #include "core/evaluation.h"
 #include "core/parser.h"
+#include "core/resists.h"
 #include "core/slots.h"
 #include "services/pobengine.h"
 
@@ -271,6 +272,44 @@ private Q_SLOTS:
         s.overlay.hotkey = u"F4"_s;
         g.settings.set(s);
         QCOMPARE(reset.size(), 1);
+    }
+
+    void scoresWithYourPriorities()
+    {
+        // short of fire resistance only
+        Character c = wearing({{u"Helmet"_s, helmet}});
+        ResistEntry entry;
+        for (const Element e : allElements)
+            entry.values[e] = 75.0;
+        entry.values[Element::Fire] = 30.0;
+        c.resists = snapshotResists(entry, c.gear, ResistSource::Manual);
+
+        PobPriorities first;
+        first.resistsFirst = true;
+        PobPriorities notFirst;
+        notFirst.resistsFirst = false;
+        const auto scoreWith = [&](const PobPriorities &priorities) {
+            return QString::number(gearScore(helmet, gearScoreOptions(c, u"Helmet"_s, priorities))->score);
+        };
+        QCOMPARE_NE(scoreWith(first), scoreWith(notFirst));
+
+        Gear g;
+        g.play(c);
+        Settings s = g.settings.settings();
+        s.pob.priorities = first;
+        g.settings.set(s);
+        QCOMPARE(g.in(u"Helmet"_s, GearList::ScoreRole).toString(), scoreWith(first));
+        s.pob.priorities = notFirst;
+        g.settings.set(s);
+        QCOMPARE(g.in(u"Helmet"_s, GearList::ScoreRole).toString(), scoreWith(notFirst));
+
+        // and the ones it started with
+        Settings started = g.settings.settings();
+        started.pob.priorities = first;
+        g.settings.set(started);
+        GearList later(&g.active, &g.settings);
+        const int row = int(g.slotNames().indexOf(u"Helmet"_s));
+        QCOMPARE(later.index(row).data(GearList::ScoreRole).toString(), scoreWith(first));
     }
 };
 

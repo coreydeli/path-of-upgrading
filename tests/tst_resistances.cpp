@@ -188,6 +188,39 @@ private Q_SLOTS:
         QCOMPARE(r.resists.summary(), u"Fire 80%, Cold 60%, Lightning 0%, Chaos 0%"_s);
     }
 
+    void alreadyThatWay()
+    {
+        Resists r;
+        r.play(withTheBuilds(), build);
+        QSignalSpy changed(&r.resists, &Resistances::changed);
+        r.resists.setFromSheet(false);
+        QCOMPARE(changed.size(), 0);
+
+        r.resists.setFromSheet(true);
+        const auto typedIn = changed.size();
+        QVERIFY(typedIn > 0);
+        r.resists.setFromSheet(true);
+        QCOMPARE(changed.size(), typedIn);
+    }
+
+    void buildWithoutResistances()
+    {
+        Resists r;
+        r.play(tester(), build);
+        r.resists.setFromSheet(false);
+        QVERIFY(!r.resists.isKnown());
+        QVERIFY(!r.saved());
+    }
+
+    void alreadyPlaying()
+    {
+        Resists r;
+        r.play(withTheBuilds());
+        Resistances later(&r.active);
+        QVERIFY(later.isKnown());
+        QCOMPARE(later.summary(), u"Fire 80%, Cold 60%"_s);
+    }
+
     void backToNone()
     {
         Resists r;
@@ -224,6 +257,26 @@ private Q_SLOTS:
         r.resists.setMargin(-1);
         QCOMPARE(r.resists.maximum(), 78.0);
         QCOMPARE(r.resists.margin(), 0.0);
+
+        // and numbers only
+        r.resists.setMaximum(qQNaN());
+        r.resists.setMaximum(qInf());
+        r.resists.setMargin(qQNaN());
+        r.resists.setMargin(qInf());
+        QCOMPARE(r.resists.maximum(), 78.0);
+        QCOMPARE(r.resists.margin(), 0.0);
+    }
+
+    void sameMaximumAndMargin()
+    {
+        Resists r;
+        r.play(withTheBuilds(), build);
+        r.resists.setMaximum(78);
+        r.resists.setMargin(12);
+        QSignalSpy changed(&r.resists, &Resistances::changed);
+        r.resists.setMaximum(78);
+        r.resists.setMargin(12);
+        QCOMPARE(changed.size(), 0);
     }
 
     void cantSave()

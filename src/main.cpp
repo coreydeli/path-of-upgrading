@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     KLocalization::setupLocalizedContext(&engine);
-    // which goes before the engine its popup is from
+    // made after the engine so it goes first, as its popup and results windows come from the engine
     pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::createSecretStore(),
                   std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
     const std::unique_ptr<pou::Tray> tray = pou::createTray();
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     desktop.reportProblems();
 
     const int exitCode = app.exec();
-    // The window reads from the app, which goes before the engine does.
+    // The main window reads from the app, so it goes before the app does.
     qDeleteAll(engine.rootObjects());
     return exitCode;
 }

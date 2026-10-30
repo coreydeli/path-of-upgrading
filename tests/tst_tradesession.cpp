@@ -115,6 +115,22 @@ private Q_SLOTS:
         QCOMPARE(s.cookie(), QByteArray());
     }
 
+    void spaceAroundTheSavedOne()
+    {
+        Signing s;
+        s.store.secrets.insert(secretName, u" "_s + fakeId + u"\n"_s);
+        s.session.load();
+        QVERIFY(s.settled());
+        QVERIFY(s.session.isSaved());
+        QCOMPARE(s.cookie(), "POESESSID=" + fakeId.toLatin1());
+        QCOMPARE(s.idChanged.size(), 1);
+
+        // it's the same one without the space
+        s.session.save(fakeId);
+        QVERIFY(s.settled());
+        QCOMPARE(s.idChanged.size(), 1);
+    }
+
     void keyringFailsToRead()
     {
         Signing s;
@@ -194,8 +210,10 @@ private Q_SLOTS:
     {
         QFETCH(QString, text);
         Signing s;
+        QSignalSpy changed(&s.session, &TradeSession::changed);
         s.session.save(text);
         QVERIFY(!s.session.isBusy());
+        QCOMPARE(changed.size(), 1);
         QCOMPARE(s.session.error(), u"That isn't a session ID. It's only letters and digits."_s);
         QCOMPARE(s.store.writes, 0);
         QVERIFY(!s.session.isSaved());

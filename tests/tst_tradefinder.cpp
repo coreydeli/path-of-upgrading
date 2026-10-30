@@ -1009,6 +1009,42 @@ private Q_SLOTS:
         QCOMPARE(site.network.sent.size(), 4);
     }
 
+    void waitsForTheLeagues()
+    {
+        // which the app gives the searcher as the data comes in, after the finder
+        // has heard of it, and the search is for the league they name
+        Site site;
+        site.searcher.setLeagues({});
+        connect(&site.data, &TradeDataStore::refreshed, &site.searcher,
+                [&site] { site.searcher.setLeagues(site.data.leagues()); });
+        site.network.answers = {{.body = json(tradefixtures::stats())},
+                                {.body = json(tradefixtures::filters())},
+                                {.body = json(leagues())},
+                                found(u"s1"_s, 5)};
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.finder.found()->league, u"Runes of Aldur"_s);
+        QCOMPARE(site.finder.found()->url, tradeResultsUrl(u"Runes of Aldur"_s, u"s1"_s));
+        // and the rates are that league's, the only ones asked for
+        QCOMPARE(site.ninja.sent.size(), 1);
+        QCOMPARE(site.ninja.sent.at(0).request.url(), ninjaCurrencyUrl(u"Runes of Aldur"_s));
+    }
+
+    void turnedOffWhileWaiting()
+    {
+        // for the stats, so poe.ninja isn't asked for rates either
+        Site site;
+        site.network.answers = {{.body = json(tradefixtures::stats())},
+                                {.body = json(tradefixtures::filters())},
+                                {.body = json(leagues())}};
+        QSignalSpy finished(&site.finder, &TradeFinder::finished);
+        site.finder.find(helmet, Kind::Similar);
+        site.searcher.setSettings({.enabled = false});
+        QVERIFY(finished.wait());
+        QCOMPARE(site.finder.errorString(), u"Trade searches are turned off in the settings."_s);
+        QVERIFY(site.ninja.sent.isEmpty());
+        QCOMPARE(site.network.sent.size(), 3);
+    }
+
     void noStats()
     {
         Site site;

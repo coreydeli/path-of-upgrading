@@ -184,8 +184,13 @@ private Q_SLOTS:
         ItemReader reader(&game);
         QSignalSpy slow(&reader, &ItemReader::slow);
         reader.read();
+        // not at once, and only the once
+        QTest::qWait(50);
+        QCOMPARE(slow.size(), 0);
         QVERIFY(slow.wait(1000));
         QVERIFY(reader.isReading());
+        QTest::qWait(600);
+        QCOMPARE(slow.size(), 1);
     }
 
     void quickGame()

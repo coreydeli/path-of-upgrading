@@ -124,6 +124,7 @@ private Q_SLOTS:
     {
         Picking p;
         QCOMPARE(p.picker.rowCount(), 0);
+        QSignalSpy messageChanged(&p.picker, &StatPicker::messageChanged);
         p.picker.refresh();
         QCOMPARE(p.keys(), properties);
         QCOMPARE(p.of(u"[Base] Armour"_s, StatPicker::NameRole).toString(), u"Armour"_s);
@@ -135,6 +136,11 @@ private Q_SLOTS:
                  u"The trade site's list of stats comes with trade search, so here are only "
                  u"the item's own and those on the items you've checked."_s);
         QVERIFY(p.network.sent.isEmpty());
+
+        // said once, as it's the same the next time
+        QCOMPARE(messageChanged.size(), 1);
+        p.picker.refresh();
+        QCOMPARE(messageChanged.size(), 1);
     }
 
     void siteStats()
@@ -255,6 +261,13 @@ private Q_SLOTS:
         p.picker.setQuery(u"fire  life"_s);
         QCOMPARE(reset.size(), 0);
         QCOMPARE(p.picker.query(), u"fire  life"_s);
+        QCOMPARE(queryChanged.size(), 5);
+        p.picker.setQuery(u"fire  life"_s);
+        QCOMPARE(queryChanged.size(), 5);
+
+        // whatever the space is
+        p.picker.setQuery(u"fire\t res"_s);
+        QCOMPARE(p.keys(), QStringList({fire}));
 
         p.picker.setQuery(QString());
         QCOMPARE(p.picker.rowCount(), properties.size() + 4);
@@ -287,6 +300,16 @@ private Q_SLOTS:
         p.picker.setTaken({life, u"[Base] Spirit"_s});
         QCOMPARE(takenChanged.size(), 1);
         QCOMPARE(p.picker.taken(), QStringList({life, u"[Base] Spirit"_s}));
+    }
+
+    void takenWithNothingListed()
+    {
+        Picking p;
+        QSignalSpy dataChanged(&p.picker, &StatPicker::dataChanged);
+        QSignalSpy takenChanged(&p.picker, &StatPicker::takenChanged);
+        p.picker.setTaken({life});
+        QCOMPARE(takenChanged.size(), 1);
+        QCOMPARE(dataChanged.size(), 0);
     }
 };
 

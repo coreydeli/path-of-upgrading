@@ -850,6 +850,30 @@ private Q_SLOTS:
                  (QJsonObject{{u"max"_s, 400}, {u"option"_s, u"exalted"_s}}));
     }
 
+    void findsBeforeTheSiteHasAnswered()
+    {
+        // the first time, so the search waits for the site's data and goes to the
+        // league it names, with the rates for that league and no other
+        Folders folders;
+        Character character;
+        character.weights = {{u"# to maximum Life"_s, 1}};
+        Settings settings;
+        settings.character = folders.add(character);
+        folders.set(settings);
+        FakeNetwork *sites = online();
+        sites->answers << FakeAnswer{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"};
+        Running r(folders, desktop(), sites);
+        r.checked();
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
+        QVERIFY(finished.wait());
+        QVERIFY(r.app.finder().errorString().isEmpty());
+        QCOMPARE(r.app.finder().found()->league, u"Runes of Aldur"_s);
+        QCOMPARE(r.asked(), (QList<QUrl>{tradeDataUrl(u"stats"_s), tradeDataUrl(u"filters"_s),
+                                         tradeDataUrl(u"leagues"_s), ninjaCurrencyUrl(u"Runes of Aldur"_s),
+                                         tradeSearchUrl(u"Runes of Aldur"_s)}));
+    }
+
     void tradeResults()
     {
         // the listings of what the popup searched for, which the site is only

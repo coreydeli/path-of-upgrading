@@ -138,6 +138,17 @@ private Q_SLOTS:
         QCOMPARE(judge.checks().at(1).evaluation.comparison.verdict, Verdict::Equipped);
     }
 
+    void nothingToJudgeAgain()
+    {
+        // which isn't a change to tell the list about
+        ListingJudge judge;
+        QSignalSpy checked(&judge, &ListingJudge::checked);
+        judge.setCharacter(wearingOld, std::nullopt);
+        judge.setSettings({.enabled = false});
+        judge.setPob(nullptr);
+        QCOMPARE(checked.size(), 0);
+    }
+
     void asksPathOfBuildingAFewAtATime()
     {
         WithPob p;
@@ -245,13 +256,14 @@ private Q_SLOTS:
         QVERIFY(p.engine.findChildren<PobReply *>().isEmpty());
 
         // so the answer to that one isn't taken for the next
-        QVERIFY(p.pob.answers(tried({asHelmet(weaker)})));
+        QVERIFY(p.pob.answers(tried({asHelmet(weaker), asHelmet(tougher)})));
         QSignalSpy checked(&p.judge, &ListingJudge::checked);
-        p.judge.add({helmet(u"Grim Ward"_s, 10)});
+        p.judge.add({helmet(u"Grim Ward"_s, 10), helmetNew});
         QVERIFY(checked.wait());
         QCOMPARE(checked.size(), 1);
-        QCOMPARE(p.judge.checks().size(), 1);
+        QCOMPARE(p.judge.checks().size(), 2);
         QCOMPARE(p.judge.checks().at(0).evaluation.comparison.verdict, Verdict::Downgrade);
+        QCOMPARE(p.judge.checks().at(1).evaluation.comparison.verdict, Verdict::Upgrade);
     }
 
     void judgesAgainWhileItAsks()
@@ -288,6 +300,16 @@ private Q_SLOTS:
         QCOMPARE(p.judge.checks().at(0).pob, Pob::NoBuild);
         p.judge.setPob(nullptr);
         QCOMPARE(p.judge.checks().at(0).pob, Pob::Unused);
+    }
+
+    void turnedOffBeforeItsGiven()
+    {
+        WithPob p;
+        p.judge.setSettings({.enabled = false});
+        p.judge.setPob(&p.engine);
+        p.judge.add({helmetNew});
+        QCOMPARE(p.judge.checks().at(0).pob, Pob::Unused);
+        QVERIFY(p.engine.findChildren<PobReply *>().isEmpty());
     }
 
     void yourSettings()

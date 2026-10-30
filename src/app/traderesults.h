@@ -74,10 +74,10 @@ ResultVerdict resultVerdict(const ItemCheck &check);
 
 // The listings of the last trade search the popup ran, as the results window
 // shows them. Each search replaces the last one's, even when it found none,
-// and one that failed or was called off leaves them. Nothing is asked of the trade site
-// until ask() says you want to see them, and then only the first page. The
-// next ones come with loadMore(). Each is judged for the character you play,
-// see judge().
+// and one that failed or was called off leaves them. Nothing is asked of the
+// trade site until ask() says you want to see them, and then only the first
+// page. The next ones come with loadMore(). Each is judged for the character
+// you play, see judge().
 class TradeResults : public QAbstractListModel
 {
     Q_OBJECT
@@ -128,9 +128,11 @@ public:
     void setSearch(const TradeFinder::Found &found);
 
     // Asks for the first page of the listings, unless it has them or there
-    // are none. It does nothing while trade searches are off.
+    // are none. While trade searches are off it asks nothing, and the error
+    // says why.
     Q_INVOKABLE void ask();
-    // Asks for the next page, ten more.
+    // Asks for the next page, ten more, unless one is on its way. Trade
+    // searches being off is the same as for ask().
     Q_INVOKABLE void loadMore();
 
     bool hasSearched() const { return m_searched; }

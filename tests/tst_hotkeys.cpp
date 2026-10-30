@@ -59,6 +59,18 @@ private Q_SLOTS:
         QCOMPARE(hotkeys.key(Hotkey::Check), QString());
     }
 
+    void withoutTheService()
+    {
+        FakeGlobalShortcuts shortcuts;
+        Hotkeys hotkeys(&shortcuts);
+        QVERIFY(hotkeys.isAvailable());
+        QCOMPARE(hotkeys.errorString(), QString());
+
+        shortcuts.available = false;
+        QVERIFY(!hotkeys.isAvailable());
+        QCOMPARE(hotkeys.errorString(), u"It's off."_s);
+    }
+
     void pressed()
     {
         FakeGlobalShortcuts shortcuts;
