@@ -39,6 +39,9 @@ public:
     // screen. Taking the mouse away only counts when it's next to the mouse.
     void shown(const QString &screen, const QRect &geometry, bool byMouse);
     void setHovered(bool hovered);
+    // Whether the mouse is on the popup or a few pixels off it, where the game
+    // sees the popup and not what's under it.
+    bool isInTheWay() const;
     // Stops it all, as the popup has gone some other way.
     void hidden();
 

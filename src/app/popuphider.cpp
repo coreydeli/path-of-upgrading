@@ -8,6 +8,8 @@ namespace {
 
 // how far from the popup the mouse can go and still be near it
 constexpr int nearby = 260;
+// how far off it the mouse can be and still have the game see the popup
+constexpr int margin = 4;
 
 } // namespace
 
@@ -50,6 +52,18 @@ void PopupHider::setHovered(bool hovered)
         m_hide.stop();
     else if (m_shown)
         m_hide.start(m_timeouts.left);
+}
+
+bool PopupHider::isInTheWay() const
+{
+    if (!m_shown)
+        return false;
+    // the mouse isn't known over the popup itself
+    if (m_hovered)
+        return true;
+    const std::optional<ScreenPoint> mouse = m_input->mouse();
+    return mouse && mouse->screen == m_screen &&
+           m_geometry.adjusted(-margin, -margin, margin, margin).contains(mouse->position);
 }
 
 void PopupHider::hidden()

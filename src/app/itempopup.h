@@ -84,6 +84,9 @@ public:
     void setWearError(const QString &why);
 
     bool isVisible() const;
+    // Whether the mouse is on it, or close enough for the game to see it and
+    // not the item under it.
+    bool isInTheWay() const { return m_hider.isInTheWay(); }
     // Null until it's first shown, or when it couldn't be made.
     QQuickWindow *window() const { return m_window.get(); }
 
