@@ -94,6 +94,8 @@ QVariant TradeResults::data(const QModelIndex &index, int role) const
         return listing.account;
     case OnlineRole:
         return listing.online;
+    case InstantBuyoutRole:
+        return listing.instantBuyout;
     case ListedRole:
         return listedAgo(listing.indexed, QDateTime::currentDateTimeUtc());
     case BaseRole:
@@ -113,9 +115,16 @@ QVariant TradeResults::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> TradeResults::roleNames() const
 {
     return {
-        {PriceRole, "price"},   {ConvertedRole, "converted"}, {AccountRole, "account"},
-        {OnlineRole, "online"}, {ListedRole, "listed"},       {NameRole, "name"},
-        {BaseRole, "base"},     {ModsRole, "mods"},           {VerdictRole, "verdict"},
+        {PriceRole, "price"},
+        {ConvertedRole, "converted"},
+        {AccountRole, "account"},
+        {OnlineRole, "online"},
+        {InstantBuyoutRole, "instantBuyout"},
+        {ListedRole, "listed"},
+        {NameRole, "name"},
+        {BaseRole, "base"},
+        {ModsRole, "mods"},
+        {VerdictRole, "verdict"},
     };
 }
 

@@ -249,7 +249,7 @@ private Q_SLOTS:
         const QString indexed = QDateTime::currentDateTimeUtc().addSecs(-5 * 60).toString(Qt::ISODate);
         QJsonArray result;
         result << helmet(u"x1"_s, price(3, u"divine"_s), indexed);
-        result << helmet(u"x2"_s, price(50, u"exalted"_s), {}, {});
+        result << instantBuyout(helmet(u"x2"_s, price(50, u"exalted"_s), {}, {}));
         result << helmet(u"x3"_s, {}, {}, u"Iron Hat"_s);
         site.network.answers = {{.body = json({{u"result"_s, result}})}};
         site.results.setSearch(foundBy(3));
@@ -262,6 +262,7 @@ private Q_SLOTS:
         QCOMPARE(site.text(0, Role::PriceRole), u"3 div"_s);
         QCOMPARE(site.text(0, Role::AccountRole), u"Sellerx1#1234"_s);
         QVERIFY(site.results.data(site.results.index(0), Role::OnlineRole).toBool());
+        QVERIFY(!site.results.data(site.results.index(0), Role::InstantBuyoutRole).toBool());
         QCOMPARE(site.text(0, Role::ListedRole), u"5 minutes ago"_s);
         QCOMPARE(site.text(0, Role::NameRole), u"Grim Ward"_s);
         QCOMPARE(site.text(0, Qt::DisplayRole), u"Grim Ward"_s);
@@ -276,6 +277,9 @@ private Q_SLOTS:
         QCOMPARE(site.text(1, Role::ListedRole), QString());
         QCOMPARE(site.text(1, Role::NameRole), u"Iron Hat"_s);
         QCOMPARE(site.text(1, Role::BaseRole), QString());
+        // which is an instant buyout, with the seller being there or not
+        QVERIFY(site.results.data(site.results.index(1), Role::InstantBuyoutRole).toBool());
+        QVERIFY(!site.results.data(site.results.index(2), Role::InstantBuyoutRole).toBool());
         QCOMPARE(site.text(2, Role::PriceRole), u"no price"_s);
         // a base type that is its name is shown once
         QCOMPARE(site.text(2, Role::NameRole), u"Iron Hat"_s);
@@ -286,6 +290,7 @@ private Q_SLOTS:
         QCOMPARE(names.value(Role::ConvertedRole), "converted"_ba);
         QCOMPARE(names.value(Role::AccountRole), "account"_ba);
         QCOMPARE(names.value(Role::OnlineRole), "online"_ba);
+        QCOMPARE(names.value(Role::InstantBuyoutRole), "instantBuyout"_ba);
         QCOMPARE(names.value(Role::ListedRole), "listed"_ba);
         QCOMPARE(names.value(Role::NameRole), "name"_ba);
         QCOMPARE(names.value(Role::BaseRole), "base"_ba);

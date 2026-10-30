@@ -15,6 +15,7 @@ Item {
     required property string converted
     required property string account
     required property bool online
+    required property bool instantBuyout
     required property string listed
     required property var mods
     required property resultVerdict verdict
@@ -204,11 +205,14 @@ Item {
                 text: row.account
             }
 
+            // an instant buyout is bought whether the seller is there or not
             ToneLabel {
+                readonly property bool reachable: row.instantBuyout || row.online
+
                 font: Kirigami.Theme.smallFont
-                text: row.online ? qsTr("Online") : qsTr("Offline")
-                tone: row.online ? Tone.Good : Tone.Plain
-                opacity: row.online ? 1 : 0.7
+                text: row.instantBuyout ? qsTr("Instant buyout") : row.online ? qsTr("Online") : qsTr("Offline")
+                tone: reachable ? Tone.Good : Tone.Plain
+                opacity: reachable ? 1 : 0.7
                 colorblind: row.colorblind
             }
 

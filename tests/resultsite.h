@@ -49,13 +49,25 @@ inline QJsonObject helmet(const QString &id, const QJsonObject &price, const QSt
 {
     const QJsonObject account{{u"name"_s, u"Seller%1#1234"_s.arg(id)},
                               {u"online"_s, QJsonObject{{u"league"_s, league}}}};
-    const QJsonObject listing{{u"indexed"_s, indexed}, {u"account"_s, account}, {u"price"_s, price}};
+    const QJsonObject listing{{u"indexed"_s, indexed},
+                              {u"account"_s, account},
+                              {u"price"_s, price},
+                              {u"whisper"_s, u"@Sellerx Hi, I would like to buy your Grim Ward"_s}};
     const QJsonObject item{{u"rarity"_s, u"Rare"_s},
                            {u"name"_s, name},
                            {u"typeLine"_s, u"Iron Hat"_s},
                            {u"ilvl"_s, 80},
                            {u"explicitMods"_s, QJsonArray{u"+80 to maximum Life"_s, u"Cannot be Frozen"_s}}};
     return {{u"id"_s, id}, {u"listing"_s, listing}, {u"item"_s, item}};
+}
+
+// The same listing as an instant buyout, which has no whisper.
+inline QJsonObject instantBuyout(QJsonObject result)
+{
+    QJsonObject listing = result.value(u"listing"_s).toObject();
+    listing.remove(u"whisper"_s);
+    result.insert(u"listing"_s, listing);
+    return result;
 }
 
 // What the site answers to a fetch of those ids, null for those it has sold.

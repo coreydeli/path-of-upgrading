@@ -108,11 +108,12 @@ public:
         ConvertedRole,                // "about 2100 ex", empty without a rate or when it says no more
         AccountRole,                  // "name#1234"
         OnlineRole,
-        ListedRole,  // "5 minutes ago"
-        NameRole,    // its base type for one without a name
-        BaseRole,    // empty when that's its name
-        ModsRole,    // a list of resultMod
-        VerdictRole, // a resultVerdict
+        InstantBuyoutRole, // bought without the seller, who needn't be online
+        ListedRole,        // "5 minutes ago"
+        NameRole,          // its base type for one without a name
+        BaseRole,          // empty when that's its name
+        ModsRole,          // a list of resultMod
+        VerdictRole,       // a resultVerdict
     };
 
     // They have to outlive it. The rates turn prices into exalts or divines.

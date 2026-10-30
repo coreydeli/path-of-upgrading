@@ -293,6 +293,31 @@ private Q_SLOTS:
         QCOMPARE(offline->property("tone").toInt(), int(Tone::Plain));
     }
 
+    void instantBuyouts()
+    {
+        Panel p;
+        // which says so, with the seller away or not
+        QJsonObject gone = instantBuyout(helmet(u"x2"_s, price(3, u"divine"_s)));
+        QJsonObject listing = gone[u"listing"_s].toObject();
+        QJsonObject account = listing[u"account"_s].toObject();
+        account.remove(u"online"_s);
+        listing[u"account"_s] = account;
+        gone[u"listing"_s] = listing;
+        p.site.network.answers = {
+            {.body = json({{u"result"_s, QJsonArray{helmet(u"x1"_s, price(3, u"divine"_s)), gone}}})}};
+        p.site.results.setSearch(foundBy(2));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 2);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+
+        const QQuickItem *instant = shown(p.window(), u"Instant buyout"_s);
+        QVERIFY(instant);
+        QCOMPARE(toneOf(instant), int(Tone::Good));
+        QVERIFY(shown(p.window(), u"Online"_s));
+        QVERIFY(!shown(p.window(), u"Offline"_s));
+    }
+
     void ratesComeLater()
     {
         // and the prices are worked out when they do
