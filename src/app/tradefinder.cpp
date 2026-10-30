@@ -4,6 +4,8 @@
 #include "core/budget.h"
 #include "core/evaluation.h"
 #include "core/tradequery.h"
+#include "services/logging.h"
+#include "services/pobengine.h"
 #include "services/ratesstore.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
@@ -59,6 +61,9 @@ constexpr std::array gearSizes = {GearSize{40, false, true}, GearSize{20, true, 
                                   GearSize{6, true, false, true}};
 // which is all the site takes signed out
 constexpr int smallest = int(gearSizes.size()) - 1;
+// And for one weighed by Path of Building, which has only the weighted sum
+// and your damage mods.
+constexpr std::array pobSizes = {30, 15, 10, 7, 5, 3};
 
 // What a gear search looks at.
 QString scoredBy(const GearSearch &search)
@@ -101,10 +106,14 @@ TradeFinder::~TradeFinder()
 {
     // calls off what's still asked for
     delete m_search;
+    delete m_weighing;
 }
 
 void TradeFinder::setSettings(const Settings &settings)
 {
+    // which says what the mods are weighed by
+    if (settings.pob.damageWeight != m_settings.pob.damageWeight)
+        m_weighings.clear();
     m_settings = settings;
 }
 
@@ -117,6 +126,20 @@ void TradeFinder::setSignedIn(bool signedIn)
 {
     m_signedIn = signedIn;
     m_size = signedIn ? 0 : smallest;
+    m_pobSize = 0;
+}
+
+void TradeFinder::setPob(PobEngine *pob)
+{
+    m_pob = pob;
+}
+
+void TradeFinder::setBuild(const std::optional<PobBuild> &build, const std::optional<PobStats> &stats)
+{
+    if (stats != m_buildStats)
+        m_weighings.clear();
+    m_build = build;
+    m_buildStats = stats;
 }
 
 void TradeFinder::find(const Item &item, Kind kind)
@@ -142,6 +165,7 @@ void TradeFinder::cancel()
 {
     ++m_finds;
     delete m_search;
+    delete m_weighing;
     m_waiting = false;
     m_busy = false;
 }
@@ -158,7 +182,27 @@ void TradeFinder::start()
     // which come from their file the first time, and from poe.ninja again
     // once they're an hour old
     m_rates->refresh(m_searcher->league().tradeId());
+    // once for each slot
+    if (const QString slot = pobWeighedSlot(); !slot.isEmpty() && !m_weighings.contains(slot))
+        return weigh(slot);
     send();
+}
+
+void TradeFinder::weigh(const QString &slot)
+{
+    m_weighing = m_pob->weigh(pobSlot(slot, m_build->swapInUse),
+                              pobSearchStats(*m_buildStats, m_settings.pob.damageWeight));
+    connect(m_weighing, &PobReply::finished, this, [this, slot] {
+        const std::unique_ptr<PobReply> reply(m_weighing.data());
+        m_weighing.clear();
+        // and without it, the search goes by the gear score
+        if (reply->errorString().isEmpty())
+            m_weighings.insert(slot, readPobWeighing(reply->answer()));
+        else
+            qCWarning(lcPob, "Path of Building couldn't weigh the mods for %s: %s", qUtf8Printable(slot),
+                      qUtf8Printable(reply->errorString()));
+        send();
+    });
 }
 
 TradeFinder::Plan TradeFinder::plan() const
@@ -178,6 +222,8 @@ TradeFinder::Plan TradeFinder::plan() const
 
 TradeFinder::Plan TradeFinder::upgradePlan() const
 {
+    if (std::optional<Plan> plan = pobPlan())
+        return *plan;
     const PobPriorities &priorities = m_settings.pob.priorities;
     const Evaluation evaluation = evaluate(m_item, m_character, priorities, {});
     // There's no gear score without a build profile, or for flasks and
@@ -234,6 +280,75 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
     else
         plan.note = u"Nothing better is listed right now, so these come within %1% of yours."_s.arg(
             qRound((1 - level.share) * 100));
+    return plan;
+}
+
+// The slot an upgrade search is for, when Path of Building is to weigh it, or
+// else empty.
+QString TradeFinder::pobWeighedSlot() const
+{
+    if (m_kind != Kind::Upgrades || !m_signedIn || !m_pob || !m_settings.pob.enabled || !m_build ||
+        !m_buildStats)
+        return {};
+    // its searches are for gear
+    if (m_item.slot == u"Charm" || m_item.slot.endsWith(u" Flask"))
+        return {};
+    // of your rings, the one it would take the place of
+    QString slot = evaluate(m_item, m_character, m_settings.pob.priorities, {}).comparison.targetSlot;
+    if (slot.isEmpty())
+        slot = m_item.slot;
+    return pobSlot(slot, m_build->swapInUse).isEmpty() ? QString() : slot;
+}
+
+// Once Path of Building has weighed the mods for the slot, and when some of
+// them are on the trade site.
+std::optional<TradeFinder::Plan> TradeFinder::pobPlan() const
+{
+    const QString slot = pobWeighedSlot();
+    const auto weighing = m_weighings.constFind(slot);
+    if (slot.isEmpty() || weighing == m_weighings.cend())
+        return std::nullopt;
+
+    const PobVerdictOptions verdict{.damageWeight = m_settings.pob.damageWeight,
+                                    .priorities = m_settings.pob.priorities,
+                                    .ignoreChaos = m_character.chaosInoculation};
+    PobSearchOptions options;
+    options.status = m_settings.trade.status;
+    options.ignoreRules = m_character.ignored;
+    options.itemClass = m_item.itemClass;
+    options.category = weighing->category;
+    options.min = weighing->min;
+    options.maxFilters = pobSizes.at(m_pobSize);
+    if (verdict.priorities.resistsFirst)
+        options.shortResists = resistsUnderCap(*m_buildStats, verdict);
+    // which a looser one can do without
+    if (m_level == 0)
+        options.worn = m_character.gear.value(slot).stats.keys();
+    const PobSearch search = pobSearch(weighing->mods, m_data->data(), options);
+    if (search.filters == 0)
+        return std::nullopt;
+
+    Plan plan{
+        .body = search.body,
+        .title = u"Better for your build than %1, by Path of Building"_s.arg(m_item.name),
+        .looser = search.needDamage > 0,
+        .shrinks = true,
+        .pob = true,
+    };
+    QStringList notes;
+    if (m_level > 0)
+        notes << u"Nothing listed keeps your damage mods, so these may give up some damage."_s;
+    notes << u"Weighed by Path of Building for your build's damage and effective HP."_s;
+    if (search.dropped > 0)
+        notes << u"The trade site limits how many filters a search can have, so it looks at the %1 mods "
+                 u"that count most."_s.arg(search.filters);
+    if (search.needDamage > 0)
+        notes << u"Each has at least %1 of your build's best damage mods, as yours does."_s.arg(
+            search.needDamage);
+    if (search.resistsBoosted)
+        notes << u"Resistances under the cap count for more."_s;
+    notes << u"Best for your build first."_s;
+    plan.note = notes.join(u' ');
     return plan;
 }
 
@@ -347,9 +462,10 @@ void TradeFinder::answered()
     const std::unique_ptr<TradeSearch> search(m_search.data());
     m_search.clear();
     if (search->error() == TradeSearch::Error::TooComplex && m_plan.shrinks) {
-        if (m_size == smallest)
+        int &size = m_plan.pob ? m_pobSize : m_size;
+        if (size == (m_plan.pob ? int(pobSizes.size()) : smallest + 1) - 1)
             return fail(u"The trade site says this search has too many filters even at its smallest."_s);
-        ++m_size;
+        ++size;
         return send();
     }
     if (search->error() != TradeSearch::Error::None)

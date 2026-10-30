@@ -4,6 +4,7 @@
 #include "core/numbers.h"
 #include "core/statnorm.h"
 
+#include <QHash>
 #include <QJsonArray>
 #include <QRegularExpression>
 #include <QSet>
@@ -142,6 +143,36 @@ void appendOnce(QStringList &list, const QString &value)
 {
     if (!list.contains(value))
         list << value;
+}
+
+// The resistances a mod adds to, by our key for it: "#% to Fire and Cold
+// Resistances" adds to two.
+QList<Element> resistsOf(const QString &key)
+{
+    static const QRegularExpression resist(
+        uR"(^#% to (all Elemental Resistances|(Fire|Cold|Lightning|Chaos)(?: and (Fire|Cold|Lightning|Chaos))? Resistances?)$)"_s);
+    const QRegularExpressionMatch m = resist.match(key);
+    if (!m.hasMatch())
+        return {};
+    QList<Element> out;
+    for (Element e : allElements) {
+        const QString name = elementName(e);
+        const bool allElemental = m.captured(2).isEmpty() && e != Element::Chaos;
+        if (allElemental || m.captured(2) == name || m.captured(3) == name)
+            out << e;
+    }
+    return out;
+}
+
+// Near enough, the mods that add to your damage rather than keep you alive.
+bool isDamageMod(const QString &key)
+{
+    static const QRegularExpression damage(
+        uR"(damage|critical|attack speed|cast speed|cooldown|level of|minions? (deal|have))"_s,
+        QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression defence(uR"(resistances?$|energy shield|armour|evasion|life|mana)"_s,
+                                            QRegularExpression::CaseInsensitiveOption);
+    return damage.match(key).hasMatch() && !defence.match(key).hasMatch();
 }
 
 } // namespace
@@ -601,6 +632,122 @@ GearSearch gearSearch(const Item &item, const QList<SearchWeight> &weights, cons
     // best for your build first; the results window can sort by price
     result.body = result.countOnly ? searchBody(query, u"price"_s, u"asc"_s)
                                    : searchBody(query, u"statgroup.0"_s, u"desc"_s);
+    return result;
+}
+
+PobSearch pobSearch(const QList<ModWeight> &mods, const TradeData &data, const PobSearchOptions &options)
+{
+    struct Weighted
+    {
+        QString id;
+        QString key;
+        double weight = 0;
+    };
+
+    QHash<QString, const TradeStat *> byId;
+    for (const TradeStat &s : data.stats.all())
+        byId.insert(s.id, &s);
+
+    PobSearch result;
+    QList<Weighted> weighted;
+    for (const ModWeight &m : mods) {
+        const TradeStat *stat = byId.value(m.id);
+        if (!stat) {
+            result.unmatched << m.id;
+            continue;
+        }
+        const QString key = keyForm(stat->text);
+        if (std::isfinite(m.weight) && m.weight > 0 && !isIgnored(options.ignoreRules, key))
+            weighted.append({m.id, key, m.weight});
+    }
+
+    // what adds to a resistance you're short of is worth at least half the best mod
+    QList<Element> shortOf;
+    for (Element e : options.shortResists) {
+        if (!isIgnored(options.ignoreRules, resistKey(e)))
+            shortOf << e;
+    }
+    if (!shortOf.isEmpty() && !weighted.isEmpty()) {
+        double best = 0;
+        double bestOfAll = 0;
+        for (const Weighted &w : std::as_const(weighted)) {
+            bestOfAll = std::max(bestOfAll, w.weight);
+            if (w.key.contains(u"#%") && resistsOf(w.key).isEmpty())
+                best = std::max(best, w.weight);
+        }
+        const double boost = (best > 0 ? best : bestOfAll) / 2;
+        for (const TradeStat &s : data.stats.all()) {
+            if (s.type != u"explicit" && s.type != u"implicit")
+                continue;
+            const QString key = keyForm(s.text);
+            const QList<Element> adds = resistsOf(key);
+            if (std::ranges::none_of(adds, [&shortOf](Element e) { return shortOf.contains(e); }) ||
+                isIgnored(options.ignoreRules, key))
+                continue;
+            const auto it = std::ranges::find(weighted, s.id, &Weighted::id);
+            if (it == weighted.end())
+                weighted.append({s.id, key, boost});
+            else
+                it->weight = std::max(it->weight, boost);
+            result.resistsBoosted = true;
+        }
+    }
+
+    std::stable_sort(weighted.begin(), weighted.end(),
+                     [](const Weighted &a, const Weighted &b) { return a.weight > b.weight; });
+    const qsizetype maxFilters = options.maxFilters;
+
+    // the build's best damage mods, and how many of them yours has
+    QSet<QString> worn;
+    for (const QString &key : options.worn)
+        worn.insert(normalizeStat(key));
+    QJsonArray damage;
+    int own = 0;
+    const qsizetype most = std::clamp(maxFilters / 4, qsizetype(2), qsizetype(8));
+    for (const Weighted &w : std::as_const(weighted)) {
+        if (damage.size() == most)
+            break;
+        if (!isDamageMod(w.key))
+            continue;
+        damage.append(statFilter(w.id, {}));
+        own += worn.contains(normalizeStat(w.key)) ? 1 : 0;
+    }
+    result.needDamage = std::min(2, own);
+
+    // which count toward the site's limit too
+    const qsizetype room = std::max(qsizetype(1), maxFilters - (result.needDamage > 0 ? damage.size() : 0));
+    const QList<Weighted> kept = weighted.mid(0, room);
+    result.filters = int(kept.size());
+    result.dropped = int(weighted.size() - kept.size());
+
+    // not uniques, as Path of Building's own searches
+    QJsonObject typeFilters{{u"rarity"_s, option(u"nonunique"_s)}};
+    QString category = data.categories.categoryFor(options.itemClass);
+    if (category.isEmpty())
+        category = options.category;
+    if (!category.isEmpty())
+        typeFilters.insert(u"category"_s, option(category));
+    const QJsonObject filters{{u"type_filters"_s, filterGroup(typeFilters)}};
+
+    result.groupMin = roundTo(std::max(0.0, options.min), 1);
+    QJsonArray stats;
+    if (!kept.isEmpty()) {
+        QJsonArray group;
+        for (const Weighted &w : kept)
+            group.append(statFilter(w.id, {{u"weight"_s, w.weight}}));
+        QJsonObject value;
+        if (result.groupMin > 0)
+            value.insert(u"min"_s, result.groupMin);
+        stats.append(statGroup(u"weight"_s, group, value));
+        if (result.needDamage > 0)
+            stats.append(statGroup(u"count"_s, damage, {{u"min"_s, result.needDamage}}));
+    }
+
+    QJsonObject query = newQuery(options.status);
+    query.insert(u"stats"_s, stats);
+    query.insert(u"filters"_s, filters);
+    result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
+    result.body = searchBody(query, u"statgroup.0"_s, u"desc"_s);
     return result;
 }
 

@@ -31,10 +31,15 @@ void ActiveCharacter::reload()
     m_character = character ? *character : Character();
     const std::optional<QString> xml = character ? m_store->pobBuild(m_id) : std::nullopt;
     m_build = xml ? parsePobBuild(*xml) : std::nullopt;
-    if (m_build)
-        m_pob->setBuild(*xml, pobWearing(m_character.gear, m_character.fromPob, m_build->swapInUse));
-    else
-        m_pob->setBuild({});
+    const QString sent = m_build ? *xml : QString();
+    const QList<PobItem> wearing =
+        m_build ? pobWearing(m_character.gear, m_character.fromPob, m_build->swapInUse) : QList<PobItem>();
+    if (sent != m_pobXml || wearing != m_pobWearing) {
+        m_pobXml = sent;
+        m_pobWearing = wearing;
+        setPobStats(std::nullopt);
+    }
+    m_pob->setBuild(sent, wearing);
     Q_EMIT changed();
 }
 
@@ -85,7 +90,9 @@ bool ActiveCharacter::fail(const QString &why)
 
 void ActiveCharacter::loaded(const QJsonObject &summary)
 {
-    const bool chaosInoculation = hasChaosInoculation(readPobStats(summary.value(u"stats").toObject()));
+    const PobStats stats = readPobStats(summary.value(u"stats").toObject());
+    setPobStats(stats);
+    const bool chaosInoculation = hasChaosInoculation(stats);
     const Character *saved = m_store->find(m_id);
     if (!saved || chaosInoculation == saved->chaosInoculation)
         return;
@@ -97,6 +104,14 @@ void ActiveCharacter::loaded(const QJsonObject &summary)
                   qUtf8Printable(m_store->errorString()));
     m_character.chaosInoculation = chaosInoculation;
     Q_EMIT changed();
+}
+
+void ActiveCharacter::setPobStats(const std::optional<PobStats> &stats)
+{
+    if (stats == m_pobStats)
+        return;
+    m_pobStats = stats;
+    Q_EMIT pobStatsChanged();
 }
 
 } // namespace pou

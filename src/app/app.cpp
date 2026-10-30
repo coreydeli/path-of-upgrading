@@ -73,6 +73,10 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
         m_finder.setCharacter(m_character.character());
         m_results.judge().setCharacter(m_character.character(), m_character.build());
     });
+    // what Path of Building says of the build, which upgrade searches are
+    // weighed by
+    connect(&m_character, &ActiveCharacter::pobStatsChanged, this,
+            [this] { m_finder.setBuild(m_character.build(), m_character.pobStats()); });
     connect(&m_settings, &SettingsStore::changed, this, &App::followSettings);
 
     const Settings &settings = m_settings.settings();
@@ -80,6 +84,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     lookForPob();
     m_checker.setPob(&m_pob);
     m_checker.setFinder(&m_finder);
+    m_finder.setPob(&m_pob);
     m_checker.setSettings(settings);
     m_results.judge().setPob(&m_pob);
     m_results.judge().setSettings(settings.pob);

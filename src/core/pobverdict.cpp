@@ -246,6 +246,20 @@ qsizetype bestVerdict(const QList<PobVerdict> &verdicts)
     return best == verdicts.cend() ? -1 : best - verdicts.cbegin();
 }
 
+QList<Element> resistsUnderCap(const PobStats &stats, const PobVerdictOptions &options)
+{
+    QList<Element> out;
+    for (Element e : allElements) {
+        if (e == Element::Chaos && (options.ignoreChaos || !options.priorities.chaos))
+            continue;
+        const QString name = elementName(e) + u"Resist"_s;
+        const std::optional<double> value = stat(stats, name);
+        if (value && !isCapped(*value, stat(stats, name + u"Total"_s), resistMax(stats, e).value_or(75)))
+            out << e;
+    }
+    return out;
+}
+
 bool hasChaosInoculation(const PobStats &stats)
 {
     if (const std::optional<double> flag = stat(stats, u"ChaosInoculation"_s))

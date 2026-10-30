@@ -46,7 +46,8 @@ from source.
 - Can sign in to the trade site with your session ID, which is kept in your
   system keyring. Signed out, the site only takes simple searches, so upgrade
   searches look for a few of your build's key stats, and the results window
-  rates each listing. Signed in, they go by your whole gear score.
+  rates each listing. Signed in, Path of Building weighs them for your build,
+  the way its own trade searches do, or they go by your whole gear score.
 - Stays in the system tray when you close the window. The tray icon shows the
   window, pauses the hotkeys and quits. Starting the program again shows the
   window that is already running, rather than opening a second one.

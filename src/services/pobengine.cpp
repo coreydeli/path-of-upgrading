@@ -134,6 +134,19 @@ void PobEngine::setBuild(const QString &xml, const QList<PobItem> &wearing)
 
 PobReply *PobEngine::evaluate(const QList<PobItem> &items)
 {
+    return ask({{u"cmd"_s, u"eval"_s}, {u"items"_s, toJson(items)}});
+}
+
+PobReply *PobEngine::weigh(const QString &slot, const QList<PobStatWeight> &weights)
+{
+    QJsonArray array;
+    for (const PobStatWeight &w : weights)
+        array.append(QJsonObject{{u"stat"_s, w.stat}, {u"weight"_s, w.weight}});
+    return ask({{u"cmd"_s, u"weigh"_s}, {u"slot"_s, slot}, {u"weights"_s, array}});
+}
+
+PobReply *PobEngine::ask(const QJsonObject &request)
+{
     auto *reply = new PobReply(this);
     if (m_state == State::Unavailable) {
         reply->fail(m_errorString);
@@ -151,7 +164,7 @@ PobReply *PobEngine::evaluate(const QList<PobItem> &items)
         reply->fail(m_errorString);
         return reply;
     }
-    send({{u"cmd"_s, u"eval"_s}, {u"items"_s, toJson(items)}}, reply);
+    send(request, reply);
     return reply;
 }
 
@@ -221,7 +234,7 @@ void PobEngine::send(QJsonObject request, PobReply *reply)
     m_process->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + '\n');
     m_sent << Sent{.id = m_lastId,
                    .items = request.value(u"items").toArray().size(),
-                   .eval = reply != nullptr,
+                   .asked = reply != nullptr,
                    .load = request.value(u"cmd").toString() == u"load",
                    .reply = reply};
     // when it's the one it's waiting on
@@ -269,7 +282,7 @@ void PobEngine::answered(const Sent &sent, const QJsonObject &answer)
 {
     const bool ok = answer.value(u"ok").toBool();
     const QString error = answer.value(u"error").toString(u"Path of Building didn't say what went wrong."_s);
-    if (!sent.eval) {
+    if (!sent.asked) {
         if (!ok)
             qCWarning(lcPob, "Path of Building couldn't load the build: %s", qUtf8Printable(error));
         // and when it's the gear you're wearing, for each item

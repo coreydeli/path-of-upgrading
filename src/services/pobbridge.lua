@@ -19,6 +19,14 @@
 --       way Path of Building's item tooltips compare them. An item that
 --       names a slot is only tried there. The answer has the stats before,
 --       and each item's slots with the stats and what it would replace.
+--   {"id":4,"cmd":"weigh","slot":"Gloves","weights":[{"stat":"FullDPS","weight":0.6},{"stat":"TotalEHP","weight":0.4}]}
+--       How much each mod the trade site has is worth to the build in a
+--       slot, the way Path of Building's own trade searches weigh them: each
+--       is tried on a blank item there, and weighed by how much it raises
+--       those stats. The answer has the site's category for the slot, the
+--       mods' ids with their weight for each point, those whose usual roll
+--       adds the most first, and the least sum of them a search should ask
+--       for.
 --
 -- Each answer is a line of JSON after "@@" with the request's id, and ok
 -- true, or false with an error in words. The first one comes before any
@@ -274,6 +282,70 @@ local function eval(items)
     return {ok = true, before = stats(output), results = results}
 end
 
+-- Path of Building weighs the mods in its list of what the trade site has,
+-- which comes with it. Without that list it would ask the trade site.
+local function weigh(request)
+    local slot = build.itemsTab.slots[request.slot]
+    if not slot then
+        return {ok = false, error = ("Path of Building has no slot called %s."):format(tostring(request.slot))}
+    end
+    local list = io.open("Data/QueryMods.lua", "r")
+    if not list then
+        return {ok = false, error = "This Path of Building has no list of the trade site's mods to weigh."}
+    end
+    list:close()
+
+    local weights = {}
+    for _, w in ipairs(request.weights or {}) do
+        table.insert(weights, {stat = w.stat, weightMult = number(w.weight) or 0})
+    end
+    local generator = new("TradeQueryGenerator", {itemsTab = build.itemsTab})
+    local query
+    generator.requesterContext = {}
+    generator.requesterCallback = function(_, made)
+        query = made
+    end
+    local ran, why = pcall(function()
+        generator:StartQuery(slot, {
+            statWeights = weights,
+            includeCorrupted = true,
+            includeMirrored = false,
+            includeRunes = false,
+            jewelType = "Base",
+        })
+        -- which it does a bit at a time, a frame at a time in its window
+        while generator.calcContext.co do
+            generator:OnFrame()
+        end
+    end)
+    -- it shows how far it's got in a popup, which mustn't be taken for what
+    -- the next build says
+    main.popups = {}
+    if not ran then
+        error(why, 0)
+    end
+    if not query then
+        return {ok = false, error = "Path of Building can't weigh mods for this slot."}
+    end
+
+    query = json.decode(query).query
+    local group = query.stats[1]
+    local mods = {}
+    for _, filter in ipairs(group.filters) do
+        table.insert(mods, {id = filter.id, weight = number(filter.value.weight)})
+    end
+    if #mods == 0 then
+        return {ok = false, error = "None of the mods this slot can have would help the build."}
+    end
+    local types = query.filters.type_filters
+    return {
+        ok = true,
+        category = types and types.filters.category and types.filters.category.option,
+        min = number(group.value.min),
+        mods = mods,
+    }
+end
+
 local commands = {
     load = function(request)
         return load(request.xml)
@@ -289,6 +361,12 @@ local commands = {
             return {ok = false, error = noBuild}
         end
         return eval(request.items or {})
+    end,
+    weigh = function(request)
+        if noBuild then
+            return {ok = false, error = noBuild}
+        end
+        return weigh(request)
     end,
 }
 

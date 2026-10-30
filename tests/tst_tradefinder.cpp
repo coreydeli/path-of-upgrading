@@ -4,10 +4,13 @@
 #include "core/datafiles.h"
 #include "core/evaluation.h"
 #include "core/parser.h"
+#include "core/pobweighing.h"
 #include "core/tradequery.h"
 #include "core/tradesite.h"
 #include "fakenetwork.h"
+#include "fakepob.h"
 #include "itemtexts.h"
+#include "services/pobengine.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
@@ -21,6 +24,7 @@
 #include <QTemporaryDir>
 #include <QTest>
 #include <array>
+#include <functional>
 #include <memory>
 
 using namespace Qt::Literals::StringLiterals;
@@ -53,6 +57,14 @@ FakeAnswer found(const QString &id, int total, const QStringList &ids = {})
 {
     return {.body =
                 json({{u"id"_s, id}, {u"total"_s, total}, {u"result"_s, QJsonArray::fromStringList(ids)}})};
+}
+
+// The answer from a site that takes plenty of searches, so later ones aren't
+// held.
+FakeAnswer plenty(FakeAnswer answer)
+{
+    answer.headers = {{"X-Rate-Limit-Ip", "30:10:0"}};
+    return answer;
 }
 
 // What the site says of a search with more filters than it takes. It
@@ -225,6 +237,95 @@ SimilarSearch similar(const Item &item, const TradeData &data, int level = 0)
     return similarSearch(item, data, options);
 }
 
+const QString build = u"<PathOfBuilding2><Build level=\"90\" className=\"Witch\"/></PathOfBuilding2>"_s;
+
+// What Path of Building says of the build, which is short of fire resistance.
+const PobStats buildStats{
+    {u"FullDPS"_s, 5000}, {u"TotalEHP"_s, 20000}, {u"FireResist"_s, 60}, {u"ColdResist"_s, 75}};
+
+// The site's stats, with one for damage.
+QJsonObject withSpellDamage()
+{
+    using namespace tradefixtures;
+    QJsonArray groups = stats().value(u"result"_s).toArray();
+    groups << group(u"explicit"_s,
+                    {stat(u"explicit.stat_spell"_s, u"#% increased Spell Damage"_s, u"explicit"_s)});
+    return response(groups);
+}
+
+QJsonObject modWeight(const QString &id, double weight)
+{
+    return {{u"id"_s, id}, {u"weight"_s, weight}};
+}
+
+// What Path of Building says the mods for a helmet are worth, with one the
+// site doesn't have.
+QJsonObject helmetMods(double min = 40)
+{
+    const QJsonArray mods{modWeight(u"explicit.stat_life"_s, 0.5), modWeight(u"explicit.stat_spell"_s, 2),
+                          modWeight(u"explicit.stat_ms"_s, 0.2), modWeight(u"explicit.stat_gone"_s, 3)};
+    return {{u"category"_s, u"armour.helmet"_s}, {u"min"_s, min}, {u"mods"_s, mods}};
+}
+
+// And for one on the site of manyStats(), more than a search can have.
+QJsonObject manyMods()
+{
+    QJsonArray mods;
+    for (int n = 1; n <= 24; ++n)
+        mods << modWeight(u"explicit.stat_life_%1"_s.arg(n), 25 - n);
+    mods << modWeight(u"implicit.stat_life"_s, 0.5);
+    return {{u"category"_s, u"armour.helmet"_s}, {u"min"_s, 10}, {u"mods"_s, mods}};
+}
+
+// Someone with spell damage on their helmet.
+Character inSpellCrown()
+{
+    Character character;
+    character.gear = {
+        {u"Helmet"_s, parseItem(u"Item Class: Helmets\nRarity: Rare\nSpell Crown\nVisored Helm\n"
+                                u"--------\nItem Level: 50\n--------\n+55 to maximum Life\n"
+                                u"25% increased Spell Damage"_s)
+                          .value()}};
+    return character;
+}
+
+// What it should search for a helmet when Path of Building weighed the mods.
+PobSearch weighed(const QJsonObject &weighing, const TradeData &data, const Character &character,
+                  int maxFilters = 30, bool keepDamage = true,
+                  const QList<Element> &shortResists = {Element::Fire})
+{
+    const PobWeighing w = readPobWeighing(weighing);
+    PobSearchOptions options;
+    options.status = Settings().trade.status;
+    options.ignoreRules = character.ignored;
+    options.itemClass = u"Helmets"_s;
+    options.category = w.category;
+    options.min = w.min;
+    options.maxFilters = maxFilters;
+    options.shortResists = shortResists;
+    if (keepDamage)
+        options.worn = character.gear.value(u"Helmet"_s).stats.keys();
+    return pobSearch(w.mods, data, options);
+}
+
+// The site, with Path of Building to weigh the mods, which has loaded the
+// build. The site goes first, so a weighing it hasn't answered is called off
+// before Path of Building stops.
+struct Weighed
+{
+    FakePob pob;
+    PobEngine engine;
+    Site site;
+
+    explicit Weighed(const QStringList &flags = {})
+    {
+        engine.setInstall(pob.install(flags));
+        engine.setBuild(build);
+        site.finder.setPob(&engine);
+        site.finder.setBuild(PobBuild(), buildStats);
+    }
+};
+
 } // namespace
 
 class TestTradeFinder : public QObject
@@ -234,9 +335,11 @@ class TestTradeFinder : public QObject
 private Q_SLOTS:
     void initTestCase()
     {
-        // what it says when the site lets it down, which the tests make it do
+        // what it says when the site lets it down, which the tests make it do,
+        // and Path of Building starting
         QLoggingCategory::setFilterRules(
-            u"pathofupgrading.trade.warning=false\npathofupgrading.ninja.warning=false"_s);
+            u"pathofupgrading.trade.warning=false\npathofupgrading.ninja.warning=false\n"
+            u"pathofupgrading.pob.info=false"_s);
     }
 
     void init() { QTest::failOnWarning(); }
@@ -681,6 +784,363 @@ private Q_SLOTS:
         QCOMPARE(site.finder.found()->note,
                  u"The trade site only takes a simple search, so each has at least 1 of these at a decent "
                  u"roll: Life. Cheapest first."_s);
+    }
+
+    void weighedByPathOfBuilding()
+    {
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs(helmetMods()));
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 4, {u"a"_s})};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 1);
+        QCOMPARE(site.searched(0), weighed(helmetMods(), site.data.data(), character).body);
+        // for the build's damage, by 0.6 to its effective HP's 0.4
+        const QJsonArray weights{QJsonObject{{u"stat"_s, u"FullDPS"_s}, {u"weight"_s, 0.6}},
+                                 QJsonObject{{u"stat"_s, u"TotalEHP"_s}, {u"weight"_s, 0.4}}};
+        QCOMPARE(w.pob.weighed(), (QJsonObject{{u"slot"_s, u"Helmet"_s}, {u"weights"_s, weights}}));
+
+        const TradeFinder::Found &found = *site.finder.found();
+        QCOMPARE(found.title, u"Better for your build than Doom Visage, by Path of Building"_s);
+        QCOMPARE(found.note, u"Weighed by Path of Building for your build's damage and effective HP. "
+                             u"Resistances under the cap count for more. Best for your build first."_s);
+        QCOMPARE(found.total, 4);
+    }
+
+    void weighedForTheSlot()
+    {
+        // the ring it would take the place of
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs({{u"category"_s, u"accessory.ring"_s},
+                              {u"mods"_s, QJsonArray{modWeight(u"explicit.stat_life"_s, 1)}}}));
+        Character character;
+        character.gear = {{u"Ring 1"_s, ring(u"Storm Loop"_s, u"+60 to maximum Life"_s)},
+                          {u"Ring 2"_s, ring(u"Dull Loop"_s, u"+10 to maximum Life"_s)}};
+        site.finder.setCharacter(character);
+        site.network.answers = {plenty(found(u"s1"_s, 1)), found(u"s2"_s, 1)};
+        QVERIFY(site.finds(ring(u"Grim Loop"_s, u"+20 to maximum Life"_s), Kind::Upgrades));
+        QCOMPARE(w.pob.weighed().value(u"slot").toString(), u"Ring 2"_s);
+
+        // and the weapon in the set you use, with the site's category for it
+        PobBuild swapped;
+        swapped.swapInUse = true;
+        site.finder.setBuild(swapped, buildStats);
+        const Item maul = parseItem(u"Item Class: Two Hand Maces\nRarity: Rare\nGrim Maul\nTotemic Greatclub"
+                                    u"\n--------\nItem Level: 80\n--------\n+20 to maximum Life"_s)
+                              .value();
+        QVERIFY(w.pob.weighs({{u"category"_s, u"weapon.onemace"_s},
+                              {u"mods"_s, QJsonArray{modWeight(u"explicit.stat_life"_s, 1)}}}));
+        QVERIFY(site.finds(maul, Kind::Upgrades));
+        QCOMPARE(w.pob.weighed().value(u"slot").toString(), pobSlot(u"Weapon"_s, true));
+        QVERIFY(pobSlot(u"Weapon"_s, true) != pobSlot(u"Weapon"_s, false));
+        const QJsonObject query = site.searched(1).value(u"query").toObject();
+        QCOMPARE(query[u"filters"][u"type_filters"][u"filters"][u"category"][u"option"].toString(),
+                 u"weapon.twomace"_s);
+    }
+
+    void categoryFromPathOfBuilding()
+    {
+        // when the site has none for the item class
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs({{u"category"_s, u"weapon.warstaff"_s},
+                              {u"mods"_s, QJsonArray{modWeight(u"explicit.stat_life"_s, 1)}}}));
+        const Item staff = parseItem(u"Item Class: Warstaves\nRarity: Rare\nGrim Pole\nLong Quarterstaff"
+                                     u"\n--------\nItem Level: 80\n--------\n+20 to maximum Life"_s)
+                               .value();
+        QVERIFY(site.data.data().categories.categoryFor(staff.itemClass).isEmpty());
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(staff, Kind::Upgrades));
+        QCOMPARE(w.pob.weighed().value(u"slot").toString(), u"Weapon 1"_s);
+        const QJsonObject query = site.searched(0).value(u"query").toObject();
+        QCOMPARE(query[u"filters"][u"type_filters"][u"filters"][u"category"][u"option"].toString(),
+                 u"weapon.warstaff"_s);
+    }
+
+    void weighedWithWhatYouIgnore()
+    {
+        // and for the listings you want
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs(helmetMods()));
+        Character character = inGrimCrown();
+        character.ignored = {{.preset = u"life"_s, .key = {}, .mode = IgnoreRule::Mode::Exclude}};
+        site.finder.setCharacter(character);
+        Settings settings;
+        settings.trade.status = ListingStatus::Online;
+        site.finder.setSettings(settings);
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+
+        const TradeData &data = site.data.data();
+        const PobWeighing weighing = readPobWeighing(helmetMods());
+        PobSearchOptions options;
+        options.status = ListingStatus::Online;
+        options.ignoreRules = character.ignored;
+        options.itemClass = u"Helmets"_s;
+        options.category = weighing.category;
+        options.min = weighing.min;
+        options.shortResists = {Element::Fire};
+        options.worn = character.gear.value(u"Helmet"_s).stats.keys();
+        const PobSearch search = pobSearch(weighing.mods, data, options);
+        QCOMPARE(site.searched(0), search.body);
+        QVERIFY(search.body != weighed(helmetMods(), data, character).body);
+    }
+
+    void withoutResistancesFirst()
+    {
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs(helmetMods()));
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        Settings settings;
+        settings.pob.priorities.resistsFirst = false;
+        site.finder.setSettings(settings);
+        site.network.answers = {found(u"s1"_s, 4)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(0), weighed(helmetMods(), site.data.data(), character, 30, true, {}).body);
+        QCOMPARE(site.finder.found()->note,
+                 u"Weighed by Path of Building for your build's damage and effective HP. "
+                 u"Best for your build first."_s);
+    }
+
+    void keepsYourDamage()
+    {
+        // unless nothing listed does
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs(helmetMods()));
+        const Character character = inSpellCrown();
+        site.finder.setCharacter(character);
+        site.network.answers = {plenty(found(u"s1"_s, 2))};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        const TradeData &data = site.data.data();
+        const PobSearch keeping = weighed(helmetMods(), data, character);
+        QCOMPARE(keeping.needDamage, 1);
+        QCOMPARE(site.searched(0), keeping.body);
+        QCOMPARE(site.finder.found()->note,
+                 u"Weighed by Path of Building for your build's damage and effective HP. Each has at least "
+                 u"1 of your build's best damage mods, as yours does. Resistances under the cap count for "
+                 u"more. Best for your build first."_s);
+
+        site.network.answers = {found(u"s2"_s, 0), found(u"s3"_s, 5)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 3);
+        QCOMPARE(site.searched(2), weighed(helmetMods(), data, character, 30, false).body);
+        QCOMPARE(site.finder.found()->note,
+                 u"Nothing listed keeps your damage mods, so these may give up some damage. Weighed by Path "
+                 u"of Building for your build's damage and effective HP. Resistances under the cap count "
+                 u"for more. Best for your build first."_s);
+        QCOMPARE(site.finder.found()->total, 5);
+
+        // which is as loose as it gets
+        site.network.answers = {found(u"s4"_s, 0), found(u"s5"_s, 0)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 5);
+        QCOMPARE(site.finder.found()->total, 0);
+    }
+
+    void weighsOnce()
+    {
+        // for the slot, until the build or what they're weighed by changes
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        const TradeData &data = site.data.data();
+        const auto searches = [&site](int min) {
+            QJsonObject body = weighed(helmetMods(min), site.data.data(), inGrimCrown()).body;
+            site.network.answers = {plenty(found(u"s"_s, 1))};
+            return site.finds(helmet, Kind::Upgrades) && site.searched(site.network.sent.size() - 1) == body;
+        };
+        QVERIFY(w.pob.weighs(helmetMods(40)));
+        QVERIFY(searches(40));
+        QVERIFY(w.pob.weighs(helmetMods(80)));
+        QVERIFY(searches(40));
+
+        site.finder.setBuild(PobBuild(), buildStats);
+        Settings settings;
+        settings.pob.priorities.keepDamage = false;
+        site.finder.setSettings(settings);
+        QVERIFY(searches(40));
+
+        settings.pob.damageWeight = 0.8;
+        site.finder.setSettings(settings);
+        QVERIFY(searches(80));
+
+        QVERIFY(w.pob.weighs(helmetMods(60)));
+        PobStats stronger = buildStats;
+        stronger.insert(u"FullDPS"_s, 6000);
+        site.finder.setBuild(PobBuild(), stronger);
+        QVERIFY(searches(60));
+        QVERIFY(!data.stats.isEmpty());
+    }
+
+    void weighedTooComplex()
+    {
+        // which has sizes of its own
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(tradefixtures::manyStats()));
+        QVERIFY(w.pob.weighs(manyMods()));
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        const TradeData &data = site.data.data();
+        site.network.answers = {tooManyFilters(), found(u"s1"_s, 3)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 2);
+        QCOMPARE(site.searched(0), weighed(manyMods(), data, character).body);
+        QCOMPARE(site.searched(1), weighed(manyMods(), data, character, 15).body);
+        QCOMPARE(site.finder.found()->note,
+                 u"Weighed by Path of Building for your build's damage and effective HP. The trade site "
+                 u"limits how many filters a search can have, so it looks at the 15 mods that count most. "
+                 u"Best for your build first."_s);
+
+        // and the next starts there
+        site.network.answers = {tooManyFilters(), found(u"s2"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 4);
+        QCOMPARE(site.searched(2), weighed(manyMods(), data, character, 15).body);
+        QCOMPARE(site.searched(3), weighed(manyMods(), data, character, 10).body);
+
+        // while those by the gear score start at their full size
+        site.finder.setBuild(PobBuild(), std::nullopt);
+        site.network.answers = {found(u"s3"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(4), upgrades(helmet, data, character, u"Helmet"_s).body);
+
+        // and signing in again starts it at its full size
+        site.finder.setBuild(PobBuild(), buildStats);
+        site.finder.setSignedIn(true);
+        site.network.answers = {found(u"s4"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(5), weighed(manyMods(), data, character).body);
+    }
+
+    void weighedTooComplexAtItsSmallest()
+    {
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(tradefixtures::manyStats()));
+        QVERIFY(w.pob.weighs(manyMods()));
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        for (int n = 0; n < 6; ++n)
+            site.network.answers << tooManyFilters();
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 6);
+        QCOMPARE(site.searched(5), weighed(manyMods(), site.data.data(), character, 3).body);
+        QCOMPARE(site.finder.errorString(),
+                 u"The trade site says this search has too many filters even at its smallest."_s);
+    }
+
+    void notWeighed()
+    {
+        // when Path of Building isn't asked, and the search is by the gear score
+        const Item flask =
+            parseItem(u"Item Class: Life Flasks\nRarity: Magic\nUltimate Life Flask of the Doctor"
+                      u"\n--------\nItem Level: 60\n--------\n+50 to maximum Life"_s)
+                .value();
+        struct Case
+        {
+            const char *what;
+            std::function<void(Weighed &)> setUp;
+            Item item = helmet;
+            Kind kind = Kind::Upgrades;
+        };
+        const QList<Case> cases = {
+            {"signed out", [](Weighed &w) { w.site.finder.setSignedIn(false); }},
+            {"turned off",
+             [](Weighed &w) {
+                 Settings settings;
+                 settings.pob.enabled = false;
+                 w.site.finder.setSettings(settings);
+             }},
+            {"no Path of Building", [](Weighed &w) { w.site.finder.setPob(nullptr); }},
+            {"no build", [](Weighed &w) { w.site.finder.setBuild(std::nullopt, buildStats); }},
+            {"not loaded yet", [](Weighed &w) { w.site.finder.setBuild(PobBuild(), std::nullopt); }},
+            {"flask", [](Weighed &) {}, flask},
+            {"similar", [](Weighed &) {}, helmet, Kind::Similar},
+        };
+        for (const Case &c : cases) {
+            Weighed w;
+            QVERIFY(w.site.hasData(withSpellDamage()));
+            QVERIFY(w.pob.weighs(helmetMods()));
+            w.site.finder.setCharacter(inGrimCrown());
+            c.setUp(w);
+            w.site.network.answers = {found(u"s1"_s, 1)};
+            QVERIFY2(w.site.finds(c.item, c.kind), c.what);
+            QVERIFY2(!w.site.finder.found()->title.contains(u"Path of Building"), c.what);
+            QVERIFY2(w.pob.runs() == 0, c.what);
+        }
+    }
+
+    void couldntWeigh()
+    {
+        // so it searches by the gear score, and asks again next time
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs({{u"ok"_s, false}, {u"error"_s, u"The fake couldn't weigh them."_s}}));
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 1)};
+        QTest::ignoreMessage(
+            QtWarningMsg,
+            "Path of Building couldn't weigh the mods for Helmet: The fake couldn't weigh them.");
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(0), upgrades(helmet, site.data.data(), character, u"Helmet"_s).body);
+
+        QVERIFY(w.pob.weighs(helmetMods()));
+        site.network.answers = {found(u"s2"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(1), weighed(helmetMods(), site.data.data(), character).body);
+    }
+
+    void noWeighedModsOnTheSite()
+    {
+        Weighed w;
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        const QJsonArray mods{modWeight(u"explicit.stat_gone"_s, 3)};
+        QVERIFY(w.pob.weighs({{u"category"_s, u"armour.helmet"_s}, {u"mods"_s, mods}}));
+        const Character character = inGrimCrown();
+        site.finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 1)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(0), upgrades(helmet, site.data.data(), character, u"Helmet"_s).body);
+    }
+
+    void calledOffWhileWeighing()
+    {
+        Weighed w({u"--slow-load"_s});
+        Site &site = w.site;
+        QVERIFY(site.hasData(withSpellDamage()));
+        QVERIFY(w.pob.weighs(helmetMods()));
+        site.finder.setCharacter(inGrimCrown());
+        site.network.answers = {found(u"s1"_s, 1), found(u"s2"_s, 2)};
+        QSignalSpy finished(&site.finder, &TradeFinder::finished);
+        site.finder.find(helmet, Kind::Upgrades);
+        site.finder.cancel();
+        QVERIFY(!finished.wait(1000));
+        QVERIFY(site.network.sent.isEmpty());
+
+        // or asked again, once
+        site.finder.find(helmet, Kind::Upgrades);
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 1);
+        QCOMPARE(site.finder.found()->searchId, u"s1"_s);
     }
 
     void similarTooComplex()

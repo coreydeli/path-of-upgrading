@@ -360,6 +360,29 @@ private Q_SLOTS:
         QVERIFY(!hasChaosInoculation({}));
     }
 
+    void underTheCap()
+    {
+        QCOMPARE(resistsUnderCap(base), QList<Element>());
+        QCOMPARE(resistsUnderCap(shortOfLightning), QList<Element>{Element::Lightning});
+
+        // chaos only when asked, and not with Chaos Inoculation
+        PobVerdictOptions options;
+        options.priorities.chaos = true;
+        QCOMPARE(resistsUnderCap(base, options), QList<Element>{Element::Chaos});
+        options.ignoreChaos = true;
+        QCOMPARE(resistsUnderCap(base, options), QList<Element>());
+
+        // a cap the tree raises
+        const PobStats raised =
+            with(base, {{u"FireResist"_s, 75}, {u"FireResistTotal"_s, 75}, {u"MissingFireResist"_s, 2}});
+        QCOMPARE(resistsUnderCap(raised), QList<Element>{Element::Fire});
+        // and without the cap, the usual one, unless it's held down to one
+        QCOMPARE(resistsUnderCap({{u"ColdResist"_s, 74}}), QList<Element>{Element::Cold});
+        QCOMPARE(resistsUnderCap({{u"ColdResist"_s, 75}}), QList<Element>());
+        QCOMPARE(resistsUnderCap({{u"ColdResist"_s, 60}, {u"ColdResistTotal"_s, 80}}), QList<Element>());
+        QCOMPARE(resistsUnderCap({}), QList<Element>());
+    }
+
     void spiritAndAttributes()
     {
         const PobVerdict spirit =

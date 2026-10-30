@@ -33,6 +33,12 @@ struct FakePob
         QFile file(folder.filePath(u"eval.json"_s));
         return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(eval).toJson()) > 0;
     }
+    // And to weighing mods, see weigh in pobbridge.lua.
+    bool weighs(const QJsonObject &weighing) const
+    {
+        QFile file(folder.filePath(u"weigh.json"_s));
+        return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(weighing).toJson()) > 0;
+    }
     // And to loading the build or putting on your gear, see summary in
     // pobbridge.lua.
     bool loads(const QJsonObject &summary) const
@@ -46,6 +52,13 @@ struct FakePob
         QFile file(folder.filePath(u"asked.json"_s));
         return file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).array()
                                               : QJsonArray();
+    }
+    // The slot and weights it was last asked to weigh the mods for.
+    QJsonObject weighed() const
+    {
+        QFile file(folder.filePath(u"weighed.json"_s));
+        return file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).object()
+                                              : QJsonObject();
     }
 
     int count(const QString &name) const

@@ -274,6 +274,31 @@ private Q_SLOTS:
         QCOMPARE(changed.size(), 5);
     }
 
+    void weighs()
+    {
+        FakePob pob;
+        QVERIFY(pob.weighs({{u"category"_s, u"armour.gloves"_s}, {u"min"_s, 40}}));
+        QVERIFY(pob.answers({{u"judged"_s, true}}));
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        const std::unique_ptr<PobReply> reply(engine.weigh(
+            u"Gloves"_s, {{.stat = u"FullDPS"_s, .weight = 0.6}, {.stat = u"TotalEHP"_s, .weight = 0.4}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+
+        const QJsonObject answer = reply->answer();
+        QCOMPARE(answer.value(u"seen").toArray(), (QJsonArray{u"load"_s, u"weigh"_s}));
+        QCOMPARE(answer.value(u"slot").toString(), u"Gloves"_s);
+        QCOMPARE(answer.value(u"weights").toArray(),
+                 (QJsonArray{QJsonObject{{u"stat"_s, u"FullDPS"_s}, {u"weight"_s, 0.6}},
+                             QJsonObject{{u"stat"_s, u"TotalEHP"_s}, {u"weight"_s, 0.4}}}));
+        QCOMPARE(answer.value(u"category").toString(), u"armour.gloves"_s);
+        QVERIFY(!answer.contains(u"judged"));
+        QCOMPARE(pob.weighed().value(u"slot").toString(), u"Gloves"_s);
+        QCOMPARE(pob.weighed().value(u"weights"), answer.value(u"weights"));
+    }
+
     void noBuild()
     {
         FakePob pob;
@@ -282,6 +307,8 @@ private Q_SLOTS:
         const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
         QCOMPARE(reply->errorString(), u"There's no build to judge items with."_s);
         QVERIFY(finishes(reply.get()));
+        const std::unique_ptr<PobReply> weighed(engine.weigh(u"Gloves"_s, {}));
+        QCOMPARE(weighed->errorString(), u"There's no build to judge items with."_s);
         // it isn't started for nothing
         QCOMPARE(engine.state(), State::Stopped);
         QCOMPARE(pob.runs(), 0);

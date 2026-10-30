@@ -3,6 +3,7 @@
 
 #include "core/characterstore.h"
 #include "core/pobbuild.h"
+#include "core/pobverdict.h"
 
 #include <QJsonObject>
 #include <QObject>
@@ -38,6 +39,10 @@ public:
     const Character &character() const { return m_character; }
     // None when it has none, or one that isn't for Path of Exile 2.
     const std::optional<PobBuild> &build() const { return m_build; }
+    // What Path of Building says of the build with your gear on, once it has
+    // loaded them, see summary in pobbridge.lua. None until then, and again
+    // when it's given another build or other gear.
+    const std::optional<PobStats> &pobStats() const { return m_pobStats; }
 
     // Puts the item on in the slot and saves that, see pou::wear(). False when
     // it can't go there or it can't be saved, with why in errorString().
@@ -50,9 +55,11 @@ public:
 
 Q_SIGNALS:
     void changed();
+    void pobStatsChanged();
 
 private:
     void loaded(const QJsonObject &summary);
+    void setPobStats(const std::optional<PobStats> &stats);
     bool save(const Character &character);
     bool fail(const QString &why);
 
@@ -61,6 +68,10 @@ private:
     QString m_id;
     Character m_character;
     std::optional<PobBuild> m_build;
+    // what Path of Building was given last, and what it said of it
+    QString m_pobXml;
+    QList<PobItem> m_pobWearing;
+    std::optional<PobStats> m_pobStats;
     QString m_error;
 };
 

@@ -1107,6 +1107,41 @@ private Q_SLOTS:
         QCOMPARE(r.network->sent.last().body, smallest);
     }
 
+    void weighedByPob()
+    {
+        // signed in, once Path of Building has loaded the build
+        Folders folders;
+        const QJsonObject stats{{u"FullDPS"_s, 100}, {u"TotalEHP"_s, 1000}};
+        QVERIFY(folders.pob.loads({{u"stats"_s, stats}}));
+        const QJsonArray mods{QJsonObject{{u"id"_s, u"explicit.stat_life"_s}, {u"weight"_s, 1}}};
+        QVERIFY(folders.pob.weighs({{u"category"_s, u"armour.helmet"_s}, {u"mods"_s, mods}}));
+        Settings settings;
+        settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld), build);
+        settings.pob.location = folders.pob.folder.path();
+        folders.set(settings);
+        Running r(folders, desktop(), online(), keyringWith(fakeId));
+        QVERIFY(r.rated());
+        QVERIFY(r.signedIn());
+        r.checked();
+        QTRY_VERIFY(r.app.character().pobStats());
+
+        QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
+        r.network->answers = {{.body = R"({"id":"s1","total":3,"result":[]})"}};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.app.finder().found()->title,
+                 u"Better for your build than Doom Visage, by Path of Building"_s);
+        QCOMPARE(folders.pob.weighed().value(u"slot").toString(), u"Helmet"_s);
+
+        // and by the gear score once it's turned off
+        settings.pob.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        r.network->answers = {{.body = R"({"id":"s2","total":3,"result":[]})"}};
+        r.app.checker().popup().findOnTrade(TradeFinder::Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QVERIFY(!r.app.finder().found()->title.contains(u"Path of Building"));
+    }
+
     void signingOut()
     {
         Folders folders;

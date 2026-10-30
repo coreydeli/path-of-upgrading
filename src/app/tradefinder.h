@@ -3,8 +3,11 @@
 
 #include "core/characterstore.h"
 #include "core/item.h"
+#include "core/pobbuild.h"
+#include "core/pobweighing.h"
 #include "core/settings.h"
 
+#include <QHash>
 #include <QJsonObject>
 #include <QObject>
 #include <QPointer>
@@ -17,6 +20,8 @@
 
 namespace pou {
 
+class PobEngine;
+class PobReply;
 class RatesStore;
 class TradeDataStore;
 class TradeSearch;
@@ -24,7 +29,8 @@ class TradeSearcher;
 
 // Trade searches for an item you checked, of the kinds the popup's buttons
 // ask for. One that finds nothing is tried again looser, and one the site
-// says is too complex, smaller.
+// says is too complex, smaller. Upgrade searches are weighed by Path of
+// Building when it can, as its own trade searches are.
 class TradeFinder : public QObject
 {
     Q_OBJECT
@@ -65,6 +71,13 @@ public:
     // Signed out, the trade site takes only the smallest upgrade searches, so
     // they start there. Signed in, they start at their full size again.
     void setSignedIn(bool signedIn);
+    // Path of Building, which weighs the mods for upgrade searches once it has
+    // loaded your build, while it's on and you're signed in, as the site takes
+    // its searches only then. It has to outlive it.
+    void setPob(PobEngine *pob);
+    // The build you play, and what Path of Building says of it with your gear
+    // on, see ActiveCharacter::pobStats().
+    void setBuild(const std::optional<PobBuild> &build, const std::optional<PobStats> &stats);
 
     // Calls off the one it's busy with. While the trade site's stats are
     // still to come, it waits for them, but it goes by the rates it has.
@@ -99,15 +112,19 @@ private:
         // An upgrade search, which is made smaller when the site says it's too
         // complex.
         bool shrinks = false;
+        bool pob = false; // weighed by Path of Building, which has sizes of its own
     };
 
     Plan plan() const;
     Plan upgradePlan() const;
+    QString pobWeighedSlot() const;
+    std::optional<Plan> pobPlan() const;
     Plan similarPlan() const;
     Plan weightedPlan() const;
     Plan craftPlan() const;
     Budget budget() const;
     void start();
+    void weigh(const QString &slot);
     void send();
     void answered();
     void fail(const QString &why, const QUrl &url = {});
@@ -122,9 +139,18 @@ private:
     Kind m_kind = Kind::Upgrades;
     int m_level = 0; // how much looser than at first
     bool m_signedIn = false;
-    // How small the site needs an upgrade search to be. Later ones start
-    // there, rather than spend searches on ones it turns down.
+    // How small the site needs an upgrade search to be, and one weighed by
+    // Path of Building. Later ones start there, rather than spend searches on
+    // ones it turns down.
     int m_size;
+    int m_pobSize = 0;
+    PobEngine *m_pob = nullptr;
+    std::optional<PobBuild> m_build;
+    std::optional<PobStats> m_buildStats;
+    // what Path of Building weighed the mods at, by slot, until the build or
+    // what they're weighed by changes
+    QHash<QString, PobWeighing> m_weighings;
+    QPointer<PobReply> m_weighing;
     Plan m_plan;     // sent last
     int m_finds = 0; // asked for or called off, so far
     bool m_busy = false;

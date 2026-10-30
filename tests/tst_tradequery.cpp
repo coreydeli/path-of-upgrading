@@ -119,6 +119,36 @@ TradeData tradeDataFor(const QStringList &names)
     return {StatIndex::fromJson(response({group(u"explicit"_s, entries)})), {}};
 }
 
+// A site with damage, defence and resistance mods, for Path of Building's
+// weights.
+TradeData pobSite()
+{
+    using namespace tradefixtures;
+    return {
+        StatIndex::fromJson(response({
+            group(u"explicit"_s,
+                  {
+                      stat(u"explicit.speed"_s, u"#% increased Attack Speed"_s, u"explicit"_s),
+                      stat(u"explicit.phys"_s, u"Adds # to # Physical Damage to Attacks"_s, u"explicit"_s),
+                      stat(u"explicit.crit"_s, u"#% increased Critical Hit Chance for Attacks"_s,
+                           u"explicit"_s),
+                      stat(u"explicit.life"_s, u"+# to maximum Life"_s, u"explicit"_s),
+                      stat(u"explicit.recoup"_s, u"#% of Damage taken Recouped as Life"_s, u"explicit"_s),
+                      stat(u"explicit.fire"_s, u"+#% to Fire Resistance"_s, u"explicit"_s),
+                      stat(u"explicit.cold"_s, u"+#% to Cold Resistance"_s, u"explicit"_s),
+                      stat(u"explicit.chaos"_s, u"+#% to Chaos Resistance"_s, u"explicit"_s),
+                      stat(u"explicit.fire_cold"_s, u"+#% to Fire and Cold Resistances"_s, u"explicit"_s),
+                      stat(u"explicit.all_res"_s, u"+#% to all Elemental Resistances"_s, u"explicit"_s),
+                      stat(u"explicit.ally_res"_s,
+                           u"Allies in your Presence have +#% to all Elemental Resistances"_s, u"explicit"_s),
+                  }),
+            group(u"implicit"_s, {stat(u"implicit.fire"_s, u"+#% to Fire Resistance"_s, u"implicit"_s)}),
+            group(u"rune"_s, {stat(u"rune.fire"_s, u"+#% to Fire Resistance"_s, u"rune"_s)}),
+            group(u"pseudo"_s, {stat(u"pseudo.fire"_s, u"+#% total to Fire Resistance"_s, u"pseudo"_s)}),
+        })),
+        TradeCategories::fromJson(tradefixtures::filters())};
+}
+
 // The "equipment_filters" ids of a search.
 QStringList equipmentIds(const TradeQuery &q)
 {
@@ -1028,6 +1058,247 @@ private Q_SLOTS:
         QCOMPARE(needed({{u"# to Alpha"_s, 1}}), 1);
         // two from one without any, so it isn't every item
         QCOMPARE(needed({}), 2);
+    }
+
+    void pobSearchForTheBuild()
+    {
+        PobSearchOptions options;
+        options.itemClass = u"Helmets"_s;
+        options.min = 140.08;
+        const PobSearch q = pobSearch({{u"explicit.life"_s, 2},
+                                       {u"explicit.speed"_s, 5},
+                                       {u"explicit.gone"_s, 9},
+                                       {u"explicit.phys"_s, 3}},
+                                      pobSite(), options);
+        QCOMPARE(statGroups(q).size(), 1);
+        const QJsonObject group = statGroups(q).at(0).toObject();
+        QCOMPARE(group.value(u"type").toString(), u"weight"_s);
+        // the heaviest first
+        QCOMPARE(filterIds(group),
+                 QStringList({u"explicit.speed"_s, u"explicit.phys"_s, u"explicit.life"_s}));
+        QCOMPARE(valueOf(group, u"explicit.phys"_s), weight(3));
+        QCOMPARE(group.value(u"value").toObject(), minimum(140.1));
+        QCOMPARE(q.groupMin, 140.1);
+        // one the site doesn't have
+        QCOMPARE(q.unmatched, QStringList{u"explicit.gone"_s});
+        QCOMPARE(q.filters, 3);
+        QCOMPARE(q.dropped, 0);
+        QVERIFY(!q.resistsBoosted);
+        QCOMPARE(q.needDamage, 0);
+        QCOMPARE(filterOf(q, u"type_filters", u"category"), QJsonObject({{u"option"_s, u"armour.helmet"_s}}));
+        // not uniques, as Path of Building's own searches
+        QCOMPARE(filterOf(q, u"type_filters", u"rarity"), QJsonObject({{u"option"_s, u"nonunique"_s}}));
+        QCOMPARE(queryOf(q).value(u"status").toObject(), QJsonObject({{u"option"_s, u"available"_s}}));
+        QCOMPARE(q.body.value(u"sort").toObject(), QJsonObject({{u"statgroup.0"_s, u"desc"_s}}));
+    }
+
+    void pobSearchCategoryAndMinimum()
+    {
+        const QList<ModWeight> mods = {{u"explicit.life"_s, 2}};
+        PobSearchOptions options;
+        // Path of Building's, for a class the site has no category for
+        options.itemClass = u"Trinkets"_s;
+        options.category = u"armour.focus"_s;
+        options.status = ListingStatus::Online;
+        const PobSearch q = pobSearch(mods, pobSite(), options);
+        QCOMPARE(filterOf(q, u"type_filters", u"category"), QJsonObject({{u"option"_s, u"armour.focus"_s}}));
+        QCOMPARE(queryOf(q).value(u"status").toObject(), QJsonObject({{u"option"_s, u"online"_s}}));
+        // but the site's own comes first
+        options.itemClass = u"Helmets"_s;
+        QCOMPARE(filterOf(pobSearch(mods, pobSite(), options), u"type_filters", u"category"),
+                 QJsonObject({{u"option"_s, u"armour.helmet"_s}}));
+
+        // with neither, and no minimum to reach
+        const PobSearch plain = pobSearch(mods, pobSite());
+        const QJsonObject typeFilters =
+            queryOf(plain).value(u"filters").toObject().value(u"type_filters").toObject();
+        QCOMPARE(typeFilters.value(u"filters").toObject().keys(), QStringList{u"rarity"_s});
+        QCOMPARE(plain.groupMin, 0.0);
+        QVERIFY(!statGroups(plain).at(0).toObject().value(u"value").toObject().contains(u"min"));
+        options.min = -5;
+        QCOMPARE(pobSearch(mods, pobSite(), options).groupMin, 0.0);
+    }
+
+    void pobSearchSkipsWhatCantCount()
+    {
+        PobSearchOptions options;
+        options.ignoreRules = {{u"res"_s, {}, IgnoreRule::Mode::Ignore}};
+        const QList<ModWeight> mods = {{u"explicit.life"_s, 2},
+                                       {u"explicit.fire"_s, 4},
+                                       {u"explicit.speed"_s, 0},
+                                       {u"explicit.crit"_s, -1},
+                                       {u"explicit.phys"_s, qInf()}};
+        const PobSearch q = pobSearch(mods, pobSite(), options);
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()), QStringList{u"explicit.life"_s});
+        QCOMPARE(q.filters, 1);
+        QCOMPARE(q.excluded, 0);
+        QCOMPARE(statGroups(q).size(), 1);
+
+        // and listings with those excluded are left out
+        options.ignoreRules = {{u"res"_s, {}, IgnoreRule::Mode::Exclude}};
+        const PobSearch excluding = pobSearch(mods, pobSite(), options);
+        QCOMPARE(statGroups(excluding).size(), 2);
+        QCOMPARE(statGroups(excluding).at(1).toObject().value(u"type").toString(), u"not"_s);
+        QVERIFY(excluding.excluded > 0);
+
+        // nothing to search for
+        const PobSearch none = pobSearch({{u"explicit.gone"_s, 3}}, pobSite());
+        QCOMPARE(none.filters, 0);
+        QVERIFY(statGroups(none).isEmpty());
+    }
+
+    void pobSearchKeepsTheHeaviest()
+    {
+        const QList<ModWeight> mods = {{u"explicit.life"_s, 2},
+                                       {u"explicit.speed"_s, 5},
+                                       {u"explicit.phys"_s, 3},
+                                       {u"explicit.crit"_s, 1}};
+        PobSearchOptions options;
+        options.maxFilters = 2;
+        const PobSearch q = pobSearch(mods, pobSite(), options);
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()),
+                 QStringList({u"explicit.speed"_s, u"explicit.phys"_s}));
+        QCOMPARE(q.filters, 2);
+        QCOMPARE(q.dropped, 2);
+        // always one at least
+        options.maxFilters = 0;
+        QCOMPARE(pobSearch(mods, pobSite(), options).filters, 1);
+    }
+
+    void pobSearchHelpsWithResistances()
+    {
+        PobSearchOptions options;
+        options.shortResists = {Element::Fire};
+        const QList<ModWeight> mods = {{u"explicit.speed"_s, 5},
+                                       {u"explicit.life"_s, 2},
+                                       {u"explicit.fire"_s, 0.5},
+                                       {u"explicit.cold"_s, 0.5}};
+        const PobSearch q = pobSearch(mods, pobSite(), options);
+        QVERIFY(q.resistsBoosted);
+        const QJsonObject group = statGroups(q).at(0).toObject();
+        // every mod that adds to fire, explicit or implicit, is worth half the
+        // best mod of a percentage
+        QCOMPARE(filterIds(group), QStringList({u"explicit.speed"_s, u"explicit.fire"_s,
+                                                u"explicit.fire_cold"_s, u"explicit.all_res"_s,
+                                                u"implicit.fire"_s, u"explicit.life"_s, u"explicit.cold"_s}));
+        QCOMPARE(valueOf(group, u"explicit.fire"_s), weight(2.5));
+        QCOMPARE(valueOf(group, u"implicit.fire"_s), weight(2.5));
+        QCOMPARE(valueOf(group, u"explicit.cold"_s), weight(0.5));
+
+        // one worth more already stays so, and doesn't count as the best
+        const PobSearch more =
+            pobSearch({{u"explicit.speed"_s, 5}, {u"explicit.fire"_s, 8}}, pobSite(), options);
+        QCOMPARE(valueOf(statGroups(more).at(0).toObject(), u"explicit.fire"_s), weight(8));
+        QCOMPARE(valueOf(statGroups(more).at(0).toObject(), u"explicit.fire_cold"_s), weight(2.5));
+        // with no mod of a percentage, it's half the best of them all
+        const PobSearch flat = pobSearch({{u"explicit.life"_s, 4}}, pobSite(), options);
+        QCOMPARE(valueOf(statGroups(flat).at(0).toObject(), u"explicit.fire"_s), weight(2));
+
+        // all elemental resistances don't add to chaos
+        options.shortResists = {Element::Chaos};
+        const PobSearch chaos = pobSearch(mods, pobSite(), options);
+        QCOMPARE(filterIds(statGroups(chaos).at(0).toObject()),
+                 QStringList({u"explicit.speed"_s, u"explicit.chaos"_s, u"explicit.life"_s,
+                              u"explicit.fire"_s, u"explicit.cold"_s}));
+    }
+
+    void pobSearchLeavesIgnoredResistancesBe()
+    {
+        const QList<ModWeight> mods = {{u"explicit.speed"_s, 5}, {u"explicit.cold"_s, 0.5}};
+        PobSearchOptions options;
+        options.shortResists = {Element::Fire, Element::Cold};
+        options.ignoreRules = {{{}, u"#% to Fire Resistance"_s, IgnoreRule::Mode::Ignore}};
+        const PobSearch q = pobSearch(mods, pobSite(), options);
+        QVERIFY(q.resistsBoosted);
+        const QStringList ids = filterIds(statGroups(q).at(0).toObject());
+        QVERIFY(ids.contains(u"explicit.cold"_s));
+        QVERIFY(ids.contains(u"explicit.fire_cold"_s));
+        QVERIFY(!ids.contains(u"explicit.fire"_s));
+        QVERIFY(!ids.contains(u"implicit.fire"_s));
+
+        options.shortResists = {Element::Fire};
+        const PobSearch fire = pobSearch(mods, pobSite(), options);
+        QVERIFY(!fire.resistsBoosted);
+        QCOMPARE(filterIds(statGroups(fire).at(0).toObject()),
+                 QStringList({u"explicit.speed"_s, u"explicit.cold"_s}));
+
+        // and a mod you ignore that would add to it
+        options.ignoreRules = {{{}, u"#% to all Elemental Resistances"_s, IgnoreRule::Mode::Ignore}};
+        QVERIFY(!filterIds(statGroups(pobSearch(mods, pobSite(), options)).at(0).toObject())
+                     .contains(u"explicit.all_res"_s));
+    }
+
+    void pobSearchKeepsYourDamage()
+    {
+        const QList<ModWeight> mods = {{u"explicit.speed"_s, 5},
+                                       {u"explicit.phys"_s, 3},
+                                       {u"explicit.life"_s, 2.5},
+                                       {u"explicit.recoup"_s, 2},
+                                       {u"explicit.crit"_s, 1}};
+        PobSearchOptions options;
+        options.worn = {u"#% increased Attack Speed"_s, u"Adds # to # Physical Damage to Attacks"_s,
+                        u"# to maximum Life"_s};
+        const PobSearch q = pobSearch(mods, pobSite(), options);
+        QCOMPARE(q.needDamage, 2);
+        QCOMPARE(statGroups(q).size(), 2);
+        const QJsonObject count = statGroups(q).at(1).toObject();
+        QCOMPARE(count.value(u"type").toString(), u"count"_s);
+        QCOMPARE(count.value(u"value").toObject(), minimum(2));
+        // the build's best damage mods, not those that keep you alive
+        QCOMPARE(filterIds(count),
+                 QStringList({u"explicit.speed"_s, u"explicit.phys"_s, u"explicit.crit"_s}));
+        QCOMPARE(valueOf(count, u"explicit.speed"_s), QJsonObject());
+
+        // as many as yours has, up to two
+        options.worn << u"#% increased Critical Hit Chance for Attacks"_s;
+        QCOMPARE(pobSearch(mods, pobSite(), options).needDamage, 2);
+        options.worn = {u"#% increased Attack Speed"_s};
+        QCOMPARE(pobSearch(mods, pobSite(), options).needDamage, 1);
+        options.worn = {u"# to maximum Life"_s};
+        const PobSearch without = pobSearch(mods, pobSite(), options);
+        QCOMPARE(without.needDamage, 0);
+        QCOMPARE(statGroups(without).size(), 1);
+        options.worn = {};
+        QCOMPARE(pobSearch(mods, pobSite(), options).needDamage, 0);
+    }
+
+    void pobSearchDamageCountsTowardTheLimit()
+    {
+        const QList<ModWeight> mods = {{u"explicit.speed"_s, 5},
+                                       {u"explicit.phys"_s, 3},
+                                       {u"explicit.life"_s, 2.5},
+                                       {u"explicit.recoup"_s, 2},
+                                       {u"explicit.crit"_s, 1}};
+        PobSearchOptions options;
+        options.maxFilters = 4;
+        options.worn = {u"#% increased Attack Speed"_s, u"Adds # to # Physical Damage to Attacks"_s};
+        const PobSearch q = pobSearch(mods, pobSite(), options);
+        QCOMPARE(filterIds(statGroups(q).at(1).toObject()),
+                 QStringList({u"explicit.speed"_s, u"explicit.phys"_s}));
+        QCOMPARE(q.filters, 2);
+        QCOMPARE(q.dropped, 3);
+        QCOMPARE(filterCount(q), 4);
+        // without the group, the mods have all the room
+        options.worn = {u"# to maximum Life"_s};
+        QCOMPARE(pobSearch(mods, pobSite(), options).filters, 4);
+
+        // and the group has eight at most
+        using namespace tradefixtures;
+        QJsonArray entries;
+        QList<ModWeight> many;
+        for (int n = 1; n <= 12; ++n) {
+            entries << stat(u"explicit.dmg_%1"_s.arg(n), u"#% increased Damage %1"_s.arg(n), u"explicit"_s);
+            many << ModWeight{u"explicit.dmg_%1"_s.arg(n), 13.0 - n};
+        }
+        const TradeData site{StatIndex::fromJson(response({group(u"explicit"_s, entries)})), {}};
+        options.maxFilters = 40;
+        options.worn = {u"#% increased Damage 1"_s};
+        QCOMPARE(filterIds(statGroups(pobSearch(many, site, options)).at(1).toObject()).size(), 8);
+        // and a quarter of them, when it has fewer
+        options.maxFilters = 12;
+        const PobSearch fewer = pobSearch(many, site, options);
+        QCOMPARE(filterIds(statGroups(fewer).at(1).toObject()).size(), 3);
+        QCOMPARE(fewer.filters, 9);
     }
 };
 

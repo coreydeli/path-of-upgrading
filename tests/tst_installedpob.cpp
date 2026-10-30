@@ -2,6 +2,7 @@
 //
 // The engine with the Path of Building on this computer, which is normally
 // the Flatpak. It's skipped when there's none.
+#include "core/pobweighing.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
 
@@ -103,6 +104,22 @@ private Q_SLOTS:
         QCOMPARE(tried.size(), 1);
         QCOMPARE(tried[0][u"replacing"].toString(), u"Grim Crown, Visored Helm"_s);
         QCOMPARE(tried[0][u"stats"][u"Life"].toDouble(), answer[u"before"][u"Life"].toDouble());
+    }
+
+    void weighsMods()
+    {
+        m_engine.setBuild(build);
+        const std::unique_ptr<PobReply> reply(
+            m_engine.weigh(u"Helmet"_s, {{.stat = u"TotalEHP"_s, .weight = 1}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+
+        const PobWeighing weighing = readPobWeighing(reply->answer());
+        QCOMPARE(weighing.category, u"armour.helmet"_s);
+        QCOMPARE_GT(weighing.min, 0.0);
+        // life adds the most to a helmet for effective HP
+        QVERIFY(!weighing.mods.isEmpty());
+        QCOMPARE(weighing.mods.first().id, u"explicit.stat_3299347043"_s);
     }
 
 private:
