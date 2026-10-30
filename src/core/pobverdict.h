@@ -116,6 +116,10 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
 // are none.
 qsizetype bestVerdict(const QList<PobVerdict> &verdicts);
 
+// The resistances under their cap that count: chaos only when you say so and
+// it isn't ignored.
+QList<Element> resistsUnderCap(const PobStats &stats, const PobVerdictOptions &options = {});
+
 // Path of Building flags Chaos Inoculation as "ChaosInoculation". The stats
 // saved in a build don't have the flag, but they show its maximum Life of 1.
 bool hasChaosInoculation(const PobStats &stats);
