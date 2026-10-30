@@ -4,6 +4,7 @@
 #include "itemtexts.h"
 
 #include <QTest>
+#include <algorithm>
 
 using namespace pou;
 
@@ -692,6 +693,103 @@ private Q_SLOTS:
                                             {.label = u"+15% increased Light Radius"_s, .tone = Tone::Bad},
                                             {.label = u"+10 to Strength"_s, .tone = Tone::Good},
                                         }));
+    }
+
+    void everyStatThatChanges()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.evaluation.comparison.rows = {
+            {.key = u"# to maximum Life"_s, .newValue = 85, .oldValue = 55, .diff = 30, .usefulness = 1},
+            {.key = u"#% to Cold Resistance"_s, .newValue = 18, .oldValue = 30, .diff = -12, .usefulness = 2},
+            // one you'd rather not have
+            {.key = u"#% increased Light Radius"_s,
+             .newValue = 15,
+             .oldValue = 0,
+             .diff = 15,
+             .usefulness = -0.5},
+            // one that doesn't count
+            {.key = u"# to Accuracy Rating"_s, .newValue = 90, .oldValue = 0, .diff = 90},
+            {.key = u"#% increased Attack Speed"_s, .newValue = 12.5, .oldValue = 10.25, .diff = 2.25},
+            {.key = u"# to Evasion Rating"_s, .newValue = 1334.4, .oldValue = 100, .diff = 1234.4},
+            {.key = u"[Base] Armour"_s, .newValue = 312, .oldValue = 180, .diff = 132, .usefulness = 1},
+            {.key = u"Adds # to # Fire Damage to Attacks"_s, .newValue = 7.5, .oldValue = 4, .diff = 3.5},
+        };
+        QCOMPARE(reportOf(check).statChanges,
+                 (QList<ReportFigure>{
+                     {.label = u"# to maximum Life"_s,
+                      .change = u"+30"_s,
+                      .from = u"55"_s,
+                      .to = u"85"_s,
+                      .tone = Tone::Good},
+                     {.label = u"#% to Cold Resistance"_s,
+                      .change = u"-12"_s,
+                      .from = u"30"_s,
+                      .to = u"18"_s,
+                      .tone = Tone::Bad},
+                     {.label = u"#% increased Light Radius"_s,
+                      .change = u"+15"_s,
+                      .from = u"0"_s,
+                      .to = u"15"_s,
+                      .tone = Tone::Bad},
+                     {.label = u"# to Accuracy Rating"_s, .change = u"+90"_s, .from = u"0"_s, .to = u"90"_s},
+                     {.label = u"#% increased Attack Speed"_s,
+                      .change = u"+2.25"_s,
+                      .from = u"10.25"_s,
+                      .to = u"12.5"_s},
+                     {.label = u"# to Evasion Rating"_s,
+                      .change = u"+1,234"_s,
+                      .from = u"100"_s,
+                      .to = u"1,334"_s},
+                     {.label = u"Armour"_s,
+                      .change = u"+132"_s,
+                      .from = u"180"_s,
+                      .to = u"312"_s,
+                      .tone = Tone::Good},
+                     {.label = u"Adds # to # Fire Damage to Attacks"_s,
+                      .change = u"+3.5"_s,
+                      .from = u"4"_s,
+                      .to = u"7.5"_s,
+                      .note = u"average"_s},
+                 }));
+        // where the lines on top are only those that count
+        QCOMPARE(reportOf(check).stats.size(), 4);
+    }
+
+    void loweredStats()
+    {
+        ItemCheck check = judged(Verdict::Downgrade);
+        check.evaluation.comparison.rows = {
+            {.key = u"# to Strength"_s, .newValue = 0, .oldValue = 12.5, .diff = -12.5, .usefulness = 0.5},
+        };
+        QCOMPARE(reportOf(check).statChanges, (QList<ReportFigure>{{.label = u"# to Strength"_s,
+                                                                    .change = u"-12.5"_s,
+                                                                    .from = u"12.5"_s,
+                                                                    .to = u"0"_s,
+                                                                    .tone = Tone::Bad}}));
+    }
+
+    void statsOfTheItemsYouCompare()
+    {
+        // all that differ between them, whatever they're worth to you
+        const ItemReport report = reportOn(helmetNew, wearing({{u"Helmet"_s, helmetOld}}));
+        QStringList labels;
+        for (const ReportFigure &f : report.statChanges)
+            labels << f.label;
+        QVERIFY(labels.contains(u"#% to Fire Resistance"_s));
+        QVERIFY(labels.contains(u"# to maximum Life"_s));
+        QVERIFY(labels.contains(u"#% to Lightning Resistance"_s));
+        QVERIFY(labels.contains(u"Armour"_s));
+        const auto life = std::ranges::find(report.statChanges, u"# to maximum Life"_s, &ReportFigure::label);
+        QVERIFY(life != report.statChanges.end());
+        QCOMPARE(life->from, u"55"_s);
+        QCOMPARE(life->to, u"89"_s);
+        QCOMPARE(life->change, u"+34"_s);
+    }
+
+    void nothingChangesForTheItemYouWear()
+    {
+        QVERIFY(reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}})).statChanges.isEmpty());
+        QVERIFY(reportOf(judged(Verdict::Upgrade)).statChanges.isEmpty());
     }
 
     void pobStatus_data()

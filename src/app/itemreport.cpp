@@ -147,17 +147,17 @@ QList<ReportFigure> headlineOf(const PobVerdict &v)
 }
 
 // A stat as the popup shows it: whole from 100 up, with commas from 1,000.
-QString amount(double v)
+QString amount(double v, int decimals = 1)
 {
     if (std::abs(v) < 100)
-        return formatNumber(roundTo(v, 1));
+        return formatNumber(roundTo(v, decimals));
     static const QLocale english(QLocale::English);
     return english.toString(roundHalfUp(v), 'f', 0);
 }
 
-QString signedAmount(double v)
+QString signedAmount(double v, int decimals = 1)
 {
-    return (v > 0 ? u"+"_s : QString()) + amount(v);
+    return (v > 0 ? u"+"_s : QString()) + amount(v, decimals);
 }
 
 QString percent(double v)
@@ -296,6 +296,22 @@ QList<ReportFigure> statsOf(const QList<StatRow> &rows)
     return stats;
 }
 
+// Every stat that changes, with what you have of it now and with the item.
+QList<ReportFigure> statChangesOf(const QList<StatRow> &rows)
+{
+    QList<ReportFigure> changes;
+    for (const StatRow &row : rows) {
+        changes << ReportFigure{.label = statName(row.key),
+                                .change = signedAmount(row.diff, 2),
+                                .from = amount(row.oldValue, 2),
+                                .to = amount(row.newValue, 2),
+                                // the numbers are the average of the range
+                                .note = row.key.contains(u"# to #") ? u"average"_s : QString(),
+                                .tone = toneOf(row.diff * row.usefulness)};
+    }
+    return changes;
+}
+
 QString openAffixesOf(const Affixes &affixes)
 {
     QStringList open;
@@ -373,6 +389,7 @@ ItemReport reportOf(const ItemCheck &check)
         report.changes = characterChanges(*e.change);
     }
     report.stats = statsOf(r.rows);
+    report.statChanges = statChangesOf(r.rows);
     if (e.gear && e.gear->isRated() && e.mode != ScoreMode::PathOfBuilding) {
         report.gearScore = QString::number(e.gear->score);
         report.gearGrade = e.gear->grade;
