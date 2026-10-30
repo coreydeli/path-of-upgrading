@@ -53,6 +53,13 @@ struct FakePob
         return file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).array()
                                               : QJsonArray();
     }
+    // The slot and weights it was last asked to weigh the mods for.
+    QJsonObject weighed() const
+    {
+        QFile file(folder.filePath(u"weighed.json"_s));
+        return file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).object()
+                                              : QJsonObject();
+    }
 
     int count(const QString &name) const
     {

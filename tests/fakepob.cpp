@@ -11,7 +11,8 @@
 // load. In the folder, it counts how many times it's run in a file called
 // runs, and how many times it has stopped once stdin was closed in one called
 // stops. It keeps the items it was last asked to judge in one called
-// asked.json.
+// asked.json, and the slot and weights it was last asked to weigh in
+// weighed.json.
 //
 // Its own arguments come before LuaJIT's, for going wrong:
 //   --fail           it says it couldn't start
@@ -164,8 +165,12 @@ int main(int argc, char *argv[])
             r.insert(u"items"_s, request.value(u"items"));
         }
         if (command == u"weigh") {
-            r.insert(u"slot"_s, request.value(u"slot"));
-            r.insert(u"weights"_s, request.value(u"weights"));
+            const QJsonObject weighed{{u"slot"_s, request.value(u"slot")},
+                                      {u"weights"_s, request.value(u"weights")}};
+            if (QFile file(u"weighed.json"_s); file.open(QIODevice::WriteOnly))
+                file.write(QJsonDocument(weighed).toJson());
+            for (auto it = weighed.constBegin(); it != weighed.constEnd(); ++it)
+                r.insert(it.key(), it.value());
         }
         r.insert(u"xml"_s, xml);
         r.insert(u"wearing"_s, wearing);

@@ -295,6 +295,8 @@ private Q_SLOTS:
                              QJsonObject{{u"stat"_s, u"TotalEHP"_s}, {u"weight"_s, 0.4}}}));
         QCOMPARE(answer.value(u"category").toString(), u"armour.gloves"_s);
         QVERIFY(!answer.contains(u"judged"));
+        QCOMPARE(pob.weighed().value(u"slot").toString(), u"Gloves"_s);
+        QCOMPARE(pob.weighed().value(u"weights"), answer.value(u"weights"));
     }
 
     void noBuild()
