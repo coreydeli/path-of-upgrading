@@ -224,6 +224,88 @@ private Q_SLOTS:
         QVERIFY(!l.instantBuyout);
     }
 
+    void itsOwnNumbers()
+    {
+        // the defences it has, from the site's properties
+        const Listing cuff = readListing(cuffs(), u"Gloves"_s, rates);
+        const QList<ListingProperty> expected = {{u"Armour"_s, u"160"_s}, {u"Energy Shield"_s, u"45"_s}};
+        QCOMPARE(cuff.properties, expected);
+        QCOMPARE(baseProperties(cuff.item), expected);
+        QCOMPARE(readListing(gloves(), u"Gloves"_s, rates).properties,
+                 (QList<ListingProperty>{{u"Energy Shield"_s, u"250"_s}}));
+
+        // in the order of the table, whatever order the site has
+        QJsonObject shield = rareItem(u"Dusk Wall"_s, u"Heavy Buckler"_s, 78);
+        shield.insert(u"properties"_s, QJsonArray{itemProperty(u"Spirit"_s, {u"30"_s}),
+                                                  itemProperty(u"Runic Ward"_s, {u"75"_s}),
+                                                  itemProperty(u"[BlockChance|Block Chance]"_s, {u"25%"_s}),
+                                                  itemProperty(u"[EnergyShield|Energy Shield]"_s, {u"40"_s}),
+                                                  itemProperty(u"[Evasion|Evasion Rating]"_s, {u"88"_s}),
+                                                  itemProperty(u"[Armour]"_s, {u"120"_s})});
+        QCOMPARE(readListing(result(u"x"_s, {}, shield), u"Shields"_s, rates).properties,
+                 (QList<ListingProperty>{{u"Armour"_s, u"120"_s},
+                                         {u"Evasion"_s, u"88"_s},
+                                         {u"Energy Shield"_s, u"40"_s},
+                                         {u"Runic Ward"_s, u"75"_s},
+                                         {u"Block"_s, u"25%"_s},
+                                         {u"Spirit"_s, u"30"_s}}));
+    }
+
+    void noOwnNumbers()
+    {
+        // jewellery has none, and those at nothing aren't shown
+        QVERIFY(readListing(result(u"x"_s, {}, rareItem(u"Plain"_s, u"Iron Ring"_s, 60)), u"Rings"_s, rates)
+                    .properties.isEmpty());
+        QJsonObject item = rareItem(u"Bare"_s, u"Heavy Buckler"_s, 60);
+        item.insert(u"properties"_s, QJsonArray{itemProperty(u"[BlockChance|Block Chance]"_s, {u"0%"_s}),
+                                                itemProperty(u"[Armour]"_s, {u"0"_s}),
+                                                itemProperty(u"[Evasion|Evasion Rating]"_s, {u"64"_s})});
+        QCOMPARE(readListing(result(u"x"_s, {}, item), u"Shields"_s, rates).properties,
+                 (QList<ListingProperty>{{u"Evasion"_s, u"64"_s}}));
+        QVERIFY(baseProperties(Item{}).isEmpty());
+    }
+
+    void weaponDamagePerSecond()
+    {
+        const auto weapon = [](const QString &chaos) {
+            QJsonObject item = rareItem(u"Gale Edge"_s, u"Crude Bow"_s, 80);
+            QJsonArray properties{itemProperty(u"Physical Damage"_s, {u"20-40"_s}),
+                                  itemProperty(u"Elemental Damage"_s, {u"10-30"_s, u"5-15"_s}),
+                                  itemProperty(u"Critical Hit Chance"_s, {u"5.00%"_s}),
+                                  itemProperty(u"Attacks per Second"_s, {u"1.50"_s})};
+            if (!chaos.isEmpty())
+                properties.append(itemProperty(u"Chaos Damage"_s, {chaos}));
+            item.insert(u"properties"_s, properties);
+            return readListing(result(u"x"_s, {}, item), u"Bows"_s, rates).properties;
+        };
+        // 30 and 30 a hit, 1.5 hits a second
+        QCOMPARE(weapon({}),
+                 (QList<ListingProperty>{
+                     {u"DPS"_s, u"90"_s}, {u"Physical DPS"_s, u"45"_s}, {u"Elemental DPS"_s, u"45"_s}}));
+        QCOMPARE(weapon(u"10-20"_s), (QList<ListingProperty>{{u"DPS"_s, u"112.5"_s},
+                                                             {u"Physical DPS"_s, u"45"_s},
+                                                             {u"Elemental DPS"_s, u"45"_s},
+                                                             {u"Chaos DPS"_s, u"22.5"_s}}));
+
+        // one kind of damage is the whole of it
+        QJsonObject physical = rareItem(u"Plain Edge"_s, u"Crude Bow"_s, 80);
+        physical.insert(u"properties"_s, QJsonArray{itemProperty(u"Physical Damage"_s, {u"5-6"_s}),
+                                                    itemProperty(u"Attacks per Second"_s, {u"1.20"_s})});
+        QCOMPARE(readListing(result(u"x"_s, {}, physical), u"Bows"_s, rates).properties,
+                 (QList<ListingProperty>{{u"DPS"_s, u"6.6"_s}}));
+        // of any kind
+        for (const QString &kind : {u"Elemental Damage"_s, u"Chaos Damage"_s}) {
+            QJsonObject only = rareItem(u"Plain Edge"_s, u"Crude Bow"_s, 80);
+            only.insert(u"properties"_s, QJsonArray{itemProperty(kind, {u"5-6"_s}),
+                                                    itemProperty(u"Attacks per Second"_s, {u"1.20"_s})});
+            QCOMPARE(readListing(result(u"x"_s, {}, only), u"Bows"_s, rates).properties,
+                     (QList<ListingProperty>{{u"DPS"_s, u"6.6"_s}}));
+        }
+        // and without the speed there's no damage per second to say
+        physical.insert(u"properties"_s, QJsonArray{itemProperty(u"Physical Damage"_s, {u"5-6"_s})});
+        QVERIFY(readListing(result(u"x"_s, {}, physical), u"Bows"_s, rates).properties.isEmpty());
+    }
+
     void sellerWithoutCharacter()
     {
         QJsonObject r = gloves();

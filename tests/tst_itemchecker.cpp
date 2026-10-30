@@ -41,6 +41,14 @@ ScreenPoint mouseAt(int x, int y)
     return {.screen = QGuiApplication::primaryScreen()->name(), .position = {x, y}};
 }
 
+// A point on the popup, in the screen's coordinates, moved by the offset.
+ScreenPoint onPopup(const ItemPopup &popup, QPoint offset = {})
+{
+    QScreen *screen = QGuiApplication::primaryScreen();
+    return {.screen = screen->name(),
+            .position = popup.window()->geometry().center() - screen->geometry().topLeft() + offset};
+}
+
 // Where the popup should be for the mouse, on the screen.
 QPoint placed(const ItemPopup &popup, PopupPosition where, const std::optional<QPoint> &mouse)
 {
@@ -144,8 +152,10 @@ public:
 private Q_SLOTS:
     void initTestCase()
     {
-        // what it says when poe.ninja has no rates, which these tests don't need
-        QLoggingCategory::setFilterRules(u"pathofupgrading.ninja.warning=false"_s);
+        // what they say when poe.ninja has no rates, which these tests don't need,
+        // and when the trade site lets a search down, which one does
+        QLoggingCategory::setFilterRules(u"pathofupgrading.ninja.warning=false\n"
+                                         u"pathofupgrading.trade.warning=false"_s);
     }
 
     void init() { QTest::failOnWarning(); }
@@ -169,6 +179,91 @@ private Q_SLOTS:
                  placed(checker.popup(), PopupPosition::Cursor, QPoint(200, 300)));
         QCOMPARE(read.size(), 1);
         QCOMPARE(read.first().at(0).value<Item>().name, u"Doom Visage"_s);
+    }
+
+    void hidesThePopupInTheWay()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        QVERIFY(!input.lastNudge);
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QVERIFY(checker.popup().isVisible());
+
+        // the mouse is on it, so the game would see that and not the item
+        input.mouseAt = onPopup(checker.popup());
+        Q_EMIT input.copyFailed(GameInput::Failure::NothingCopied, {}, std::nullopt);
+        checker.check();
+        QVERIFY(!checker.popup().isVisible());
+        QCOMPARE(input.copies, 2);
+        QVERIFY(input.lastNudge);
+
+        // and the next item brings it back
+        Q_EMIT input.itemCopied(itemtexts::helmetOld, mouseAt(200, 300));
+        QVERIFY(checker.popup().isVisible());
+    }
+
+    void hidesThePopupHovered()
+    {
+        // which is how it's known over the popup, where the mouse isn't
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        checker.popup().setHovered(true);
+        QVERIFY(!input.mouseAt);
+        Q_EMIT input.copyFailed(GameInput::Failure::NothingCopied, {}, std::nullopt);
+        checker.check();
+        QVERIFY(!checker.popup().isVisible());
+        QVERIFY(input.lastNudge);
+    }
+
+    void leavesThePopupNotInTheWay()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+
+        // with the mouse well off it
+        input.mouseAt = onPopup(checker.popup(), {checker.popup().window()->width(), 0});
+        Q_EMIT input.copyFailed(GameInput::Failure::NothingCopied, {}, std::nullopt);
+        checker.check();
+        QVERIFY(checker.popup().isVisible());
+        QCOMPARE(input.copies, 2);
+        QVERIFY(!input.lastNudge);
+    }
+
+    void leavesThePopupWhenItCantRead()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        checker.popup().setHovered(true);
+
+        Settings paused;
+        paused.overlay.paused = true;
+        checker.setSettings(paused);
+        checker.check();
+        QVERIFY(checker.popup().isVisible());
+        QCOMPARE(input.copies, 1);
+
+        // and while it reads one already
+        checker.setSettings({});
+        checker.check();
+        QVERIFY(!checker.popup().isVisible());
+        QCOMPARE(input.copies, 2);
+        QTRY_VERIFY(checker.popup().isVisible());
+        QCOMPARE(checker.popup().message(), u"The game is still copying the item."_s);
+        checker.popup().setHovered(true);
+        checker.check();
+        QVERIFY(checker.popup().isVisible());
+        QCOMPARE(input.copies, 2);
     }
 
     void wear()
@@ -285,6 +380,31 @@ private Q_SLOTS:
         checker.popup().findOnTrade(TradeFinder::Kind::Upgrades);
         QVERIFY(finished.wait());
         QCOMPARE(checker.popup().trade(), failedReport(u"Trade searches are turned off in the settings."_s));
+    }
+
+    // the site couldn't be searched, so the popup offers it for you to try
+    void tradeSiteFails()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        trading.network.answers << FakeAnswer{.error = QNetworkReply::HostNotFoundError};
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QSignalSpy finished(&trading.finder, &TradeFinder::finished);
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(finished.wait());
+
+        const TradeReport trade = checker.popup().trade();
+        QVERIFY(trade.failed);
+        QVERIFY(!trade.listed);
+        QCOMPARE(trade.status, trading.finder.errorString());
+        QVERIFY(!trade.url.isEmpty());
+        QCOMPARE(trade, failedReport(trading.finder.errorString(), trading.finder.errorUrl()));
+        QVERIFY(trade.url.path().startsWith(u"/trade2/search/poe2/Standard"_s));
+        QVERIFY(trade.url.hasQuery());
     }
 
     void tradeWaitsItsTurn()

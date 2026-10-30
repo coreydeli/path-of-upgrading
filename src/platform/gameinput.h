@@ -27,15 +27,24 @@ public:
     };
     Q_ENUM(Failure)
 
+    struct CopyOptions
+    {
+        // with Alt as well, which has the mods' tiers in the copy
+        bool advanced = false;
+        // The popup was over the mouse and is going, so the game is waiting for
+        // it to be gone and then given a nudge of the mouse. Until it moves,
+        // the game still has the popup under it and no item.
+        bool nudge = false;
+    };
+
     using QObject::QObject;
 
     virtual bool isAvailable() const = 0;
     virtual QString errorString() const = 0;
 
     // Has the game copy the item under the mouse, which ends in itemCopied or
-    // copyFailed. An advanced copy, with Alt as well, has the mods' tiers in
-    // it. While a copy is under way, another does nothing.
-    virtual void copyItem(bool advanced) = 0;
+    // copyFailed. While a copy is under way, another does nothing.
+    virtual void copyItem(const CopyOptions &options) = 0;
     // Where the mouse is, when it can be told, as it can over the game.
     virtual std::optional<ScreenPoint> mouse() const = 0;
 

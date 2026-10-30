@@ -77,6 +77,15 @@ private Q_SLOTS:
         const QString why = u"Trade searches are turned off in the settings."_s;
         QCOMPARE(failedReport(why), (TradeReport{.asked = true, .failed = true, .status = why}));
     }
+
+    // with the search to try on the trade site
+    void failedWithASearch()
+    {
+        const QString why = u"The trade site couldn't be reached."_s;
+        const QUrl url(u"https://www.pathofexile.com/trade2/search/poe2/Standard?q=%7B%7D"_s);
+        QCOMPARE(failedReport(why, url),
+                 (TradeReport{.asked = true, .failed = true, .status = why, .url = url}));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTradeReport)

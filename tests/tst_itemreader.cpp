@@ -52,6 +52,37 @@ private Q_SLOTS:
         QVERIFY(game.lastAdvanced);
     }
 
+    void nudgesTheMouse()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        reader.setAdvancedCopy(true);
+        reader.read();
+        QVERIFY(!game.lastNudge);
+        Q_EMIT game.copyFailed(GameInput::Failure::NothingCopied, {}, overItem);
+
+        // with the advanced copy as well
+        reader.read(true);
+        QCOMPARE(game.copies, 2);
+        QVERIFY(game.lastNudge);
+        QVERIFY(game.lastAdvanced);
+    }
+
+    void canRead()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        QVERIFY(reader.canRead());
+        reader.read();
+        QVERIFY(!reader.canRead());
+        Q_EMIT game.copyFailed(GameInput::Failure::NothingCopied, {}, overItem);
+        QVERIFY(reader.canRead());
+        reader.setPaused(true);
+        QVERIFY(!reader.canRead());
+        reader.setPaused(false);
+        QVERIFY(reader.canRead());
+    }
+
     void oneAtATime()
     {
         FakeGameInput game;

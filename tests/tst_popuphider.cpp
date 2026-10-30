@@ -236,6 +236,69 @@ private Q_SLOTS:
         QVERIFY(hide.isEmpty());
     }
 
+    void inTheWay_data()
+    {
+        QTest::addColumn<ScreenPoint>("mouse");
+        QTest::addColumn<bool>("inTheWay");
+
+        QTest::newRow("on it") << at(1200, 500) << true;
+        QTest::newRow("on its top left corner") << at(1000, 400) << true;
+        QTest::newRow("on its bottom right corner") << at(1399, 699) << true;
+        QTest::newRow("just off its left") << at(996, 500) << true;
+        QTest::newRow("just off its top") << at(1200, 396) << true;
+        QTest::newRow("just off its right") << at(1403, 500) << true;
+        QTest::newRow("just off its bottom") << at(1200, 703) << true;
+        QTest::newRow("past its left") << at(995, 500) << false;
+        QTest::newRow("past its top") << at(1200, 395) << false;
+        QTest::newRow("past its right") << at(1404, 500) << false;
+        QTest::newRow("past its bottom") << at(1200, 704) << false;
+        QTest::newRow("on another screen") << at(1200, 500, u"HDMI-A-1"_s) << false;
+    }
+
+    void inTheWay()
+    {
+        QFETCH(ScreenPoint, mouse);
+        QFETCH(bool, inTheWay);
+
+        FakeGameInput input;
+        PopupHider hider(&input);
+        input.mouseAt = mouse;
+        hider.shown(u"DP-1"_s, popup, true);
+        QCOMPARE(hider.isInTheWay(), inTheWay);
+    }
+
+    void inTheWayWhenHovered()
+    {
+        // which is how it's known over the popup, where the mouse isn't
+        FakeGameInput input;
+        PopupHider hider(&input);
+        hider.shown(u"DP-1"_s, popup, true);
+        QVERIFY(!hider.isInTheWay());
+        hider.setHovered(true);
+        QVERIFY(hider.isInTheWay());
+        input.mouseAt = at(0, 0);
+        QVERIFY(hider.isInTheWay());
+        hider.setHovered(false);
+        QVERIFY(!hider.isInTheWay());
+    }
+
+    void notInTheWayWhenNotShown()
+    {
+        FakeGameInput input;
+        PopupHider hider(&input);
+        input.mouseAt = at(1200, 500);
+        hider.setHovered(true);
+        QVERIFY(!hider.isInTheWay());
+
+        hider.shown(u"DP-1"_s, popup, true);
+        QVERIFY(hider.isInTheWay());
+        hider.hidden();
+        QVERIFY(!hider.isInTheWay());
+        // not even with the mouse still where it was
+        hider.setHovered(true);
+        QVERIFY(!hider.isInTheWay());
+    }
+
     void notByTheMouse()
     {
         // at the side of the screen, where you'd go past it to the item

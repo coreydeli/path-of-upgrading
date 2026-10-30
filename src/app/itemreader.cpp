@@ -70,14 +70,14 @@ void ItemReader::setPaused(bool paused)
     m_paused = paused;
 }
 
-void ItemReader::read()
+void ItemReader::read(bool nudge)
 {
-    if (m_paused || m_reading)
+    if (!canRead())
         return;
     m_reading = true;
     m_slow.start();
     // which can fail before it returns
-    m_input->copyItem(m_advanced);
+    m_input->copyItem({.advanced = m_advanced, .nudge = nudge});
 }
 
 void ItemReader::copied(const QString &text, const std::optional<ScreenPoint> &mouse)

@@ -44,6 +44,16 @@ QString ranger(const QStringList &slots)
            u"<ItemSet id=\"1\">%2</ItemSet></Items></PathOfBuilding2>"_s.arg(items, set);
 }
 
+// A level 70 Witch with five times as much Energy Shield as Life, and
+// minions that deal damage when asked to.
+QString witch(bool withMinions = false)
+{
+    return u"<PathOfBuilding2><Build level=\"70\" className=\"Witch\">"
+           u"<PlayerStat stat=\"Life\" value=\"900\"/><PlayerStat stat=\"EnergyShield\" value=\"4500\"/>"_s +
+           (withMinions ? u"<MinionStat stat=\"TotalDPS\" value=\"12000\"/>"_s : QString()) +
+           u"</Build></PathOfBuilding2>"_s;
+}
+
 // the bow as the game copies it
 Item copiedBow()
 {
@@ -114,6 +124,40 @@ private Q_SLOTS:
         i.importer.importText(ranger({u"Weapon 1"_s}));
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.store.pobBuild(wren).value_or(QString()), ranger({u"Weapon 1"_s}));
+    }
+
+    void saysWhichProfile()
+    {
+        Importer i;
+        const QString wren = i.play(u"Wren"_s);
+        i.importer.importText(witch());
+        QVERIFY(!i.importer.hasFailed());
+        QCOMPARE(i.importer.message(), u"Imported the level 70 Witch build for Wren. It has no items on. "
+                                       u"Chose the Energy Shield spellcaster gear score profile for it."_s);
+        QCOMPARE(i.store.find(wren)->buildProfile, u"es-caster"_s);
+
+        // nothing more to say when it's the one it has
+        i.importer.importText(witch());
+        QCOMPARE(i.importer.message(), u"Imported the level 70 Witch build for Wren. It has no items on."_s);
+
+        i.importer.importText(witch(true));
+        QVERIFY(i.importer.message().endsWith(
+            u"Chose the Minion summoner on Energy Shield gear score profile for it."_s));
+        QCOMPARE(i.store.find(wren)->buildProfile, u"minion-es"_s);
+    }
+
+    void saysNothingOfAPickedProfile()
+    {
+        Importer i;
+        const QString wren = i.play(u"Wren"_s);
+        Character picked = *i.store.find(wren);
+        picked.buildProfile = u"life-res"_s;
+        picked.profilePicked = true;
+        QVERIFY(i.store.save(wren, picked));
+
+        i.importer.importText(witch());
+        QCOMPARE(i.importer.message(), u"Imported the level 70 Witch build for Wren. It has no items on."_s);
+        QCOMPARE(i.store.find(wren)->buildProfile, u"life-res"_s);
     }
 
     void newCharacter_data()

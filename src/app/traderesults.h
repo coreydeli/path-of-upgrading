@@ -37,6 +37,22 @@ public:
     friend bool operator==(const ResultMod &, const ResultMod &) = default;
 };
 
+// One of the numbers a listed item has of its own, "Armour" and "160".
+struct ResultProperty
+{
+    Q_GADGET
+    QML_VALUE_TYPE(resultProperty)
+
+    Q_PROPERTY(QString name MEMBER name)
+    Q_PROPERTY(QString value MEMBER value)
+
+public:
+    QString name;
+    QString value;
+
+    friend bool operator==(const ResultProperty &, const ResultProperty &) = default;
+};
+
 // How a listing does for the character you play, the way the popup says it
 // of an item you check, with only the numbers.
 struct ResultVerdict
@@ -47,6 +63,8 @@ struct ResultVerdict
     Q_PROPERTY(QString verdict MEMBER verdict)
     Q_PROPERTY(pou::Tone::Tone tone MEMBER tone)
     Q_PROPERTY(QString score MEMBER score)
+    Q_PROPERTY(QString versus MEMBER versus)
+    Q_PROPERTY(QString gearScore MEMBER gearScore)
     Q_PROPERTY(QList<pou::ReportFigure> figures MEMBER figures)
     Q_PROPERTY(QStringList losses MEMBER losses)
     Q_PROPERTY(QStringList risks MEMBER risks)
@@ -58,6 +76,12 @@ public:
     QString verdict; // "Upgrade", empty when it can't be compared
     Tone::Tone tone = Tone::Plain;
     QString score; // "+4% for your build", empty with nothing to compare it with
+    // What it would replace, "vs Grim Crown", or "in your Helmet slot" for the
+    // one you wear.
+    QString versus;
+    // "Gear score 72 A, yours 61", empty when Path of Building judges it or
+    // there's no build profile to score it by.
+    QString gearScore;
     // What Path of Building says it does to your damage and effective HP, or
     // without it what it changes on your character. Four at most.
     QList<ReportFigure> figures;
@@ -108,11 +132,14 @@ public:
         ConvertedRole,                // "about 2100 ex", empty without a rate or when it says no more
         AccountRole,                  // "name#1234"
         OnlineRole,
-        ListedRole,  // "5 minutes ago"
-        NameRole,    // its base type for one without a name
-        BaseRole,    // empty when that's its name
-        ModsRole,    // a list of resultMod
-        VerdictRole, // a resultVerdict
+        InstantBuyoutRole, // bought without the seller, who needn't be online
+        ListedRole,        // "5 minutes ago"
+        NameRole,          // its base type for one without a name
+        BaseRole,          // empty when that's its name
+        ItemLevelRole,     // 0 when the site doesn't say
+        PropertiesRole,    // a list of resultProperty, its defences and damage per second
+        ModsRole,          // a list of resultMod
+        VerdictRole,       // a resultVerdict
     };
 
     // They have to outlive it. The rates turn prices into exalts or divines.

@@ -103,7 +103,7 @@ QList<ProfileStat> common(double lifeImportance)
 BuildProfile lifeAndResistances()
 {
     BuildProfile p{
-        u"life-res"_s,
+        defaultBuildProfile.toString(),
         u"Life and resistances"_s,
         u"A safe all-rounder for any build: life, resistances, Armour or Evasion and movement speed. "
         "Weapons are rated by damage per second."_s,
@@ -133,7 +133,7 @@ BuildProfile lifeAndResistances()
 BuildProfile energyShieldCaster()
 {
     BuildProfile p{
-        u"es-caster"_s,
+        energyShieldProfile.toString(),
         u"Energy Shield spellcaster"_s,
         u"Spell skill levels, spell and elemental damage, cast speed and critical hits on weapons. "
         "Energy Shield and resistances on armour."_s,
@@ -172,7 +172,7 @@ BuildProfile minionSummoner()
 {
     const QString allies = u"(Allies in your Presence|Minions)"_s;
     return {
-        u"minion-es"_s,
+        minionProfile.toString(),
         u"Minion summoner on Energy Shield"_s,
         u"Minion skill levels and Spirit first, then ally and minion damage, Energy Shield and "
         "resistances. Movement speed on boots."_s,

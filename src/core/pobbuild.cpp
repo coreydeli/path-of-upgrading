@@ -349,15 +349,27 @@ QList<int> readSpec(QXmlStreamReader &reader)
 }
 
 // The numbers the build saved for its sidebar, by name: "Life", "FireResist"...
-QHash<QString, double> readPlayerStats(QXmlStreamReader &reader)
+// The minions of its main skill have a list of their own, when it has some.
+struct SavedStats
 {
-    QHash<QString, double> stats;
+    QHash<QString, double> player;
+    QHash<QString, double> minion;
+};
+
+SavedStats readSavedStats(QXmlStreamReader &reader)
+{
+    SavedStats stats;
     while (reader.readNextStartElement()) {
-        if (reader.name() == u"PlayerStat") {
+        QHash<QString, double> *list = nullptr;
+        if (reader.name() == u"PlayerStat")
+            list = &stats.player;
+        else if (reader.name() == u"MinionStat")
+            list = &stats.minion;
+        if (list) {
             const QXmlStreamAttributes stat = reader.attributes();
             bool ok = false;
             if (const double value = stat.value(u"value").toDouble(&ok); ok && std::isfinite(value))
-                stats.insert(stat.value(u"stat").toString(), value);
+                list->insert(stat.value(u"stat").toString(), value);
         }
         reader.skipCurrentElement();
     }
@@ -622,7 +634,7 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
         return std::nullopt;
 
     PobBuild build;
-    QHash<QString, double> stats;
+    SavedStats stats;
     QHash<int, QString> items;
     QList<ItemSet> itemSets;
     int activeItemSet = 0;
@@ -635,7 +647,7 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
             build.className = attributes.value(u"className").toString();
             if (const QStringView ascendancy = attributes.value(u"ascendClassName"); ascendancy != u"None")
                 build.ascendancy = ascendancy.toString();
-            stats = readPlayerStats(reader);
+            stats = readSavedStats(reader);
         } else if (reader.name() == u"Tree") {
             activeTree = attributes.value(u"activeSpec").toInt();
             while (reader.readNextStartElement()) {
@@ -686,9 +698,13 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
 
     for (Element e : allElements) {
         const QString stat = elementName(e) + u"Resist"_s;
-        if (const auto value = stats.constFind(stat); value != stats.cend())
-            build.resists[e] = *value + stats.value(stat + u"OverCap"_s);
+        if (const auto value = stats.player.constFind(stat); value != stats.player.cend())
+            build.resists[e] = *value + stats.player.value(stat + u"OverCap"_s);
     }
+    build.life = stats.player.value(u"Life"_s);
+    build.energyShield = stats.player.value(u"EnergyShield"_s);
+    // the combined damage, or the hits when it has none
+    build.minionDps = std::max(stats.minion.value(u"CombinedDPS"_s), stats.minion.value(u"TotalDPS"_s));
     return build;
 }
 

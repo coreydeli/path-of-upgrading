@@ -29,6 +29,8 @@ struct Character
     Weights weights = defaultWeights();
     QList<IgnoreRule> ignored;
     QString buildProfile; // gear score profile id, empty for the default
+    // You chose the profile yourself, so importing a build leaves it be.
+    bool profilePicked = false;
     ProfileTweaks tweaks;
     std::optional<ResistRecord> resists;
     // Path of Building found Chaos Inoculation the last time it loaded the
