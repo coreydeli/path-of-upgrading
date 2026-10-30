@@ -107,7 +107,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     });
     // the site takes bigger searches signed in, so what it limited them to
     // before isn't kept
-    connect(&m_tradeSession, &TradeSession::idChanged, &m_finder, &TradeFinder::forgetSize);
+    connect(&m_tradeSession, &TradeSession::idChanged, this,
+            [this] { m_finder.setSignedIn(m_tradeSession.isSaved()); });
     followTrade();
 
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {

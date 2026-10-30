@@ -122,14 +122,6 @@ FakeSecretStore *keyringWith(const QString &id = {})
     return keyring;
 }
 
-// What the site says of a search with more filters than it takes.
-FakeAnswer tooComplex()
-{
-    return {.status = 400,
-            .body = R"({"error":{"message":"Query is too complex."}})",
-            .headers = {{"X-Rate-Limit-Ip", "30:10:0"}}};
-}
-
 // Two listings, as the site's fetch answers have them.
 FakeAnswer twoListings()
 {
@@ -1074,8 +1066,7 @@ private Q_SLOTS:
 
     void signingInSearchesBigger()
     {
-        // as the site takes bigger searches signed in, so the size it
-        // limited them to before is forgotten
+        // as signed out, the site takes only the smallest upgrade searches
         Folders folders;
         Settings settings;
         settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
@@ -1087,31 +1078,33 @@ private Q_SLOTS:
         ItemPopup &popup = r.app.checker().popup();
         QSignalSpy finished(&r.app.finder(), &TradeFinder::finished);
         const qsizetype before = r.network->sent.size();
-        r.network->answers = {tooComplex(), {.body = R"({"id":"s1","total":3,"result":[]})"}};
+        r.network->answers = {{.body = R"({"id":"s1","total":3,"result":[]})"}};
         popup.findOnTrade(TradeFinder::Kind::Upgrades);
         QVERIFY(finished.wait());
-        QCOMPARE(r.network->sent.size(), before + 2);
-        const QByteArray full = r.network->sent.at(before).body;
-        QVERIFY(r.network->sent.at(before + 1).body != full);
-        QCOMPARE(r.network->sent.at(before).request.rawHeader("Cookie"), QByteArray());
-
-        // the next starts small
-        r.network->answers = {{.body = R"({"id":"s2","total":3,"result":[]})"}};
-        popup.findOnTrade(TradeFinder::Kind::Upgrades);
-        QVERIFY(finished.wait());
-        QCOMPARE(r.network->sent.size(), before + 3);
-        QCOMPARE(r.network->sent.last().body, r.network->sent.at(before + 1).body);
+        QCOMPARE(r.network->sent.size(), before + 1);
+        const QByteArray smallest = r.network->sent.last().body;
+        QCOMPARE(r.network->sent.last().request.rawHeader("Cookie"), QByteArray());
+        QVERIFY(r.app.finder().found()->note.startsWith(u"Signed out, "));
 
         // until you sign in
         r.app.tradeSession()->save(fakeId);
         QVERIFY(r.signedIn());
         QCOMPARE(r.keyring->secrets.value(u"POESESSID"_s), fakeId);
+        r.network->answers = {{.body = R"({"id":"s2","total":3,"result":[]})"}};
+        popup.findOnTrade(TradeFinder::Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QCOMPARE(r.network->sent.size(), before + 2);
+        QVERIFY(r.network->sent.last().body != smallest);
+        QCOMPARE(r.network->sent.last().request.rawHeader("Cookie"), "POESESSID=" + fakeId.toLatin1());
+
+        // and out again
+        r.app.tradeSession()->forget();
+        QVERIFY(r.signedIn());
         r.network->answers = {{.body = R"({"id":"s3","total":3,"result":[]})"}};
         popup.findOnTrade(TradeFinder::Kind::Upgrades);
         QVERIFY(finished.wait());
-        QCOMPARE(r.network->sent.size(), before + 4);
-        QCOMPARE(r.network->sent.last().body, full);
-        QCOMPARE(r.network->sent.last().request.rawHeader("Cookie"), "POESESSID=" + fakeId.toLatin1());
+        QCOMPARE(r.network->sent.size(), before + 3);
+        QCOMPARE(r.network->sent.last().body, smallest);
     }
 
     void signingOut()

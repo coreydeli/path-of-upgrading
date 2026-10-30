@@ -86,7 +86,12 @@ struct Site
     RatesStore rates{&ninja, dir.filePath(u"rates"_s)};
     TradeFinder finder{&searcher, &data, &rates};
 
-    Site() { searcher.setLeagues(siteLeagues); }
+    // signed in, so that upgrade searches start at their full size
+    Site()
+    {
+        searcher.setLeagues(siteLeagues);
+        finder.setSignedIn(true);
+    }
 
     // what the site said of its stats earlier today, which the store reads
     bool hasData(const QJsonObject &stats = tradefixtures::stats())
@@ -565,9 +570,10 @@ private Q_SLOTS:
         QCOMPARE(site.finder.found()->searchId, u"s2"_s);
     }
 
-    void forgetsTheSize()
+    void signingInForgetsTheSize()
     {
-        // so that a search signed in is tried at full size
+        // so that a search signed in again, maybe as someone else, is tried at
+        // full size
         const Character character = inGrimCrown();
         Site site;
         QVERIFY(site.hasData(tradefixtures::manyStats()));
@@ -577,12 +583,55 @@ private Q_SLOTS:
         QCOMPARE(site.network.sent.size(), 2);
         QVERIFY(site.searched(1) != site.searched(0));
 
-        site.finder.forgetSize();
+        site.finder.setSignedIn(true);
         site.network.answers = {found(u"s2"_s, 1)};
         QVERIFY(site.finds(helmet, Kind::Upgrades));
         QCOMPARE(site.network.sent.size(), 3);
         QCOMPARE(site.searched(2), site.searched(0));
         QCOMPARE(site.finder.found()->searchId, u"s2"_s);
+    }
+
+    void signedOut()
+    {
+        // the site takes only the smallest upgrade search, so that's the first
+        const Character character = inGrimCrown();
+        Site site;
+        QVERIFY(site.hasData(tradefixtures::manyStats()));
+        site.finder.setCharacter(character);
+        site.finder.setSignedIn(false);
+        site.network.answers = {found(u"s1"_s, 2)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.network.sent.size(), 1);
+        const TradeData &data = site.data.data();
+        QCOMPARE(site.searched(0),
+                 upgrades(helmet, data, character, u"Helmet"_s, clearlyBetter, {}, smaller(4)).body);
+        QCOMPARE(
+            site.finder.found()->note,
+            u"Signed out, the trade site only takes a simple search, so each has at least 1 of these at a "
+            u"decent roll: Life. Cheapest first."_s);
+
+        // and signing in makes them full size again
+        site.finder.setSignedIn(true);
+        site.network.answers = {found(u"s2"_s, 2)};
+        QVERIFY(site.finds(helmet, Kind::Upgrades));
+        QCOMPARE(site.searched(1), upgrades(helmet, data, character, u"Helmet"_s).body);
+    }
+
+    void startsSignedOut()
+    {
+        // as the trade client does
+        Site site;
+        QVERIFY(site.hasData(tradefixtures::manyStats()));
+        TradeFinder finder(&site.searcher, &site.data, &site.rates);
+        const Character character = inGrimCrown();
+        finder.setCharacter(character);
+        site.network.answers = {found(u"s1"_s, 2)};
+        QSignalSpy finished(&finder, &TradeFinder::finished);
+        finder.find(helmet, Kind::Upgrades);
+        QVERIFY(finished.wait());
+        QCOMPARE(
+            site.searched(0),
+            upgrades(helmet, site.data.data(), character, u"Helmet"_s, clearlyBetter, {}, smaller(4)).body);
     }
 
     void smallerAndLooser()
