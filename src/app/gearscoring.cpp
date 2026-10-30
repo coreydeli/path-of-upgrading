@@ -106,10 +106,16 @@ int GearScoring::profile() const
 void GearScoring::setProfile(int profile)
 {
     const QList<BuildProfile> &all = buildProfiles();
-    if (profile < 0 || profile > all.size() || profile == this->profile())
+    if (profile < 0 || profile > all.size())
+        return;
+    // choosing the one you have is a choice too, but only the first time
+    if (profile == this->profile() && m_active->character().profilePicked)
         return;
     const QString id = profile < all.size() ? all.at(profile).id : noBuildProfile.toString();
-    change([&id](Character &character) { character.buildProfile = id; });
+    change([&id](Character &character) {
+        character.buildProfile = id;
+        character.profilePicked = true;
+    });
 }
 
 QString GearScoring::summary() const
