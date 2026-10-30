@@ -2,6 +2,7 @@
 #include "app/buildimporter.h"
 
 #include "app/characterlist.h"
+#include "core/buildprofiles.h"
 #include "core/datafiles.h"
 #include "core/pobbuild.h"
 #include "services/pobengine.h"
@@ -37,6 +38,9 @@ QString imported(const BuildImport &done, const PobBuild &build)
         said << u"Copy your weapon in the game once, as the build doesn't say its damage."_s;
     else if (done.withoutDamage > 1)
         said << u"Copy your weapons in the game once, as the build doesn't say their damage."_s;
+    if (done.profileChanged)
+        said << u"Chose the %1 gear score profile for it."_s.arg(
+            buildProfile(done.character.buildProfile)->name);
     return said.join(u' ');
 }
 
