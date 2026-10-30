@@ -21,6 +21,7 @@ qt_add_library(pou_app STATIC
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
+    resistances.cpp resistances.h
     resultspanel.cpp resultspanel.h
     settingsstore.cpp settingsstore.h
     statpicker.cpp statpicker.h

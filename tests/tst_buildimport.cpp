@@ -194,6 +194,29 @@ private Q_SLOTS:
         QVERIFY(!done.resists);
         QCOMPARE(done.character.resists, character.resists);
     }
+
+    void theBuildsResists()
+    {
+        // without importing it
+        PobBuild build = buildWith({{u"Helmet"_s, {.text = helmet}}});
+        build.jewels << PobItemText{
+            .text = rare(u"Jewels"_s, u"Glint"_s, u"Ruby"_s, u"+8% to Fire Resistance"_s)};
+        build.resists[Element::Fire] = 80;
+        ResistRecord before{.cap = 76, .buffer = 3, .bufferSet = true, .source = ResistSource::Game};
+        before.entered[Element::Cold] = 50;
+
+        const std::optional<ResistRecord> r = buildResists(build, &before);
+        QVERIFY(r);
+        QCOMPARE(r->source, ResistSource::Pob);
+        QCOMPARE(r->entered[Element::Fire], 80);
+        QCOMPARE(r->entered[Element::Cold], std::nullopt);
+        QCOMPARE(r->cap, 76);
+        QCOMPARE(r->buffer, 3);
+        // jewels don't add to your resistances
+        QCOMPARE(r->gear[Element::Fire], 20);
+
+        QCOMPARE(buildResists(buildWith({{u"Helmet"_s, {.text = helmet}}})), std::nullopt);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestBuildImport)

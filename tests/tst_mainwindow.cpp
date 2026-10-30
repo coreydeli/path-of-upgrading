@@ -714,6 +714,7 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"gearHelp"_s)));
         QVERIFY(!isVisible(w.find(u"gearError"_s)));
         QVERIFY(!isVisible(w.find(u"extras"_s)));
+        QVERIFY(!isVisible(w.find(u"resistances"_s)));
     }
 
     void gear()
@@ -808,6 +809,105 @@ private Q_SLOTS:
         QVERIFY(QDir().mkdir(file));
         QVERIFY(click(w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s)));
         QObject *error = w.find(u"gearError"_s);
+        QVERIFY(isVisible(error));
+        QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
+    }
+
+    void resistancesNotKnown()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        w.play({});
+        QVERIFY(isVisible(w.find(u"resistances"_s)));
+        QObject *summary = w.find(u"resistSummary"_s);
+        QVERIFY(isVisible(summary));
+        QCOMPARE(text(summary), u"Not known yet"_s);
+        QCOMPARE(summary->property("description").toString(),
+                 u"Import a build, or type them in off your character sheet."_s);
+        QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
+        QVERIFY(!isVisible(w.find(u"fireResist"_s)));
+        QVERIFY(!isVisible(w.find(u"maximumResist"_s)));
+        QVERIFY(!isVisible(w.find(u"resistMargin"_s)));
+        QVERIFY(!isVisible(w.find(u"resistError"_s)));
+    }
+
+    void resistancesFromTheBuild()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        w.play({});
+        PerElement<std::optional<double>> values;
+        values[Element::Fire] = 80;
+        values[Element::Cold] = 60;
+        QVERIFY(w.app->character().change([&values](Character &c) {
+            c.resists = snapshotResists({.values = values, .cap = {}, .buffer = {}}, {}, ResistSource::Pob);
+        }));
+        QObject *summary = w.find(u"resistSummary"_s);
+        QCOMPARE(text(summary), u"Fire 80%, Cold 60%"_s);
+        QCOMPARE(summary->property("description").toString(),
+                 u"From your build in Path of Building, with what you wear now."_s);
+        QVERIFY(!isVisible(w.find(u"fireResist"_s)));
+        QVERIFY(isVisible(w.find(u"maximumResist"_s)));
+        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 75);
+        QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 15);
+    }
+
+    void typeInResistances()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        w.play({});
+        Resistances *resists = w.app->resistances();
+        QVERIFY(toggle(w.find(u"fromSheetSwitch"_s)));
+        QVERIFY(resists->isFromSheet());
+        QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
+        for (const QString &field :
+             {u"fireResist"_s, u"coldResist"_s, u"lightningResist"_s, u"chaosResist"_s})
+            QVERIFY(isVisible(w.find(field)));
+
+        QVERIFY(setValue(w.spinBox(u"fireResist"_s), 76, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"coldResist"_s), 120, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"lightningResist"_s), 30, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"chaosResist"_s), -20, "valueModified"));
+        QCOMPARE(resists->summary(), u"Fire 76%, Cold 120%, Lightning 30%, Chaos -20%"_s);
+        QVERIFY(setValue(w.spinBox(u"maximumResist"_s), 78, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"resistMargin"_s), 2, "valueModified"));
+        QCOMPARE(resists->maximum(), 78.0);
+        QCOMPARE(resists->margin(), 2.0);
+        // no sheet goes that high
+        QVERIFY(setValue(w.spinBox(u"fireResist"_s), 900, "valueModified"));
+        QCOMPARE(resists->fire(), 500.0);
+
+        // and they show what it has
+        resists->setFire(50);
+        resists->setCold(40);
+        resists->setLightning(45);
+        resists->setChaos(-5);
+        resists->setMaximum(77);
+        resists->setMargin(4);
+        QCOMPARE(w.spinBox(u"fireResist"_s)->property("value").toInt(), 50);
+        QCOMPARE(w.spinBox(u"coldResist"_s)->property("value").toInt(), 40);
+        QCOMPARE(w.spinBox(u"lightningResist"_s)->property("value").toInt(), 45);
+        QCOMPARE(w.spinBox(u"chaosResist"_s)->property("value").toInt(), -5);
+        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 77);
+        QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 4);
+
+        resists->setFromSheet(false);
+        QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
+        QVERIFY(!isVisible(w.find(u"fireResist"_s)));
+        QCOMPARE(text(w.find(u"resistSummary"_s)), u"Not known yet"_s);
+    }
+
+    void cantSaveResistances()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        const QString id = w.play({});
+        const QString file = w.dir.filePath(u"data/characters/"_s + id + u".json"_s);
+        QVERIFY(QFile::remove(file));
+        QVERIFY(QDir().mkdir(file));
+        QVERIFY(toggle(w.find(u"fromSheetSwitch"_s)));
+        QObject *error = w.find(u"resistError"_s);
         QVERIFY(isVisible(error));
         QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
     }

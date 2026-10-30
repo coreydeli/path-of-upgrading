@@ -54,6 +54,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)
+    , m_resistances(&m_character)
     , m_gearScoring(&m_character)
     , m_statWeights(&m_character)
     , m_statPicker(&m_tradeData, &m_history)
