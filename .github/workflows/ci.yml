@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: MIT
+#
+# Builds with no warnings and runs every test, on Arch Linux for the newest Qt
+# and KDE Frameworks and on Debian 13 for the oldest the app supports, and
+# checks the format.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # every merge to main keeps its own result
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  format:
+    name: Format
+    # A branch of this repository is checked when it's pushed, which a pull
+    # request from it shows, so pull requests are only checked from forks.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install clang-format
+        run: pacman -Syu --noconfirm --needed clang git
+      - uses: actions/checkout@v7
+      - name: Check the format
+        run: git ls-files -z '*.cpp' '*.h' | xargs -0 clang-format --dry-run -Werror
+
+  build:
+    name: ${{ matrix.name }}
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Arch Linux
+            image: archlinux:latest
+            distro: arch
+          - name: Debian 13
+            image: debian:trixie
+            distro: debian
+    env:
+      LANG: C.UTF-8
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-${{ matrix.distro }}.sh
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+      - name: Build
+        run: cmake --build build
+      - name: Lint the QML
+        run: cmake --build build --target pou_app_qmllint
+      - name: Test
+        working-directory: build
+        run: sh ../.github/scripts/run-tests.sh

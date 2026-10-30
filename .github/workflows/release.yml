@@ -1,0 +1,128 @@
+# SPDX-License-Identifier: MIT
+#
+# Pushing a version tag, like v0.1.0, makes a release on GitHub with the
+# source, an Arch Linux package and a Debian 13 package. Pull requests that
+# change how they're made build them too, without releasing anything.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .github/scripts/**
+      - packaging/**
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    name: Source
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the version
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+              version=$(sh .github/scripts/check-version.sh "$GITHUB_REF_NAME")
+          else
+              version=$(sh .github/scripts/check-version.sh)
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Make the tarball
+        run: |
+          name=path-of-upgrading-${{ steps.version.outputs.version }}
+          git archive --prefix="$name/" -o "$name.tar.gz" HEAD
+      - uses: actions/upload-artifact@v7
+        with:
+          name: source
+          path: path-of-upgrading-*.tar.gz
+          if-no-files-found: error
+
+  arch:
+    name: Arch Linux package
+    needs: source
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-arch.sh
+      # where makepkg looks for the PKGBUILD's source before downloading it
+      - uses: actions/download-artifact@v8
+        with:
+          name: source
+          path: packaging/arch
+      - name: Build and test the package
+        working-directory: packaging/arch
+        # makepkg won't run as root
+        run: |
+          useradd -m builder
+          chown -R builder .
+          runuser -u builder -- makepkg
+      - uses: actions/upload-artifact@v7
+        with:
+          name: arch
+          # not the debug package
+          path: packaging/arch/path-of-upgrading-[0-9]*.pkg.tar.zst
+          if-no-files-found: error
+
+  debian:
+    name: Debian 13 package
+    needs: source
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    env:
+      LANG: C.UTF-8
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-debian.sh
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        working-directory: build
+        run: sh ../.github/scripts/run-tests.sh
+      - name: Make the package
+        working-directory: build
+        run: cpack
+      # which fails when a package it depends on has the wrong name
+      - name: Install the package
+        run: |
+          apt-get install -y ./build/path-of-upgrading_*.deb
+          QT_QPA_PLATFORM=offscreen path-of-upgrading --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: debian
+          path: build/path-of-upgrading_*.deb
+          if-no-files-found: error
+
+  release:
+    name: Release
+    if: github.ref_type == 'tag'
+    needs: [source, arch, debian]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Make the release
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          sha256sum -- * > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" --verify-tag \
+              --title "Path of Upgrading ${{ needs.source.outputs.version }}" \
+              --generate-notes *
