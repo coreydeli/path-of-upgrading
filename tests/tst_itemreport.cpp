@@ -4,6 +4,8 @@
 #include "itemtexts.h"
 
 #include <QTest>
+#include <algorithm>
+#include <cmath>
 
 using namespace pou;
 
@@ -279,6 +281,172 @@ private Q_SLOTS:
         QCOMPARE(report.gearGrade, QString());
     }
 
+    void gearScoreParts()
+    {
+        // out of 50 points, so each is two of the 100
+        ItemCheck check = judged(Verdict::Upgrade);
+        Evaluation &e = check.evaluation;
+        e.gear = GearScore{
+            .score = 70,
+            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 20, 3.0, StatOrigin::Implicit},
+                              {u"# to maximum Life"_s, u"Life"_s, 90, 80, 7.0, StatOrigin::Mod},
+                              {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, StatOrigin::Mod},
+                              {u"speed"_s, u"Movement speed"_s, 8, 50, 2.0, StatOrigin::Socket},
+                              {u"speed"_s, u"Movement speed"_s, 4, 25, 1.0, StatOrigin::Mod},
+                              // too little to show
+                              {u"light"_s, u"Light radius"_s, 5, 10, 0.02, StatOrigin::Mod}},
+            .ideal = 50};
+        e.gearEquipped =
+            GearScore{.score = 62,
+                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 80, 90, 8.0, StatOrigin::Mod},
+                                        {u"cold"_s, u"Cold resistance"_s, 20, 100, 2.5, StatOrigin::Mod},
+                                        {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, StatOrigin::Mod}},
+                      .ideal = 50};
+        const QString excellent = u"100% of an excellent roll"_s;
+        // those that change most first, then those that are worth most
+        QCOMPARE(reportOf(check).gearParts, (QList<ReportFigure>{
+                                                {.label = u"Movement speed"_s,
+                                                 .change = u"+6"_s,
+                                                 .from = u"0"_s,
+                                                 .to = u"6"_s,
+                                                 .note = u"75% of an excellent roll, runes count half"_s,
+                                                 .tone = Tone::Good},
+                                                {.label = u"Cold resistance"_s,
+                                                 .change = u"-5"_s,
+                                                 .from = u"5"_s,
+                                                 .to = u"0"_s,
+                                                 .tone = Tone::Bad},
+                                                {.label = u"Life"_s,
+                                                 .change = u"+4"_s,
+                                                 .from = u"16"_s,
+                                                 .to = u"20"_s,
+                                                 .note = excellent,
+                                                 .tone = Tone::Good},
+                                                {.label = u"Fire resistance"_s,
+                                                 .change = u"0"_s,
+                                                 .from = u"10"_s,
+                                                 .to = u"10"_s,
+                                                 .note = excellent},
+                                            }));
+
+        // with nothing of yours to compare with
+        const QList<ReportFigure> alone = {
+            {.label = u"Life"_s, .to = u"20"_s, .note = excellent},
+            {.label = u"Fire resistance"_s, .to = u"10"_s, .note = excellent},
+            {.label = u"Movement speed"_s,
+             .to = u"6"_s,
+             .note = u"75% of an excellent roll, runes count half"_s},
+        };
+        e.gearEquipped.reset();
+        QCOMPARE(reportOf(check).gearParts, alone);
+        e.gearEquipped = GearScore{.unrated = GearScore::Unrated::Unique};
+        QCOMPARE(reportOf(check).gearParts, alone);
+    }
+
+    void gearScoreWithoutAnIdeal()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.evaluation.gear =
+            GearScore{.score = 70,
+                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}}};
+        QCOMPARE(reportOf(check).gearParts, QList<ReportFigure>());
+    }
+
+    void gearScorePartsThatChangeAlike()
+    {
+        // by the numbers shown, so 0.5 - 0.2 and 0.4 - 0.1 are the same change
+        ItemCheck check = judged(Verdict::Upgrade);
+        Evaluation &e = check.evaluation;
+        e.gear = GearScore{.score = 1,
+                           .contributions = {{u"b"_s, u"Mana"_s, 4, 100, 0.4, StatOrigin::Mod},
+                                             {u"a"_s, u"Life"_s, 5, 100, 0.5, StatOrigin::Mod}},
+                           .ideal = 100};
+        e.gearEquipped = GearScore{.score = 0,
+                                   .contributions = {{u"a"_s, u"Life"_s, 2, 100, 0.2, StatOrigin::Mod},
+                                                     {u"b"_s, u"Mana"_s, 1, 100, 0.1, StatOrigin::Mod},
+                                                     // too little to show
+                                                     {u"c"_s, u"Rarity"_s, 1, 100, 0.04, StatOrigin::Mod}},
+                                   .ideal = 100};
+        const QList<ReportFigure> parts = reportOf(check).gearParts;
+        QCOMPARE(parts.size(), 2);
+        QCOMPARE(parts.at(0).label, u"Life"_s);
+        QCOMPARE(parts.at(0).change, u"+0.3"_s);
+        QCOMPARE(parts.at(1).label, u"Mana"_s);
+        QCOMPARE(parts.at(1).change, u"+0.3"_s);
+    }
+
+    void gearScorePartsAddUp()
+    {
+        // to the score, give or take the rounding
+        const auto addsUp = [](const ItemReport &report) {
+            double total = 0;
+            for (const ReportFigure &part : report.gearParts)
+                total += part.to.toDouble();
+            QVERIFY(!report.gearParts.isEmpty());
+            QCOMPARE_LE(std::abs(total - report.gearScore.toDouble()), 1.5);
+        };
+        addsUp(reportOn(helmetNew));
+        addsUp(reportOn(helmetNew, wearing({{u"Helmet"_s, helmetOld}})));
+
+        const ItemReport compared = reportOn(helmetNew, wearing({{u"Helmet"_s, helmetOld}}));
+        for (const ReportFigure &part : compared.gearParts) {
+            QVERIFY(!part.from.isEmpty());
+            QVERIFY(!part.change.isEmpty());
+        }
+        for (const ReportFigure &part : reportOn(helmetNew).gearParts) {
+            QVERIFY(part.from.isEmpty());
+            QVERIFY(part.change.isEmpty());
+        }
+    }
+
+    void gearScoreNotes()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        Evaluation &e = check.evaluation;
+        const QString capped = u"Fire res: you're already capped, so it doesn't count."_s;
+        e.gear = GearScore{.score = 50,
+                           .wasted = {u"#% increased Light Radius"_s, u"[Base] Evasion Rating"_s},
+                           .missing = {u"Life"_s, u"Movement speed"_s},
+                           .ideal = 40,
+                           .resistNote = capped};
+        QCOMPARE(reportOf(check).gearNotes,
+                 (QStringList{capped, u"Not used by your build: #% increased Light Radius, Evasion Rating."_s,
+                              u"Missing what your build wants: Life, Movement speed."_s}));
+
+        e.gear->resistNote.clear();
+        e.gear->wasted.clear();
+        QCOMPARE(reportOf(check).gearNotes,
+                 QStringList{u"Missing what your build wants: Life, Movement speed."_s});
+        e.gear->missing.clear();
+        e.gear->wasted = {u"# to Accuracy Rating"_s};
+        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Not used by your build: # to Accuracy Rating."_s});
+        e.gear->wasted.clear();
+        QCOMPARE(reportOf(check).gearNotes, QStringList());
+    }
+
+    void noGearScoreDetails()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        Evaluation &e = check.evaluation;
+        e.gear =
+            GearScore{.score = 70,
+                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}},
+                      .wasted = {u"#% increased Light Radius"_s},
+                      .ideal = 50};
+        QVERIFY(!reportOf(check).gearParts.isEmpty());
+        QVERIFY(!reportOf(check).gearNotes.isEmpty());
+
+        // as Path of Building's is the one that counts
+        e.mode = ScoreMode::PathOfBuilding;
+        QCOMPARE(reportOf(check).gearParts, QList<ReportFigure>());
+        QCOMPARE(reportOf(check).gearNotes, QStringList());
+
+        e.mode = ScoreMode::GearScores;
+        e.gear->unrated = GearScore::Unrated::Unidentified;
+        QCOMPARE(reportOf(check).gearParts, QList<ReportFigure>());
+        QCOMPARE(reportOf(check).gearNotes, QStringList());
+    }
+
     void lossesAndRisks()
     {
         ItemCheck check = judged(Verdict::ResistLoss);
@@ -410,6 +578,82 @@ private Q_SLOTS:
             }));
     }
 
+    void damageAndEffectiveHpInTheChanges()
+    {
+        PobVerdict v;
+        v.verdict = Verdict::Upgrade;
+        v.damage = {.stat = u"FullDPS"_s, .from = 12400, .to = 13100, .percent = 5.6};
+        v.ehp = PobChange{.stat = u"TotalEHP"_s, .from = 40000.4, .to = 39000, .percent = -2.5};
+        v.resists = {{.element = Element::Fire, .from = 70, .to = 75, .capped = true, .reachesCap = true}};
+        v.changes = {{.stat = u"Life"_s, .from = 1200, .to = 1350}};
+        const QList<ReportFigure> changes = reportOf(judgedByPob(v)).changes;
+        // first, as the headline has them
+        QCOMPARE(changes.size(), 4);
+        QCOMPARE(changes.value(0), (ReportFigure{.label = u"DPS"_s,
+                                                 .change = u"+5.6%"_s,
+                                                 .from = u"12,400"_s,
+                                                 .to = u"13,100"_s,
+                                                 .tone = Tone::Good}));
+        QCOMPARE(changes.value(1), (ReportFigure{.label = u"Effective HP"_s,
+                                                 .change = u"-2.5%"_s,
+                                                 .from = u"40,000"_s,
+                                                 .to = u"39,000"_s,
+                                                 .tone = Tone::Bad}));
+        QCOMPARE(changes.value(2).label, u"Fire res"_s);
+        QCOMPARE(changes.value(3).label, u"Life"_s);
+    }
+
+    void minionDamageInTheChanges()
+    {
+        PobVerdict v;
+        v.damage = {.stat = u"MinionDPS"_s, .from = 250.4, .to = 260, .percent = 3.8};
+        QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{{.label = u"Minion DPS"_s,
+                                                                         .change = u"+3.8%"_s,
+                                                                         .from = u"250"_s,
+                                                                         .to = u"260"_s,
+                                                                         .tone = Tone::Good}}));
+    }
+
+    void damageThatDoesNotChange()
+    {
+        PobVerdict v;
+        v.damage = {.stat = u"TotalDPS"_s, .from = 8000, .to = 8004, .percent = 0};
+        QCOMPARE(reportOf(judgedByPob(v)).changes,
+                 (QList<ReportFigure>{
+                     {.label = u"DPS"_s, .change = u"0%"_s, .from = u"8,000"_s, .to = u"8,004"_s}}));
+    }
+
+    void damageFromNothingInTheChanges()
+    {
+        // which has no percent to give
+        PobVerdict v;
+        v.damage = {.stat = u"TotalDPS"_s, .from = 0, .to = 5000};
+        v.ehp = PobChange{.stat = u"TotalEHP"_s, .from = 3000, .to = 0};
+        QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{
+                                                       {.label = u"DPS"_s,
+                                                        .change = u"+5,000"_s,
+                                                        .from = u"0"_s,
+                                                        .to = u"5,000"_s,
+                                                        .tone = Tone::Good},
+                                                       {.label = u"Effective HP"_s,
+                                                        .change = u"-3,000"_s,
+                                                        .from = u"3,000"_s,
+                                                        .to = u"0"_s,
+                                                        .tone = Tone::Bad},
+                                                   }));
+    }
+
+    void noDamageOrEffectiveHpToShow()
+    {
+        // Path of Building didn't calculate them
+        PobVerdict v;
+        v.verdict = Verdict::Upgrade;
+        v.changes = {{.stat = u"Life"_s, .from = 1200, .to = 1350}};
+        QCOMPARE(reportOf(judgedByPob(v)).changes.size(), 1);
+        v.ehp = PobChange{.stat = u"TotalEHP"_s};
+        QCOMPARE(reportOf(judgedByPob(v)).changes.size(), 1);
+    }
+
     void changedCaps()
     {
         PobVerdict v;
@@ -475,17 +719,19 @@ private Q_SLOTS:
                                                .change = u"-5%"_s,
                                                .from = u"85%"_s,
                                                .to = u"80%"_s,
-                                               .note = u"barely capped"_s,
+                                               .note = u"barely capped, 5 over the cap"_s,
                                                .tone = Tone::Bad},
                                               {.label = u"Lightning res"_s,
                                                .change = u"+10%"_s,
                                                .from = u"70%"_s,
                                                .to = u"80%"_s,
+                                               .note = u"5 over the cap"_s,
                                                .tone = Tone::Good},
                                               {.label = u"Chaos res"_s,
                                                .change = u"+7%"_s,
                                                .from = u"90%"_s,
                                                .to = u"97%"_s,
+                                               .note = u"22 over the cap"_s,
                                                .minor = true},
                                               {.label = u"Life"_s,
                                                .change = u"+150"_s,
@@ -511,12 +757,56 @@ private Q_SLOTS:
             {.element = Cold, .label = u"Cold res"_s, .delta = -7, .from = 97, .to = 90, .safe = 85},
         };
         change.overall = TotalChange{u"Gear score"_s, 56, 56, 0};
-        QCOMPARE(
-            reportOf(check).changes,
-            (QList<ReportFigure>{
-                {.label = u"Fire res"_s, .change = u"+12%"_s, .tone = Tone::Good},
-                {.label = u"Cold res"_s, .change = u"-7%"_s, .from = u"97%"_s, .to = u"90%"_s, .minor = true},
-            }));
+        QCOMPARE(reportOf(check).changes,
+                 (QList<ReportFigure>{
+                     {.label = u"Fire res"_s, .change = u"+12%"_s, .tone = Tone::Good},
+                     {.label = u"Cold res"_s,
+                      .change = u"-7%"_s,
+                      .from = u"97%"_s,
+                      .to = u"90%"_s,
+                      .note = u"15 over the cap"_s,
+                      .minor = true},
+                 }));
+    }
+
+    void overTheCap_data()
+    {
+        QTest::addColumn<double>("cap");
+        QTest::addColumn<double>("from");
+        QTest::addColumn<double>("to");
+        QTest::addColumn<bool>("thin");
+        QTest::addColumn<QString>("note");
+
+        QTest::newRow("over") << 75.0 << 80.0 << 83.0 << false << u"8 over the cap"_s;
+        QTest::newRow("a fraction") << 75.0 << 70.0 << 76.5 << false << u"1.5 over the cap"_s;
+        QTest::newRow("rounded to a decimal") << 75.0 << 70.0 << 76.04 << false << u"1 over the cap"_s;
+        QTest::newRow("a higher cap") << 78.0 << 70.0 << 80.0 << false << u"2 over the cap"_s;
+        QTest::newRow("at the cap") << 75.0 << 70.0 << 75.0 << false << QString();
+        QTest::newRow("barely over") << 75.0 << 90.0 << 77.0 << true << u"barely capped, 2 over the cap"_s;
+        QTest::newRow("gaining some, so not barely") << 75.0 << 70.0 << 80.0 << true << u"5 over the cap"_s;
+        QTest::newRow("barely at the cap") << 75.0 << 90.0 << 75.0 << true << u"barely capped"_s;
+        QTest::newRow("under") << 75.0 << 80.0 << 60.0 << false << u"under the cap"_s;
+    }
+
+    void overTheCap()
+    {
+        QFETCH(double, cap);
+        QFETCH(double, from);
+        QFETCH(double, to);
+        QFETCH(bool, thin);
+        QFETCH(QString, note);
+
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.evaluation.change = CharacterChange{.resists = {{.element = Element::Fire,
+                                                               .label = u"Fire res"_s,
+                                                               .delta = to - from,
+                                                               .cap = cap,
+                                                               .from = from,
+                                                               .to = to,
+                                                               .safe = cap + 10,
+                                                               .under = to < cap,
+                                                               .thin = thin}}};
+        QCOMPARE(reportOf(check).changes.value(0).note, note);
     }
 
     void statLines_data()
@@ -570,6 +860,103 @@ private Q_SLOTS:
                                             {.label = u"+15% increased Light Radius"_s, .tone = Tone::Bad},
                                             {.label = u"+10 to Strength"_s, .tone = Tone::Good},
                                         }));
+    }
+
+    void everyStatThatChanges()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.evaluation.comparison.rows = {
+            {.key = u"# to maximum Life"_s, .newValue = 85, .oldValue = 55, .diff = 30, .usefulness = 1},
+            {.key = u"#% to Cold Resistance"_s, .newValue = 18, .oldValue = 30, .diff = -12, .usefulness = 2},
+            // one you'd rather not have
+            {.key = u"#% increased Light Radius"_s,
+             .newValue = 15,
+             .oldValue = 0,
+             .diff = 15,
+             .usefulness = -0.5},
+            // one that doesn't count
+            {.key = u"# to Accuracy Rating"_s, .newValue = 90, .oldValue = 0, .diff = 90},
+            {.key = u"#% increased Attack Speed"_s, .newValue = 12.5, .oldValue = 10.25, .diff = 2.25},
+            {.key = u"# to Evasion Rating"_s, .newValue = 1334.4, .oldValue = 100, .diff = 1234.4},
+            {.key = u"[Base] Armour"_s, .newValue = 312, .oldValue = 180, .diff = 132, .usefulness = 1},
+            {.key = u"Adds # to # Fire Damage to Attacks"_s, .newValue = 7.5, .oldValue = 4, .diff = 3.5},
+        };
+        QCOMPARE(reportOf(check).statChanges,
+                 (QList<ReportFigure>{
+                     {.label = u"# to maximum Life"_s,
+                      .change = u"+30"_s,
+                      .from = u"55"_s,
+                      .to = u"85"_s,
+                      .tone = Tone::Good},
+                     {.label = u"#% to Cold Resistance"_s,
+                      .change = u"-12"_s,
+                      .from = u"30"_s,
+                      .to = u"18"_s,
+                      .tone = Tone::Bad},
+                     {.label = u"#% increased Light Radius"_s,
+                      .change = u"+15"_s,
+                      .from = u"0"_s,
+                      .to = u"15"_s,
+                      .tone = Tone::Bad},
+                     {.label = u"# to Accuracy Rating"_s, .change = u"+90"_s, .from = u"0"_s, .to = u"90"_s},
+                     {.label = u"#% increased Attack Speed"_s,
+                      .change = u"+2.25"_s,
+                      .from = u"10.25"_s,
+                      .to = u"12.5"_s},
+                     {.label = u"# to Evasion Rating"_s,
+                      .change = u"+1,234"_s,
+                      .from = u"100"_s,
+                      .to = u"1,334"_s},
+                     {.label = u"Armour"_s,
+                      .change = u"+132"_s,
+                      .from = u"180"_s,
+                      .to = u"312"_s,
+                      .tone = Tone::Good},
+                     {.label = u"Adds # to # Fire Damage to Attacks"_s,
+                      .change = u"+3.5"_s,
+                      .from = u"4"_s,
+                      .to = u"7.5"_s,
+                      .note = u"average"_s},
+                 }));
+        // where the lines on top are only those that count
+        QCOMPARE(reportOf(check).stats.size(), 4);
+    }
+
+    void loweredStats()
+    {
+        ItemCheck check = judged(Verdict::Downgrade);
+        check.evaluation.comparison.rows = {
+            {.key = u"# to Strength"_s, .newValue = 0, .oldValue = 12.5, .diff = -12.5, .usefulness = 0.5},
+        };
+        QCOMPARE(reportOf(check).statChanges, (QList<ReportFigure>{{.label = u"# to Strength"_s,
+                                                                    .change = u"-12.5"_s,
+                                                                    .from = u"12.5"_s,
+                                                                    .to = u"0"_s,
+                                                                    .tone = Tone::Bad}}));
+    }
+
+    void statsOfTheItemsYouCompare()
+    {
+        // all that differ between them, whatever they're worth to you
+        const ItemReport report = reportOn(helmetNew, wearing({{u"Helmet"_s, helmetOld}}));
+        QStringList labels;
+        for (const ReportFigure &f : report.statChanges)
+            labels << f.label;
+        QVERIFY(labels.contains(u"#% to Fire Resistance"_s));
+        QVERIFY(labels.contains(u"# to maximum Life"_s));
+        QVERIFY(labels.contains(u"#% to Lightning Resistance"_s));
+        QVERIFY(labels.contains(u"Armour"_s));
+        const auto life = std::ranges::find(report.statChanges, u"# to maximum Life"_s, &ReportFigure::label);
+        QVERIFY(life != report.statChanges.end());
+        QCOMPARE(life->from, u"55"_s);
+        QCOMPARE(life->to, u"89"_s);
+        QCOMPARE(life->change, u"+34"_s);
+    }
+
+    void nothingChangesForTheItemYouWear()
+    {
+        QVERIFY(reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}})).statChanges.isEmpty());
+        QVERIFY(reportOf(judged(Verdict::Upgrade)).statChanges.isEmpty());
     }
 
     void pobStatus_data()

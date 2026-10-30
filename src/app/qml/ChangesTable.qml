@@ -5,13 +5,16 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// What equipping an item changes on your character, in columns of what you
-// have now, what you'd have with it and the change.
+// What equipping an item changes, in columns of what you have now, what you'd
+// have with it and the change.
 ColumnLayout {
     id: table
 
+    property string title: qsTr("If you equip it")
     property list<reportFigure> figures
     property bool colorblind: false
+    // for notes that say how a stat was counted, not how its change reads
+    property bool plainNotes: false
 
     spacing: 0
 
@@ -31,7 +34,7 @@ ColumnLayout {
         QQC2.Label {
             Layout.fillWidth: true
             font: Kirigami.Theme.smallFont
-            text: qsTr("If you equip it")
+            text: table.title
         }
 
         QQC2.Label {
@@ -70,7 +73,7 @@ ColumnLayout {
 
                 QQC2.Label {
                     Layout.fillWidth: true
-                    elide: Text.ElideRight
+                    wrapMode: Text.Wrap
                     text: change.modelData.label
                 }
 
@@ -78,9 +81,10 @@ ColumnLayout {
                 ToneLabel {
                     Layout.fillWidth: true
                     visible: text !== ""
+                    wrapMode: Text.Wrap
                     font: Kirigami.Theme.smallFont
                     text: change.modelData.note
-                    tone: change.modelData.tone
+                    tone: table.plainNotes ? Tone.Plain : change.modelData.tone
                     colorblind: table.colorblind
                 }
             }

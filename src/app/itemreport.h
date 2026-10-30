@@ -73,12 +73,15 @@ struct ItemReport
     Q_PROPERTY(QString gearGrade MEMBER gearGrade)
     Q_PROPERTY(QString yourGearScore MEMBER yourGearScore)
     Q_PROPERTY(QString gearBuild MEMBER gearBuild)
+    Q_PROPERTY(QList<pou::ReportFigure> gearParts MEMBER gearParts)
+    Q_PROPERTY(QStringList gearNotes MEMBER gearNotes)
     Q_PROPERTY(QStringList losses MEMBER losses)
     Q_PROPERTY(QStringList risks MEMBER risks)
     Q_PROPERTY(QString caps MEMBER caps)
     Q_PROPERTY(QList<pou::ReportFigure> headline MEMBER headline)
     Q_PROPERTY(QList<pou::ReportFigure> changes MEMBER changes)
     Q_PROPERTY(QList<pou::ReportFigure> stats MEMBER stats)
+    Q_PROPERTY(QList<pou::ReportFigure> statChanges MEMBER statChanges)
     Q_PROPERTY(bool pobChecking MEMBER pobChecking)
     Q_PROPERTY(QString pobStatus MEMBER pobStatus)
     Q_PROPERTY(QStringList notes MEMBER notes)
@@ -105,6 +108,12 @@ public:
     QString gearGrade;
     QString yourGearScore;
     QString gearBuild; // the build profile's name
+    // What the gear score is made of: the points each stat the build wants
+    // adds to yours and to the item's, out of 100, biggest change first.
+    QList<ReportFigure> gearParts;
+    // What kept it from counting more: stats the build has no use for, what
+    // it doesn't have, and resistances you're near the cap on.
+    QStringList gearNotes;
     // Resistance or damage it loses, which matters more than its risks.
     QStringList losses;
     QStringList risks;
@@ -117,6 +126,9 @@ public:
     // The item's stats that change most of those that count, each as its
     // line, "+30 to maximum Life".
     QList<ReportFigure> stats;
+    // All of them that change, the item's own stats and its mods, in the order
+    // of what they're worth to you. Those that don't count are plain.
+    QList<ReportFigure> statChanges;
     // Where Path of Building is with it when it hasn't judged it: still
     // checking, why it couldn't, or that it could with a build.
     bool pobChecking = false;

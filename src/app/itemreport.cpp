@@ -8,6 +8,7 @@
 
 #include <QHash>
 #include <QLocale>
+#include <algorithm>
 #include <cmath>
 
 using namespace Qt::Literals::StringLiterals;
@@ -122,13 +123,17 @@ Tone::Tone toneOf(double change)
     return change < 0 ? Tone::Bad : Tone::Plain;
 }
 
+QString damageLabel(const PobVerdict &v)
+{
+    return v.damage.stat == u"MinionDPS" ? u"Minion DPS"_s : u"DPS"_s;
+}
+
 QList<ReportFigure> headlineOf(const PobVerdict &v)
 {
     QList<ReportFigure> headline;
     if (const std::optional<double> damage = v.damage.percent) {
-        const QString label = v.damage.stat == u"MinionDPS" ? u"Minion DPS"_s : u"DPS"_s;
         headline << ReportFigure{
-            .label = label, .change = signedNumber(*damage) + u'%', .tone = toneOf(*damage)};
+            .label = damageLabel(v), .change = signedNumber(*damage) + u'%', .tone = toneOf(*damage)};
     }
     if (const std::optional<double> ehp = v.ehp ? v.ehp->percent : std::nullopt) {
         headline << ReportFigure{
@@ -143,17 +148,17 @@ QList<ReportFigure> headlineOf(const PobVerdict &v)
 }
 
 // A stat as the popup shows it: whole from 100 up, with commas from 1,000.
-QString amount(double v)
+QString amount(double v, int decimals = 1)
 {
     if (std::abs(v) < 100)
-        return formatNumber(roundTo(v, 1));
+        return formatNumber(roundTo(v, decimals));
     static const QLocale english(QLocale::English);
     return english.toString(roundHalfUp(v), 'f', 0);
 }
 
-QString signedAmount(double v)
+QString signedAmount(double v, int decimals = 1)
 {
-    return (v > 0 ? u"+"_s : QString()) + amount(v);
+    return (v > 0 ? u"+"_s : QString()) + amount(v, decimals);
 }
 
 QString percent(double v)
@@ -171,9 +176,30 @@ QString pobLabel(const QString &stat)
     return labels.value(stat, stat);
 }
 
+// Damage or effective HP before and after. It changes by percent, or by the
+// number when it was 0 before.
+ReportFigure bigFigure(const QString &label, const PobChange &c)
+{
+    const double change = c.percent.value_or(c.to - c.from);
+    return {.label = label,
+            .change = c.percent ? signedNumber(*c.percent) + u'%' : signedAmount(change),
+            .from = amount(c.from),
+            .to = amount(c.to),
+            .tone = toneOf(change)};
+}
+
+bool isCalculated(const PobChange &c)
+{
+    return c.from > 0 || c.to > 0;
+}
+
 QList<ReportFigure> pobChanges(const PobVerdict &v)
 {
     QList<ReportFigure> changes;
+    if (isCalculated(v.damage))
+        changes << bigFigure(damageLabel(v), v.damage);
+    if (v.ehp && isCalculated(*v.ehp))
+        changes << bigFigure(u"Effective HP"_s, *v.ehp);
     for (const PobResistChange &r : v.resists) {
         const double change = roundHalfUp(r.to) - roundHalfUp(r.from);
         // past the cap only the cap counts
@@ -210,10 +236,14 @@ QList<ReportFigure> characterChanges(const CharacterChange &change)
             f.from = formatNumber(roundTo(*r.from, 1)) + u'%';
             f.to = formatNumber(roundTo(*r.to, 1)) + u'%';
             const bool thinner = r.thin && r.delta < 0;
+            QStringList notes;
             if (r.under)
-                f.note = u"under the cap"_s;
-            else if (thinner)
-                f.note = u"barely capped"_s;
+                notes << u"under the cap"_s;
+            if (thinner)
+                notes << u"barely capped"_s;
+            if (const double over = roundTo(*r.to - r.cap, 1); over > 0)
+                notes << formatNumber(over) + u" over the cap"_s;
+            f.note = notes.join(u", "_s);
             if (r.delta > 0)
                 f.tone = r.wasUnder ? Tone::Good : Tone::Plain;
             else
@@ -265,6 +295,119 @@ QList<ReportFigure> statsOf(const QList<StatRow> &rows)
             break;
     }
     return stats;
+}
+
+// Every stat that changes, with what you have of it now and with the item.
+QList<ReportFigure> statChangesOf(const QList<StatRow> &rows)
+{
+    QList<ReportFigure> changes;
+    for (const StatRow &row : rows) {
+        changes << ReportFigure{.label = statName(row.key),
+                                .change = signedAmount(row.diff, 2),
+                                .from = amount(row.oldValue, 2),
+                                .to = amount(row.newValue, 2),
+                                // the numbers are the average of the range
+                                .note = row.key.contains(u"# to #") ? u"average"_s : QString(),
+                                .tone = toneOf(row.diff * row.usefulness)};
+    }
+    return changes;
+}
+
+// What one stat the build wants adds to a gear score, in points out of 100.
+struct GearPart
+{
+    double points = 0;
+    int quality = 0; // percent of an excellent roll
+    bool runes = false;
+};
+
+// By the stat's label in the build profile, as it can come from several mods.
+QHash<QString, GearPart> gearPartsByLabel(const GearScore &gear)
+{
+    const double scale = gear.ideal > 0 ? 100 / gear.ideal : 0;
+    QHash<QString, GearPart> parts;
+    for (const GearContribution &c : gear.contributions) {
+        GearPart &part = parts[c.label];
+        part.points += c.points * scale;
+        part.quality += c.quality;
+        part.runes = part.runes || c.origin == StatOrigin::Socket;
+    }
+    return parts;
+}
+
+QString gearPartNote(const GearPart &part)
+{
+    QStringList notes;
+    if (part.quality > 0)
+        notes << u"%1% of an excellent roll"_s.arg(part.quality);
+    if (part.runes)
+        notes << u"runes count half"_s;
+    return notes.join(u", "_s);
+}
+
+// The stats that make up the item's gear score and yours, with the points each
+// adds. Those that change the most come first.
+QList<ReportFigure> gearPartsOf(const GearScore &gear, const GearScore *yours)
+{
+    const QHash<QString, GearPart> itemParts = gearPartsByLabel(gear);
+    const QHash<QString, GearPart> yourParts = yours ? gearPartsByLabel(*yours) : QHash<QString, GearPart>();
+    QStringList labels;
+    for (const GearScore *g : {&gear, yours}) {
+        if (!g)
+            continue;
+        for (const GearContribution &c : g->contributions) {
+            if (!labels.contains(c.label))
+                labels << c.label;
+        }
+    }
+
+    struct Part
+    {
+        ReportFigure figure;
+        double size = 0; // of the change
+        double to = 0;
+    };
+    QList<Part> parts;
+    for (const QString &label : std::as_const(labels)) {
+        const GearPart there = itemParts.value(label);
+        const double to = roundTo(there.points, 1);
+        const double from = roundTo(yourParts.value(label).points, 1);
+        if (to == 0 && from == 0)
+            continue;
+        ReportFigure f{.label = label, .to = amount(to), .note = gearPartNote(there)};
+        double size = 0;
+        if (yours) {
+            const double change = roundTo(to - from, 1);
+            f.change = signedAmount(change);
+            f.from = amount(from);
+            f.tone = toneOf(change);
+            size = std::abs(change);
+        }
+        parts.append({f, size, to});
+    }
+    std::ranges::stable_sort(
+        parts, [](const Part &a, const Part &b) { return a.size != b.size ? a.size > b.size : a.to > b.to; });
+
+    QList<ReportFigure> figures;
+    for (const Part &part : std::as_const(parts))
+        figures << part.figure;
+    return figures;
+}
+
+QStringList gearNotesOf(const GearScore &gear)
+{
+    QStringList notes;
+    if (!gear.resistNote.isEmpty())
+        notes << gear.resistNote;
+    if (!gear.wasted.isEmpty()) {
+        QStringList names;
+        for (const QString &key : gear.wasted)
+            names << statName(key);
+        notes << u"Not used by your build: "_s + names.join(u", "_s) + u'.';
+    }
+    if (!gear.missing.isEmpty())
+        notes << u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
+    return notes;
 }
 
 QString openAffixesOf(const Affixes &affixes)
@@ -344,12 +487,16 @@ ItemReport reportOf(const ItemCheck &check)
         report.changes = characterChanges(*e.change);
     }
     report.stats = statsOf(r.rows);
+    report.statChanges = statChangesOf(r.rows);
     if (e.gear && e.gear->isRated() && e.mode != ScoreMode::PathOfBuilding) {
         report.gearScore = QString::number(e.gear->score);
         report.gearGrade = e.gear->grade;
         report.gearBuild = e.gear->buildName;
-        if (e.gearEquipped && e.gearEquipped->isRated())
-            report.yourGearScore = QString::number(e.gearEquipped->score);
+        const GearScore *yours = e.gearEquipped && e.gearEquipped->isRated() ? &*e.gearEquipped : nullptr;
+        if (yours)
+            report.yourGearScore = QString::number(yours->score);
+        report.gearParts = gearPartsOf(*e.gear, yours);
+        report.gearNotes = gearNotesOf(*e.gear);
     }
     putPobStatus(report, check);
     report.notes << r.notes;
