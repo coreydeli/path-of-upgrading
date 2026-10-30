@@ -63,6 +63,14 @@ struct PobBuild
     // As Path of Building shows them plus however far over the maximum they
     // go. Unknown when the build doesn't say.
     PerElement<std::optional<double>> resists;
+
+    // Also from the numbers it saved for its sidebar, and zero when it
+    // doesn't say.
+    double life = 0;
+    double energyShield = 0;
+    // What the minions of its main skill deal, zero when that skill doesn't
+    // summon any.
+    double minionDps = 0;
 };
 
 // Empty when the XML isn't a Path of Building 2 build.
