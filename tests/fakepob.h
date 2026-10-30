@@ -33,6 +33,12 @@ struct FakePob
         QFile file(folder.filePath(u"eval.json"_s));
         return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(eval).toJson()) > 0;
     }
+    // And to weighing mods, see weigh in pobbridge.lua.
+    bool weighs(const QJsonObject &weighing) const
+    {
+        QFile file(folder.filePath(u"weigh.json"_s));
+        return file.open(QIODevice::WriteOnly) && file.write(QJsonDocument(weighing).toJson()) > 0;
+    }
     // And to loading the build or putting on your gear, see summary in
     // pobbridge.lua.
     bool loads(const QJsonObject &summary) const

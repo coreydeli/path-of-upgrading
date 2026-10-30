@@ -3,6 +3,7 @@
 
 #include "core/pobbuild.h"
 #include "core/pobinstall.h"
+#include "core/pobweighing.h"
 
 #include <QByteArray>
 #include <QDeadlineTimer>
@@ -103,6 +104,10 @@ public:
     // The build's numbers with each item, in the slot it names or each one it
     // can go in. See eval in pobbridge.lua for the answer.
     PobReply *evaluate(const QList<PobItem> &items);
+    // How much each mod the trade site has is worth to the build in the slot,
+    // by how much it raises those stats. See weigh in pobbridge.lua for the
+    // answer, and readPobWeighing() for reading it.
+    PobReply *weigh(const QString &slot, const QList<PobStatWeight> &weights);
     // Stops it, failing what it hasn't answered. It starts again the next time
     // it's asked something, even when it couldn't start before.
     void stop();
@@ -130,11 +135,12 @@ private:
     {
         int id = 0;
         qsizetype items = 0;
-        bool eval = false;        // from evaluate(), not the build or your gear
+        bool asked = false;       // with a reply, not the build or your gear
         bool load = false;        // the build itself, which has its own time
         QPointer<PobReply> reply; // for an eval, null once it's deleted
     };
 
+    PobReply *ask(const QJsonObject &request);
     void start();
     void sendBuild();
     void send(QJsonObject request, PobReply *reply = nullptr);
