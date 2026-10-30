@@ -76,6 +76,9 @@ public:
     // Once it has finished, what it found, or why it found nothing.
     const std::optional<Found> &found() const { return m_found; }
     QString errorString() const { return m_errorString; }
+    // When the site couldn't be searched, the site's search page filled in
+    // with it, which may still work in the browser. Empty for other failures.
+    QUrl errorUrl() const { return m_errorUrl; }
 
 Q_SIGNALS:
     // Always from the event loop.
@@ -107,7 +110,7 @@ private:
     void start();
     void send();
     void answered();
-    void fail(const QString &why);
+    void fail(const QString &why, const QUrl &url = {});
     void failSoon(const QString &why);
 
     TradeSearcher *m_searcher;
@@ -129,6 +132,7 @@ private:
     QPointer<TradeSearch> m_search;
     std::optional<Found> m_found;
     QString m_errorString;
+    QUrl m_errorUrl;
 };
 
 } // namespace pou

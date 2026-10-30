@@ -152,8 +152,10 @@ public:
 private Q_SLOTS:
     void initTestCase()
     {
-        // what it says when poe.ninja has no rates, which these tests don't need
-        QLoggingCategory::setFilterRules(u"pathofupgrading.ninja.warning=false"_s);
+        // what they say when poe.ninja has no rates, which these tests don't need,
+        // and when the trade site lets a search down, which one does
+        QLoggingCategory::setFilterRules(u"pathofupgrading.ninja.warning=false\n"
+                                         u"pathofupgrading.trade.warning=false"_s);
     }
 
     void init() { QTest::failOnWarning(); }
@@ -378,6 +380,31 @@ private Q_SLOTS:
         checker.popup().findOnTrade(TradeFinder::Kind::Upgrades);
         QVERIFY(finished.wait());
         QCOMPARE(checker.popup().trade(), failedReport(u"Trade searches are turned off in the settings."_s));
+    }
+
+    // the site couldn't be searched, so the popup offers it for you to try
+    void tradeSiteFails()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        trading.network.answers << FakeAnswer{.error = QNetworkReply::HostNotFoundError};
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QSignalSpy finished(&trading.finder, &TradeFinder::finished);
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(finished.wait());
+
+        const TradeReport trade = checker.popup().trade();
+        QVERIFY(trade.failed);
+        QVERIFY(!trade.listed);
+        QCOMPARE(trade.status, trading.finder.errorString());
+        QVERIFY(!trade.url.isEmpty());
+        QCOMPARE(trade, failedReport(trading.finder.errorString(), trading.finder.errorUrl()));
+        QVERIFY(trade.url.path().startsWith(u"/trade2/search/poe2/Standard"_s));
+        QVERIFY(trade.url.hasQuery());
     }
 
     void tradeWaitsItsTurn()

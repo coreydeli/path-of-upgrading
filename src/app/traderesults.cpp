@@ -26,6 +26,7 @@ ResultVerdict resultVerdict(const ItemCheck &check)
     const ItemReport report = reportOf(check);
     ResultVerdict out{.verdict = report.verdict,
                       .tone = report.verdictTone,
+                      .versus = report.versus,
                       .losses = report.losses,
                       .risks = report.risks,
                       .caps = report.caps,
@@ -33,6 +34,11 @@ ResultVerdict resultVerdict(const ItemCheck &check)
                       .pobError = check.pobError};
     if (!report.score.isEmpty())
         out.score = report.score + u' ' + report.scoreLabel;
+    if (!report.gearScore.isEmpty()) {
+        out.gearScore = u"Gear score %1 %2"_s.arg(report.gearScore, report.gearGrade);
+        if (!report.yourGearScore.isEmpty())
+            out.gearScore += u", yours "_s + report.yourGearScore;
+    }
     if (!report.headline.isEmpty()) {
         out.figures = report.headline;
     } else {
@@ -94,10 +100,20 @@ QVariant TradeResults::data(const QModelIndex &index, int role) const
         return listing.account;
     case OnlineRole:
         return listing.online;
+    case InstantBuyoutRole:
+        return listing.instantBuyout;
     case ListedRole:
         return listedAgo(listing.indexed, QDateTime::currentDateTimeUtc());
     case BaseRole:
         return item.name == item.baseType ? QString() : item.baseType;
+    case ItemLevelRole:
+        return item.itemLevel;
+    case PropertiesRole: {
+        QList<ResultProperty> properties;
+        for (const ListingProperty &property : listing.properties)
+            properties << ResultProperty{property.name, property.value};
+        return QVariant::fromValue(properties);
+    }
     case ModsRole: {
         QList<ResultMod> mods;
         for (const ListingMod &mod : listing.mods)
@@ -113,9 +129,18 @@ QVariant TradeResults::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> TradeResults::roleNames() const
 {
     return {
-        {PriceRole, "price"},   {ConvertedRole, "converted"}, {AccountRole, "account"},
-        {OnlineRole, "online"}, {ListedRole, "listed"},       {NameRole, "name"},
-        {BaseRole, "base"},     {ModsRole, "mods"},           {VerdictRole, "verdict"},
+        {PriceRole, "price"},
+        {ConvertedRole, "converted"},
+        {AccountRole, "account"},
+        {OnlineRole, "online"},
+        {InstantBuyoutRole, "instantBuyout"},
+        {ListedRole, "listed"},
+        {NameRole, "name"},
+        {BaseRole, "base"},
+        {ItemLevelRole, "itemLevel"},
+        {PropertiesRole, "properties"},
+        {ModsRole, "mods"},
+        {VerdictRole, "verdict"},
     };
 }
 

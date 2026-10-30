@@ -379,6 +379,28 @@ private Q_SLOTS:
         QVERIFY(!button(popup, u"Open on the Trade Site"_s));
     }
 
+    // the search can still be tried on the site, once you click
+    void tradeFailedWithASearch()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.setTradeAvailable(true);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        Browser browser;
+        const QUrl url(u"https://www.pathofexile.com/trade2/search/poe2/Standard?q=%7B%7D"_s);
+        popup.setTrade(failedReport(u"The trade site couldn't be reached."_s, url));
+        QVERIFY(shown(popup, u"The trade site couldn't be reached."_s));
+        QVERIFY(button(popup, u"Open on the Trade Site"_s));
+        // as there are no listings to show
+        QVERIFY(!button(popup, u"Show Results"_s));
+        QVERIFY(browser.opened.isEmpty());
+
+        QVERIFY(click(popup, u"Open on the Trade Site"_s));
+        QCOMPARE(browser.opened, QList<QUrl>{url});
+    }
+
     void wear()
     {
         QQmlEngine engine;

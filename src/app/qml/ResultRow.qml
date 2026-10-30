@@ -11,14 +11,19 @@ Item {
 
     required property string name
     required property string base
+    required property int itemLevel
+    required property var properties
     required property string price
     required property string converted
     required property string account
     required property bool online
+    required property bool instantBuyout
     required property string listed
     required property var mods
     required property resultVerdict verdict
     property bool colorblind: false
+    // How much of the right edge the scroll bar covers, which the row keeps clear
+    property real clearance: 0
 
     width: ListView.view.width
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.smallSpacing
@@ -30,8 +35,7 @@ Item {
             fill: parent
             topMargin: Kirigami.Units.smallSpacing
             bottomMargin: Kirigami.Units.smallSpacing
-            // clear of the scroll bar
-            rightMargin: Kirigami.Units.largeSpacing
+            rightMargin: row.clearance
         }
         spacing: 0
 
@@ -57,6 +61,31 @@ Item {
                     wrapMode: Text.Wrap
                     opacity: 0.7
                     text: row.base
+                }
+
+                // what the item has of its own
+                Flow {
+                    Layout.fillWidth: true
+                    visible: row.itemLevel > 0 || row.properties.length > 0
+                    spacing: Kirigami.Units.largeSpacing
+
+                    QQC2.Label {
+                        visible: row.itemLevel > 0
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: qsTr("Item level %1").arg(row.itemLevel)
+                    }
+
+                    Repeater {
+                        model: row.properties
+
+                        QQC2.Label {
+                            required property resultProperty modelData
+
+                            font: Kirigami.Theme.smallFont
+                            text: modelData.name + " " + modelData.value
+                        }
+                    }
                 }
             }
 
@@ -105,6 +134,27 @@ Item {
                     text: row.verdict.score
                     tone: row.verdict.tone
                     colorblind: row.colorblind
+                }
+            }
+
+            // what it would replace, and how its gear score goes with yours
+            Flow {
+                Layout.fillWidth: true
+                visible: row.verdict.versus !== "" || row.verdict.gearScore !== ""
+                spacing: Kirigami.Units.largeSpacing
+
+                QQC2.Label {
+                    visible: text !== ""
+                    opacity: 0.7
+                    font: Kirigami.Theme.smallFont
+                    text: row.verdict.versus
+                }
+
+                QQC2.Label {
+                    visible: text !== ""
+                    opacity: 0.7
+                    font: Kirigami.Theme.smallFont
+                    text: row.verdict.gearScore
                 }
             }
 
@@ -204,11 +254,14 @@ Item {
                 text: row.account
             }
 
+            // an instant buyout is bought whether the seller is there or not
             ToneLabel {
+                readonly property bool reachable: row.instantBuyout || row.online
+
                 font: Kirigami.Theme.smallFont
-                text: row.online ? qsTr("Online") : qsTr("Offline")
-                tone: row.online ? Tone.Good : Tone.Plain
-                opacity: row.online ? 1 : 0.7
+                text: row.instantBuyout ? qsTr("Instant buyout") : row.online ? qsTr("Online") : qsTr("Offline")
+                tone: reachable ? Tone.Good : Tone.Plain
+                opacity: reachable ? 1 : 0.7
                 colorblind: row.colorblind
             }
 

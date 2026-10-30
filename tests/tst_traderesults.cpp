@@ -249,7 +249,7 @@ private Q_SLOTS:
         const QString indexed = QDateTime::currentDateTimeUtc().addSecs(-5 * 60).toString(Qt::ISODate);
         QJsonArray result;
         result << helmet(u"x1"_s, price(3, u"divine"_s), indexed);
-        result << helmet(u"x2"_s, price(50, u"exalted"_s), {}, {});
+        result << instantBuyout(helmet(u"x2"_s, price(50, u"exalted"_s), {}, {}));
         result << helmet(u"x3"_s, {}, {}, u"Iron Hat"_s);
         site.network.answers = {{.body = json({{u"result"_s, result}})}};
         site.results.setSearch(foundBy(3));
@@ -262,10 +262,15 @@ private Q_SLOTS:
         QCOMPARE(site.text(0, Role::PriceRole), u"3 div"_s);
         QCOMPARE(site.text(0, Role::AccountRole), u"Sellerx1#1234"_s);
         QVERIFY(site.results.data(site.results.index(0), Role::OnlineRole).toBool());
+        QVERIFY(!site.results.data(site.results.index(0), Role::InstantBuyoutRole).toBool());
         QCOMPARE(site.text(0, Role::ListedRole), u"5 minutes ago"_s);
         QCOMPARE(site.text(0, Role::NameRole), u"Grim Ward"_s);
         QCOMPARE(site.text(0, Qt::DisplayRole), u"Grim Ward"_s);
         QCOMPARE(site.text(0, Role::BaseRole), u"Iron Hat"_s);
+        QCOMPARE(site.results.data(site.results.index(0), Role::ItemLevelRole).toInt(), 80);
+        QVERIFY(site.results.data(site.results.index(0), Role::PropertiesRole)
+                    .value<QList<ResultProperty>>()
+                    .isEmpty());
         const QList<ResultMod> mods =
             site.results.data(site.results.index(0), Role::ModsRole).value<QList<ResultMod>>();
         QCOMPARE(mods, (QList<ResultMod>{{u"+80 to maximum Life"_s, u"explicit"_s},
@@ -276,6 +281,9 @@ private Q_SLOTS:
         QCOMPARE(site.text(1, Role::ListedRole), QString());
         QCOMPARE(site.text(1, Role::NameRole), u"Iron Hat"_s);
         QCOMPARE(site.text(1, Role::BaseRole), QString());
+        // which is an instant buyout, with the seller being there or not
+        QVERIFY(site.results.data(site.results.index(1), Role::InstantBuyoutRole).toBool());
+        QVERIFY(!site.results.data(site.results.index(2), Role::InstantBuyoutRole).toBool());
         QCOMPARE(site.text(2, Role::PriceRole), u"no price"_s);
         // a base type that is its name is shown once
         QCOMPARE(site.text(2, Role::NameRole), u"Iron Hat"_s);
@@ -286,10 +294,47 @@ private Q_SLOTS:
         QCOMPARE(names.value(Role::ConvertedRole), "converted"_ba);
         QCOMPARE(names.value(Role::AccountRole), "account"_ba);
         QCOMPARE(names.value(Role::OnlineRole), "online"_ba);
+        QCOMPARE(names.value(Role::InstantBuyoutRole), "instantBuyout"_ba);
         QCOMPARE(names.value(Role::ListedRole), "listed"_ba);
         QCOMPARE(names.value(Role::NameRole), "name"_ba);
         QCOMPARE(names.value(Role::BaseRole), "base"_ba);
+        QCOMPARE(names.value(Role::ItemLevelRole), "itemLevel"_ba);
+        QCOMPARE(names.value(Role::PropertiesRole), "properties"_ba);
         QCOMPARE(names.value(Role::ModsRole), "mods"_ba);
+    }
+
+    // what the item has of its own, and the level it was made at
+    void itsOwnNumbers()
+    {
+        Site site;
+        const auto property = [](const QString &name, const QString &value) {
+            return QJsonObject{{u"name"_s, name}, {u"values"_s, QJsonArray{QJsonArray{value, 1}}}};
+        };
+        QJsonObject armoured = helmet(u"x1"_s, price(3, u"divine"_s));
+        QJsonObject item = armoured.value(u"item"_s).toObject();
+        item.insert(u"properties"_s, QJsonArray{property(u"[Evasion|Evasion Rating]"_s, u"88"_s),
+                                                property(u"[Armour]"_s, u"120"_s)});
+        armoured.insert(u"item"_s, item);
+        // and one that doesn't say its level
+        QJsonObject plain = helmet(u"x2"_s, price(3, u"divine"_s));
+        item = plain.value(u"item"_s).toObject();
+        item.remove(u"ilvl"_s);
+        plain.insert(u"item"_s, item);
+        site.network.answers = {{.body = json({{u"result"_s, QJsonArray{armoured, plain}}})}};
+        site.results.setSearch(foundBy(2));
+        QVERIFY(site.loads());
+
+        const auto level = [&](int row) {
+            return site.results.data(site.results.index(row), TradeResults::ItemLevelRole).toInt();
+        };
+        const auto properties = [&](int row) {
+            return site.results.data(site.results.index(row), TradeResults::PropertiesRole)
+                .value<QList<ResultProperty>>();
+        };
+        QCOMPARE(level(0), 80);
+        QCOMPARE(properties(0), (QList<ResultProperty>{{u"Armour"_s, u"120"_s}, {u"Evasion"_s, u"88"_s}}));
+        QCOMPARE(level(1), 0);
+        QVERIFY(properties(1).isEmpty());
     }
 
     void convertsPrices()
@@ -646,6 +691,8 @@ private Q_SLOTS:
         QCOMPARE(better.figures.at(0).label, u"Life"_s);
         QCOMPARE(better.figures.at(0).change, u"+50"_s);
         QCOMPARE(better.figures.at(1).label, u"Average gear score"_s);
+        QCOMPARE(better.versus, u"vs Grim Crown"_s);
+        QCOMPARE(better.gearScore, u"Gear score 13 D, yours 5"_s);
         QVERIFY(better.losses.isEmpty());
         QVERIFY(better.risks.isEmpty());
         QVERIFY(!better.checking);
@@ -655,7 +702,22 @@ private Q_SLOTS:
         QCOMPARE(worse.verdict, u"Downgrade"_s);
         QCOMPARE(worse.tone, Tone::Bad);
         QCOMPARE(worse.score, u"-3 gear score"_s);
+        QCOMPARE(worse.versus, u"vs Grim Crown"_s);
+        QCOMPARE(worse.gearScore, u"Gear score 2 D, yours 5"_s);
         QCOMPARE(site.results.roleNames().value(TradeResults::VerdictRole), "verdict"_ba);
+    }
+
+    // with nothing on your head, there's nothing to compare it with
+    void aListingForAnEmptySlot()
+    {
+        Site site;
+        site.results.judge().setCharacter(Character(), std::nullopt);
+        site.network.answers = {fetched({u"x1"_s})};
+        site.results.setSearch(foundBy(1));
+        QVERIFY(site.loads());
+        const ResultVerdict v = verdictIn(site, 0);
+        QVERIFY(v.versus.isEmpty());
+        QCOMPARE(v.gearScore, u"Gear score 13 D"_s);
     }
 
     void judgesTheNextPagesToo()
@@ -765,6 +827,9 @@ private Q_SLOTS:
         QVERIFY(!v.checking);
         QCOMPARE(v.verdict, u"Upgrade"_s);
         QVERIFY(v.score.endsWith(u"% for your build"));
+        // and no gear score, as Path of Building judges it
+        QVERIFY(v.gearScore.isEmpty());
+        QCOMPARE(v.versus, u"vs Grim Crown"_s);
         // which it says instead of the changes on your character
         QCOMPARE(v.figures.size(), 2);
         QCOMPARE(v.figures.at(0).label, u"DPS"_s);

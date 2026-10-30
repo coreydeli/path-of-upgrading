@@ -242,6 +242,7 @@ private Q_SLOTS:
         QVERIFY(shown(p.window(), u"2 listed in Runes of Aldur"_s));
         QVERIFY(shown(p.window(), u"Grim Ward"_s));
         QVERIFY(shown(p.window(), u"Iron Hat"_s));
+        QVERIFY(shown(p.window(), u"Item level 80"_s));
         QVERIFY(shown(p.window(), u"3 div"_s));
         QVERIFY(shown(p.window(), u"about 2100 ex"_s));
         QVERIFY(shown(p.window(), u"+80 to maximum Life"_s));
@@ -291,6 +292,98 @@ private Q_SLOTS:
         QVERIFY(offline);
         QCOMPARE(online->property("tone").toInt(), int(Tone::Good));
         QCOMPARE(offline->property("tone").toInt(), int(Tone::Plain));
+    }
+
+    void instantBuyouts()
+    {
+        Panel p;
+        // which says so, with the seller away or not
+        QJsonObject gone = instantBuyout(helmet(u"x2"_s, price(3, u"divine"_s)));
+        QJsonObject listing = gone[u"listing"_s].toObject();
+        QJsonObject account = listing[u"account"_s].toObject();
+        account.remove(u"online"_s);
+        listing[u"account"_s] = account;
+        gone[u"listing"_s] = listing;
+        p.site.network.answers = {
+            {.body = json({{u"result"_s, QJsonArray{helmet(u"x1"_s, price(3, u"divine"_s)), gone}}})}};
+        p.site.results.setSearch(foundBy(2));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 2);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+
+        const QQuickItem *instant = shown(p.window(), u"Instant buyout"_s);
+        QVERIFY(instant);
+        QCOMPARE(toneOf(instant), int(Tone::Good));
+        QVERIFY(shown(p.window(), u"Online"_s));
+        QVERIFY(!shown(p.window(), u"Offline"_s));
+    }
+
+    void itsOwnNumbers()
+    {
+        Panel p;
+        const auto property = [](const QString &name, const QString &value) {
+            return QJsonObject{{u"name"_s, name}, {u"values"_s, QJsonArray{QJsonArray{value, 1}}}};
+        };
+        // one with defences, and one that says no level and has none
+        QJsonObject armoured = helmet(u"x1"_s, price(3, u"divine"_s));
+        QJsonObject item = armoured[u"item"_s].toObject();
+        item[u"properties"_s] =
+            QJsonArray{property(u"[Armour]"_s, u"120"_s), property(u"[Evasion|Evasion Rating]"_s, u"88"_s)};
+        armoured[u"item"_s] = item;
+        QJsonObject plain = helmet(u"x2"_s, price(3, u"divine"_s));
+        item = plain[u"item"_s].toObject();
+        item.remove(u"ilvl"_s);
+        plain[u"item"_s] = item;
+        p.site.network.answers = {{.body = json({{u"result"_s, QJsonArray{armoured, plain}}})}};
+        p.site.results.setSearch(foundBy(2));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 2);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+
+        QVERIFY(shown(p.window(), u"Item level 80"_s));
+        QVERIFY(shown(p.window(), u"Armour 120"_s));
+        QVERIFY(shown(p.window(), u"Evasion 88"_s));
+        // and only the first has them
+        QVERIFY(!shown(p.window(), u"Item level 0"_s));
+        int levels = 0;
+        for (const QQuickItem *label : visibleItems(p.window())) {
+            if (label->property("text").toString().startsWith(u"Item level"))
+                ++levels;
+        }
+        QCOMPARE(levels, 1);
+    }
+
+    // the right of each row is clear of the scroll bar
+    void clearOfTheScrollBar()
+    {
+        Panel p;
+        const QString indexed = QDateTime::currentDateTimeUtc().addSecs(-5 * 60).toString(Qt::ISODate);
+        QJsonArray result;
+        for (const QString &id : listingIds(10))
+            result << helmet(id, price(3, u"divine"_s), indexed);
+        p.site.network.answers = {{.body = json({{u"result"_s, result}})}};
+        QVERIFY(p.site.hasRates(700));
+        p.site.results.setSearch(foundBy(10));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 10);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+
+        const QList<QQuickItem *> items = visibleItems(p.window());
+        const auto bar = std::ranges::find_if(
+            items, [](const QQuickItem *item) { return item->inherits("QQuickScrollBar"); });
+        // there are more rows than fit
+        QVERIFY(bar != items.end());
+        const qreal barLeft = (*bar)->mapToScene(QPointF(0, 0)).x();
+        for (const QString &text : {u"3 div"_s, u"about 2100 ex"_s, u"5 minutes ago"_s}) {
+            const QQuickItem *label = shown(p.window(), text);
+            QVERIFY2(label, qPrintable(text));
+            const qreal right = label->mapToScene(QPointF(label->width(), 0)).x();
+            QVERIFY2(right <= barLeft,
+                     qPrintable(u"%1 ends at %2, the bar starts at %3"_s.arg(text).arg(right).arg(barLeft)));
+        }
     }
 
     void ratesComeLater()
@@ -641,6 +734,9 @@ private Q_SLOTS:
         QVERIFY(verdict);
         QCOMPARE(toneOf(verdict), int(Tone::Good));
         QVERIFY(shown(p.window(), u"+8 gear score"_s));
+        // against what it would replace, and what you wear
+        QVERIFY(shown(p.window(), u"vs Grim Crown"_s));
+        QVERIFY(shown(p.window(), u"Gear score 13 D, yours 5"_s));
         const QQuickItem *life = shown(p.window(), u"Life +50"_s);
         QVERIFY(life);
         QCOMPARE(toneOf(life), int(Tone::Good));

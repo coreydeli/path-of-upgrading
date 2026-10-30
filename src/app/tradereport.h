@@ -43,6 +43,7 @@ public:
 // While it searches, after waiting that long for its turn.
 TradeReport searchingReport(std::chrono::milliseconds wait = {});
 TradeReport reportOf(const TradeFinder::Found &found);
-TradeReport failedReport(const QString &why);
+// Why it found nothing, with the search to try on the trade site if there is one.
+TradeReport failedReport(const QString &why, const QUrl &url = {});
 
 } // namespace pou
