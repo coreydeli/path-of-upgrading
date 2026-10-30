@@ -31,8 +31,8 @@ public:
 
     // Has the game copy the item under the mouse, which ends in itemRead() or
     // failed(). Does nothing while it can't read. When the popup was in the way
-    // and is going, the game is told to nudge the mouse for the item to be
-    // under it again.
+    // and is going, the mouse is nudged for the game to see the item under it
+    // again.
     void read(bool nudge = false);
     // Whether read() does anything, which it doesn't while paused or reading
     // one already.

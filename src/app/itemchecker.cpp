@@ -69,7 +69,7 @@ void ItemChecker::check()
     if (!m_reader.canRead())
         return;
     // With the mouse on the popup, the game would see that and not the item.
-    // It goes first, and the game moves the mouse for the item to be under it.
+    // It goes first, and the mouse is nudged for the game to see the item again.
     const bool inTheWay = m_popup.isInTheWay();
     if (inTheWay)
         m_popup.close();
