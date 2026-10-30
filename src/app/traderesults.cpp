@@ -106,6 +106,14 @@ QVariant TradeResults::data(const QModelIndex &index, int role) const
         return listedAgo(listing.indexed, QDateTime::currentDateTimeUtc());
     case BaseRole:
         return item.name == item.baseType ? QString() : item.baseType;
+    case ItemLevelRole:
+        return item.itemLevel;
+    case PropertiesRole: {
+        QList<ResultProperty> properties;
+        for (const ListingProperty &property : listing.properties)
+            properties << ResultProperty{property.name, property.value};
+        return QVariant::fromValue(properties);
+    }
     case ModsRole: {
         QList<ResultMod> mods;
         for (const ListingMod &mod : listing.mods)
@@ -129,6 +137,8 @@ QHash<int, QByteArray> TradeResults::roleNames() const
         {ListedRole, "listed"},
         {NameRole, "name"},
         {BaseRole, "base"},
+        {ItemLevelRole, "itemLevel"},
+        {PropertiesRole, "properties"},
         {ModsRole, "mods"},
         {VerdictRole, "verdict"},
     };

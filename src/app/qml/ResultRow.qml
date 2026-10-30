@@ -11,6 +11,8 @@ Item {
 
     required property string name
     required property string base
+    required property int itemLevel
+    required property var properties
     required property string price
     required property string converted
     required property string account
@@ -58,6 +60,31 @@ Item {
                     wrapMode: Text.Wrap
                     opacity: 0.7
                     text: row.base
+                }
+
+                // what the item has of its own
+                Flow {
+                    Layout.fillWidth: true
+                    visible: row.itemLevel > 0 || row.properties.length > 0
+                    spacing: Kirigami.Units.largeSpacing
+
+                    QQC2.Label {
+                        visible: row.itemLevel > 0
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: qsTr("Item level %1").arg(row.itemLevel)
+                    }
+
+                    Repeater {
+                        model: row.properties
+
+                        QQC2.Label {
+                            required property resultProperty modelData
+
+                            font: Kirigami.Theme.smallFont
+                            text: modelData.name + " " + modelData.value
+                        }
+                    }
                 }
             }
 

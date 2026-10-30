@@ -37,6 +37,22 @@ public:
     friend bool operator==(const ResultMod &, const ResultMod &) = default;
 };
 
+// One of the numbers a listed item has of its own, "Armour" and "160".
+struct ResultProperty
+{
+    Q_GADGET
+    QML_VALUE_TYPE(resultProperty)
+
+    Q_PROPERTY(QString name MEMBER name)
+    Q_PROPERTY(QString value MEMBER value)
+
+public:
+    QString name;
+    QString value;
+
+    friend bool operator==(const ResultProperty &, const ResultProperty &) = default;
+};
+
 // How a listing does for the character you play, the way the popup says it
 // of an item you check, with only the numbers.
 struct ResultVerdict
@@ -120,6 +136,8 @@ public:
         ListedRole,        // "5 minutes ago"
         NameRole,          // its base type for one without a name
         BaseRole,          // empty when that's its name
+        ItemLevelRole,     // 0 when the site doesn't say
+        PropertiesRole,    // a list of resultProperty, its defences and damage per second
         ModsRole,          // a list of resultMod
         VerdictRole,       // a resultVerdict
     };

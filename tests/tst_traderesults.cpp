@@ -267,6 +267,10 @@ private Q_SLOTS:
         QCOMPARE(site.text(0, Role::NameRole), u"Grim Ward"_s);
         QCOMPARE(site.text(0, Qt::DisplayRole), u"Grim Ward"_s);
         QCOMPARE(site.text(0, Role::BaseRole), u"Iron Hat"_s);
+        QCOMPARE(site.results.data(site.results.index(0), Role::ItemLevelRole).toInt(), 80);
+        QVERIFY(site.results.data(site.results.index(0), Role::PropertiesRole)
+                    .value<QList<ResultProperty>>()
+                    .isEmpty());
         const QList<ResultMod> mods =
             site.results.data(site.results.index(0), Role::ModsRole).value<QList<ResultMod>>();
         QCOMPARE(mods, (QList<ResultMod>{{u"+80 to maximum Life"_s, u"explicit"_s},
@@ -294,7 +298,43 @@ private Q_SLOTS:
         QCOMPARE(names.value(Role::ListedRole), "listed"_ba);
         QCOMPARE(names.value(Role::NameRole), "name"_ba);
         QCOMPARE(names.value(Role::BaseRole), "base"_ba);
+        QCOMPARE(names.value(Role::ItemLevelRole), "itemLevel"_ba);
+        QCOMPARE(names.value(Role::PropertiesRole), "properties"_ba);
         QCOMPARE(names.value(Role::ModsRole), "mods"_ba);
+    }
+
+    // what the item has of its own, and the level it was made at
+    void itsOwnNumbers()
+    {
+        Site site;
+        const auto property = [](const QString &name, const QString &value) {
+            return QJsonObject{{u"name"_s, name}, {u"values"_s, QJsonArray{QJsonArray{value, 1}}}};
+        };
+        QJsonObject armoured = helmet(u"x1"_s, price(3, u"divine"_s));
+        QJsonObject item = armoured.value(u"item"_s).toObject();
+        item.insert(u"properties"_s, QJsonArray{property(u"[Evasion|Evasion Rating]"_s, u"88"_s),
+                                                property(u"[Armour]"_s, u"120"_s)});
+        armoured.insert(u"item"_s, item);
+        // and one that doesn't say its level
+        QJsonObject plain = helmet(u"x2"_s, price(3, u"divine"_s));
+        item = plain.value(u"item"_s).toObject();
+        item.remove(u"ilvl"_s);
+        plain.insert(u"item"_s, item);
+        site.network.answers = {{.body = json({{u"result"_s, QJsonArray{armoured, plain}}})}};
+        site.results.setSearch(foundBy(2));
+        QVERIFY(site.loads());
+
+        const auto level = [&](int row) {
+            return site.results.data(site.results.index(row), TradeResults::ItemLevelRole).toInt();
+        };
+        const auto properties = [&](int row) {
+            return site.results.data(site.results.index(row), TradeResults::PropertiesRole)
+                .value<QList<ResultProperty>>();
+        };
+        QCOMPARE(level(0), 80);
+        QCOMPARE(properties(0), (QList<ResultProperty>{{u"Armour"_s, u"120"_s}, {u"Evasion"_s, u"88"_s}}));
+        QCOMPARE(level(1), 0);
+        QVERIFY(properties(1).isEmpty());
     }
 
     void convertsPrices()

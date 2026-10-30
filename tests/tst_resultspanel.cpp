@@ -242,6 +242,7 @@ private Q_SLOTS:
         QVERIFY(shown(p.window(), u"2 listed in Runes of Aldur"_s));
         QVERIFY(shown(p.window(), u"Grim Ward"_s));
         QVERIFY(shown(p.window(), u"Iron Hat"_s));
+        QVERIFY(shown(p.window(), u"Item level 80"_s));
         QVERIFY(shown(p.window(), u"3 div"_s));
         QVERIFY(shown(p.window(), u"about 2100 ex"_s));
         QVERIFY(shown(p.window(), u"+80 to maximum Life"_s));
@@ -316,6 +317,42 @@ private Q_SLOTS:
         QCOMPARE(toneOf(instant), int(Tone::Good));
         QVERIFY(shown(p.window(), u"Online"_s));
         QVERIFY(!shown(p.window(), u"Offline"_s));
+    }
+
+    void itsOwnNumbers()
+    {
+        Panel p;
+        const auto property = [](const QString &name, const QString &value) {
+            return QJsonObject{{u"name"_s, name}, {u"values"_s, QJsonArray{QJsonArray{value, 1}}}};
+        };
+        // one with defences, and one that says no level and has none
+        QJsonObject armoured = helmet(u"x1"_s, price(3, u"divine"_s));
+        QJsonObject item = armoured[u"item"_s].toObject();
+        item[u"properties"_s] =
+            QJsonArray{property(u"[Armour]"_s, u"120"_s), property(u"[Evasion|Evasion Rating]"_s, u"88"_s)};
+        armoured[u"item"_s] = item;
+        QJsonObject plain = helmet(u"x2"_s, price(3, u"divine"_s));
+        item = plain[u"item"_s].toObject();
+        item.remove(u"ilvl"_s);
+        plain[u"item"_s] = item;
+        p.site.network.answers = {{.body = json({{u"result"_s, QJsonArray{armoured, plain}}})}};
+        p.site.results.setSearch(foundBy(2));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 2);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+
+        QVERIFY(shown(p.window(), u"Item level 80"_s));
+        QVERIFY(shown(p.window(), u"Armour 120"_s));
+        QVERIFY(shown(p.window(), u"Evasion 88"_s));
+        // and only the first has them
+        QVERIFY(!shown(p.window(), u"Item level 0"_s));
+        int levels = 0;
+        for (const QQuickItem *label : visibleItems(p.window())) {
+            if (label->property("text").toString().startsWith(u"Item level"))
+                ++levels;
+        }
+        QCOMPARE(levels, 1);
     }
 
     void ratesComeLater()
