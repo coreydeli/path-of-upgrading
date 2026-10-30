@@ -434,6 +434,49 @@ private Q_SLOTS:
         QVERIFY(!c.list.importBuild(u"nobody"_s, stormweaver, build));
     }
 
+    void importFitsTheProfile()
+    {
+        Characters c;
+        const QString wren = c.saved(u"Wren"_s);
+        c.list.load();
+        c.active.setId(wren);
+        PobBuild build = parsePobBuild(stormweaver).value();
+        build.life = 900;
+        build.energyShield = 4500;
+
+        const std::optional<BuildImport> done = c.list.importBuild(wren, stormweaver, build);
+        QVERIFY(done);
+        QVERIFY(done->profileChanged);
+        QCOMPARE(c.inFolder(wren)->buildProfile, u"es-caster"_s);
+        QVERIFY(!c.inFolder(wren)->profilePicked);
+        QCOMPARE(c.active.character().buildProfile, u"es-caster"_s);
+
+        // and the next build's, as long as you haven't chosen
+        build.minionDps = 800;
+        QVERIFY(c.list.importBuild(wren, stormweaver, build));
+        QCOMPARE(c.inFolder(wren)->buildProfile, u"minion-es"_s);
+    }
+
+    void importLeavesYourProfile()
+    {
+        Characters c;
+        const QString wren = c.saved(u"Wren"_s);
+        c.list.load();
+        Character picked = *c.store.find(wren);
+        picked.buildProfile = u"life-res"_s;
+        picked.profilePicked = true;
+        QVERIFY(c.store.save(wren, picked));
+        c.active.setId(wren);
+        PobBuild build = parsePobBuild(stormweaver).value();
+        build.energyShield = 4500;
+
+        const std::optional<BuildImport> done = c.list.importBuild(wren, stormweaver, build);
+        QVERIFY(done);
+        QVERIFY(!done->profileChanged);
+        QCOMPARE(c.inFolder(wren)->buildProfile, u"life-res"_s);
+        QVERIFY(c.inFolder(wren)->profilePicked);
+    }
+
     void importFails()
     {
         Characters c;

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/activecharacter.h"
+#include "app/characterlist.h"
 #include "app/gearscoring.h"
+#include "app/settingsstore.h"
 #include "core/buildprofiles.h"
 #include "services/pobengine.h"
 
@@ -48,6 +50,36 @@ struct Scoring
     }
 
     const Character &saved() const { return *store.find(active.id()); }
+};
+
+// Importing builds for the character you play.
+struct Importing
+{
+    QTemporaryDir dir;
+    SettingsStore settings{dir.filePath(u"settings.conf"_s)};
+    CharacterStore store{dir.filePath(u"characters"_s)};
+    PobEngine engine;
+    ActiveCharacter active{&store, &engine};
+    CharacterList list{&store, &active, &settings};
+    GearScoring scoring{&active};
+    QString id;
+
+    Importing()
+    {
+        Character c;
+        c.name = u"Tester"_s;
+        id = store.add(c).value_or(QString());
+        active.setId(id);
+    }
+
+    // a build with this much Energy Shield and a thousand Life
+    bool import(double energyShield)
+    {
+        PobBuild build;
+        build.life = 1000;
+        build.energyShield = energyShield;
+        return list.importBuild(id, u"<PathOfBuilding2/>"_s, build).has_value();
+    }
 };
 
 Character tester(const QString &profile = {})
@@ -161,6 +193,39 @@ private Q_SLOTS:
         s.scoring.setProfile(int(s.scoring.profiles().size()) - 1);
         QCOMPARE(s.saved().buildProfile, noBuildProfile.toString());
         QVERIFY(s.saved().profilePicked);
+    }
+
+    void followsTheBuild()
+    {
+        Importing i;
+        QSignalSpy reset(&i.scoring, &GearScoring::modelReset);
+        QCOMPARE(i.scoring.profile(), 0);
+        QVERIFY(i.import(5000));
+        QCOMPARE(i.scoring.profile(), 1);
+        QCOMPARE(reset.size(), 1);
+        QVERIFY(i.import(100));
+        QCOMPARE(i.scoring.profile(), 0);
+    }
+
+    void keepsWhatYouPicked()
+    {
+        Importing i;
+        QVERIFY(i.import(5000));
+        QCOMPARE(i.scoring.profile(), 1);
+        i.scoring.setProfile(2);
+        QVERIFY(i.import(5000));
+        QVERIFY(i.import(100));
+        QCOMPARE(i.scoring.profile(), 2);
+    }
+
+    void keepsTheOneYouPickedAgain()
+    {
+        // it was the one you had, and you chose it anyway
+        Importing i;
+        QVERIFY(i.import(5000));
+        i.scoring.setProfile(1);
+        QVERIFY(i.import(100));
+        QCOMPARE(i.scoring.profile(), 1);
     }
 
     void noProfile()
