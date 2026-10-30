@@ -62,9 +62,9 @@ public:
     // The character you play, whose build profile and weights say what's
     // better and whose ignored stats are left out.
     void setCharacter(const Character &character);
-    // Upgrade searches start at their full size again, as the site takes
-    // bigger ones signed in than signed out.
-    void forgetSize() { m_size = 0; }
+    // Signed out, the trade site takes only the smallest upgrade searches, so
+    // they start there. Signed in, they start at their full size again.
+    void setSignedIn(bool signedIn);
 
     // Calls off the one it's busy with. While the trade site's stats are
     // still to come, it waits for them, but it goes by the rates it has.
@@ -118,9 +118,10 @@ private:
     Item m_item;
     Kind m_kind = Kind::Upgrades;
     int m_level = 0; // how much looser than at first
+    bool m_signedIn = false;
     // How small the site needs an upgrade search to be. Later ones start
     // there, rather than spend searches on ones it turns down.
-    int m_size = 0;
+    int m_size;
     Plan m_plan;     // sent last
     int m_finds = 0; // asked for or called off, so far
     bool m_busy = false;

@@ -57,6 +57,8 @@ struct GearSize
 constexpr std::array gearSizes = {GearSize{40, false, true}, GearSize{20, true, true},
                                   GearSize{10, true, false}, GearSize{6, true, false},
                                   GearSize{6, true, false, true}};
+// which is all the site takes signed out
+constexpr int smallest = int(gearSizes.size()) - 1;
 
 // What a gear search looks at.
 QString scoredBy(const GearSearch &search)
@@ -81,6 +83,7 @@ TradeFinder::TradeFinder(TradeSearcher *searcher, TradeDataStore *data, RatesSto
     , m_searcher(searcher)
     , m_data(data)
     , m_rates(rates)
+    , m_size(smallest)
 {
     // queued, so the app has taken the site's leagues from the data by then
     connect(
@@ -108,6 +111,12 @@ void TradeFinder::setSettings(const Settings &settings)
 void TradeFinder::setCharacter(const Character &character)
 {
     m_character = character;
+}
+
+void TradeFinder::setSignedIn(bool signedIn)
+{
+    m_signedIn = signedIn;
+    m_size = signedIn ? 0 : smallest;
 }
 
 void TradeFinder::find(const Item &item, Kind kind)
@@ -209,10 +218,10 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
         .shrinks = true,
     };
     if (search.countOnly)
-        plan.note =
-            u"The trade site only takes a simple search, so each has at least %1 of these at a decent "
-            u"roll: %2. Cheapest first."_s.arg(QString::number(search.needKeyStats),
-                                               search.keyStats.join(u", "));
+        plan.note = (m_signedIn ? u"The trade site only takes a simple search"_s
+                                : u"Signed out, the trade site only takes a simple search"_s) +
+                    u", so each has at least %1 of these at a decent roll: %2. Cheapest first."_s.arg(
+                        QString::number(search.needKeyStats), search.keyStats.join(u", "));
     else if (m_level == 0 && m_size > 0)
         plan.note =
             u"Scored by your build's main weights, as the trade site limits how many filters a search "
@@ -337,7 +346,7 @@ void TradeFinder::answered()
     const std::unique_ptr<TradeSearch> search(m_search.data());
     m_search.clear();
     if (search->error() == TradeSearch::Error::TooComplex && m_plan.shrinks) {
-        if (m_size + 1 == int(gearSizes.size()))
+        if (m_size == smallest)
             return fail(u"The trade site says this search has too many filters even at its smallest."_s);
         ++m_size;
         return send();
