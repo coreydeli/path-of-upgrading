@@ -173,7 +173,7 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
             notes << u"Your weapon is two-handed, so you can't use this with it."_s;
     }
 
-    r.isEquipped = worn != slotNames.cend();
+    r.isEquipped = sameItem(item, itemIn(equipped, r.targetSlot));
 
     const bool hasBaseline = !r.replacing.isEmpty();
     if (!hasBaseline)

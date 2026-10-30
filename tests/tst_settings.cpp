@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QTest>
+#include <functional>
 
 using namespace Qt::Literals::StringLiterals;
 using namespace pou;
@@ -99,6 +100,84 @@ private Q_SLOTS:
         trade.enabled = enabled;
         trade.league.soloSelfFound = soloSelfFound;
         QCOMPARE(tradeUnavailable(trade), why);
+    }
+
+    void everySettingHasItsOwnKey()
+    {
+        const QList<std::function<void(Settings &)>> changes = {
+            [](Settings &s) { s.character = u"abc"_s; },
+            [](Settings &s) { s.trade.enabled = false; },
+            [](Settings &s) { s.trade.league.name = u"Standard"_s; },
+            [](Settings &s) { s.trade.league.hardcore = true; },
+            [](Settings &s) { s.trade.league.soloSelfFound = true; },
+            [](Settings &s) { s.trade.status = ListingStatus::Online; },
+            [](Settings &s) { s.trade.budget.min = 3; },
+            [](Settings &s) { s.trade.budget.max = 9; },
+            [](Settings &s) { s.trade.budget.currency = Currency::Chaos; },
+            [](Settings &s) { s.trade.budget.divineRate = 250; },
+            [](Settings &s) { s.trade.autoRate = false; },
+            [](Settings &s) { s.pob.enabled = false; },
+            [](Settings &s) { s.pob.location = u"/opt/pob"_s; },
+            [](Settings &s) { s.pob.damageWeight = 0.25; },
+            [](Settings &s) { s.pob.priorities.resistsFirst = false; },
+            [](Settings &s) { s.pob.priorities.chaos = true; },
+            [](Settings &s) { s.pob.priorities.keepDamage = false; },
+            [](Settings &s) { s.pob.priorities.spirit = false; },
+            [](Settings &s) { s.pob.priorities.attributes = false; },
+            [](Settings &s) { s.overlay.hotkey = u"F5"_s; },
+            [](Settings &s) { s.overlay.resultsHotkey = u"F6"_s; },
+            [](Settings &s) { s.overlay.advancedCopy = true; },
+            [](Settings &s) { s.overlay.watchClipboard = false; },
+            [](Settings &s) { s.overlay.position = PopupPosition::Top; },
+            [](Settings &s) { s.overlay.scale = 1.5; },
+            [](Settings &s) { s.overlay.compact = false; },
+            [](Settings &s) { s.overlay.colorblind = true; },
+            [](Settings &s) { s.overlay.autoHideSeconds = 30; },
+            [](Settings &s) { s.overlay.paused = true; },
+        };
+
+        // changing one setting must change only that one when it comes back
+        int row = 0;
+        for (const auto &change : changes) {
+            const QString which = u"change "_s + QString::number(row++);
+            Settings changed;
+            change(changed);
+            QVERIFY2(changed != Settings(), qPrintable(which));
+
+            QTemporaryDir dir;
+            const QString path = dir.filePath(u"settings.conf"_s);
+            {
+                QSettings store(path, QSettings::IniFormat);
+                saveSettings(store, changed);
+            }
+            const QSettings again(path, QSettings::IniFormat);
+            QVERIFY2(loadSettings(again) == changed, qPrintable(which));
+        }
+    }
+
+    void numbersStayWithinTheirLimits()
+    {
+        QTemporaryDir dir;
+        QSettings store(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+        store.setValue(u"overlay/autoHideSeconds"_s, 0);
+        store.setValue(u"overlay/scale"_s, 0.1);
+        store.setValue(u"pob/damageWeight"_s, 3);
+        store.setValue(u"trade/budgetMin"_s, -5);
+        store.setValue(u"trade/budgetMax"_s, -5);
+        store.setValue(u"trade/divineRate"_s, -5);
+        Settings s = loadSettings(store);
+        QCOMPARE(s.overlay.autoHideSeconds, 2);
+        QCOMPARE(s.overlay.scale, 0.5);
+        QCOMPARE(s.pob.damageWeight, 1.0);
+        QCOMPARE(s.trade.budget.min, 0.0);
+        QCOMPARE(s.trade.budget.max, 0.0);
+        QCOMPARE(s.trade.budget.divineRate, 0.0);
+
+        store.setValue(u"overlay/scale"_s, 10);
+        store.setValue(u"overlay/autoHideSeconds"_s, u"soon"_s);
+        s = loadSettings(store);
+        QCOMPARE(s.overlay.scale, 2.0);
+        QCOMPARE(s.overlay.autoHideSeconds, OverlaySettings().autoHideSeconds);
     }
 };
 

@@ -166,4 +166,12 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
     return change;
 }
 
+std::optional<double> overallGearScore(const Equipped &equipped, const GearScoreFn &gearScore)
+{
+    Gear gear;
+    for (auto it = equipped.cbegin(); it != equipped.cend(); ++it)
+        gear.insert(it.key(), &it.value());
+    return averageScore(gear, gearScore);
+}
+
 } // namespace pou

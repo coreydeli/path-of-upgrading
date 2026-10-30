@@ -133,6 +133,25 @@ private Q_SLOTS:
         QCOMPARE(store.ids(), QStringList{id});
     }
 
+    void aSaveThatFailsChangesNothing()
+    {
+        QTemporaryDir dir;
+        CharacterStore store(dir.path());
+        Character ember;
+        ember.name = u"Ember"_s;
+        const QString id = store.add(ember).value();
+
+        // a folder where the file goes can't be written over
+        const QString path = dir.filePath(id + u".json"_s);
+        QVERIFY(QFile::remove(path));
+        QVERIFY(QDir().mkdir(path));
+        Character frost = ember;
+        frost.name = u"Frost"_s;
+        QVERIFY(!store.save(id, frost));
+        QVERIFY(!store.errorString().isEmpty());
+        QCOMPARE(store.find(id)->name, u"Ember"_s);
+    }
+
     void builds()
     {
         QTemporaryDir dir;
@@ -173,6 +192,7 @@ private Q_SLOTS:
         QCOMPARE(store.ids(), QStringList{id});
         QCOMPARE(store.problems().size(), 2);
         QVERIFY(store.problems().at(0).startsWith(u"broken.json: "));
+        QVERIFY(!store.problems().at(0).contains(u"newer version"));
         QCOMPARE(store.problems().at(1), u"future.json: saved by a newer version of Path of Upgrading"_s);
         // left for you to look at
         QVERIFY(QFile::exists(dir.filePath(u"broken.json"_s)));

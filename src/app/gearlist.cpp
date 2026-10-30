@@ -3,8 +3,13 @@
 
 #include "app/activecharacter.h"
 #include "app/settingsstore.h"
+#include "core/character.h"
 #include "core/evaluation.h"
 #include "core/slots.h"
+
+#include <algorithm>
+
+using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
 
@@ -47,7 +52,7 @@ QVariant GearList::data(const QModelIndex &index, int role) const
     case FromPobRole:
         return character.fromPob.contains(row.slot);
     case ScoreRole:
-        return row.score;
+        return row.score ? QString::number(*row.score) : QString();
     case GradeRole:
         return row.grade;
     case ExtraRole:
@@ -103,12 +108,36 @@ void GearList::refresh()
             const std::optional<GearScore> score =
                 gearScore(*item, gearScoreOptions(character, slot, m_priorities));
             if (score && score->isRated()) {
-                row.score = QString::number(score->score);
+                row.score = score->score;
                 row.grade = score->grade;
             }
             m_rows << row;
         }
     }
+
+    // the scores worked out above
+    const GearScoreFn slotScore = [this](const Item &, const QString &slot) -> std::optional<double> {
+        for (const Row &row : std::as_const(m_rows)) {
+            if (row.slot == slot)
+                return row.score;
+        }
+        return std::nullopt;
+    };
+    const std::optional<double> overall = overallGearScore(character.gear, slotScore);
+    m_overall = overall ? QString::number(*overall) : QString();
+    m_overallGrade = overall ? gearGrade(int(*overall)) : QString();
+
+    QList<const Row *> rated;
+    for (const Row &row : std::as_const(m_rows)) {
+        if (row.score && mainSlots().contains(row.slot))
+            rated << &row;
+    }
+    std::stable_sort(rated.begin(), rated.end(),
+                     [](const Row *a, const Row *b) { return *a->score < *b->score; });
+    QStringList weakest;
+    for (const Row *row : rated.first(std::min<qsizetype>(3, rated.size())))
+        weakest << row->slot + u' ' + QString::number(*row->score);
+    m_weakest = weakest.join(u", "_s);
     endResetModel();
     Q_EMIT changed();
 }

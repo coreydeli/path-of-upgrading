@@ -61,6 +61,8 @@ private Q_SLOTS:
         QTest::newRow("big budget") << budget(0, 20, Currency::Divine, 150) << price(0, 20, u"divine"_s);
         QTest::newRow("small budget")
             << budget(0, 1.5, Currency::Divine, 700) << price(0, 1050, u"exalted"_s);
+        QTest::newRow("two divines") << budget(0, 2, Currency::Divine, 400) << price(0, 800, u"exalted"_s);
+        QTest::newRow("just over two") << budget(0, 2.5, Currency::Divine, 400) << price(0, 2.5, u"divine"_s);
         QTest::newRow("small, no rate") << budget(0, 1.5) << price(0, 1.5, u"divine"_s);
         QTest::newRow("exalts") << budget(0, 500, Currency::Exalted) << price(0, 500, u"exalted"_s);
         QTest::newRow("range") << budget(5, 20, Currency::Divine, 150) << price(5, 20, u"divine"_s);

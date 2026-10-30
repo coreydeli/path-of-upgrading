@@ -64,6 +64,18 @@ ItemCheck checkOf(const Judging &judging)
     return firstCheck(listingToItem(helmet(u"x1"_s, price(3, u"divine"_s)), u"Helmets"_s), judging);
 }
 
+// What Path of Building says of the listed helmet, tried as yours.
+PobEval triedAsHelmet(const QJsonObject &before, const QJsonObject &stats)
+{
+    const QJsonObject slot{{u"slot"_s, u"Helmet"_s},
+                           {u"label"_s, u"Helmet"_s},
+                           {u"replacing"_s, u"Grim Crown, Iron Hat"_s},
+                           {u"stats"_s, stats}};
+    return readPobEval(
+        {{u"before"_s, before},
+         {u"results"_s, QJsonArray{QJsonObject{{u"ok"_s, true}, {u"slots"_s, QJsonArray{slot}}}}}});
+}
+
 } // namespace
 
 class TestTradeResults : public QObject
@@ -746,15 +758,8 @@ private Q_SLOTS:
         check.pob = ItemCheck::Pob::Checking;
         QVERIFY(resultVerdict(check).checking);
 
-        const QJsonObject stats{{u"FullDPS"_s, 104}, {u"TotalEHP"_s, 1100}};
-        const QJsonObject slot{{u"slot"_s, u"Helmet"_s},
-                               {u"label"_s, u"Helmet"_s},
-                               {u"replacing"_s, u"Grim Crown, Iron Hat"_s},
-                               {u"stats"_s, stats}};
-        const QJsonObject before{{u"FullDPS"_s, 100}, {u"TotalEHP"_s, 1000}};
-        const PobEval eval = readPobEval(
-            {{u"before"_s, before},
-             {u"results"_s, QJsonArray{QJsonObject{{u"ok"_s, true}, {u"slots"_s, QJsonArray{slot}}}}}});
+        const PobEval eval = triedAsHelmet({{u"FullDPS"_s, 100}, {u"TotalEHP"_s, 1000}},
+                                           {{u"FullDPS"_s, 104}, {u"TotalEHP"_s, 1100}});
         const ResultVerdict v =
             resultVerdict(withPobAnswer(check, eval.before, eval.items.value(0), judging));
         QVERIFY(!v.checking);
@@ -766,6 +771,19 @@ private Q_SLOTS:
         QCOMPARE(v.figures.at(0).change, u"+4%"_s);
         QCOMPARE(v.figures.at(1).label, u"Effective HP"_s);
         QCOMPARE(v.figures.at(1).change, u"+10%"_s);
+        QVERIFY(v.caps.isEmpty());
+    }
+
+    void whatItCaps()
+    {
+        Judging judging{.character = wearing(worseHelmet), .build = PobBuild()};
+        const ItemCheck check = checkOf(judging);
+        const PobEval eval = triedAsHelmet(
+            {{u"FullDPS"_s, 100}, {u"TotalEHP"_s, 1000}, {u"FireResist"_s, 60}, {u"MissingFireResist"_s, 15}},
+            {{u"FullDPS"_s, 100}, {u"TotalEHP"_s, 1000}, {u"FireResist"_s, 75}, {u"MissingFireResist"_s, 0}});
+        const ResultVerdict v =
+            resultVerdict(withPobAnswer(check, eval.before, eval.items.value(0), judging));
+        QCOMPARE(v.caps, u"Caps your fire resistance"_s);
     }
 
     void whenPathOfBuildingCant()

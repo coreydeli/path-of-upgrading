@@ -92,6 +92,18 @@ private Q_SLOTS:
         QVERIFY(!back.note(item(itemtexts::helmetNew)));
         QVERIFY(back.note(item(itemtexts::helmetOld)));
     }
+
+    void savedCountsMustBeCounts()
+    {
+        const QJsonObject saved = {
+            {u"byClass"_s, QJsonObject{{u"Rings"_s, QJsonObject{{life, 2},
+                                                                {u"# to Strength"_s, 0},
+                                                                {u"# to Dexterity"_s, -3},
+                                                                {u"# to Intelligence"_s, u"many"_s}}}}},
+        };
+        const SeenStatsLog log = SeenStatsLog::fromJson(saved);
+        QCOMPARE(log.stats().value(u"Rings"_s), (QHash<QString, int>{{life, 2}}));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestSeenStats)

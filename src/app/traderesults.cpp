@@ -28,6 +28,7 @@ ResultVerdict resultVerdict(const ItemCheck &check)
                       .tone = report.verdictTone,
                       .losses = report.losses,
                       .risks = report.risks,
+                      .caps = report.caps,
                       .checking = report.pobChecking,
                       .pobError = check.pobError};
     if (!report.score.isEmpty())
