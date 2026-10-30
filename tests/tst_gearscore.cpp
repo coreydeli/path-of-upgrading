@@ -49,6 +49,10 @@ private Q_SLOTS:
     {
         QCOMPARE(buildProfile(u"")->id, u"life-res"_s);
         QCOMPARE(buildProfile(u"minion-es")->id, u"minion-es"_s);
+        // the ones picked by name, which characters have saved
+        QCOMPARE(buildProfile(defaultBuildProfile)->id, u"life-res"_s);
+        QCOMPARE(buildProfile(energyShieldProfile)->id, u"es-caster"_s);
+        QCOMPARE(buildProfile(minionProfile)->id, u"minion-es"_s);
         QVERIFY(!buildProfile(u"nothing like it"));
         QCOMPARE(buildProfiles().size(), 3);
         for (const BuildProfile &p : buildProfiles()) {

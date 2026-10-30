@@ -61,6 +61,8 @@ struct BuildProfile
 };
 
 inline constexpr QStringView defaultBuildProfile = u"life-res";
+inline constexpr QStringView energyShieldProfile = u"es-caster";
+inline constexpr QStringView minionProfile = u"minion-es";
 // For scoring by your stat weights alone, as no profile has it.
 inline constexpr QStringView noBuildProfile = u"none";
 

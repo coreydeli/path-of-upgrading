@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/buildimport.h"
 
+#include "core/buildprofiles.h"
 #include "core/parser.h"
 #include "core/slots.h"
 
@@ -81,6 +82,15 @@ BuildImport importBuild(const Character &character, const PobBuild &build)
         out.resists = true;
     }
     return out;
+}
+
+QString fittingProfile(const PobBuild &build)
+{
+    if (build.minionDps > 0)
+        return minionProfile.toString();
+    if (build.energyShield > build.life * 2)
+        return energyShieldProfile.toString();
+    return defaultBuildProfile.toString();
 }
 
 std::optional<ResistRecord> buildResists(const PobBuild &build, const ResistRecord *previous)

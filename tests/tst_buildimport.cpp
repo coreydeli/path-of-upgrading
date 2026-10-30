@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "core/buildimport.h"
+#include "core/buildprofiles.h"
 #include "core/parser.h"
 
 #include <QTest>
@@ -193,6 +194,38 @@ private Q_SLOTS:
         const BuildImport done = importBuild(character, buildWith({{u"Helmet"_s, {.text = helmet}}}));
         QVERIFY(!done.resists);
         QCOMPARE(done.character.resists, character.resists);
+    }
+
+    void profileForTheBuild_data()
+    {
+        QTest::addColumn<double>("life");
+        QTest::addColumn<double>("energyShield");
+        QTest::addColumn<double>("minionDps");
+        QTest::addColumn<QString>("profile");
+
+        QTest::newRow("life") << 1600.0 << 300.0 << 0.0 << u"life-res"_s;
+        QTest::newRow("hybrid") << 1000.0 << 1500.0 << 0.0 << u"life-res"_s;
+        QTest::newRow("twice as much") << 1000.0 << 2000.0 << 0.0 << u"life-res"_s;
+        QTest::newRow("more than twice") << 1000.0 << 2001.0 << 0.0 << u"es-caster"_s;
+        QTest::newRow("chaos inoculation") << 1.0 << 3000.0 << 0.0 << u"es-caster"_s;
+        QTest::newRow("no numbers") << 0.0 << 0.0 << 0.0 << u"life-res"_s;
+        QTest::newRow("minions") << 1500.0 << 200.0 << 5000.0 << u"minion-es"_s;
+        QTest::newRow("minions and energy shield") << 1000.0 << 5000.0 << 0.5 << u"minion-es"_s;
+        QTest::newRow("minions that do nothing") << 1000.0 << 5000.0 << 0.0 << u"es-caster"_s;
+    }
+
+    void profileForTheBuild()
+    {
+        QFETCH(double, life);
+        QFETCH(double, energyShield);
+        QFETCH(double, minionDps);
+        QFETCH(QString, profile);
+        PobBuild build;
+        build.life = life;
+        build.energyShield = energyShield;
+        build.minionDps = minionDps;
+        QCOMPARE(fittingProfile(build), profile);
+        QVERIFY(buildProfile(profile));
     }
 
     void theBuildsResists()
