@@ -207,6 +207,49 @@ private Q_SLOTS:
         QVERIFY(!c.saved(id).chaosInoculation);
     }
 
+    void pobStats()
+    {
+        Characters c;
+        const QString id = c.add(inGrimCrown(), build);
+        QSignalSpy statsChanged(&c.active, &ActiveCharacter::pobStatsChanged);
+        c.active.setId(id);
+        QVERIFY(!c.active.pobStats());
+        QCOMPARE(statsChanged.size(), 0);
+
+        // as Path of Building says them, numbers only
+        c.pob.loads(
+            {{u"stats"_s, QJsonObject{{u"Life"_s, 1200}, {u"FullDPS"_s, 5000}, {u"Name"_s, u"x"_s}}}});
+        pobHas(c.engine);
+        QCOMPARE(c.active.pobStats(), (PobStats{{u"Life"_s, 1200}, {u"FullDPS"_s, 5000}}));
+        QCOMPARE(statsChanged.size(), 1);
+
+        // which a change that isn't to the build or the gear keeps
+        QVERIFY(c.active.change([](Character &torvald) { torvald.name = u"Torvald the Grim"_s; }));
+        QVERIFY(c.active.pobStats());
+        QCOMPARE(statsChanged.size(), 1);
+
+        // and other gear doesn't, until it's loaded with it
+        QVERIFY(c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
+        QVERIFY(!c.active.pobStats());
+        QCOMPARE(statsChanged.size(), 2);
+        pobHas(c.engine);
+        QVERIFY(c.active.pobStats());
+        QCOMPARE(statsChanged.size(), 3);
+
+        // nor another build
+        QVERIFY(c.store.savePobBuild(id, QString(build).replace(u"90"_s, u"91"_s)));
+        c.active.reload();
+        QVERIFY(!c.active.pobStats());
+        QCOMPARE(statsChanged.size(), 4);
+        pobHas(c.engine);
+        QCOMPARE(statsChanged.size(), 5);
+
+        // nor another character
+        c.active.setId(c.add(inGrimCrown()));
+        QVERIFY(!c.active.pobStats());
+        QCOMPARE(statsChanged.size(), 6);
+    }
+
     void keepsYourChanges()
     {
         // made since it was read
