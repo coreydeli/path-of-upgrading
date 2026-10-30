@@ -210,10 +210,14 @@ QList<ReportFigure> characterChanges(const CharacterChange &change)
             f.from = formatNumber(roundTo(*r.from, 1)) + u'%';
             f.to = formatNumber(roundTo(*r.to, 1)) + u'%';
             const bool thinner = r.thin && r.delta < 0;
+            QStringList notes;
             if (r.under)
-                f.note = u"under the cap"_s;
-            else if (thinner)
-                f.note = u"barely capped"_s;
+                notes << u"under the cap"_s;
+            if (thinner)
+                notes << u"barely capped"_s;
+            if (const double over = roundTo(*r.to - r.cap, 1); over > 0)
+                notes << formatNumber(over) + u" over the cap"_s;
+            f.note = notes.join(u", "_s);
             if (r.delta > 0)
                 f.tone = r.wasUnder ? Tone::Good : Tone::Plain;
             else

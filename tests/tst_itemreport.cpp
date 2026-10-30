@@ -475,17 +475,19 @@ private Q_SLOTS:
                                                .change = u"-5%"_s,
                                                .from = u"85%"_s,
                                                .to = u"80%"_s,
-                                               .note = u"barely capped"_s,
+                                               .note = u"barely capped, 5 over the cap"_s,
                                                .tone = Tone::Bad},
                                               {.label = u"Lightning res"_s,
                                                .change = u"+10%"_s,
                                                .from = u"70%"_s,
                                                .to = u"80%"_s,
+                                               .note = u"5 over the cap"_s,
                                                .tone = Tone::Good},
                                               {.label = u"Chaos res"_s,
                                                .change = u"+7%"_s,
                                                .from = u"90%"_s,
                                                .to = u"97%"_s,
+                                               .note = u"22 over the cap"_s,
                                                .minor = true},
                                               {.label = u"Life"_s,
                                                .change = u"+150"_s,
@@ -511,12 +513,56 @@ private Q_SLOTS:
             {.element = Cold, .label = u"Cold res"_s, .delta = -7, .from = 97, .to = 90, .safe = 85},
         };
         change.overall = TotalChange{u"Gear score"_s, 56, 56, 0};
-        QCOMPARE(
-            reportOf(check).changes,
-            (QList<ReportFigure>{
-                {.label = u"Fire res"_s, .change = u"+12%"_s, .tone = Tone::Good},
-                {.label = u"Cold res"_s, .change = u"-7%"_s, .from = u"97%"_s, .to = u"90%"_s, .minor = true},
-            }));
+        QCOMPARE(reportOf(check).changes,
+                 (QList<ReportFigure>{
+                     {.label = u"Fire res"_s, .change = u"+12%"_s, .tone = Tone::Good},
+                     {.label = u"Cold res"_s,
+                      .change = u"-7%"_s,
+                      .from = u"97%"_s,
+                      .to = u"90%"_s,
+                      .note = u"15 over the cap"_s,
+                      .minor = true},
+                 }));
+    }
+
+    void overTheCap_data()
+    {
+        QTest::addColumn<double>("cap");
+        QTest::addColumn<double>("from");
+        QTest::addColumn<double>("to");
+        QTest::addColumn<bool>("thin");
+        QTest::addColumn<QString>("note");
+
+        QTest::newRow("over") << 75.0 << 80.0 << 83.0 << false << u"8 over the cap"_s;
+        QTest::newRow("a fraction") << 75.0 << 70.0 << 76.5 << false << u"1.5 over the cap"_s;
+        QTest::newRow("rounded to a decimal") << 75.0 << 70.0 << 76.04 << false << u"1 over the cap"_s;
+        QTest::newRow("a higher cap") << 78.0 << 70.0 << 80.0 << false << u"2 over the cap"_s;
+        QTest::newRow("at the cap") << 75.0 << 70.0 << 75.0 << false << QString();
+        QTest::newRow("barely over") << 75.0 << 90.0 << 77.0 << true << u"barely capped, 2 over the cap"_s;
+        QTest::newRow("gaining some, so not barely") << 75.0 << 70.0 << 80.0 << true << u"5 over the cap"_s;
+        QTest::newRow("barely at the cap") << 75.0 << 90.0 << 75.0 << true << u"barely capped"_s;
+        QTest::newRow("under") << 75.0 << 80.0 << 60.0 << false << u"under the cap"_s;
+    }
+
+    void overTheCap()
+    {
+        QFETCH(double, cap);
+        QFETCH(double, from);
+        QFETCH(double, to);
+        QFETCH(bool, thin);
+        QFETCH(QString, note);
+
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.evaluation.change = CharacterChange{.resists = {{.element = Element::Fire,
+                                                               .label = u"Fire res"_s,
+                                                               .delta = to - from,
+                                                               .cap = cap,
+                                                               .from = from,
+                                                               .to = to,
+                                                               .safe = cap + 10,
+                                                               .under = to < cap,
+                                                               .thin = thin}}};
+        QCOMPARE(reportOf(check).changes.value(0).note, note);
     }
 
     void statLines_data()
