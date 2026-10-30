@@ -24,4 +24,9 @@ struct BuildImport
 // resistances are taken unless yours were read off the character sheet.
 BuildImport importBuild(const Character &character, const PobBuild &build);
 
+// The build's resistances with the gear it wears, as importing it takes them.
+// The maximum and margin of the previous ones stay. Empty when the build has
+// none.
+std::optional<ResistRecord> buildResists(const PobBuild &build, const ResistRecord *previous = nullptr);
+
 } // namespace pou
