@@ -14,7 +14,7 @@ League league(const QString &name, bool hardcore = false, bool soloSelfFound = f
     return {name, hardcore, soloSelfFound};
 }
 
-// Shaped like /api/trade2/data/leagues, as the site answered in October 2026.
+// Shaped like /api/trade2/data/leagues.
 QJsonObject leaguesResponse()
 {
     QJsonArray result;
