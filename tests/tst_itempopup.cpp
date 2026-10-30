@@ -525,6 +525,29 @@ private Q_SLOTS:
             << QStringList{u"Stats that change"_s, u"maximum Life"_s, u"120"_s, u"165"_s, u"+45"_s,
                            u"Movement Speed"_s,    u"30%"_s,          u"20%"_s, u"-10%"_s};
 
+        ItemReport whyRated = aReport();
+        whyRated.gearScore = u"78"_s;
+        whyRated.gearGrade = u"A"_s;
+        whyRated.gearParts = {
+            ReportFigure{.label = u"Life"_s,
+                         .change = u"+4"_s,
+                         .from = u"16"_s,
+                         .to = u"20"_s,
+                         .note = u"100% of an excellent roll"_s,
+                         .tone = Tone::Good},
+        };
+        whyRated.gearNotes = {u"Not used by your build: #% increased Light Radius."_s,
+                              u"Missing what your build wants: Movement speed."_s};
+        QTest::newRow("what the gear score is made of") << whyRated
+                                                        << QStringList{u"Gear score points"_s,
+                                                                       u"Life"_s,
+                                                                       u"16"_s,
+                                                                       u"20"_s,
+                                                                       u"+4"_s,
+                                                                       u"100% of an excellent roll"_s,
+                                                                       whyRated.gearNotes.at(0),
+                                                                       whyRated.gearNotes.at(1)};
+
         ItemReport rated = aReport();
         rated.gearScore = u"78"_s;
         rated.gearGrade = u"A"_s;
@@ -625,6 +648,63 @@ private Q_SLOTS:
         QVERIFY(!shown(popup, u"Spirit"_s));
     }
 
+    void foldedGearScore()
+    {
+        // why it scored what it did waits behind More, with a button for it
+        // when there's nothing else
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.gearScore = u"78"_s;
+        report.gearGrade = u"A"_s;
+        report.gearParts = {ReportFigure{.label = u"Life"_s, .to = u"20"_s}};
+        report.gearNotes = {u"Missing what your build wants: Movement speed."_s};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(shown(popup, u"78 A"_s));
+        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(!shown(popup, report.gearNotes.first()));
+
+        QVERIFY(click(popup, u"Show More"_s));
+        QVERIFY(shown(popup, u"Gear score points"_s));
+        QVERIFY(shown(popup, report.gearNotes.first()));
+        QVERIFY(click(popup, u"Show Less"_s));
+        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(!shown(popup, report.gearNotes.first()));
+    }
+
+    void foldedGearScoreNotesOnly()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.gearNotes = {u"Fire res: you're already capped, so it doesn't count."_s};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(click(popup, u"Show More"_s));
+        QVERIFY(shown(popup, report.gearNotes.first()));
+        // with no points to show
+        QVERIFY(!shown(popup, u"Gear score points"_s));
+    }
+
+    void foldedGearScorePointsOnly()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.gearParts = {ReportFigure{.label = u"Life"_s, .to = u"20"_s}};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(!shown(popup, u"Life"_s));
+        QVERIFY(click(popup, u"Show More"_s));
+        QVERIFY(shown(popup, u"Gear score points"_s));
+        QVERIFY(shown(popup, u"Life"_s));
+    }
+
     void noStatsThatChange()
     {
         QQmlEngine engine;
@@ -635,6 +715,7 @@ private Q_SLOTS:
         popup.setSettings(settings);
         popup.showReport(aReport(), mouseAt(200, 300));
         QVERIFY(!shown(popup, u"Stats that change"_s));
+        QVERIFY(!shown(popup, u"Gear score points"_s));
     }
 
     void longStatName()
@@ -940,6 +1021,37 @@ private Q_SLOTS:
         QQuickItem *label = shown(popup, text);
         QVERIFY(label);
         QCOMPARE(label->property("color"), colour);
+    }
+
+    void plainNotes()
+    {
+        // how a stat counts isn't good or bad news, unlike its change
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.colorblind = true;
+        settings.compact = false;
+        popup.setSettings(settings);
+        ItemReport report = aReport();
+        report.gearParts = {ReportFigure{.label = u"Life"_s,
+                                         .change = u"+4"_s,
+                                         .from = u"16"_s,
+                                         .to = u"20"_s,
+                                         .note = u"96% of an excellent roll"_s,
+                                         .tone = Tone::Good}};
+        report.statChanges = {ReportFigure{.label = u"# to Strength"_s,
+                                           .change = u"+14"_s,
+                                           .from = u"0"_s,
+                                           .to = u"14"_s,
+                                           .note = u"average"_s,
+                                           .tone = Tone::Good}};
+        popup.showReport(report, mouseAt(200, 300));
+        const QColor better(u"#3daee9"_s);
+        QCOMPARE(shown(popup, u"+4"_s)->property("color").value<QColor>(), better);
+        QCOMPARE(shown(popup, u"+14"_s)->property("color").value<QColor>(), better);
+        QCOMPARE_NE(shown(popup, u"96% of an excellent roll"_s)->property("color").value<QColor>(), better);
+        QCOMPARE_NE(shown(popup, u"average"_s)->property("color").value<QColor>(), better);
     }
 
     void scaled()

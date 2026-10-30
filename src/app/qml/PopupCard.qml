@@ -17,7 +17,8 @@ Rectangle {
     // none.
     readonly property bool notesFold: report.verdict !== "" && report.notes.length > 0
     // the stats behind the verdict, which wait behind Show More
-    readonly property bool hasDetails: report.statChanges.length > 0
+    readonly property bool hasDetails: report.statChanges.length > 0 || report.gearParts.length > 0
+                                       || report.gearNotes.length > 0
     readonly property tradeReport trade: popup.trade
 
     // the game's colours for them
@@ -258,6 +259,32 @@ Rectangle {
             title: qsTr("Stats that change")
             figures: card.report.statChanges
             colorblind: card.popup.colorblind
+            plainNotes: true
+        }
+
+        // what the gear score is made of, and what kept it from more
+        ChangesTable {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: !card.folded && figures.length > 0
+            title: qsTr("Gear score points")
+            figures: card.report.gearParts
+            colorblind: card.popup.colorblind
+            plainNotes: true
+        }
+
+        Repeater {
+            model: card.folded ? [] : card.report.gearNotes
+
+            QQC2.Label {
+                required property string modelData
+
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                opacity: 0.7
+                font: Kirigami.Theme.smallFont
+                text: modelData
+            }
         }
 
         // where Path of Building is with it, while it hasn't judged it

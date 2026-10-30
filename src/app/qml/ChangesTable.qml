@@ -13,6 +13,8 @@ ColumnLayout {
     property string title: qsTr("If you equip it")
     property list<reportFigure> figures
     property bool colorblind: false
+    // for notes that say how a stat was counted, not how its change reads
+    property bool plainNotes: false
 
     spacing: 0
 
@@ -82,7 +84,7 @@ ColumnLayout {
                     wrapMode: Text.Wrap
                     font: Kirigami.Theme.smallFont
                     text: change.modelData.note
-                    tone: change.modelData.tone
+                    tone: table.plainNotes ? Tone.Plain : change.modelData.tone
                     colorblind: table.colorblind
                 }
             }
