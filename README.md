@@ -99,6 +99,10 @@ Run it from the build folder with `build/src/path-of-upgrading`, or install it
 with `cmake --install build --prefix ~/.local`. That also installs the desktop
 file, the icon and the AppStream metainfo.
 
+Each release on GitHub has an Arch Linux package and a Debian 13 package. To
+make them yourself, run `makepkg` in `packaging/arch`, or `cpack` in the build
+folder on Debian.
+
 ## Tests
 
 ```bash
