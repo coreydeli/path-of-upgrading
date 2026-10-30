@@ -507,6 +507,24 @@ private Q_SLOTS:
             // when only the change is known
             ReportFigure{.label = u"Cold res"_s, .change = u"+12%"_s, .tone = Tone::Good},
         };
+        ItemReport allStats = aReport();
+        allStats.statChanges = {
+            ReportFigure{.label = u"maximum Life"_s,
+                         .change = u"+45"_s,
+                         .from = u"120"_s,
+                         .to = u"165"_s,
+                         .tone = Tone::Good},
+            ReportFigure{.label = u"Movement Speed"_s,
+                         .change = u"-10%"_s,
+                         .from = u"30%"_s,
+                         .to = u"20%"_s,
+                         .tone = Tone::Plain},
+        };
+        QTest::newRow("every stat that changes")
+            << allStats
+            << QStringList{u"Stats that change"_s, u"maximum Life"_s, u"120"_s, u"165"_s, u"+45"_s,
+                           u"Movement Speed"_s,    u"30%"_s,          u"20%"_s, u"-10%"_s};
+
         ItemReport rated = aReport();
         rated.gearScore = u"78"_s;
         rated.gearGrade = u"A"_s;
@@ -580,6 +598,73 @@ private Q_SLOTS:
         QVERIFY(click(popup, u"Show Less"_s));
         QVERIFY(!popup.isExpanded());
         QVERIFY(!shown(popup, u"Cold res"_s));
+    }
+
+    void foldedStats()
+    {
+        // every stat that changes waits behind More, under what counts
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport report = aReport();
+        report.stats = {ReportFigure{.label = u"+45 to maximum Life"_s, .tone = Tone::Good}};
+        report.statChanges = {ReportFigure{
+            .label = u"Spirit"_s, .change = u"+5"_s, .from = u"100"_s, .to = u"105"_s, .tone = Tone::Plain}};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(shown(popup, u"+45 to maximum Life"_s));
+        QVERIFY(!shown(popup, u"Stats that change"_s));
+        QVERIFY(!shown(popup, u"Spirit"_s));
+
+        // with nothing else to open, it's why there's a button
+        QVERIFY(click(popup, u"Show More"_s));
+        QVERIFY(shown(popup, u"+45 to maximum Life"_s));
+        QVERIFY(shown(popup, u"Stats that change"_s));
+        QVERIFY(shown(popup, u"Spirit"_s));
+        QVERIFY(click(popup, u"Show Less"_s));
+        QVERIFY(!shown(popup, u"Spirit"_s));
+    }
+
+    void noStatsThatChange()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.compact = false;
+        popup.setSettings(settings);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(!shown(popup, u"Stats that change"_s));
+    }
+
+    void longStatName()
+    {
+        // which wraps, as it can't be cut short
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        OverlaySettings settings;
+        settings.compact = false;
+        popup.setSettings(settings);
+        ItemReport report = aReport();
+        const QString name =
+            u"Adds # to # Cold Damage to Attacks with Bows and Quarterstaves while Dual Wielding"_s;
+        report.statChanges = {
+            ReportFigure{.label = name,
+                         .change = u"+4"_s,
+                         .from = u"10"_s,
+                         .to = u"14"_s,
+                         .note = u"average of the range, which is longer than there is room for"_s,
+                         .tone = Tone::Good}};
+        popup.showReport(report, mouseAt(200, 300));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        const QQuickItem *label = shown(popup, name);
+        QVERIFY(label);
+        QVERIFY(label->property("lineCount").toInt() > 1);
+        QVERIFY(!label->property("truncated").toBool());
+        const QQuickItem *note = shown(popup, report.statChanges.first().note);
+        QVERIFY(note);
+        QVERIFY(!note->property("truncated").toBool());
     }
 
     void onlyMinor()

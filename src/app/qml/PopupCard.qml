@@ -16,6 +16,8 @@ Rectangle {
     // Under a verdict the notes are extras. Without one they say why it has
     // none.
     readonly property bool notesFold: report.verdict !== "" && report.notes.length > 0
+    // the stats behind the verdict, which wait behind Show More
+    readonly property bool hasDetails: report.statChanges.length > 0
     readonly property tradeReport trade: popup.trade
 
     // the game's colours for them
@@ -248,6 +250,16 @@ Rectangle {
             colorblind: card.popup.colorblind
         }
 
+        // every stat that changes, not only those that count
+        ChangesTable {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: !card.folded && figures.length > 0
+            title: qsTr("Stats that change")
+            figures: card.report.statChanges
+            colorblind: card.popup.colorblind
+        }
+
         // where Path of Building is with it, while it hasn't judged it
         RowLayout {
             Layout.fillWidth: true
@@ -285,7 +297,8 @@ Rectangle {
         }
 
         QQC2.ToolButton {
-            visible: card.popup.compact && (card.report.changes.some(figure => figure.minor) || card.notesFold)
+            visible: card.popup.compact
+                     && (card.report.changes.some(figure => figure.minor) || card.notesFold || card.hasDetails)
             text: card.popup.expanded ? qsTr("Show Less") : qsTr("Show More")
             icon.name: card.popup.expanded ? "arrow-up" : "arrow-down"
             onClicked: card.popup.expanded = !card.popup.expanded
