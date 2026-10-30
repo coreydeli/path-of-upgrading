@@ -128,8 +128,10 @@ bool CharacterList::rename(const QString &id, const QString &name)
     character.name = name.trimmed();
     if (character.name.isEmpty())
         return fail(u"Give the character a name."_s);
-    if (character.name == saved->name)
+    if (character.name == saved->name) {
+        succeed();
         return true;
+    }
     if (!m_store->save(id, character))
         return fail(u"Couldn't save %1: %2"_s.arg(character.name, m_store->errorString()));
     changed(id);

@@ -352,6 +352,10 @@ private Q_SLOTS:
         QVERIFY(!c.list.rename(wren, u" "_s));
         QCOMPARE(c.list.error(), u"Give the character a name."_s);
         QCOMPARE(c.inFolder(wren)->name, u"Wren"_s);
+
+        // the name it has is fine, so the error goes
+        QVERIFY(c.list.rename(wren, u"Wren"_s));
+        QCOMPARE(c.list.error(), QString());
         QVERIFY(!c.list.rename(u"nobody"_s, u"Wren"_s));
         QCOMPARE(changed.size(), 0);
     }
