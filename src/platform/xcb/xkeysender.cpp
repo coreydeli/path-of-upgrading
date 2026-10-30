@@ -15,6 +15,10 @@ namespace {
 
 // how long the hotkey's keys get to go up, in milliseconds
 constexpr qint64 letGoTime = 1500;
+// how long the mouse is a pixel away from where it was
+constexpr auto nudgeTime = 20ms;
+// and the game gets to show what's under it once it's back
+constexpr auto redrawTime = 70ms;
 
 QList<xcb_keycode_t> heldKeys(xcb_connection_t *c)
 {
@@ -91,6 +95,21 @@ void XKeySender::copy(bool advanced)
     waitForKeys();
 }
 
+void XKeySender::nudge()
+{
+    if (m_busy || !isValid())
+        return;
+    m_busy = true;
+    moveMouse(1);
+    QTimer::singleShot(nudgeTime, this, [this] {
+        moveMouse(-1);
+        QTimer::singleShot(redrawTime, this, [this] {
+            m_busy = false;
+            Q_EMIT nudged();
+        });
+    });
+}
+
 CopyKeys XKeySender::copyKeys()
 {
     // where they are on a PC keyboard, for layouts that don't have them, like
@@ -153,6 +172,15 @@ void XKeySender::send(const KeyStep &step)
 {
     xcb_test_fake_input(m_x.xcb(), step.press ? XCB_KEY_PRESS : XCB_KEY_RELEASE, xcb_keycode_t(step.key),
                         XCB_CURRENT_TIME, XCB_WINDOW_NONE, 0, 0, 0);
+    xcb_flush(m_x.xcb());
+}
+
+// A step of the pointer from where it is, in pixels to the right.
+void XKeySender::moveMouse(int dx)
+{
+    // the 1 is for a move from where it is, not to a place
+    xcb_test_fake_input(m_x.xcb(), XCB_MOTION_NOTIFY, 1, XCB_CURRENT_TIME, XCB_WINDOW_NONE, int16_t(dx), 0,
+                        0);
     xcb_flush(m_x.xcb());
 }
 
