@@ -43,8 +43,10 @@ from source.
   score of each slot, the overall score, and the three slots to upgrade first.
   It also has your resistances, from your build or typed in off the character
   sheet, so an item that leaves one under the cap says so.
-- Can sign in to the trade site with your session ID, which lets the site take
-  bigger searches. It is kept in your system keyring.
+- Can sign in to the trade site with your session ID, which is kept in your
+  system keyring. Signed out, the site only takes simple searches, so upgrade
+  searches look for a few of your build's key stats, and the results window
+  rates each listing. Signed in, they go by your whole gear score.
 - Stays in the system tray when you close the window. The tray icon shows the
   window, pauses the hotkeys and quits. Starting the program again shows the
   window that is already running, rather than opening a second one.
