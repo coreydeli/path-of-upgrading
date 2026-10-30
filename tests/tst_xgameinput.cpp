@@ -18,8 +18,16 @@ class TestXGameInput : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void gameNotOpen_data()
+    {
+        QTest::addColumn<bool>("popupInTheWay");
+        QTest::newRow("plain") << false;
+        QTest::newRow("popup in the way") << true;
+    }
+
     void gameNotOpen()
     {
+        QFETCH(bool, popupInTheWay);
         XConnection x;
         if (!x.isValid())
             QSKIP(qPrintable(x.errorString()));
@@ -32,7 +40,16 @@ private Q_SLOTS:
         QVERIFY2(input.isAvailable(), qPrintable(input.errorString()));
         QSignalSpy copied(&input, &GameInput::itemCopied);
         QSignalSpy failed(&input, &GameInput::copyFailed);
-        input.copyItem(false);
+        input.copyItem({.nudge = popupInTheWay});
+        if (popupInTheWay) {
+            // which it waits to go from under the mouse, and the mouse isn't nudged
+            // for a game that isn't there
+            QVERIFY(failed.isEmpty());
+            // another copy does nothing meanwhile
+            input.copyItem({});
+            QVERIFY(failed.isEmpty());
+            QVERIFY(failed.wait());
+        }
         QCOMPARE(failed.size(), 1);
         QCOMPARE(failed.at(0).at(0).value<GameInput::Failure>(), GameInput::Failure::NotInFront);
         QVERIFY(copied.isEmpty());
@@ -56,7 +73,7 @@ private Q_SLOTS:
         QVERIFY(!input.isAvailable());
         QCOMPARE(input.mouse(), std::nullopt);
         QSignalSpy failed(&input, &GameInput::copyFailed);
-        input.copyItem(false);
+        input.copyItem({});
         QCOMPARE(failed.size(), 1);
         QCOMPARE(failed.at(0).at(0).value<GameInput::Failure>(), GameInput::Failure::Unavailable);
         QCOMPARE(failed.at(0).at(1).toString(),
