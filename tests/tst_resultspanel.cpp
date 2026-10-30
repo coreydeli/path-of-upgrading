@@ -355,6 +355,37 @@ private Q_SLOTS:
         QCOMPARE(levels, 1);
     }
 
+    // the right of each row is clear of the scroll bar
+    void clearOfTheScrollBar()
+    {
+        Panel p;
+        const QString indexed = QDateTime::currentDateTimeUtc().addSecs(-5 * 60).toString(Qt::ISODate);
+        QJsonArray result;
+        for (const QString &id : listingIds(10))
+            result << helmet(id, price(3, u"divine"_s), indexed);
+        p.site.network.answers = {{.body = json({{u"result"_s, result}})}};
+        QVERIFY(p.site.hasRates(700));
+        p.site.results.setSearch(foundBy(10));
+        p.panel.show();
+        QVERIFY(p.loaded());
+        QTRY_COMPARE(rows(p.window()), 10);
+        QVERIFY(QQuickTest::qWaitForPolish(p.window()));
+
+        const QList<QQuickItem *> items = visibleItems(p.window());
+        const auto bar = std::ranges::find_if(
+            items, [](const QQuickItem *item) { return item->inherits("QQuickScrollBar"); });
+        // there are more rows than fit
+        QVERIFY(bar != items.end());
+        const qreal barLeft = (*bar)->mapToScene(QPointF(0, 0)).x();
+        for (const QString &text : {u"3 div"_s, u"about 2100 ex"_s, u"5 minutes ago"_s}) {
+            const QQuickItem *label = shown(p.window(), text);
+            QVERIFY2(label, qPrintable(text));
+            const qreal right = label->mapToScene(QPointF(label->width(), 0)).x();
+            QVERIFY2(right <= barLeft,
+                     qPrintable(u"%1 ends at %2, the bar starts at %3"_s.arg(text).arg(right).arg(barLeft)));
+        }
+    }
+
     void ratesComeLater()
     {
         // and the prices are worked out when they do

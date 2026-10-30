@@ -106,9 +106,13 @@ Rectangle {
             model: card.results
             delegate: ResultRow {
                 colorblind: card.panel.colorblind
+                // the bar is always the same width, so the text doesn't move when it comes and goes
+                clearance: scrollBar.implicitWidth + Kirigami.Units.smallSpacing
             }
 
-            QQC2.ScrollBar.vertical: QQC2.ScrollBar {}
+            QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+                id: scrollBar
+            }
         }
 
         RowLayout {

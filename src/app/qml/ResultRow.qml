@@ -22,6 +22,8 @@ Item {
     required property var mods
     required property resultVerdict verdict
     property bool colorblind: false
+    // How much of the right edge the scroll bar covers, which the row keeps clear
+    property real clearance: 0
 
     width: ListView.view.width
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.smallSpacing
@@ -33,8 +35,7 @@ Item {
             fill: parent
             topMargin: Kirigami.Units.smallSpacing
             bottomMargin: Kirigami.Units.smallSpacing
-            // clear of the scroll bar
-            rightMargin: Kirigami.Units.largeSpacing
+            rightMargin: row.clearance
         }
         spacing: 0
 
