@@ -410,6 +410,82 @@ private Q_SLOTS:
             }));
     }
 
+    void damageAndEffectiveHpInTheChanges()
+    {
+        PobVerdict v;
+        v.verdict = Verdict::Upgrade;
+        v.damage = {.stat = u"FullDPS"_s, .from = 12400, .to = 13100, .percent = 5.6};
+        v.ehp = PobChange{.stat = u"TotalEHP"_s, .from = 40000.4, .to = 39000, .percent = -2.5};
+        v.resists = {{.element = Element::Fire, .from = 70, .to = 75, .capped = true, .reachesCap = true}};
+        v.changes = {{.stat = u"Life"_s, .from = 1200, .to = 1350}};
+        const QList<ReportFigure> changes = reportOf(judgedByPob(v)).changes;
+        // first, as the headline has them
+        QCOMPARE(changes.size(), 4);
+        QCOMPARE(changes.value(0), (ReportFigure{.label = u"DPS"_s,
+                                                 .change = u"+5.6%"_s,
+                                                 .from = u"12,400"_s,
+                                                 .to = u"13,100"_s,
+                                                 .tone = Tone::Good}));
+        QCOMPARE(changes.value(1), (ReportFigure{.label = u"Effective HP"_s,
+                                                 .change = u"-2.5%"_s,
+                                                 .from = u"40,000"_s,
+                                                 .to = u"39,000"_s,
+                                                 .tone = Tone::Bad}));
+        QCOMPARE(changes.value(2).label, u"Fire res"_s);
+        QCOMPARE(changes.value(3).label, u"Life"_s);
+    }
+
+    void minionDamageInTheChanges()
+    {
+        PobVerdict v;
+        v.damage = {.stat = u"MinionDPS"_s, .from = 250.4, .to = 260, .percent = 3.8};
+        QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{{.label = u"Minion DPS"_s,
+                                                                         .change = u"+3.8%"_s,
+                                                                         .from = u"250"_s,
+                                                                         .to = u"260"_s,
+                                                                         .tone = Tone::Good}}));
+    }
+
+    void damageThatDoesNotChange()
+    {
+        PobVerdict v;
+        v.damage = {.stat = u"TotalDPS"_s, .from = 8000, .to = 8004, .percent = 0};
+        QCOMPARE(reportOf(judgedByPob(v)).changes,
+                 (QList<ReportFigure>{
+                     {.label = u"DPS"_s, .change = u"0%"_s, .from = u"8,000"_s, .to = u"8,004"_s}}));
+    }
+
+    void damageFromNothingInTheChanges()
+    {
+        // which has no percent to give
+        PobVerdict v;
+        v.damage = {.stat = u"TotalDPS"_s, .from = 0, .to = 5000};
+        v.ehp = PobChange{.stat = u"TotalEHP"_s, .from = 3000, .to = 0};
+        QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{
+                                                       {.label = u"DPS"_s,
+                                                        .change = u"+5,000"_s,
+                                                        .from = u"0"_s,
+                                                        .to = u"5,000"_s,
+                                                        .tone = Tone::Good},
+                                                       {.label = u"Effective HP"_s,
+                                                        .change = u"-3,000"_s,
+                                                        .from = u"3,000"_s,
+                                                        .to = u"0"_s,
+                                                        .tone = Tone::Bad},
+                                                   }));
+    }
+
+    void noDamageOrEffectiveHpToShow()
+    {
+        // Path of Building didn't calculate them
+        PobVerdict v;
+        v.verdict = Verdict::Upgrade;
+        v.changes = {{.stat = u"Life"_s, .from = 1200, .to = 1350}};
+        QCOMPARE(reportOf(judgedByPob(v)).changes.size(), 1);
+        v.ehp = PobChange{.stat = u"TotalEHP"_s};
+        QCOMPARE(reportOf(judgedByPob(v)).changes.size(), 1);
+    }
+
     void changedCaps()
     {
         PobVerdict v;

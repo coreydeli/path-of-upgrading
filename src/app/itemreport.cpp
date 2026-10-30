@@ -122,13 +122,17 @@ Tone::Tone toneOf(double change)
     return change < 0 ? Tone::Bad : Tone::Plain;
 }
 
+QString damageLabel(const PobVerdict &v)
+{
+    return v.damage.stat == u"MinionDPS" ? u"Minion DPS"_s : u"DPS"_s;
+}
+
 QList<ReportFigure> headlineOf(const PobVerdict &v)
 {
     QList<ReportFigure> headline;
     if (const std::optional<double> damage = v.damage.percent) {
-        const QString label = v.damage.stat == u"MinionDPS" ? u"Minion DPS"_s : u"DPS"_s;
         headline << ReportFigure{
-            .label = label, .change = signedNumber(*damage) + u'%', .tone = toneOf(*damage)};
+            .label = damageLabel(v), .change = signedNumber(*damage) + u'%', .tone = toneOf(*damage)};
     }
     if (const std::optional<double> ehp = v.ehp ? v.ehp->percent : std::nullopt) {
         headline << ReportFigure{
@@ -171,9 +175,30 @@ QString pobLabel(const QString &stat)
     return labels.value(stat, stat);
 }
 
+// Damage or effective HP before and after. It changes by percent, or by the
+// number when it was 0 before.
+ReportFigure bigFigure(const QString &label, const PobChange &c)
+{
+    const double change = c.percent.value_or(c.to - c.from);
+    return {.label = label,
+            .change = c.percent ? signedNumber(*c.percent) + u'%' : signedAmount(change),
+            .from = amount(c.from),
+            .to = amount(c.to),
+            .tone = toneOf(change)};
+}
+
+bool isCalculated(const PobChange &c)
+{
+    return c.from > 0 || c.to > 0;
+}
+
 QList<ReportFigure> pobChanges(const PobVerdict &v)
 {
     QList<ReportFigure> changes;
+    if (isCalculated(v.damage))
+        changes << bigFigure(damageLabel(v), v.damage);
+    if (v.ehp && isCalculated(*v.ehp))
+        changes << bigFigure(u"Effective HP"_s, *v.ehp);
     for (const PobResistChange &r : v.resists) {
         const double change = roundHalfUp(r.to) - roundHalfUp(r.from);
         // past the cap only the cap counts
