@@ -47,6 +47,8 @@ struct ResultVerdict
     Q_PROPERTY(QString verdict MEMBER verdict)
     Q_PROPERTY(pou::Tone::Tone tone MEMBER tone)
     Q_PROPERTY(QString score MEMBER score)
+    Q_PROPERTY(QString versus MEMBER versus)
+    Q_PROPERTY(QString gearScore MEMBER gearScore)
     Q_PROPERTY(QList<pou::ReportFigure> figures MEMBER figures)
     Q_PROPERTY(QStringList losses MEMBER losses)
     Q_PROPERTY(QStringList risks MEMBER risks)
@@ -58,6 +60,12 @@ public:
     QString verdict; // "Upgrade", empty when it can't be compared
     Tone::Tone tone = Tone::Plain;
     QString score; // "+4% for your build", empty with nothing to compare it with
+    // What it would replace, "vs Grim Crown", or "in your Helmet slot" for the
+    // one you wear.
+    QString versus;
+    // "Gear score 72 A, yours 61", empty when Path of Building judges it or
+    // there's no build profile to score it by.
+    QString gearScore;
     // What Path of Building says it does to your damage and effective HP, or
     // without it what it changes on your character. Four at most.
     QList<ReportFigure> figures;

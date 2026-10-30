@@ -666,6 +666,9 @@ private Q_SLOTS:
         QVERIFY(verdict);
         QCOMPARE(toneOf(verdict), int(Tone::Good));
         QVERIFY(shown(p.window(), u"+8 gear score"_s));
+        // against what it would replace, and what you wear
+        QVERIFY(shown(p.window(), u"vs Grim Crown"_s));
+        QVERIFY(shown(p.window(), u"Gear score 13 D, yours 5"_s));
         const QQuickItem *life = shown(p.window(), u"Life +50"_s);
         QVERIFY(life);
         QCOMPARE(toneOf(life), int(Tone::Good));

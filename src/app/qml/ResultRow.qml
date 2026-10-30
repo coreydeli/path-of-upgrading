@@ -109,6 +109,27 @@ Item {
                 }
             }
 
+            // what it would replace, and how its gear score goes with yours
+            Flow {
+                Layout.fillWidth: true
+                visible: row.verdict.versus !== "" || row.verdict.gearScore !== ""
+                spacing: Kirigami.Units.largeSpacing
+
+                QQC2.Label {
+                    visible: text !== ""
+                    opacity: 0.7
+                    font: Kirigami.Theme.smallFont
+                    text: row.verdict.versus
+                }
+
+                QQC2.Label {
+                    visible: text !== ""
+                    opacity: 0.7
+                    font: Kirigami.Theme.smallFont
+                    text: row.verdict.gearScore
+                }
+            }
+
             Flow {
                 Layout.fillWidth: true
                 visible: row.verdict.figures.length > 0

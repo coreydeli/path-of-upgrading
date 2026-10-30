@@ -26,6 +26,7 @@ ResultVerdict resultVerdict(const ItemCheck &check)
     const ItemReport report = reportOf(check);
     ResultVerdict out{.verdict = report.verdict,
                       .tone = report.verdictTone,
+                      .versus = report.versus,
                       .losses = report.losses,
                       .risks = report.risks,
                       .caps = report.caps,
@@ -33,6 +34,11 @@ ResultVerdict resultVerdict(const ItemCheck &check)
                       .pobError = check.pobError};
     if (!report.score.isEmpty())
         out.score = report.score + u' ' + report.scoreLabel;
+    if (!report.gearScore.isEmpty()) {
+        out.gearScore = u"Gear score %1 %2"_s.arg(report.gearScore, report.gearGrade);
+        if (!report.yourGearScore.isEmpty())
+            out.gearScore += u", yours "_s + report.yourGearScore;
+    }
     if (!report.headline.isEmpty()) {
         out.figures = report.headline;
     } else {

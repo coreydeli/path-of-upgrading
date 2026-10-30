@@ -651,6 +651,8 @@ private Q_SLOTS:
         QCOMPARE(better.figures.at(0).label, u"Life"_s);
         QCOMPARE(better.figures.at(0).change, u"+50"_s);
         QCOMPARE(better.figures.at(1).label, u"Average gear score"_s);
+        QCOMPARE(better.versus, u"vs Grim Crown"_s);
+        QCOMPARE(better.gearScore, u"Gear score 13 D, yours 5"_s);
         QVERIFY(better.losses.isEmpty());
         QVERIFY(better.risks.isEmpty());
         QVERIFY(!better.checking);
@@ -660,7 +662,22 @@ private Q_SLOTS:
         QCOMPARE(worse.verdict, u"Downgrade"_s);
         QCOMPARE(worse.tone, Tone::Bad);
         QCOMPARE(worse.score, u"-3 gear score"_s);
+        QCOMPARE(worse.versus, u"vs Grim Crown"_s);
+        QCOMPARE(worse.gearScore, u"Gear score 2 D, yours 5"_s);
         QCOMPARE(site.results.roleNames().value(TradeResults::VerdictRole), "verdict"_ba);
+    }
+
+    // with nothing on your head, there's nothing to compare it with
+    void aListingForAnEmptySlot()
+    {
+        Site site;
+        site.results.judge().setCharacter(Character(), std::nullopt);
+        site.network.answers = {fetched({u"x1"_s})};
+        site.results.setSearch(foundBy(1));
+        QVERIFY(site.loads());
+        const ResultVerdict v = verdictIn(site, 0);
+        QVERIFY(v.versus.isEmpty());
+        QCOMPARE(v.gearScore, u"Gear score 13 D"_s);
     }
 
     void judgesTheNextPagesToo()
@@ -770,6 +787,9 @@ private Q_SLOTS:
         QVERIFY(!v.checking);
         QCOMPARE(v.verdict, u"Upgrade"_s);
         QVERIFY(v.score.endsWith(u"% for your build"));
+        // and no gear score, as Path of Building judges it
+        QVERIFY(v.gearScore.isEmpty());
+        QCOMPARE(v.versus, u"vs Grim Crown"_s);
         // which it says instead of the changes on your character
         QCOMPARE(v.figures.size(), 2);
         QCOMPARE(v.figures.at(0).label, u"DPS"_s);
