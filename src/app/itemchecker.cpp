@@ -66,7 +66,14 @@ void ItemChecker::setFinder(TradeFinder *finder)
 
 void ItemChecker::check()
 {
-    m_reader.read();
+    if (!m_reader.canRead())
+        return;
+    // With the mouse on the popup, the game would see that and not the item.
+    // It goes first, and the mouse is nudged for the game to see the item again.
+    const bool inTheWay = m_popup.isInTheWay();
+    if (inTheWay)
+        m_popup.close();
+    m_reader.read(inTheWay);
 }
 
 void ItemChecker::checkItem(const Item &item)

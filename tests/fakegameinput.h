@@ -13,10 +13,11 @@ public:
     bool isAvailable() const override { return true; }
     QString errorString() const override { return {}; }
 
-    void copyItem(bool advanced) override
+    void copyItem(const CopyOptions &options) override
     {
         ++copies;
-        lastAdvanced = advanced;
+        lastAdvanced = options.advanced;
+        lastNudge = options.nudge;
         // the way it fails when it can't press keys at all
         if (!failRightAway.isEmpty())
             Q_EMIT copyFailed(Failure::Unavailable, failRightAway, std::nullopt);
@@ -30,6 +31,7 @@ public:
 
     int copies = 0;
     bool lastAdvanced = false;
+    bool lastNudge = false;
     QString failRightAway;
     std::optional<pou::ScreenPoint> mouseAt;
     mutable int mouseLooks = 0;

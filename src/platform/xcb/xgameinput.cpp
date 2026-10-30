@@ -17,6 +17,8 @@ namespace {
 
 // how long the game gets to come to the front, in milliseconds
 constexpr qint64 bringForwardTime = 500;
+// how long the popup gets to go from under the mouse, in milliseconds
+constexpr qint64 popupGoneTime = 250;
 // and to copy once the keys are pressed, which takes it a while when it's busy
 constexpr auto copyTime = 1500ms;
 
@@ -43,7 +45,7 @@ XGameInput::XGameInput(QObject *parent)
     m_reconnect.setInterval(5s);
     connect(&m_reconnect, &QTimer::timeout, this, &XGameInput::reconnect);
     m_poll.setInterval(20ms);
-    connect(&m_poll, &QTimer::timeout, this, &XGameInput::checkInFront);
+    connect(&m_poll, &QTimer::timeout, this, &XGameInput::poll);
     m_timeout.setSingleShot(true);
     m_timeout.setInterval(copyTime);
     connect(&m_timeout, &QTimer::timeout, this,
@@ -65,7 +67,7 @@ QString XGameInput::errorString() const
     return m_keys->errorString();
 }
 
-void XGameInput::copyItem(bool advanced)
+void XGameInput::copyItem(const CopyOptions &options)
 {
     if (m_step != Step::Idle || m_keys->isBusy())
         return;
@@ -77,8 +79,22 @@ void XGameInput::copyItem(bool advanced)
         fail(Failure::Unavailable, errorString());
         return;
     }
-    m_advanced = advanced;
+    m_advanced = options.advanced;
+    m_nudge = options.nudge;
+    if (m_nudge) {
+        // until the popup has gone from under the mouse, it's over a window
+        // the X server doesn't know
+        m_mouse.reset();
+        m_step = Step::PopupGoing;
+        m_since.start();
+        m_poll.start();
+        return;
+    }
+    findGame();
+}
 
+void XGameInput::findGame()
+{
     const XPointer pointer = queryPointer(*m_x);
     m_overGame = pointer.window != XCB_WINDOW_NONE && isGameWindow(describeWindow(*m_x, pointer.window));
     m_mouse = mouseAt(pointer);
@@ -138,6 +154,7 @@ void XGameInput::connectToServer()
         m_reconnect.start();
     });
     connect(m_keys, &XKeySender::sent, this, &XGameInput::keysSent);
+    connect(m_keys, &XKeySender::nudged, this, &XGameInput::nudged);
     connect(m_keys, &XKeySender::failed, this, [this](const QString &why) { fail(Failure::KeyHeld, why); });
     if (!isAvailable())
         qCWarning(lcInput, "Can't copy items out of the game: %s", qPrintable(errorString()));
@@ -149,6 +166,22 @@ void XGameInput::reconnect()
     connectToServer();
     if (!m_x->isValid())
         m_reconnect.start();
+}
+
+void XGameInput::poll()
+{
+    if (m_step == Step::PopupGoing)
+        checkPopupGone();
+    else
+        checkInFront();
+}
+
+void XGameInput::checkPopupGone()
+{
+    if (queryPointer(*m_x).window == XCB_WINDOW_NONE && !m_since.hasExpired(popupGoneTime))
+        return;
+    m_poll.stop();
+    findGame();
 }
 
 void XGameInput::checkInFront()
@@ -164,6 +197,19 @@ void XGameInput::checkInFront()
 
 void XGameInput::press()
 {
+    if (m_nudge) {
+        m_step = Step::Nudging;
+        m_keys->nudge();
+        return;
+    }
+    m_step = Step::Pressing;
+    m_keys->copy(m_advanced);
+}
+
+void XGameInput::nudged()
+{
+    if (m_step != Step::Nudging)
+        return;
     m_step = Step::Pressing;
     m_keys->copy(m_advanced);
 }
