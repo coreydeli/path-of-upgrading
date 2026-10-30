@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: MIT
+# Maintainer: Corey Deli <55706677+coreydeli@users.noreply.github.com>
+
+pkgname=path-of-upgrading
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Path of Exile 2 item overlay that checks items against your build'
+arch=(x86_64)
+url='https://github.com/coreydeli/path-of-upgrading'
+license=(MIT)
+depends=(
+  gcc-libs glibc
+  qt6-base qt6-declarative qt6-wayland
+  kirigami kirigami-addons kdeclarative ki18n kdbusaddons kglobalaccel
+  knotifications kstatusnotifieritem kwindowsystem
+  layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib
+  hicolor-icon-theme
+)
+makedepends=(cmake ninja kconfig)
+checkdepends=(xorg-server-xvfb xorg-xauth dbus)
+optdepends=(
+  'qqc2-desktop-style: the Plasma style for the window'
+  'flatpak: Path of Building from Flathub'
+  'luajit: to run another install of Path of Building'
+)
+# The release builds put the tarball from git archive here, under this name.
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cmake -B build -S "$pkgname-$pkgver" -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+}
+
+check() {
+  cd build
+  sh "../$pkgname-$pkgver/.github/scripts/run-tests.sh"
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$pkgname-$pkgver/LICENSE" -t "$pkgdir/usr/share/licenses/$pkgname"
+}
