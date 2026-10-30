@@ -144,6 +144,18 @@ private Q_SLOTS:
         QCOMPARE(changed.size(), 1);
     }
 
+    void alreadyPlaying()
+    {
+        Weighing w;
+        w.play(wearing(someGear(), {{life, 1}, {armour, 0.05}}));
+        StatWeights later(&w.active);
+        QCOMPARE(later.character(), u"Tester"_s);
+        QCOMPARE(later.keys(), w.keys());
+        QVERIFY(!later.keys().isEmpty());
+        QCOMPARE(later.suggestions().size(), w.weights.suggestions().size());
+        QVERIFY(!later.suggestions().isEmpty());
+    }
+
     void defaults()
     {
         Weighing w;
@@ -186,6 +198,8 @@ private Q_SLOTS:
         QCOMPARE(w.saved().value(life), 2.5);
         QCOMPARE(w.of(life, StatWeights::WeightRole).toDouble(), 2.5);
         QCOMPARE(dataChanged.size(), 1);
+        QCOMPARE(dataChanged.at(0).at(2).value<QList<int>>(),
+                 QList<int>({StatWeights::NoteRole, StatWeights::WeightRole}));
         QCOMPARE(reset.size(), 0);
 
         // nothing and less than nothing are weights too
