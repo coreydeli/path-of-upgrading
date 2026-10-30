@@ -8,6 +8,7 @@
 
 #include <QHash>
 #include <QLocale>
+#include <algorithm>
 #include <cmath>
 
 using namespace Qt::Literals::StringLiterals;
@@ -312,6 +313,103 @@ QList<ReportFigure> statChangesOf(const QList<StatRow> &rows)
     return changes;
 }
 
+// What one stat the build wants adds to a gear score, in points out of 100.
+struct GearPart
+{
+    double points = 0;
+    int quality = 0; // percent of an excellent roll
+    bool runes = false;
+};
+
+// By the stat's label in the build profile, as it can come from several mods.
+QHash<QString, GearPart> gearPartsByLabel(const GearScore &gear)
+{
+    const double scale = gear.ideal > 0 ? 100 / gear.ideal : 0;
+    QHash<QString, GearPart> parts;
+    for (const GearContribution &c : gear.contributions) {
+        GearPart &part = parts[c.label];
+        part.points += c.points * scale;
+        part.quality += c.quality;
+        part.runes = part.runes || c.origin == StatOrigin::Socket;
+    }
+    return parts;
+}
+
+QString gearPartNote(const GearPart &part)
+{
+    QStringList notes;
+    if (part.quality > 0)
+        notes << u"%1% of an excellent roll"_s.arg(part.quality);
+    if (part.runes)
+        notes << u"runes count half"_s;
+    return notes.join(u", "_s);
+}
+
+// The stats that make up the item's gear score and yours, with the points each
+// adds. Those that change the most come first.
+QList<ReportFigure> gearPartsOf(const GearScore &gear, const GearScore *yours)
+{
+    const QHash<QString, GearPart> itemParts = gearPartsByLabel(gear);
+    const QHash<QString, GearPart> yourParts = yours ? gearPartsByLabel(*yours) : QHash<QString, GearPart>();
+    QStringList labels;
+    for (const GearScore *g : {&gear, yours}) {
+        if (!g)
+            continue;
+        for (const GearContribution &c : g->contributions) {
+            if (!labels.contains(c.label))
+                labels << c.label;
+        }
+    }
+
+    struct Part
+    {
+        ReportFigure figure;
+        double size = 0; // of the change
+        double to = 0;
+    };
+    QList<Part> parts;
+    for (const QString &label : std::as_const(labels)) {
+        const GearPart there = itemParts.value(label);
+        const double to = roundTo(there.points, 1);
+        const double from = roundTo(yourParts.value(label).points, 1);
+        if (to == 0 && from == 0)
+            continue;
+        ReportFigure f{.label = label, .to = amount(to), .note = gearPartNote(there)};
+        double size = 0;
+        if (yours) {
+            const double change = roundTo(to - from, 1);
+            f.change = signedAmount(change);
+            f.from = amount(from);
+            f.tone = toneOf(change);
+            size = std::abs(change);
+        }
+        parts.append({f, size, to});
+    }
+    std::ranges::stable_sort(
+        parts, [](const Part &a, const Part &b) { return a.size != b.size ? a.size > b.size : a.to > b.to; });
+
+    QList<ReportFigure> figures;
+    for (const Part &part : std::as_const(parts))
+        figures << part.figure;
+    return figures;
+}
+
+QStringList gearNotesOf(const GearScore &gear)
+{
+    QStringList notes;
+    if (!gear.resistNote.isEmpty())
+        notes << gear.resistNote;
+    if (!gear.wasted.isEmpty()) {
+        QStringList names;
+        for (const QString &key : gear.wasted)
+            names << statName(key);
+        notes << u"Not used by your build: "_s + names.join(u", "_s) + u'.';
+    }
+    if (!gear.missing.isEmpty())
+        notes << u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
+    return notes;
+}
+
 QString openAffixesOf(const Affixes &affixes)
 {
     QStringList open;
@@ -394,8 +492,11 @@ ItemReport reportOf(const ItemCheck &check)
         report.gearScore = QString::number(e.gear->score);
         report.gearGrade = e.gear->grade;
         report.gearBuild = e.gear->buildName;
-        if (e.gearEquipped && e.gearEquipped->isRated())
-            report.yourGearScore = QString::number(e.gearEquipped->score);
+        const GearScore *yours = e.gearEquipped && e.gearEquipped->isRated() ? &*e.gearEquipped : nullptr;
+        if (yours)
+            report.yourGearScore = QString::number(yours->score);
+        report.gearParts = gearPartsOf(*e.gear, yours);
+        report.gearNotes = gearNotesOf(*e.gear);
     }
     putPobStatus(report, check);
     report.notes << r.notes;

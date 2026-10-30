@@ -73,6 +73,8 @@ struct ItemReport
     Q_PROPERTY(QString gearGrade MEMBER gearGrade)
     Q_PROPERTY(QString yourGearScore MEMBER yourGearScore)
     Q_PROPERTY(QString gearBuild MEMBER gearBuild)
+    Q_PROPERTY(QList<pou::ReportFigure> gearParts MEMBER gearParts)
+    Q_PROPERTY(QStringList gearNotes MEMBER gearNotes)
     Q_PROPERTY(QStringList losses MEMBER losses)
     Q_PROPERTY(QStringList risks MEMBER risks)
     Q_PROPERTY(QString caps MEMBER caps)
@@ -106,6 +108,12 @@ public:
     QString gearGrade;
     QString yourGearScore;
     QString gearBuild; // the build profile's name
+    // What the gear score is made of: the points each stat the build wants
+    // adds to yours and to the item's, out of 100, biggest change first.
+    QList<ReportFigure> gearParts;
+    // What kept it from counting more: stats the build has no use for, what
+    // it doesn't have, and resistances you're near the cap on.
+    QStringList gearNotes;
     // Resistance or damage it loses, which matters more than its risks.
     QStringList losses;
     QStringList risks;
