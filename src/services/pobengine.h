@@ -70,11 +70,13 @@ public:
 
     struct Timeouts
     {
-        // to start, which takes a second or so
-        std::chrono::milliseconds start = std::chrono::seconds(30);
-        // to answer, with more for each item
-        std::chrono::milliseconds request = std::chrono::seconds(15);
-        std::chrono::milliseconds perItem = std::chrono::seconds(1);
+        // to start, which takes a second or so, but longer on a slow PC
+        std::chrono::milliseconds start = std::chrono::seconds(90);
+        // to load the build, which a heavy one takes a while to do
+        std::chrono::milliseconds load = std::chrono::seconds(120);
+        // to answer anything else, with more for each item
+        std::chrono::milliseconds request = std::chrono::seconds(30);
+        std::chrono::milliseconds perItem = std::chrono::seconds(3);
         // with nothing to do, until it's stopped to free its memory
         std::chrono::milliseconds idle = std::chrono::minutes(10);
         // after it couldn't start, until it's tried again
@@ -129,6 +131,7 @@ private:
         int id = 0;
         qsizetype items = 0;
         bool eval = false;        // from evaluate(), not the build or your gear
+        bool load = false;        // the build itself, which has its own time
         QPointer<PobReply> reply; // for an eval, null once it's deleted
     };
 
@@ -144,6 +147,7 @@ private:
     void failAll(const QString &why);
     void retire();
     void warn(const QString &why) const;
+    std::chrono::milliseconds timeToAnswer(const Sent &sent) const;
     void watch();
     void timedOut();
     void setState(State state);

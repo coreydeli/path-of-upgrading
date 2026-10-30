@@ -20,6 +20,9 @@
 //   --kill-on-eval   it's killed when it's asked to judge items
 //   --garble         its answer to an eval isn't JSON
 //   --hang-on-eval   it doesn't answer one
+//   --hang-on-load   it doesn't answer loading the build, or anything after
+//   --hang-on-equip  it doesn't answer putting on gear, or anything after
+//   --slow-load      it takes half a second to load the build
 //   --linger         it takes ten seconds to stop once stdin is closed
 //   --once           only the first time it's run
 
@@ -124,6 +127,15 @@ int main(int argc, char *argv[])
         }
         if (command == u"eval" && goWrong && flags.contains("--hang-on-eval"))
             continue;
+        if (goWrong && ((command == u"load" && flags.contains("--hang-on-load")) ||
+                        (command == u"equip" && flags.contains("--hang-on-equip")))) {
+            // it answers nothing more, as the rest would come out of order
+            while (!in.readLine().isEmpty()) {
+            }
+            break;
+        }
+        if (command == u"load" && goWrong && flags.contains("--slow-load"))
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         if (command == u"eval" && goWrong && flags.contains("--garble")) {
             out.write("@@{\"id\": " + QByteArray::number(request.value(u"id").toInt()) + ", \"ok\"\n");
             out.flush();

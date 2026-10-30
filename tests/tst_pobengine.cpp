@@ -575,6 +575,87 @@ private Q_SLOTS:
         QCOMPARE(pob.runs(), 2);
     }
 
+    void answersForEachItem()
+    {
+        FakePob pob;
+        PobEngine engine;
+        // so with three it has a second
+        engine.setTimeouts({.request = 100ms, .perItem = 300ms});
+        engine.setInstall(pob.install({u"--hang-on-eval"_s, u"--once"_s}));
+        engine.setBuild(build);
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(u"^Path of Building didn't answer in time\\."_s));
+        QElapsedTimer since;
+        since.start();
+        const std::unique_ptr<PobReply> reply(
+            engine.evaluate({{.text = helmetOld}, {.text = advancedRing}, {.text = twoHandMace}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building didn't answer in time."_s);
+        QCOMPARE_GE(since.elapsed(), 900);
+    }
+
+    void loadsSlowly()
+    {
+        // which takes longer than it has to answer anything else
+        FakePob pob;
+        PobEngine engine;
+        engine.setTimeouts({.load = 5s, .request = 200ms, .perItem = 0ms});
+        engine.setInstall(pob.install({u"--slow-load"_s}));
+        QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
+        engine.setBuild(build);
+        QElapsedTimer since;
+        since.start();
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE_GT(since.elapsed(), 400);
+        QCOMPARE(loaded.size(), 1);
+        QCOMPARE(pob.runs(), 1);
+    }
+
+    void loadsTooSlowly()
+    {
+        FakePob pob;
+        PobEngine engine;
+        // with plenty of time for anything else
+        engine.setTimeouts({.load = 150ms, .request = 10min});
+        engine.setInstall(pob.install({u"--hang-on-load"_s, u"--once"_s}));
+        QSignalSpy loaded(&engine, &PobEngine::buildLoaded);
+        engine.setBuild(build);
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(u"^Path of Building didn't answer in time\\."_s));
+        std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building didn't answer in time."_s);
+        QCOMPARE(engine.state(), State::Stopped);
+        QVERIFY(loaded.isEmpty());
+        QTRY_COMPARE(pob.stops(), 1);
+
+        // and it starts again
+        reply.reset(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(loaded.size(), 1);
+        QCOMPARE(pob.runs(), 2);
+    }
+
+    void gearTooSlowly()
+    {
+        FakePob pob;
+        PobEngine engine;
+        // with plenty of time to load the build, which isn't what it's given
+        // for putting on gear
+        engine.setTimeouts({.load = 10min, .request = 100ms, .perItem = 0ms});
+        engine.setInstall(pob.install({u"--hang-on-equip"_s}));
+        engine.setBuild(build, {{.text = helmetOld, .slot = u"Helmet"_s}});
+        QTest::ignoreMessage(QtWarningMsg,
+                             QRegularExpression(u"^Path of Building didn't answer in time\\."_s));
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = advancedRing}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"Path of Building didn't answer in time."_s);
+        QCOMPARE(engine.state(), State::Stopped);
+    }
+
     void cantRun()
     {
         FakePob pob;
