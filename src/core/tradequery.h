@@ -4,6 +4,7 @@
 #include "core/gearscore.h"
 #include "core/ignore.h"
 #include "core/item.h"
+#include "core/resists.h"
 #include "core/statsources.h"
 #include "core/tradedata.h"
 #include "core/weights.h"
@@ -165,5 +166,45 @@ struct GearSearch : TradeQuery
 // roll of a minor stat can't carry a poor item.
 GearSearch gearSearch(const Item &item, const QList<SearchWeight> &weights, const TradeData &data,
                       const GearSearchOptions &options = {});
+
+// A mod the trade site has, with what each point of it is worth.
+struct ModWeight
+{
+    QString id; // "explicit.stat_3299347043"
+    double weight = 0;
+};
+
+struct PobSearchOptions : SearchOptions
+{
+    QString itemClass;
+    QString category; // for when there's none for the item class
+    double min = 0;   // what a listing's sum has to reach
+    // How many filters it has at most, as the trade site limits them. The
+    // heaviest mods are kept.
+    int maxFilters = 30;
+    // Resistances you're short of. Their mods count for at least half as much
+    // as the best mod of a percentage, so items with your damage and the
+    // resistance come first, rather than those with only a big roll of it.
+    QList<Element> shortResists;
+    // The stats on what you wear in the slot. A listing needs as many of the
+    // build's damage mods as it has, up to two, so it doesn't trade them for
+    // resistance. Empty asks for none.
+    QStringList worn;
+};
+
+struct PobSearch : TradeQuery
+{
+    double groupMin = 0;
+    int filters = 0; // weighted mods searched for
+    int dropped = 0; // and left out for the site's limit
+    bool resistsBoosted = false;
+    int needDamage = 0; // of the build's damage mods a listing has to have
+};
+
+// "Better for my build" as Path of Building's own trade searches find it:
+// the trade site's weighted sum of the mods it weighed, best first. Mods the
+// site doesn't have and those you ignore are left out.
+PobSearch pobSearch(const QList<ModWeight> &mods, const TradeData &data,
+                    const PobSearchOptions &options = {});
 
 } // namespace pou
