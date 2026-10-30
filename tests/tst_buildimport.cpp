@@ -228,6 +228,61 @@ private Q_SLOTS:
         QVERIFY(buildProfile(profile));
     }
 
+    void importPicksTheProfile_data()
+    {
+        QTest::addColumn<QString>("had");
+        QTest::addColumn<bool>("picked");
+        QTest::addColumn<double>("energyShield");
+        QTest::addColumn<QString>("profile");
+        QTest::addColumn<bool>("changed");
+
+        QTest::newRow("a new character") << QString() << false << 5000.0 << u"es-caster"_s << true;
+        QTest::newRow("from an earlier import") << u"life-res"_s << false << 5000.0 << u"es-caster"_s << true;
+        QTest::newRow("back again") << u"es-caster"_s << false << 100.0 << u"life-res"_s << true;
+        QTest::newRow("as before") << u"es-caster"_s << false << 5000.0 << u"es-caster"_s << false;
+        QTest::newRow("the default") << QString() << false << 100.0 << u"life-res"_s << false;
+        QTest::newRow("one a newer version knows")
+            << u"glass-cannon"_s << false << 5000.0 << u"es-caster"_s << true;
+        QTest::newRow("picked") << u"life-res"_s << true << 5000.0 << u"life-res"_s << false;
+        QTest::newRow("picked, saved as the default") << QString() << true << 5000.0 << QString() << false;
+        QTest::newRow("picked, none") << u"none"_s << true << 5000.0 << u"none"_s << false;
+    }
+
+    void importPicksTheProfile()
+    {
+        QFETCH(QString, had);
+        QFETCH(bool, picked);
+        QFETCH(double, energyShield);
+        QFETCH(QString, profile);
+        QFETCH(bool, changed);
+        Character character;
+        character.buildProfile = had;
+        character.profilePicked = picked;
+        PobBuild build = buildWith({{u"Helmet"_s, {.text = helmet}}});
+        build.life = 1000;
+        build.energyShield = energyShield;
+
+        const BuildImport done = importBuild(character, build);
+        QCOMPARE(done.character.buildProfile, profile);
+        QCOMPARE(done.character.profilePicked, picked);
+        QCOMPARE(done.profileChanged, changed);
+    }
+
+    void profileWithResistsFromTheSheet()
+    {
+        // the sheet keeps the resistances, not the profile
+        PobBuild build = buildWith({{u"Helmet"_s, {.text = helmet}}});
+        build.minionDps = 100;
+        build.resists[Element::Fire] = 80;
+        Character character;
+        character.resists = ResistRecord{.cap = 75, .source = ResistSource::Game};
+
+        const BuildImport done = importBuild(character, build);
+        QVERIFY(!done.resists);
+        QCOMPARE(done.character.buildProfile, u"minion-es"_s);
+        QVERIFY(done.profileChanged);
+    }
+
     void theBuildsResists()
     {
         // without importing it

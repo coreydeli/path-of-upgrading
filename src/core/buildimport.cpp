@@ -74,6 +74,13 @@ BuildImport importBuild(const Character &character, const PobBuild &build)
             ++out.withoutDamage;
     }
 
+    if (!c.profilePicked) {
+        const QString fitting = fittingProfile(build);
+        const QString had = c.buildProfile.isEmpty() ? defaultBuildProfile.toString() : c.buildProfile;
+        out.profileChanged = fitting != had;
+        c.buildProfile = fitting;
+    }
+
     const bool fromSheet = c.resists && c.resists->source == ResistSource::Game;
     if (fromSheet)
         return out;

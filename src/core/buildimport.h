@@ -17,11 +17,15 @@ struct BuildImport
     // Weapons put on from the build, which can't say what damage they deal.
     int withoutDamage = 0;
     bool resists = false; // the build's resistances were taken
+    // The gear score profile is another one now, to suit the build.
+    bool profileChanged = false;
 };
 
 // The character wearing the build's gear in place of what came with its
 // build before, the jewels in the order of their sockets. The build's
-// resistances are taken unless yours were read off the character sheet.
+// resistances are taken unless yours were read off the character sheet, and
+// its gear score profile is the one that suits the build unless you picked
+// one yourself.
 BuildImport importBuild(const Character &character, const PobBuild &build);
 
 // The gear score profile that suits the build: the minion one when the
