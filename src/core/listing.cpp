@@ -118,6 +118,40 @@ QString cleanListingText(const QString &text)
         .trimmed();
 }
 
+QList<ListingProperty> baseProperties(const Item &item)
+{
+    struct Property
+    {
+        QStringView key;
+        QStringView name;
+        QStringView unit;
+        bool partOfDps;
+    };
+    static const std::array table = {
+        Property{u"[Base] Armour", u"Armour", {}, false},
+        Property{u"[Base] Evasion Rating", u"Evasion", {}, false},
+        Property{u"[Base] Energy Shield", u"Energy Shield", {}, false},
+        Property{u"[Base] Runic Ward", u"Runic Ward", {}, false},
+        Property{u"[Base] Block Chance", u"Block", u"%", false},
+        Property{u"[Base] Spirit", u"Spirit", {}, false},
+        Property{u"[Weapon] Total DPS", u"DPS", {}, false},
+        Property{u"[Weapon] Physical DPS", u"Physical DPS", {}, true},
+        Property{u"[Weapon] Elemental DPS", u"Elemental DPS", {}, true},
+        Property{u"[Weapon] Chaos DPS", u"Chaos DPS", {}, true},
+    };
+    const double dps = item.stats.value(u"[Weapon] Total DPS"_s);
+
+    QList<ListingProperty> out;
+    for (const Property &property : table) {
+        const double value = item.stats.value(property.key);
+        // a part that is all of it says nothing more
+        if (!(value > 0) || (property.partOfDps && !(value < dps)))
+            continue;
+        out << ListingProperty{property.name.toString(), formatNumber(value) + property.unit};
+    }
+    return out;
+}
+
 Item listingToItem(const QJsonObject &result, const QString &itemClass)
 {
     const QJsonObject item = result.value(u"item").toObject();
@@ -224,6 +258,7 @@ Listing readListing(const QJsonObject &result, const QString &itemClass, const C
     Listing out;
     out.id = result.value(u"id").toString();
     out.item = listingToItem(result, itemClass);
+    out.properties = baseProperties(out.item);
     const QJsonObject item = result.value(u"item").toObject();
     for (const ModGroup &group : modGroups) {
         for (const QString &text : modTexts(item, group.field))

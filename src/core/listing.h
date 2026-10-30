@@ -53,6 +53,21 @@ struct ListingMod
     friend bool operator==(const ListingMod &, const ListingMod &) = default;
 };
 
+// One of the numbers an item has of its own, like its armour or damage per second.
+struct ListingProperty
+{
+    QString name;  // "Armour"
+    QString value; // "160"
+
+    friend bool operator==(const ListingProperty &, const ListingProperty &) = default;
+};
+
+// The defences and weapon damage the item has of its own, as the game shows
+// them on the item, with the weapon's damage per second after them. Those the
+// item hasn't got, or has none of, are left out. A weapon's damage is split
+// into physical and elemental only when it has both.
+QList<ListingProperty> baseProperties(const Item &item);
+
 struct Listing
 {
     QString id;
@@ -60,6 +75,7 @@ struct Listing
     // Every mod line, in the order the game shows them. The item leaves out
     // some of those that aren't stats.
     QList<ListingMod> mods;
+    QList<ListingProperty> properties; // see baseProperties()
     std::optional<ListingPrice> price;
     std::optional<double> exalts; // the price in Exalted Orbs, when there's a rate for it
     QString seller;               // the character they last played, or else the account
