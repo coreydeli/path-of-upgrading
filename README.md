@@ -107,9 +107,16 @@ cd build && ctest -j8
 
 The window tests are offscreen. They don't touch your clipboard, your
 keyring, your shortcuts or the network. Run them on a private session bus
-(`dbus-run-session -- ctest -j8`) so they can't start any desktop services.
-Two tests, `tst_xmonitors` and `tst_xwindows`, read the real XWayland, so they
-fail while the screens are off.
+with no services, so they can't start any of the desktop's:
+
+```bash
+cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
+```
+
+The tests of the X side read the X server in `DISPLAY`, and skip when there's
+none. Two of them, `tst_xmonitors` and `tst_xwindows`, fail while the screens
+are off. `.github/scripts/run-tests.sh` runs them all the way the CI does, with
+an X server of their own from `xvfb-run`.
 
 ## Your data
 
