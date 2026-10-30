@@ -32,7 +32,7 @@ struct PobWeighing
     QString category; // the trade site's for the slot, "armour.gloves"
     // The least a listing's sum should come to, from what you wear there.
     double min = 0;
-    QList<ModWeight> mods; // the best first
+    QList<ModWeight> mods; // those whose usual roll adds the most first
 };
 
 // Mods without an id or a weight above nothing are left out.

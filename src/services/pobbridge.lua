@@ -24,8 +24,9 @@
 --       slot, the way Path of Building's own trade searches weigh them: each
 --       is tried on a blank item there, and weighed by how much it raises
 --       those stats. The answer has the site's category for the slot, the
---       mods' ids with their weight for each point, the best first, and the
---       least sum of them a search should ask for.
+--       mods' ids with their weight for each point, those whose usual roll
+--       adds the most first, and the least sum of them a search should ask
+--       for.
 --
 -- Each answer is a line of JSON after "@@" with the request's id, and ok
 -- true, or false with an error in words. The first one comes before any
