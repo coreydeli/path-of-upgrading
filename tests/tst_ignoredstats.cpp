@@ -132,6 +132,7 @@ private Q_SLOTS:
             tester({single(rarity, IgnoreRule::Mode::Exclude), single(life), single(armour), single(life)}));
         // the item's own first, and each once
         QCOMPARE(i.keys(), QStringList({armour, life, rarity}));
+        QCOMPARE(i.ignored.index(0).data(Qt::DisplayRole).toString(), u"Armour"_s);
         QCOMPARE(i.of(armour, IgnoredStats::NameRole).toString(), u"Armour"_s);
         QCOMPARE(i.of(armour, IgnoredStats::NoteRole).toString(), u"The item's own, with its mods"_s);
         QCOMPARE(i.of(life, IgnoredStats::NameRole).toString(), life);
@@ -139,6 +140,15 @@ private Q_SLOTS:
         QCOMPARE(i.of(life, IgnoredStats::ModeRole).toInt(), int(IgnoredStats::Ignored));
         QCOMPARE(i.of(rarity, IgnoredStats::ModeRole).toInt(), int(IgnoredStats::Excluded));
         QCOMPARE(i.ignored.keys(), QStringList({armour, life, rarity}));
+    }
+
+    void alreadyPlaying()
+    {
+        Ignoring i;
+        i.play(tester({single(life), group(u"mana"_s)}));
+        IgnoredStats later(&i.active);
+        QCOMPARE(later.rowCount(), 1);
+        QCOMPARE(later.groups().size(), groupIds.size());
     }
 
     void bothWays()
@@ -167,6 +177,11 @@ private Q_SLOTS:
         QCOMPARE(i.saved(), QList<IgnoreRule>({single(life)}));
         QCOMPARE(i.groupMode(u"attributes"_s), int(IgnoredStats::Counts));
         QCOMPARE(changed.size(), 3);
+
+        // or straight to excluded
+        i.ignored.setGroupMode(u"life"_s, IgnoredStats::Excluded);
+        QCOMPARE(i.saved(), QList<IgnoreRule>({single(life), group(u"life"_s, IgnoreRule::Mode::Exclude)}));
+        QCOMPARE(i.groupMode(u"life"_s), int(IgnoredStats::Excluded));
     }
 
     void groupInPlace()
