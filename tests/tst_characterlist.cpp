@@ -139,6 +139,14 @@ private Q_SLOTS:
         QCOMPARE(roles.value(CharacterList::BuildRole), "build");
     }
 
+    void buildWithNothingToName()
+    {
+        Characters c;
+        c.saved(u"Wren"_s, u"<PathOfBuilding2><Build/></PathOfBuilding2>"_s);
+        c.list.load();
+        QCOMPARE(c.list.index(0).data(CharacterList::BuildRole).toString(), QString());
+    }
+
     void problems()
     {
         Characters c;
@@ -241,6 +249,8 @@ private Q_SLOTS:
         QVERIFY(!c.list.add(u"Mira"_s).isEmpty());
         QCOMPARE(c.list.error(), QString());
         QCOMPARE(error.size(), 2);
+        QVERIFY(!c.list.add(u"Wren"_s).isEmpty());
+        QCOMPARE(error.size(), 2);
     }
 
     void addFails()
@@ -290,6 +300,26 @@ private Q_SLOTS:
         QCOMPARE(moved.size(), 2);
         QCOMPARE(changed.size(), 3);
         QCOMPARE(changed.last().first().toModelIndex().row(), 0);
+    }
+
+    void renameFails()
+    {
+        Characters c;
+        const QString wren = c.saved(u"Wren"_s);
+        c.list.load();
+        // a folder with something in it where the character's file would be
+        const QString file = c.folder + u'/' + wren + u".json"_s;
+        QVERIFY(QFile::remove(file));
+        QVERIFY(QDir(c.folder).mkpath(wren + u".json/kept"_s));
+        QVERIFY(!c.list.rename(wren, u"Wrenna"_s));
+        QVERIFY(c.list.error().startsWith(u"Couldn't save Wrenna: "_s));
+        QCOMPARE(c.names(), QStringList{u"Wren"_s});
+
+        // and nothing is wrong once it works
+        QVERIFY(QDir(file).removeRecursively());
+        QVERIFY(c.list.rename(wren, u"Wrenna"_s));
+        QCOMPARE(c.list.error(), QString());
+        QCOMPARE(c.names(), QStringList{u"Wrenna"_s});
     }
 
     void renameTheOneYouPlay()
@@ -366,6 +396,11 @@ private Q_SLOTS:
         QVERIFY(!c.list.remove(wren));
         QVERIFY(c.list.error().startsWith(u"Couldn't delete Wren: "_s));
         QCOMPARE(c.names(), QStringList{u"Wren"_s});
+
+        // and nothing is wrong once it works
+        QVERIFY(QDir(c.folder + u'/' + wren + u".xml"_s).removeRecursively());
+        QVERIFY(c.list.remove(wren));
+        QCOMPARE(c.list.error(), QString());
     }
 
     void importBuild()
@@ -407,6 +442,11 @@ private Q_SLOTS:
         QVERIFY(!done);
         QVERIFY(c.list.error().startsWith(u"Couldn't save the build for Wren: "_s));
         QCOMPARE(c.list.index(0).data(CharacterList::BuildRole).toString(), QString());
+
+        // and nothing is wrong once it works
+        QVERIFY(QDir(c.folder).rmdir(wren + u".xml"_s));
+        QVERIFY(c.list.importBuild(wren, stormweaver, parsePobBuild(stormweaver).value()));
+        QCOMPARE(c.list.error(), QString());
     }
 };
 
