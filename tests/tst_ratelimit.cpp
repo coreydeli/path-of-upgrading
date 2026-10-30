@@ -26,6 +26,8 @@ private Q_SLOTS:
         QCOMPARE(rateWindows(u"5:10,x:10:60,5:0:60,5:10:x,-2:10:60,,7:30:0"),
                  (QList<RateWindow>{{7, 30, 0}}));
         QVERIFY(rateWindows(u"").isEmpty());
+        // none used yet in a state header
+        QCOMPARE(rateWindows(u"0:10:0"), (QList<RateWindow>{{0, 10, 0}}));
     }
 
     void safeGuesses()

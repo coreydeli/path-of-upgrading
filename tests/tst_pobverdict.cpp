@@ -123,6 +123,14 @@ private Q_SLOTS:
         QVERIFY(!v.losesDamage);
     }
 
+    void noDamageEitherWay()
+    {
+        const PobStats stats = {{u"TotalDPS"_s, 0}, {u"TotalEHP"_s, 9000}};
+        const PobVerdict v = judgeWithPob(stats, stats);
+        QCOMPARE(v.score, 0.0);
+        QCOMPARE(v.verdict, Verdict::Same);
+    }
+
     void damageWeight()
     {
         const PobStats before = {{u"FullDPS"_s, 1000}, {u"TotalEHP"_s, 1000}};
@@ -142,6 +150,14 @@ private Q_SLOTS:
         const PobVerdict v = judgeWithPob({{u"FullDPS"_s, 1000}}, {{u"FullDPS"_s, 1100}});
         QVERIFY(!v.ehp);
         QCOMPARE(v.score, 6.0);
+    }
+
+    void ehpNeedsBothSides()
+    {
+        const PobStats dps = {{u"FullDPS"_s, 1000}};
+        const PobStats withEhp = with(dps, {{u"TotalEHP"_s, 9000}});
+        QVERIFY(!judgeWithPob(dps, withEhp).ehp);
+        QVERIFY(!judgeWithPob(withEhp, dps).ehp);
     }
 
     void resistanceOffTheCap()
@@ -235,6 +251,45 @@ private Q_SLOTS:
         const PobStats held = {{u"ColdResist"_s, 70}, {u"ColdResistTotal"_s, 80}};
         QCOMPARE(judgeWithPob(under, held).resistRank, 2);
         QVERIFY(judgeWithPob(held, under).resists.first().wasCapped);
+    }
+
+    void halfAPointIsRounding()
+    {
+        const PobStats under = {{u"ColdResist"_s, 50}, {u"ColdResistTotal"_s, 50}};
+        const auto wasCapped = [&under](double resist, double total) {
+            const PobStats before = {{u"ColdResist"_s, resist}, {u"ColdResistTotal"_s, total}};
+            return judgeWithPob(before, under).resists.first().wasCapped;
+        };
+        QVERIFY(wasCapped(74.5, 74.5));
+        QVERIFY(!wasCapped(74.4, 74.4));
+        // a total over the resistance by more than that shows it's held down
+        QVERIFY(wasCapped(70, 71));
+        QVERIFY(!wasCapped(70, 70.5));
+
+        // and losing that much isn't a loss
+        const PobStats sixty = {{u"ColdResist"_s, 60}, {u"ColdResistTotal"_s, 60}};
+        const auto lessBy = [&sixty](double resist) {
+            return judgeWithPob(sixty, {{u"ColdResist"_s, resist}, {u"ColdResistTotal"_s, resist}});
+        };
+        QVERIFY(lessBy(59.5).breaks.isEmpty());
+        QCOMPARE(lessBy(59.4).breaks.size(), 1);
+    }
+
+    void resistsNeedBothSides()
+    {
+        const PobStats cold = {{u"ColdResist"_s, 75}};
+        QVERIFY(judgeWithPob(cold, {}).resists.isEmpty());
+        QVERIFY(judgeWithPob({}, cold).resists.isEmpty());
+    }
+
+    void overcapChangesAreShown()
+    {
+        const PobVerdict v = judgeWithPob(base, with(base, {{u"FireResistTotal"_s, 90}}));
+        QCOMPARE(v.resists.size(), 1);
+        QCOMPARE(v.resists.first().totalFrom.value(), 78.0);
+        QCOMPARE(v.resists.first().totalTo.value(), 90.0);
+        QVERIFY(!v.resists.first().lost);
+        QCOMPARE(v.verdict, Verdict::Same);
     }
 
     void resistancesFirst()
@@ -333,6 +388,28 @@ private Q_SLOTS:
         QVERIFY(judgeWithPob(weak, with(weak, {{u"Str"_s, 55}})).breaks.isEmpty());
     }
 
+    void exactlyEnough()
+    {
+        // no Spirit left over, and just the attributes the gear asks for
+        const PobStats after =
+            with(geared, {{u"MinionDPS"_s, 120000}, {u"SpiritUnreserved"_s, 0}, {u"Str"_s, 75}});
+        QVERIFY(judgeWithPob(geared, after).breaks.isEmpty());
+    }
+
+    void attributesYouJustHad()
+    {
+        const PobStats just = with(geared, {{u"Str"_s, 75}});
+        QCOMPARE(judgeWithPob(just, with(just, {{u"Str"_s, 60}})).breaks.size(), 1);
+
+        // when Path of Building didn't say before, the item is to blame
+        PobStats unknown = geared;
+        unknown.remove(u"Str"_s);
+        QCOMPARE(judgeWithPob(unknown, with(geared, {{u"Str"_s, 60}})).breaks.size(), 1);
+        PobStats noRequirement = geared;
+        noRequirement.remove(u"ReqStr"_s);
+        QCOMPARE(judgeWithPob(noRequirement, with(geared, {{u"Str"_s, 60}})).breaks.size(), 1);
+    }
+
     void switchingChecksOff()
     {
         PobPriorities relaxed;
@@ -356,6 +433,12 @@ private Q_SLOTS:
 
         const PobVerdict own = judgeWithPob({{u"FullDPS"_s, 2000}}, {{u"FullDPS"_s, 1500}});
         QCOMPARE(own.breaks, QStringList{u"Damage drops 25%"_s});
+    }
+
+    void damageLossAtFivePercent()
+    {
+        QVERIFY(judgeWithPob(base, with(base, {{u"MinionDPS"_s, 95000}})).losesDamage);
+        QVERIFY(!judgeWithPob(base, with(base, {{u"MinionDPS"_s, 95100}})).losesDamage);
     }
 
     void damageLossEvenWhenItCaps()
@@ -398,6 +481,30 @@ private Q_SLOTS:
         QCOMPARE(v.breaks, (QStringList{u"Lightning res drops below the cap (38% of 75%)"_s,
                                         u"Not enough Strength to use your gear (60 of 75)"_s}));
         QCOMPARE(v.losses, QStringList{v.breaks.first()});
+    }
+
+    void verdictThresholds_data()
+    {
+        QTest::addColumn<double>("after");
+        QTest::addColumn<Verdict>("verdict");
+
+        // a thousand damage before, so each point is a tenth of a percent
+        QTest::newRow("3% better") << 1030.0 << Verdict::Upgrade;
+        QTest::newRow("just under 3% better") << 1029.0 << Verdict::Small;
+        QTest::newRow("1% better") << 1010.0 << Verdict::Small;
+        QTest::newRow("just under 1% better") << 1009.0 << Verdict::Same;
+        QTest::newRow("1% worse") << 990.0 << Verdict::Downgrade;
+        QTest::newRow("just under 1% worse") << 991.0 << Verdict::Same;
+    }
+
+    void verdictThresholds()
+    {
+        QFETCH(double, after);
+        QFETCH(Verdict, verdict);
+
+        PobVerdictOptions options;
+        options.damageWeight = 1;
+        QCOMPARE(judgeWithPob({{u"TotalDPS"_s, 1000}}, {{u"TotalDPS"_s, after}}, options).verdict, verdict);
     }
 
     void otherNumbers()

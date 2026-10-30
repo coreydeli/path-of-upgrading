@@ -109,6 +109,20 @@ private Q_SLOTS:
                  (ProfileTweaks{{u"Cold res"_s, 0.5}}));
     }
 
+    void gearThatRaisesTheCap()
+    {
+        Character c;
+        c.gear = {{u"Amulet"_s, amulet(u"+5% to Maximum Fire Resistance"_s)}};
+        c.resists = resists(c.gear, 78, 76, std::nullopt, std::nullopt);
+
+        // fire has to reach 80 and the buffer on top, cold only 75
+        const GearScoreOptions options = gearScoreOptions(c, u"Helmet"_s);
+        QCOMPARE(options.resistNeed[Element::Fire], 12.0);
+        QCOMPARE(options.resistNeed[Element::Cold], 9.0);
+        // so only fire is short
+        QCOMPARE(options.tweaks, (ProfileTweaks{{u"Fire res"_s, 2}}));
+    }
+
     void chaosInoculation()
     {
         Character c;
@@ -254,6 +268,16 @@ private Q_SLOTS:
         QCOMPARE(e.mode, ScoreMode::GearScores);
         QCOMPARE(e.comparison.delta, 5.0);
         QCOMPARE(e.comparison.verdict, Verdict::Small);
+    }
+
+    void equalRingsReplaceTheFirst()
+    {
+        const Character c = wearing({
+            {u"Ring 1"_s, ring(u"Storm Loop"_s, u"+20 to maximum Life"_s)},
+            {u"Ring 2"_s, ring(u"Woe Band"_s, u"+20 to maximum Life"_s)},
+        });
+        const Evaluation e = evaluate(ring(u"Grim Grasp"_s, u"+40 to maximum Life"_s), c);
+        QCOMPARE(e.comparison.targetSlot, u"Ring 1"_s);
     }
 
     void freeRingSlotFirst()

@@ -179,6 +179,28 @@ private Q_SLOTS:
         QCOMPARE(b->stats.value(u"#% to Maximum Fire Resistance"), 7.5);
 
         QVERIFY(!parseItem(itemtexts::helmetNew)->legacies);
+
+        // a Legacy that isn't in the table is left out
+        const auto c = parseItem(QString(belt).replace(u"Legacy of Jade"_s, u"Legacy of Nothing"_s));
+        QCOMPARE(c->legacies->names, QStringList({u"Bismuth"_s, u"Sulphur"_s, u"Quicksilver"_s}));
+        QVERIFY(lineWith(*c, u"Nothing").text.isEmpty());
+    }
+
+    void onlyRangesAreAveraged()
+    {
+        const auto it = parseItem(u"Item Class: Gloves\nRarity: Rare\nA\nB\n--------\n"
+                                  "10% increased Damage per 5 Strength\nAdds 10 to 20 Fire Damage"_s);
+        QCOMPARE(it->stats.value(u"#% increased Damage per # Strength"), 10.0);
+        QCOMPARE(it->stats.value(u"Adds # to # Fire Damage"), 15.0);
+    }
+
+    void runeAndAugmentHeaders()
+    {
+        for (const QString &header : {u"{ Rune Modifier }"_s, u"{ Augment }"_s}) {
+            const auto it = parseItem(u"Item Class: Gloves\nRarity: Rare\nA\nB\n--------\n"_s + header +
+                                      u"\n+10% to Fire Resistance"_s);
+            QCOMPARE(lineWith(*it, u"Fire").tag, u"rune"_s);
+        }
     }
 
     void expandsPairedStats()
@@ -204,6 +226,11 @@ private Q_SLOTS:
             parseItem(u"Item Class: Life Flasks\nRarity: Magic\nFlask\n--------\nItem Level: 10"_s);
         QCOMPARE(flask->slot, u"Life Flask"_s);
         QVERIFY(flask->baseType.isEmpty()); // magic: the one name line has affixes in it
+
+        const auto ring = parseItem(
+            u"Item Class: Rings\nRarity: Magic\nHale Gold Ring of the Whelpling\nGold Ring\n--------\n"
+            "Item Level: 10"_s);
+        QCOMPARE(ring->baseType, u"Gold Ring"_s);
     }
 
     void normalItemsLoseSuperior()
@@ -212,6 +239,10 @@ private Q_SLOTS:
             u"Item Class: Boots\nRarity: Normal\nSuperior Leather Boots\n--------\nEvasion Rating: 20"_s);
         QCOMPARE(it->baseType, u"Leather Boots"_s);
         QCOMPARE(it->stats.value(u"[Base] Evasion Rating"), 20.0);
+
+        const auto plain =
+            parseItem(u"Item Class: Boots\nRarity: Normal\nLeather Boots\n--------\nEvasion Rating: 20"_s);
+        QCOMPARE(plain->baseType, u"Leather Boots"_s);
     }
 
     void infoAndFlavourLines()
@@ -224,6 +255,42 @@ private Q_SLOTS:
         QVERIFY(it->lines.at(0).key.isEmpty());
         QCOMPARE(it->lines.at(2).text, u"Can't be used with Shields"_s);
         QVERIFY(it->lines.at(2).key.isEmpty());
+    }
+
+    void flavourTextOnlyInShortBlocks()
+    {
+        const QString head = u"Item Class: Wands\nRarity: Rare\nA\nWithered Wand\n--------\n"_s;
+        const QString five = u"+10 to Strength\n+10 to Dexterity\n+10 to Intelligence\n"
+                             "+10 to maximum Life\n+10 to maximum Mana\n"_s;
+        const QString flavour = u"Can't be used with Shields"_s;
+
+        // it's kept in a block of six lines, and left out of seven
+        QCOMPARE(lineWith(*parseItem(head + five + flavour), u"Can't").text, flavour);
+        QVERIFY(lineWith(*parseItem(head + five + u"+10 to Spirit\n"_s + flavour), u"Can't").text.isEmpty());
+
+        // and from uniques
+        const auto unique =
+            parseItem(u"Item Class: Wands\nRarity: Unique\nA\nWithered Wand\n--------\n"_s + flavour);
+        QVERIFY(unique->lines.isEmpty());
+    }
+
+    void onlyRareAndMagicHaveOpenAffixes()
+    {
+        for (const QString &rarity : {u"Unique"_s, u"Normal"_s}) {
+            const auto it =
+                parseItem(u"Item Class: Rings\nRarity: "_s + rarity +
+                          u"\nA\nIron Ring\n--------\n{ Unique Modifier }\n+30 to maximum Life"_s);
+            QVERIFY(!it->affixes.known);
+            QCOMPARE(it->stats.value(u"# to maximum Life"), 30.0);
+        }
+    }
+
+    void noSpeedNoDps()
+    {
+        const auto it =
+            parseItem(u"Item Class: One Hand Maces\nRarity: Rare\nA\nB\n--------\nPhysical Damage: 10-20"_s);
+        QVERIFY(!it->stats.contains(u"[Weapon] Total DPS"));
+        QVERIFY(!it->stats.contains(u"[Weapon] Physical DPS"));
     }
 };
 

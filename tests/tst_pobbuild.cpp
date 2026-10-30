@@ -82,6 +82,11 @@ private Q_SLOTS:
         for (qsizetype i = 40; i < code.size(); i += 41)
             code.insert(i, u'\n');
         QCOMPARE(decoded(u"  "_s + code + u"\r\n"_s), buildXml);
+
+        // with spaces and tabs in it too
+        QString spaced = codeFor(zlibData(buildXml));
+        spaced.insert(8, u" \t"_s);
+        QCOMPARE(decoded(spaced), buildXml);
     }
 
     void rawDeflate()
@@ -101,6 +106,17 @@ private Q_SLOTS:
         // cut short
         const QString code = codeFor(zlibData(buildXml));
         QVERIFY(!decodeBuildCode(code.first(code.size() / 2)));
+    }
+
+    void tooBigToBeABuild()
+    {
+        // 32 MiB is as much as it inflates to
+        const qsizetype limit = 32 * 1024 * 1024;
+        const auto inflatesTo = [](qsizetype size) {
+            return decodeBuildCode(codeFor(zlibData(QString(size, u' '))));
+        };
+        QCOMPARE(inflatesTo(limit)->size(), limit);
+        QVERIFY(!inflatesTo(limit + 1));
     }
 
     void shareLinks_data()
@@ -182,6 +198,73 @@ private Q_SLOTS:
                             }));
         QVERIFY(!item.missingDamage);
         QVERIFY(parseItem(item.text));
+    }
+
+    void stateLines()
+    {
+        const auto convert = [](const QString &state) {
+            return convertPobItem(joined({u"Rarity: RARE"_s, u"Doom Vise"_s, u"Sorcerer Gloves"_s,
+                                          u"+10 to maximum Life"_s, state}),
+                                  u"Gloves"_s)
+                .text;
+        };
+        const QString plain = joined({u"Item Class: Gloves"_s, u"Rarity: Rare"_s, u"Doom Vise"_s,
+                                      u"Sorcerer Gloves"_s, separator, u"+10 to maximum Life"_s});
+        // they aren't mods, and only the corrupted ones are kept
+        QCOMPARE(convert(u"Mirrored"_s), plain);
+        QCOMPARE(convert(u"Sanctified"_s), plain);
+        QCOMPARE(convert(u"Unidentified"_s), plain);
+        QCOMPARE(convert(u"Corrupted"_s), plain + u"\n--------\nCorrupted"_s);
+        QCOMPARE(convert(u"Twice Corrupted"_s), plain + u"\n--------\nCorrupted"_s);
+    }
+
+    void rolledNumbers()
+    {
+        const auto rolled = [](const QString &mod) {
+            const QString text =
+                convertPobItem(joined({u"Rarity: RARE"_s, u"Doom Vise"_s, u"Sorcerer Gloves"_s, mod}),
+                               u"Gloves"_s)
+                    .text;
+            return text.section(u"\n--------\n"_s, 1);
+        };
+        // decimals in either end of the range keep two
+        QCOMPARE(rolled(u"{range:0.5}(1-2.5)% increased Rarity of Items found"_s),
+                 u"1.75% increased Rarity of Items found"_s);
+        QCOMPARE(rolled(u"{range:0.5}(1.5-3)% increased Rarity of Items found"_s),
+                 u"2.25% increased Rarity of Items found"_s);
+        // a plus only goes in front of a number above zero
+        QCOMPARE(rolled(u"{range:0.5}+(-10-10) to maximum Mana"_s), u"0 to maximum Mana"_s);
+    }
+
+    void loneBaseType()
+    {
+        // what follows a name line that's the only one isn't a second name
+        const auto convert = [](const QString &next) {
+            return convertPobItem(joined({u"Rarity: RARE"_s, u"Sorcerer Gloves"_s, next}), u"Gloves"_s).text;
+        };
+        const QString header = joined({u"Item Class: Gloves"_s, u"Rarity: Rare"_s, u"Sorcerer Gloves"_s});
+        QCOMPARE(convert(u"Unidentified"_s), header);
+        QCOMPARE(convert(u"Energy Shield: 98"_s), joined({header, separator, u"Energy Shield: 98"_s}));
+        QCOMPARE(convert(u"{crafted}+10 to maximum Life"_s),
+                 joined({header, separator, u"+10 to maximum Life (crafted)"_s}));
+        QCOMPARE(convertPobItem(u"Rarity: RARE\nSorcerer Gloves"_s, u"Gloves"_s).text, header);
+    }
+
+    void withoutARarityLine()
+    {
+        const PobItemText item =
+            convertPobItem(joined({u"Item Level: 40"_s, u"+10 to maximum Life"_s}), u"Amulet"_s);
+        QVERIFY(item.text.startsWith(u"Item Class: Amulets\nRarity: Rare\n"_s));
+    }
+
+    void requirementLines()
+    {
+        const PobItemText item =
+            convertPobItem(joined({u"Rarity: RARE"_s, u"Doom Vise"_s, u"Sorcerer Gloves"_s,
+                                   u"Requires Class Witch"_s, u"Requires Level 65"_s}),
+                           u"Gloves"_s);
+        QCOMPARE(item.text, joined({u"Item Class: Gloves"_s, u"Rarity: Rare"_s, u"Doom Vise"_s,
+                                    u"Sorcerer Gloves"_s, separator, u"Requires: Level 65"_s}));
     }
 
     void rollsAndTags()

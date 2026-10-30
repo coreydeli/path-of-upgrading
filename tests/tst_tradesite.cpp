@@ -47,6 +47,16 @@ private Q_SLOTS:
                  u"https://www.pathofexile.com/api/trade2/fetch/a1,b2?query=Xy9&realm=poe2"_s);
     }
 
+    void aFullPage()
+    {
+        QStringList ids;
+        for (int n = 0; n < tradeFetchLimit; ++n)
+            ids << u"id%1"_s.arg(n);
+        const QString url = text(tradeFetchUrl(ids, u"Xy9"_s));
+        QCOMPARE(url.count(u','), tradeFetchLimit - 1);
+        QVERIFY(url.contains(u"id9?query=Xy9"));
+    }
+
     void prefilledSearch()
     {
         const QJsonObject body{{u"query"_s, QJsonObject{{u"term"_s, u"+1 to Level & more"_s}}}};

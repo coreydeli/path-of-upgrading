@@ -109,6 +109,53 @@ StatPick pick(const QString &key, double min)
     return p;
 }
 
+// A site with an explicit "+# to <name>" for each name.
+TradeData tradeDataFor(const QStringList &names)
+{
+    using namespace tradefixtures;
+    QJsonArray entries;
+    for (const QString &name : names)
+        entries << stat(u"explicit."_s + name.toLower(), u"+# to "_s + name, u"explicit"_s);
+    return {StatIndex::fromJson(response({group(u"explicit"_s, entries)})), {}};
+}
+
+// The "equipment_filters" ids of a search.
+QStringList equipmentIds(const TradeQuery &q)
+{
+    return queryOf(q)
+        .value(u"filters")
+        .toObject()
+        .value(u"equipment_filters")
+        .toObject()
+        .value(u"filters")
+        .toObject()
+        .keys();
+}
+
+// A part of the gear score for "# to <name>", worth 100 trade weight a point.
+SearchWeight weightFor(const QString &name, double importance, double cap = 10)
+{
+    SearchWeight w;
+    w.label = name;
+    w.key = u"# to "_s + name;
+    w.pattern = QRegularExpression(u"^"_s + QRegularExpression::escape(w.key) + u"$"_s);
+    w.weight = 1;
+    w.importance = importance;
+    w.cap = cap;
+    return w;
+}
+
+// The same for an item property such as "[Base] Armour".
+SearchWeight propertyWeight(const QString &key)
+{
+    SearchWeight w;
+    w.label = key;
+    w.pattern = QRegularExpression(u"^"_s + QRegularExpression::escape(key) + u"$"_s);
+    w.weight = 1;
+    w.importance = 1;
+    return w;
+}
+
 } // namespace
 
 class TestTradeQuery : public QObject
@@ -156,6 +203,23 @@ private Q_SLOTS:
         QVERIFY(!queryOf(q).value(u"filters").toObject().contains(u"type_filters"));
         QCOMPARE(statGroups(q), QJsonArray());
         QCOMPARE(queryOf(q).value(u"status").toObject().value(u"option").toString(), u"online"_s);
+    }
+
+    void thisBaseNeedsAName()
+    {
+        CustomSearchOptions options;
+        options.itemClass = u"Helmets"_s;
+        options.matchBase = true;
+        const TradeQuery q = customSearch({}, tradeData(), options);
+        QVERIFY(!queryOf(q).contains(u"type"));
+    }
+
+    void pseudoTotalsCoverEveryKindOfMod()
+    {
+        StatPick p = pick(u"# to maximum Life"_s, 80);
+        p.origin = StatOrigin::Mod;
+        const TradeQuery q = customSearch({p}, tradeData(), {});
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()), QStringList{u"pseudo.pseudo_total_life"_s});
     }
 
     void handPickedStat()
@@ -258,6 +322,31 @@ private Q_SLOTS:
         QCOMPARE(filterOf(q, u"equipment_filters", u"dps"), minimum(176));
         QCOMPARE(filterOf(q, u"type_filters", u"category").value(u"option").toString(), u"weapon.twomace"_s);
         QCOMPARE(statGroups(q), QJsonArray());
+    }
+
+    void weaponDpsNeedsYourOwnAndAPositiveWeight()
+    {
+        const Item mace = withStats(u"Two Hand Maces"_s, {{u"[Weapon] Total DPS"_s, 176.4}});
+        const WeightedSearch against = weightedSearch(mace, {{u"[Weapon] Total DPS"_s, -1}}, tradeData());
+        QVERIFY(equipmentIds(against).isEmpty());
+
+        const Item bare = withStats(u"Two Hand Maces"_s, {{u"# to maximum Life"_s, 5}});
+        const WeightedSearch without = weightedSearch(bare, {{u"[Weapon] Total DPS"_s, 1}}, tradeData());
+        QVERIFY(equipmentIds(without).isEmpty());
+    }
+
+    void weightedSearchNeedsRealWeights()
+    {
+        const QString armour = u"#% increased Armour"_s;
+        const QString speed = u"#% increased Movement Speed"_s;
+        const Item helmet = withStats(
+            u"Helmets"_s,
+            {{u"# to maximum Life"_s, 50}, {u"#% to Fire Resistance"_s, 20}, {armour, 40}, {speed, 10}});
+        const Weights weights = {
+            {u"# to maximum Life"_s, 1}, {u"#% to Fire Resistance"_s, 0}, {armour, qQNaN()}, {speed, qInf()}};
+        const WeightedSearch q = weightedSearch(helmet, weights, tradeData());
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()), QStringList{u"pseudo.pseudo_total_life"_s});
+        QCOMPARE(q.current, 50.0);
     }
 
     void runesDontCount()
@@ -396,6 +485,112 @@ private Q_SLOTS:
         QCOMPARE(statGroups(nameOnly), QJsonArray());
     }
 
+    void looserSearchesMayMissMore()
+    {
+        const QStringList names = {u"Alpha"_s, u"Bravo"_s,   u"Charlie"_s, u"Delta"_s,
+                                   u"Echo"_s,  u"Foxtrot"_s, u"Golf"_s,    u"Hotel"_s};
+        const TradeData data = tradeDataFor(names);
+        QCOMPARE(similarSearchLevels(), 4);
+
+        // how many of n stats a listing has to have, at each level
+        const int needed[4][8] = {
+            {1, 2, 3, 3, 4, 5, 6, 7},
+            {1, 1, 2, 2, 3, 4, 5, 6},
+            {1, 1, 2, 2, 3, 4, 4, 5},
+            {1, 1, 1, 2, 2, 3, 3, 4},
+        };
+        for (int level = 0; level < similarSearchLevels(); ++level) {
+            for (int n = 1; n <= 8; ++n) {
+                StatMap stats;
+                for (int i = 0; i < n; ++i)
+                    stats.add(u"# to "_s + names.at(i), 100);
+                SimilarSearchOptions options;
+                options.level = level;
+                const SimilarSearch q = similarSearch(withStats(u"Helmets"_s, stats), data, options);
+                QCOMPARE(q.total, n);
+                QVERIFY2(q.need == needed[level][n - 1],
+                         qPrintable(u"level %1, %2 stats: %3 needed"_s.arg(level).arg(n).arg(q.need)));
+            }
+        }
+    }
+
+    void looserSearchesAskForLess()
+    {
+        const Item helmet = withStats(u"Helmets"_s, {{u"# to maximum Life"_s, 100}});
+        const double shares[] = {100, 90, 80, 65};
+        for (int level = 0; level < similarSearchLevels(); ++level) {
+            SimilarSearchOptions options;
+            options.level = level;
+            QCOMPARE(firstValue(similarSearch(helmet, tradeData(), options)), minimum(shares[level]));
+        }
+
+        SimilarSearchOptions below;
+        below.level = -3;
+        QCOMPARE(similarSearch(helmet, tradeData(), below).level, 0);
+    }
+
+    void smallValuesKeepTheirDecimals()
+    {
+        const auto minFor = [](double value, int level) {
+            SimilarSearchOptions options;
+            options.level = level;
+            return firstValue(similarSearch(withStats(u"Helmets"_s, {{u"# to maximum Life"_s, value}}),
+                                            tradeData(), options));
+        };
+        QCOMPARE(minFor(2.5, 0), minimum(2.5));
+        QCOMPARE(minFor(3.5, 0), minimum(3));
+        // only a whole point or more is kept from rounding down to nothing
+        QCOMPARE(minFor(0.4, 3), minimum(0.26));
+    }
+
+    void noStatsToSearchFor()
+    {
+        const SimilarSearch q = similarSearch(withStats(u"Helmets"_s, {{u"mystery #"_s, 3}}), tradeData());
+        QCOMPARE(q.total, 0);
+        QCOMPARE(statGroups(q), QJsonArray());
+    }
+
+    void weaponPropertiesBesidesDps()
+    {
+        const Item mace = withStats(u"Two Hand Maces"_s, {{u"[Weapon] Total DPS"_s, 200},
+                                                          {u"[Weapon] Physical DPS"_s, 150},
+                                                          {u"[Weapon] Elemental DPS"_s, 50},
+                                                          {u"[Weapon] Attacks per Second"_s, 1.2},
+                                                          {u"[Weapon] Critical Hit Chance"_s, 5},
+                                                          {u"[Base] Runic Ward"_s, 100},
+                                                          {u"[Base] Block Chance"_s, 25},
+                                                          {u"[Base] Armour"_s, 300}});
+        const SimilarSearch q = similarSearch(mace, tradeData());
+        QCOMPARE(equipmentIds(q), QStringList({u"ar"_s, u"dps"_s}));
+        QCOMPARE(filterOf(q, u"equipment_filters", u"dps"), minimum(180));
+    }
+
+    void uniquesAreSearchedByName()
+    {
+        // no base type of its own, so none to ask for
+        const Item ring =
+            parseItem(u"Item Class: Rings\nRarity: Unique\nSeal of Gold\n--------\n+10 to maximum Life"_s)
+                .value();
+        const SimilarSearch byName = similarSearch(ring, tradeData());
+        QCOMPARE(queryOf(byName).value(u"name").toString(), u"Seal of Gold"_s);
+        QVERIFY(!queryOf(byName).contains(u"type"));
+
+        Item nameless;
+        nameless.itemClass = u"Rings"_s;
+        nameless.rarity = u"Unique"_s;
+        nameless.slot = u"Ring"_s;
+        nameless.stats = {{u"# to maximum Life"_s, 10}};
+        const SimilarSearch bare = similarSearch(nameless, tradeData());
+        QVERIFY(bare.unique);
+        QVERIFY(!queryOf(bare).contains(u"name"));
+
+        // the base's defences depend on the roll, not on what makes it that item
+        const Item cap = parseItem(u"Item Class: Helmets\nRarity: Unique\nGoldrim\nLeather Cap\n--------\n"
+                                   "Evasion Rating: 100\n--------\n+30 to maximum Life"_s)
+                             .value();
+        QVERIFY(equipmentIds(similarSearch(cap, tradeData())).isEmpty());
+    }
+
     void similarSkipsIgnoredStats()
     {
         const Item helmet = withStats(
@@ -462,6 +657,49 @@ private Q_SLOTS:
         const CraftBaseSearch plain = craftBaseSearch(boots, keyStats, tradeData());
         QVERIFY(!plain.emptyAffixFilter);
         QCOMPARE(statGroups(plain).size(), 1);
+    }
+
+    void craftBaseRollsAreAboutHalfOfTheBest()
+    {
+        const TradeData data = tradeDataFor({u"Alpha"_s, u"Bravo"_s, u"Charlie"_s, u"Delta"_s});
+        const QList<KeyStat> keyStats = {
+            {u"# to Alpha"_s, u"Alpha"_s, 9, 1},
+            {u"# to Bravo"_s, u"Bravo"_s, 9, 4},
+            {u"# to Charlie"_s, u"Charlie"_s, 9, 10},
+            {u"# to Delta"_s, u"Delta"_s, 9, 20},
+        };
+        const CraftBaseSearch q = craftBaseSearch(withStats(u"Boots"_s, {}), keyStats, data);
+        const QJsonObject wanted = statGroups(q).at(0).toObject();
+        // never nothing, and a little over half from 5 up
+        QCOMPARE(valueOf(wanted, u"explicit.alpha"_s), minimum(1));
+        QCOMPARE(valueOf(wanted, u"explicit.bravo"_s), minimum(2));
+        QCOMPARE(valueOf(wanted, u"explicit.charlie"_s), minimum(5));
+        QCOMPARE(valueOf(wanted, u"explicit.delta"_s), minimum(11));
+    }
+
+    void craftBaseWithoutKeyStats()
+    {
+        const CraftBaseSearch q = craftBaseSearch(withStats(u"Boots"_s, {}), {}, tradeData());
+        QCOMPARE(statGroups(q), QJsonArray());
+        QVERIFY(q.keyStats.isEmpty());
+    }
+
+    void craftBaseKeyStatsAreMods()
+    {
+        const KeyStat armour{u"[Base] Armour"_s, u"Armour"_s, 9, 100};
+        const CraftBaseSearch q = craftBaseSearch(withStats(u"Boots"_s, {}), {armour}, tradeData());
+        QCOMPARE(q.unmatched, QStringList{u"[Base] Armour"_s});
+        QCOMPARE(statGroups(q), QJsonArray());
+    }
+
+    void craftBaseLeavesWhatComesWithTheBase()
+    {
+        const Item mace = withStats(u"Two Hand Maces"_s, {{u"[Weapon] Total DPS"_s, 200},
+                                                          {u"[Weapon] Physical DPS"_s, 150},
+                                                          {u"[Base] Runic Ward"_s, 100},
+                                                          {u"[Base] Block Chance"_s, 25},
+                                                          {u"[Base] Armour"_s, 300}});
+        QCOMPARE(equipmentIds(craftBaseSearch(mace, {}, tradeData())), QStringList{u"ar"_s});
     }
 
     void gearSearchForTheBuild()
@@ -616,6 +854,180 @@ private Q_SLOTS:
                                      "+8 to Intelligence"_s)
                                .value();
         QCOMPARE(gearSearch(plain, weights, data, smallest).needKeyStats, 2);
+    }
+
+    void gearSearchOptionsOfZeroMeanTheDefaults()
+    {
+        const Item boots = withStats(u"Boots"_s, {{u"[Base] Armour"_s, 100}});
+        GearSearchOptions noBaseShare;
+        noBaseShare.baseShare = 0;
+        const GearSearch q =
+            gearSearch(boots, {propertyWeight(u"[Base] Armour"_s)}, tradeData(), noBaseShare);
+        QCOMPARE(filterOf(q, u"equipment_filters", u"ar"), minimum(80));
+
+        QStringList names;
+        QList<SearchWeight> weights;
+        for (int i = 0; i < 42; ++i) {
+            names << u"S%1"_s.arg(i);
+            weights << weightFor(names.last(), 1);
+        }
+        GearSearchOptions noLimit;
+        noLimit.maxFilters = 0;
+        const GearSearch many = gearSearch(withStats(u"Rings"_s, {}), weights, tradeDataFor(names), noLimit);
+        QCOMPARE(many.filters, 40);
+        QCOMPARE(many.dropped, 2);
+    }
+
+    void gearSearchSkipsWhatTheItemLacks()
+    {
+        const Item helmet = withStats(u"Helmets"_s, {{u"# to Alpha"_s, 5}});
+        const QList<SearchWeight> weights = {propertyWeight(u"[Base] Armour"_s), weightFor(u"Alpha"_s, 1),
+                                             weightFor(u"Bravo"_s, 1)};
+        const GearSearch q = gearSearch(helmet, weights, tradeDataFor({u"Alpha"_s, u"Bravo"_s}));
+        // no base armour to ask for, and a property isn't a mod to weigh
+        QVERIFY(equipmentIds(q).isEmpty());
+        QCOMPARE(q.filters, 2);
+        QCOMPARE(q.parts, QStringList{u"Alpha"_s});
+    }
+
+    void gearSearchKeyStatsAreTheMostImportant()
+    {
+        const TradeData data =
+            tradeDataFor({u"Alpha"_s, u"Bravo"_s, u"Charlie"_s, u"Delta while Moving"_s, u"Echo"_s});
+        // least important first, so the order comes from the sort
+        const QList<SearchWeight> weights = {
+            weightFor(u"Bravo"_s, 4), weightFor(u"Charlie"_s, 3),  weightFor(u"Delta while Moving"_s, 8),
+            weightFor(u"Echo"_s, 6),  weightFor(u"Alpha"_s, 9, 1),
+        };
+        const Item ring = withStats(u"Rings"_s, {{u"# to Alpha"_s, 1},
+                                                 {u"# to Bravo"_s, 5},
+                                                 {u"# to Charlie"_s, 5},
+                                                 {u"# to Delta while Moving"_s, 5},
+                                                 {u"# to Echo"_s, 5}});
+        GearSearchOptions options;
+        options.keyStatShare = 0.5;
+        const GearSearch q = gearSearch(ring, weights, data, options);
+        // not Charlie, who isn't important enough, nor Delta, who has no unconditional version
+        QCOMPARE(q.keyStats, QStringList({u"Alpha"_s, u"Echo"_s, u"Bravo"_s}));
+        const QJsonObject count = statGroups(q).at(1).toObject();
+        QCOMPARE(filterIds(count),
+                 QStringList({u"explicit.alpha"_s, u"explicit.echo"_s, u"explicit.bravo"_s}));
+        // half of a good roll, and never nothing
+        QCOMPARE(valueOf(count, u"explicit.alpha"_s), minimum(1));
+        QCOMPARE(valueOf(count, u"explicit.bravo"_s), minimum(5));
+        // up to two, however many it has
+        QCOMPARE(q.needKeyStats, 2);
+        QCOMPARE(count.value(u"value").toObject(), minimum(2));
+    }
+
+    void gearSearchAsksForOnlyTheKeyStatsYouHave()
+    {
+        const TradeData data = tradeDataFor({u"Alpha"_s, u"Bravo"_s});
+        const QList<SearchWeight> weights = {weightFor(u"Alpha"_s, 5), weightFor(u"Bravo"_s, 5)};
+
+        const GearSearch none = gearSearch(withStats(u"Rings"_s, {}), weights, data);
+        QCOMPARE(none.keyStats, QStringList({u"Alpha"_s, u"Bravo"_s}));
+        QCOMPARE(none.needKeyStats, 0);
+        QCOMPARE(statGroups(none).size(), 1);
+
+        // a negative roll is not having it
+        const Item cursed = withStats(u"Rings"_s, {{u"# to Alpha"_s, -5}, {u"# to Bravo"_s, -5}});
+        const GearSearch negative = gearSearch(cursed, weights, data);
+        QCOMPARE(negative.needKeyStats, 0);
+        QCOMPARE(statGroups(negative).size(), 1);
+
+        // and runes can be swapped, so they don't count either
+        const Item runed = parseItem(u"Item Class: Rings\nRarity: Rare\nA\nB\n--------\n"
+                                     "+10 to Alpha (rune)\n--------\n+5 to Bravo"_s)
+                               .value();
+        const GearSearch q = gearSearch(runed, weights, data);
+        QCOMPARE(q.needKeyStats, 1);
+        QCOMPARE(q.current, 500.0);
+        QCOMPARE(q.parts, QStringList{u"Bravo"_s});
+    }
+
+    void gearSearchCountsConditionalStatsForLess()
+    {
+        const GearSearch q =
+            gearSearch(withStats(u"Rings"_s, {{u"# to Delta while Moving"_s, 10}}),
+                       {weightFor(u"Delta while Moving"_s, 1)}, tradeDataFor({u"Delta while Moving"_s}));
+        QCOMPARE(q.current, 600.0);
+    }
+
+    void gearSearchCountsResistsOnlyUpToWhatYouNeed()
+    {
+        SearchWeight fire = weightFor(u"Fire"_s, 1);
+        fire.resist = Element::Fire;
+        const Item ring = withStats(u"Rings"_s, {{u"# to Fire"_s, 50}});
+        const TradeData data = tradeDataFor({u"Fire"_s});
+
+        fire.need = 20;
+        QCOMPARE(gearSearch(ring, {fire}, data).current, 2000.0);
+        fire.need = std::nullopt;
+        QCOMPARE(gearSearch(ring, {fire}, data).current, 5000.0);
+
+        // capped already, so it adds nothing
+        fire.need = -5;
+        const GearSearch capped = gearSearch(ring, {fire}, data);
+        QCOMPARE(capped.current, 0.0);
+        QVERIFY(capped.parts.isEmpty());
+    }
+
+    void gearSearchWantsAtLeastOnePoint()
+    {
+        GearSearchOptions within;
+        within.share = 0.5;
+        const GearSearch q = gearSearch(withStats(u"Rings"_s, {}), {weightFor(u"Alpha"_s, 1)},
+                                        tradeDataFor({u"Alpha"_s}), within);
+        QCOMPARE(q.current, 0.0);
+        QCOMPARE(q.groupMin, 1.0);
+    }
+
+    void countOnlyNeedsKeyStats()
+    {
+        GearSearchOptions countOnly;
+        countOnly.countOnly = true;
+        const Item ring = withStats(u"Rings"_s, {{u"# to Alpha"_s, 5}});
+        const GearSearch minor =
+            gearSearch(ring, {weightFor(u"Alpha"_s, 3)}, tradeDataFor({u"Alpha"_s}), countOnly);
+        QVERIFY(!minor.countOnly);
+        QCOMPARE(minor.body.value(u"sort").toObject(), QJsonObject({{u"statgroup.0"_s, u"desc"_s}}));
+
+        // the explicit version of a key stat is asked for, at a roll of at least 1
+        using namespace tradefixtures;
+        const TradeData both{
+            StatIndex::fromJson(response({
+                group(u"implicit"_s, {stat(u"implicit.alpha"_s, u"+# to Alpha"_s, u"implicit"_s)}),
+                group(u"explicit"_s, {stat(u"explicit.alpha"_s, u"+# to Alpha"_s, u"explicit"_s)}),
+            })),
+            {}};
+        const GearSearch q = gearSearch(ring, {weightFor(u"Alpha"_s, 5, 1)}, both, countOnly);
+        QVERIFY(q.countOnly);
+        const QJsonObject count = statGroups(q).at(0).toObject();
+        QCOMPARE(filterIds(count), QStringList{u"explicit.alpha"_s});
+        QCOMPARE(valueOf(count, u"explicit.alpha"_s), minimum(1));
+    }
+
+    void countOnlyWantsUpToThreeKeyStats()
+    {
+        const QStringList names = {u"Alpha"_s, u"Bravo"_s, u"Charlie"_s, u"Delta"_s};
+        QList<SearchWeight> weights;
+        for (const QString &name : names)
+            weights << weightFor(name, 5);
+        GearSearchOptions countOnly;
+        countOnly.countOnly = true;
+
+        const auto needed = [&](const StatMap &stats) {
+            return gearSearch(withStats(u"Rings"_s, stats), weights, tradeDataFor(names), countOnly)
+                .needKeyStats;
+        };
+        QCOMPARE(
+            needed(
+                {{u"# to Alpha"_s, 1}, {u"# to Bravo"_s, 1}, {u"# to Charlie"_s, 1}, {u"# to Delta"_s, 1}}),
+            3);
+        QCOMPARE(needed({{u"# to Alpha"_s, 1}}), 1);
+        // two from one without any, so it isn't every item
+        QCOMPARE(needed({}), 2);
     }
 };
 

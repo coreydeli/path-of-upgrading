@@ -245,6 +245,207 @@ private Q_SLOTS:
                  0.0);
         QCOMPARE(usefulness(u"Amulet"_s, u"# to maximum Mana"_s, {.build = u"es-caster"_s}), 0.02);
     }
+
+    void gradesChangeAtTheirBoundaries_data()
+    {
+        QTest::addColumn<int>("score");
+        QTest::addColumn<QString>("grade");
+        QTest::newRow("100") << 100 << u"S"_s;
+        QTest::newRow("85") << 85 << u"S"_s;
+        QTest::newRow("84") << 84 << u"A"_s;
+        QTest::newRow("70") << 70 << u"A"_s;
+        QTest::newRow("69") << 69 << u"B"_s;
+        QTest::newRow("55") << 55 << u"B"_s;
+        QTest::newRow("54") << 54 << u"C"_s;
+        QTest::newRow("40") << 40 << u"C"_s;
+        QTest::newRow("39") << 39 << u"D"_s;
+        QTest::newRow("0") << 0 << u"D"_s;
+    }
+
+    void gradesChangeAtTheirBoundaries()
+    {
+        QFETCH(int, score);
+        QFETCH(QString, grade);
+        QCOMPARE(gearGrade(score), grade);
+    }
+
+    void everyWantedStatHasACap()
+    {
+        for (const BuildProfile &p : buildProfiles()) {
+            for (const ProfileStat &s : p.stats) {
+                for (const QString &group : ratedGroups()) {
+                    if (s.importance.at(group) > 0)
+                        QVERIFY2(s.cap.at(group) > 0,
+                                 qPrintable(p.id + u" / "_s + s.label + u" / "_s + group));
+                }
+            }
+        }
+    }
+
+    void flasksAndCharmsAreNotRated()
+    {
+        for (const QString &itemClass : {u"Life Flasks"_s, u"Mana Flasks"_s, u"Charms"_s}) {
+            const auto g = gearScore(
+                item(u"Item Class: "_s + itemClass + u"\nRarity: Magic\nA\n--------\n+10 to maximum Life"_s));
+            QVERIFY2(g, qPrintable(itemClass));
+            QCOMPARE(g->unrated, GearScore::Unrated::FlaskOrCharm);
+        }
+    }
+
+    void unidentifiedItemsAreNotRated()
+    {
+        const auto g = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
+                                      "Unidentified"_s));
+        QCOMPARE(g->unrated, GearScore::Unrated::Unidentified);
+        QVERIFY(g->grade.isEmpty());
+    }
+
+    void itemsWithoutASlotAreNotScored()
+    {
+        const Item currency = item(
+            u"Item Class: Stackable Currency\nRarity: Currency\nChaos Orb\n--------\nStack Size: 3/20"_s);
+        QVERIFY(currency.slot.isEmpty());
+        QVERIFY(!gearScore(currency));
+    }
+
+    void jewelsAreMeasuredAgainstFourStats()
+    {
+        // eight of the minion profile's stats count on a jewel, and the best four make the ideal
+        const auto g = gearScore(item(u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
+                                      "Minions deal 20% increased Damage"_s),
+                                 {.build = u"minion-es"_s});
+        QCOMPARE(g->ideal, 24.0);
+    }
+
+    void theIdealIsTheBestSixOrSevenStats()
+    {
+        const auto ring = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring"_s));
+        QCOMPARE(ring->ideal, 28.0);
+        const auto helmet = gearScore(item(u"Item Class: Helmets\nRarity: Rare\nA\nIron Hat"_s));
+        QCOMPARE(helmet->ideal, 42.0);
+    }
+
+    void aSlotTheBuildHasNoUseForScoresNothing()
+    {
+        const auto g = gearScore(item(u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
+                                      "+20 to maximum Life"_s));
+        QCOMPARE(g->score, 0);
+        QCOMPARE(g->grade, u"D"_s);
+        QCOMPARE(g->ideal, 1.0);
+    }
+
+    void scoresStopAtOneHundred()
+    {
+        const auto g = gearScore(item(u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
+                                      "20% increased Spell Damage\n14% increased maximum Energy Shield\n"
+                                      "8% increased Cast Speed\n20% increased Critical Hit Chance"_s),
+                                 {.build = u"es-caster"_s});
+        QCOMPARE(g->score, 100);
+        QCOMPARE(g->grade, u"S"_s);
+    }
+
+    void ignoringEverythingKeepsStatsWithoutAKey()
+    {
+        // a helmet's defences are several mods, so there's no one key to ignore them by
+        GearScoreOptions all;
+        all.ignore = [](const QString &) {
+            return true;
+        };
+        const auto g = gearScore(item(greatHelm), all);
+        QCOMPARE(g->score, 0);
+        QCOMPARE(g->ideal, 19.0);
+    }
+
+    void modsThatNetToNothingAreNotWasted()
+    {
+        const auto g = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
+                                      "20% increased Stun Threshold\n20% reduced Stun Threshold\n"
+                                      "15% reduced Flask Charges Gained"_s));
+        QVERIFY(g->wasted.isEmpty());
+    }
+
+    void unwantedImplicitsAreWastedButRunesAndBasesAreNot()
+    {
+        const auto g = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
+                                      "20% increased Stun Threshold (implicit)\n--------\n"
+                                      "15% increased Flask Charges Gained\n--------\n"
+                                      "12% increased Light Radius (rune)"_s));
+        QCOMPARE(g->wasted,
+                 (QStringList{u"#% increased Stun Threshold"_s, u"#% increased Flask Charges Gained"_s}));
+    }
+
+    void resistanceNeedsAreCheckedAtTheirEdges()
+    {
+        const Item ring = item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
+                               "+20% to Fire Resistance\n+60 to maximum Life"_s);
+        const auto open = gearScore(ring);
+
+        // a quarter of an excellent roll short is still worth looking for
+        GearScoreOptions options;
+        options.resistNeed[Element::Fire] = 11.25;
+        QCOMPARE(gearScore(ring, options)->ideal, open->ideal);
+        options.resistNeed[Element::Fire] = 11.2;
+        QVERIFY(gearScore(ring, options)->ideal < open->ideal);
+
+        // a roll that just covers the need has nothing left over
+        options.resistNeed[Element::Fire] = 20;
+        const auto exact = gearScore(ring, options);
+        QVERIFY(exact->resistNote.isEmpty());
+        QCOMPARE(exact->score, open->score);
+        options.resistNeed[Element::Fire] = 19;
+        QVERIFY(!gearScore(ring, options)->resistNote.isEmpty());
+    }
+
+    void aResistanceIsNotedOnce()
+    {
+        const Item ring = item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
+                               "+10% to Fire Resistance (implicit)\n--------\n+30% to Fire Resistance"_s);
+        GearScoreOptions options;
+        options.resistNeed[Element::Fire] = 5;
+        QCOMPARE(gearScore(ring, options)->resistNote,
+                 u"Fire res: you only need 5 more to reach the cap, so it isn't counted."_s);
+    }
+
+    void runesAndConditionalModsCountForLess()
+    {
+        const auto pointsFor = [](const QString &mod) {
+            const Item ring = item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"_s + mod);
+            return gearScore(ring, {.build = u"minion-es"_s})->contributions.first().points;
+        };
+        QCOMPARE(pointsFor(u"Minions deal 20% increased Damage"_s), 5.6);
+        QCOMPARE(pointsFor(u"Minions deal 20% increased Damage (rune)"_s), 2.8);
+        QCOMPARE(pointsFor(u"Minions deal 20% increased Damage if you've Hit Recently"_s), 3.4);
+    }
+
+    void aStatCountsForAboutOneExcellentRoll()
+    {
+        // the rune comes after a roll that's already past excellent, so it adds nothing
+        const auto g = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB\n--------\n"
+                                      "+150 to maximum Life\n--------\n+50 to maximum Life (rune)"_s));
+        QCOMPARE(g->contributions.size(), 1);
+        QCOMPARE(g->contributions.first().quality, 115);
+    }
+
+    void missingListsTheThreeBestStatsTheItemLacks()
+    {
+        const auto bare = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB"_s));
+        QCOMPARE(bare->missing, (QStringList{u"Armour / Evasion"_s, u"Energy Shield"_s, u"Life"_s}));
+
+        // a stat worth 5 is listed, and one worth less isn't
+        const Item armoured = item(u"Item Class: Body Armours\nRarity: Rare\nA\nB\n--------\n"
+                                   "Armour: 900\nEnergy Shield: 900\n--------\n+80 to maximum Life\n"
+                                   "+30% to Fire Resistance\n+30% to Cold Resistance"_s);
+        QCOMPARE(gearScore(armoured)->missing, QStringList{u"Lightning res"_s});
+    }
+
+    void topStatsIncludeThoseWorthFour()
+    {
+        QStringList labels;
+        for (const KeyStat &s : topStats(u"Ring"_s, 10, {.build = u"minion-es"_s}))
+            labels << s.label;
+        // not the resistances, which are worth 4 here, nor the stats with no one key
+        QCOMPARE(labels, (QStringList{u"Minion damage"_s, u"Energy Shield"_s, u"Life"_s}));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestGearScore)

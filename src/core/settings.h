@@ -68,7 +68,8 @@ struct Settings
     friend bool operator==(const Settings &, const Settings &) = default;
 };
 
-// Anything missing or out of range reads as its default.
+// Anything missing or unreadable reads as its default, and numbers are held
+// to their limits.
 Settings loadSettings(const QSettings &store);
 void saveSettings(QSettings &store, const Settings &settings);
 

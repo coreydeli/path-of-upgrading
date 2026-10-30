@@ -126,6 +126,20 @@ private Q_SLOTS:
         QVERIFY(!find(s, u"[Weapon] Critical Hit Chance"));
     }
 
+    void onlyStatsThatAddSomething()
+    {
+        Item helmet;
+        helmet.rarity = u"Rare"_s;
+        helmet.lines = {
+            {u"+30 to Intelligence"_s, u"# to Intelligence"_s, 30, u"explicit"_s},
+            {u"+0 to maximum Mana"_s, u"# to maximum Mana"_s, 0, u"explicit"_s},
+            {u"-5 to Dexterity"_s, u"# to Dexterity"_s, -5, u"explicit"_s},
+        };
+        const QList<SuggestedWeight> s = suggestWeights({{u"Helmet"_s, helmet}});
+        QCOMPARE(s.size(), 1);
+        QCOMPARE(s.first().key, u"# to Intelligence"_s);
+    }
+
     void nothingWorn() { QVERIFY(suggestWeights({}).isEmpty()); }
 };
 

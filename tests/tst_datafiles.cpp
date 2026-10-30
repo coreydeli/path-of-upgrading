@@ -48,6 +48,16 @@ private Q_SLOTS:
         QVERIFY(QFile::exists(path));
     }
 
+    void folderUnderAFile()
+    {
+        QTemporaryDir dir;
+        const QString file = dir.filePath(u"in-the-way"_s);
+        QVERIFY(writeFile(file, "x"_ba));
+        QString error;
+        QVERIFY(!writeFile(file + u"/characters/one.json"_s, "{}"_ba, &error));
+        QVERIFY(error.startsWith(u"can't make the folder"));
+    }
+
     void unreadable()
     {
         QTemporaryDir dir;
