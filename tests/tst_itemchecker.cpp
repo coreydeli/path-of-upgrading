@@ -199,7 +199,6 @@ private Q_SLOTS:
 
         // the mouse is on it, so the game would see that and not the item
         input.mouseAt = onPopup(checker.popup());
-        Q_EMIT input.copyFailed(GameInput::Failure::NothingCopied, {}, std::nullopt);
         checker.check();
         QVERIFY(!checker.popup().isVisible());
         QCOMPARE(input.copies, 2);
