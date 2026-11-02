@@ -230,13 +230,14 @@ struct Window
         return QTest::qWaitFor([this] { return !app->tradeSession()->isBusy(); }, 1000);
     }
 
-    // On the offscreen screen, as a list only makes the rows it shows once
-    // it's laid out.
+    // On the offscreen screen and laid out, as a list only makes the rows it
+    // shows once it's laid out, and Kirigami 6.13 keeps a page disabled until
+    // it's laid out in view.
     bool shown() const
     {
         window->resize(1000, 700);
         window->show();
-        return QTest::qWaitForWindowExposed(window.get());
+        return QTest::qWaitForWindowExposed(window.get()) && settled();
     }
 
     // once what changed is laid out
@@ -366,6 +367,7 @@ private Q_SLOTS:
     void addCharacter()
     {
         Window w;
+        QVERIFY(w.shown());
         QObject *name = w.find(u"nameField"_s);
         QObject *add = w.find(u"addButton"_s);
         QVERIFY(!add->property("enabled").toBool());
@@ -634,6 +636,7 @@ private Q_SLOTS:
     void pobSettings()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"pobAction"_s));
         const QStringList weighing = {u"damageSlider"_s,     u"resistsSwitch"_s, u"chaosSwitch"_s,
                                       u"keepDamageSwitch"_s, u"spiritSwitch"_s,  u"attributesSwitch"_s};
@@ -670,6 +673,7 @@ private Q_SLOTS:
     void showsPobSettings()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"pobAction"_s));
         Settings settings = w.settings();
         settings.pob.enabled = false;
@@ -962,6 +966,7 @@ private Q_SLOTS:
     void gearScore()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"gearScoreAction"_s));
         w.play({});
         QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
@@ -993,6 +998,7 @@ private Q_SLOTS:
     void statLevels()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"gearScoreAction"_s));
         w.play({});
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
@@ -1058,6 +1064,7 @@ private Q_SLOTS:
     void weights()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
@@ -1093,6 +1100,7 @@ private Q_SLOTS:
     void editWeight()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QObject *life = w.find(u"weight:# to maximum Life"_s)->findChild<QObject *>(u"weightBox"_s);
@@ -1123,6 +1131,7 @@ private Q_SLOTS:
     void noWeights()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         for (const QString &key : defaultWeights().keys())
@@ -1247,6 +1256,7 @@ private Q_SLOTS:
     void nothingToSuggest()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QObject *suggest = w.find(u"suggestButton"_s);
@@ -1259,6 +1269,7 @@ private Q_SLOTS:
     void useSuggestedWeights()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({{u"Jewel 2"_s, item(jewel)}});
         QObject *suggest = w.find(u"suggestButton"_s);
@@ -1691,6 +1702,10 @@ private Q_SLOTS:
     void noRateYet()
     {
         Window w;
+        // poe.ninja, which is asked once the trade site has said its leagues
+        w.network->answers.last() = {.never = true};
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.app->rates().isRefreshing());
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(w.find(u"autoRateSwitch"_s)->property("description").toString(),
                  u"It hasn't said yet, so it goes by yours."_s);
