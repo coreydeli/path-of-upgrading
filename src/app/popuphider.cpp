@@ -43,6 +43,11 @@ void PopupHider::shown(const QString &screen, const QRect &geometry, bool byMous
         m_hide.start(m_timeouts.shown);
 }
 
+void PopupHider::moved(const QRect &geometry)
+{
+    m_geometry = geometry;
+}
+
 void PopupHider::setHovered(bool hovered)
 {
     if (hovered == m_hovered)

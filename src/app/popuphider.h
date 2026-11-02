@@ -38,6 +38,9 @@ public:
     // The popup is shown, or shown again with something else, there on that
     // screen. Taking the mouse away only counts when it's next to the mouse.
     void shown(const QString &screen, const QRect &geometry, bool byMouse);
+    // It's somewhere else now, or bigger, as when it grows to fit Path of
+    // Building's answer.
+    void moved(const QRect &geometry);
     void setHovered(bool hovered);
     // Whether the mouse is on the popup or a few pixels off it, where the game
     // sees the popup and not what's under it.
