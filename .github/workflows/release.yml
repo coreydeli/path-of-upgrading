@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: MIT
 #
 # Pushing a version tag, like v0.1.0, makes a release on GitHub with the
-# source, an Arch Linux package and a Debian 13 package. Pull requests that
-# change how they're made build them too, without releasing anything.
+# source, an Arch Linux package and a Debian 13 package: the source first, then
+# every check CI makes, then the packages, then the release, each once the
+# stages before it have passed. Pull requests that change how they're made
+# build the packages too, without releasing anything.
 name: Release
 
 on:
@@ -40,13 +42,22 @@ jobs:
           git archive --prefix="$name/" -o "$name.tar.gz" HEAD
       - uses: actions/upload-artifact@v7
         with:
-          name: source
+          name: dist-source
           path: path-of-upgrading-*.tar.gz
           if-no-files-found: error
 
+  checks:
+    name: Checks
+    # a pull request has them from CI already
+    if: github.ref_type == 'tag'
+    needs: source
+    uses: ./.github/workflows/ci.yml
+
   arch:
     name: Arch Linux package
-    needs: source
+    needs: [source, checks]
+    # once the checks have passed, or without them on a pull request
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
@@ -56,7 +67,7 @@ jobs:
       # where makepkg looks for the PKGBUILD's source before downloading it
       - uses: actions/download-artifact@v8
         with:
-          name: source
+          name: dist-source
           path: packaging/arch
       - name: Build and test the package
         working-directory: packaging/arch
@@ -67,14 +78,15 @@ jobs:
           runuser -u builder -- makepkg
       - uses: actions/upload-artifact@v7
         with:
-          name: arch
+          name: dist-arch
           # not the debug package
           path: packaging/arch/path-of-upgrading-[0-9]*.pkg.tar.zst
           if-no-files-found: error
 
   debian:
     name: Debian 13 package
-    needs: source
+    needs: [source, checks]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     container: debian:trixie
     env:
@@ -100,20 +112,22 @@ jobs:
           QT_QPA_PLATFORM=offscreen path-of-upgrading --version
       - uses: actions/upload-artifact@v7
         with:
-          name: debian
+          name: dist-debian
           path: build/path-of-upgrading_*.deb
           if-no-files-found: error
 
   release:
     name: Release
     if: github.ref_type == 'tag'
-    needs: [source, arch, debian]
+    needs: [source, checks, arch, debian]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      # not the builds the checks handed on
       - uses: actions/download-artifact@v8
         with:
+          pattern: dist-*
           path: dist
           merge-multiple: true
       - name: Make the release
