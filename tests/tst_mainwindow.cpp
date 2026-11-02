@@ -158,6 +158,15 @@ struct Window
         window.reset(qobject_cast<QQuickWindow *>(made));
     }
 
+    // The rows a list let go of are only deleted later, and in Qt 6.8 a QML
+    // object that outlives its engine leaves its types for the next engine,
+    // which can't use them.
+    ~Window()
+    {
+        window.reset();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
+
     const Settings &settings() const { return app->settings().settings(); }
 
     // as when you pick it in the sidebar
