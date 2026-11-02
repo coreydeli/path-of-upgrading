@@ -13,7 +13,8 @@ Kirigami.ApplicationWindow {
     // Starts with the window hidden, as when it starts with the desktop
     property bool startHidden: false
 
-    function show(page: Kirigami.Page): void {
+    // an Item, as Qt 6.8 warns that it can't check a Kirigami.Page argument
+    function show(page: Item): void {
         pageStack.clear();
         pageStack.push(page);
     }
