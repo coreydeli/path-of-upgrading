@@ -81,7 +81,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "advancedCopySwitch"
             text: qsTr("Use advanced copy")
             description: qsTr("Copies with Ctrl+Alt+C, which tells prefixes from suffixes, for crafting.")
@@ -91,7 +91,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "clipboardSwitch"
             text: qsTr("Also check gear you copy yourself")
             description: qsTr("When you press Ctrl+C over it in the game.")
@@ -101,7 +101,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "pausedSwitch"
             text: qsTr("Pause")
             description: qsTr("The hotkeys and the clipboard are ignored until you turn this off.")
@@ -162,7 +162,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "compactSwitch"
             text: qsTr("Compact")
             description: qsTr("Puts what hardly matters behind Show More.")
@@ -172,7 +172,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "colorblindSwitch"
             text: qsTr("Colorblind friendly colors")
             description: qsTr("Blue for better and orange for worse, in place of green and red.")
@@ -198,7 +198,7 @@ FormCard.FormCardPage {
     }
 
     FormCard.FormCard {
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "startSwitch"
             text: qsTr("Start with the desktop")
             description: qsTr("Waits in the tray when you log in, without the window.")

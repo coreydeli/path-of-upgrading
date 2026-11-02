@@ -18,7 +18,7 @@ FormCard.FormCardPage {
     FormCard.FormCard {
         Layout.topMargin: Kirigami.Units.largeSpacing
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Judge items with Path of Building")
             description: qsTr("By its own numbers for your build, once you've imported one.")
@@ -118,7 +118,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "resistsSwitch"
             text: qsTr("Cap my resistances first")
             description: qsTr("While one is under the cap, items that fill it score much higher.")
@@ -128,7 +128,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "chaosSwitch"
             text: qsTr("Count chaos resistance too")
             enabled: pobPage.options.resistsFirst
@@ -138,7 +138,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "keepDamageSwitch"
             text: qsTr("Never lose damage")
             description: qsTr("An item that costs a good part of your damage is never an upgrade.")
@@ -148,7 +148,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "spiritSwitch"
             text: qsTr("Never run short of Spirit")
             description: qsTr("For your minions and auras.")
@@ -158,7 +158,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "attributesSwitch"
             text: qsTr("Keep attribute requirements met")
             description: qsTr("The Strength, Dexterity and Intelligence your gear and skills need.")

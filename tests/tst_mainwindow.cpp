@@ -685,6 +685,39 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"chaosSwitch"_s)->property("enabled").toBool(), false);
     }
 
+    // A click on its switch or on the rest of the row flips it, and it still
+    // follows the setting when that changes somewhere else.
+    void switchRows()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"pobAction"_s));
+        QVERIFY(w.settled());
+        auto *row = qobject_cast<QQuickItem *>(w.find(u"enabledSwitch"_s));
+        QVERIFY(row);
+        auto *flip = row->findChild<QQuickItem *>(u"switch"_s);
+        QVERIFY(flip);
+        QCOMPARE(row->property("checked").toBool(), true);
+
+        QTest::mouseClick(w.window.get(), Qt::LeftButton, {},
+                          flip->mapToScene(QPointF(flip->width() / 2, flip->height() / 2)).toPoint());
+        QCOMPARE(w.settings().pob.enabled, false);
+        QCOMPARE(row->property("checked").toBool(), false);
+        QCOMPARE(flip->property("checked").toBool(), false);
+
+        QTest::mouseClick(w.window.get(), Qt::LeftButton, {},
+                          row->mapToScene(QPointF(20, row->height() / 2)).toPoint());
+        QCOMPARE(w.settings().pob.enabled, true);
+        QCOMPARE(row->property("checked").toBool(), true);
+        QCOMPARE(flip->property("checked").toBool(), true);
+
+        Settings settings = w.settings();
+        settings.pob.enabled = false;
+        QVERIFY(w.app->settings().set(settings));
+        QCOMPARE(row->property("checked").toBool(), false);
+        QCOMPARE(flip->property("checked").toBool(), false);
+    }
+
     void pages()
     {
         Window w;
