@@ -1,14 +1,16 @@
 # SPDX-License-Identifier: MIT
 #
-# Builds with no warnings and runs every test, on Arch Linux for the newest Qt
-# and KDE Frameworks and on Debian 13 for the oldest the app supports, and
-# checks the format.
+# Checks the format, then builds with no warnings, then runs every test, each
+# stage once the one before it has passed. It builds on Arch Linux for the
+# newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
+# supports. A release runs it too.
 name: CI
 
 on:
   push:
     branches: ['**']
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -23,6 +25,7 @@ jobs:
     name: Format
     # A branch of this repository is checked when it's pushed, which a pull
     # request from it shows, so pull requests are only checked from forks.
+    # The other stages wait on this one, so they're left out with it.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -34,8 +37,8 @@ jobs:
         run: git ls-files -z '*.cpp' '*.h' | xargs -0 clang-format --dry-run -Werror
 
   build:
-    name: ${{ matrix.name }}
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    name: Build on ${{ matrix.name }}
+    needs: format
     runs-on: ubuntu-latest
     container: ${{ matrix.image }}
     strategy:
@@ -54,12 +57,53 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-${{ matrix.distro }}.sh
+      # with no debug info, which would make the build too big to hand on
       - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+        run: >-
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG=-g0
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
       - name: Build
         run: cmake --build build
       - name: Lint the QML
         run: cmake --build build --target pou_app_qmllint
+      # in a tarball, which keeps the programs runnable, and without what was
+      # only needed to link them
+      - name: Pack the build
+        run: tar -cf build.tar --exclude='*.o' --exclude='*.a' build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-${{ matrix.distro }}
+          path: build.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  test:
+    name: Test on ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Arch Linux
+            image: archlinux:latest
+            distro: arch
+          - name: Debian 13
+            image: debian:trixie
+            distro: debian
+    env:
+      LANG: C.UTF-8
+    steps:
+      # in the same folder as the build, which the tests find their files by
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-${{ matrix.distro }}.sh
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-${{ matrix.distro }}
+      - name: Unpack the build
+        run: tar -xf build.tar
       - name: Test
         working-directory: build
         run: sh ../.github/scripts/run-tests.sh
