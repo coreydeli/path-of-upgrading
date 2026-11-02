@@ -18,14 +18,17 @@ ColumnLayout {
     property bool plainNotes: false
     // in whole pixels, as Qt 6.8's layouts round it down and the widest
     // number wouldn't fit
-    readonly property int numberWidth: Math.ceil(number.width)
+    readonly property int numberWidth: Math.ceil(number.implicitWidth)
 
     spacing: 0
 
-    // the widest a number gets, in bold like the change, so the columns line up
-    TextMetrics {
+    // The widest a number gets, in bold like the change, so the columns line
+    // up. It's a label like theirs, as the style can draw labels wider than
+    // TextMetrics measures.
+    QQC2.Label {
         id: number
 
+        visible: false
         font.bold: true
         text: "+88,888%"
     }
