@@ -13,7 +13,7 @@ Kirigami.ApplicationWindow {
     // Starts with the window hidden, as when it starts with the desktop
     property bool startHidden: false
 
-    function show(page: Kirigami.Page) {
+    function show(page: Kirigami.Page): void {
         pageStack.clear();
         pageStack.push(page);
     }
