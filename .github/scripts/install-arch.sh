@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: MIT
 #
 # What building, testing and packaging needs on Arch Linux, as root in the
-# CI's container. Xvfb is for the tests that read an X server, and the Plasma
-# style is what the window tests load when it's there.
+# CI's container. Xvfb is for the tests that read an X server, the Plasma
+# style is what the window tests load when it's there, and LuaJIT runs the
+# bridge to Path of Building in its test.
 set -eu
 pacman -Syu --noconfirm --needed \
     base-devel cmake ninja git \
@@ -12,4 +13,4 @@ pacman -Syu --noconfirm --needed \
     kglobalaccel knotifications kstatusnotifieritem kwindowsystem \
     layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib \
     qqc2-desktop-style qt6-wayland hicolor-icon-theme \
-    desktop-file-utils appstream dbus xorg-server-xvfb xorg-xauth
+    desktop-file-utils appstream dbus xorg-server-xvfb xorg-xauth luajit

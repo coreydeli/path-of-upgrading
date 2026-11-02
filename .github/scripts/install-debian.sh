@@ -3,7 +3,8 @@
 #
 # What building, testing and packaging needs on Debian 13, as root in the
 # CI's container. Debian splits the QML modules out of the libraries, and the
-# app only loads them when it runs, so they're named here too.
+# app only loads them when it runs, so they're named here too. LuaJIT runs the
+# bridge to Path of Building in its test.
 set -eu
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
@@ -21,4 +22,4 @@ apt-get install -y --no-install-recommends \
     qml6-module-org-kde-kirigami qml6-module-org-kde-kirigamiaddons-components \
     qml6-module-org-kde-kirigamiaddons-delegates qml6-module-org-kde-kirigamiaddons-formcard \
     qml6-module-org-kde-kquickcontrols qml6-module-org-kde-desktop \
-    desktop-file-utils appstream dbus-daemon xvfb xauth
+    desktop-file-utils appstream dbus-daemon xvfb xauth luajit
