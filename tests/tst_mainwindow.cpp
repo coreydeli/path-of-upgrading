@@ -320,6 +320,9 @@ public:
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
         qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1");
+        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
+        // platform plugin of its own
+        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
     }
 
 private Q_SLOTS:
