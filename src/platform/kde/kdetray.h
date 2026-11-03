@@ -18,6 +18,7 @@ public:
 
     void setWindow(QWindow *window) override;
     void setPaused(bool paused) override;
+    void showMessage(const QString &title, const QString &text) override;
 
 private:
     KStatusNotifierItem *m_item;

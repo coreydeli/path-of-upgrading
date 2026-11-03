@@ -22,6 +22,8 @@ public:
     virtual void setWindow(QWindow *window) = 0;
     // Whether the menu says the hotkeys are paused.
     virtual void setPaused(bool paused) = 0;
+    // A message from the icon, which is how Windows shows notifications.
+    virtual void showMessage(const QString &title, const QString &text) = 0;
 
 Q_SIGNALS:
     // "Show Path of Upgrading" in the menu.
