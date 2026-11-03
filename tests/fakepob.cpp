@@ -39,6 +39,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <thread>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -125,7 +128,12 @@ int main(int argc, char *argv[])
         }
         if (command == u"eval" && goWrong && flags.contains("--kill-on-eval")) {
             std::fprintf(stderr, "The fake was killed\n");
+#ifdef _WIN32
+            // with the code Windows gives a program that crashed
+            TerminateProcess(GetCurrentProcess(), STATUS_ACCESS_VIOLATION);
+#else
             std::raise(SIGKILL);
+#endif
         }
         if (command == u"eval" && goWrong && flags.contains("--hang-on-eval"))
             continue;
