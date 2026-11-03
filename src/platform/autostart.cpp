@@ -12,6 +12,45 @@ using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
 
+#ifdef Q_OS_WIN
+
+QString Autostart::fileFor(const QString &)
+{
+    return u"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"_s;
+}
+
+Autostart::Autostart(const QString &file, const Entry &entry)
+    : m_file(file)
+    , m_entry(entry)
+{}
+
+bool Autostart::isEnabled() const
+{
+    return !m_file.isEmpty() && QSettings(m_file, QSettings::NativeFormat).contains(m_entry.name);
+}
+
+bool Autostart::setEnabled(bool enabled)
+{
+    m_error.clear();
+    if (m_file.isEmpty()) {
+        m_error = u"There's nowhere to keep it."_s;
+        return !enabled;
+    }
+    QSettings run(m_file, QSettings::NativeFormat);
+    if (enabled)
+        run.setValue(m_entry.name, m_entry.exec);
+    else
+        run.remove(m_entry.name);
+    run.sync();
+    if (run.status() != QSettings::NoError) {
+        m_error = u"Couldn't change what Windows starts when you sign in."_s;
+        return false;
+    }
+    return true;
+}
+
+#else
+
 // In a Flatpak that folder is the app's own, and nothing starts from it. The
 // Background portal's RequestBackground, with autostart on, would be used there.
 
@@ -73,5 +112,7 @@ bool Autostart::setEnabled(bool enabled)
     }
     return true;
 }
+
+#endif
 
 } // namespace pou

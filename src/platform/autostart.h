@@ -6,7 +6,8 @@
 namespace pou {
 
 // Whether the program starts when you log in: an entry in the desktop's
-// autostart folder, as the XDG autostart spec has it.
+// autostart folder, as the XDG autostart spec has it, or on Windows a value
+// by the entry's name in the registry's Run key.
 class Autostart
 {
 public:
@@ -20,6 +21,7 @@ public:
 
     // The file for a program in your autostart folder, which is
     // ~/.config/autostart/<id>.desktop unless XDG_CONFIG_HOME says otherwise.
+    // On Windows it's the Run key, for any id.
     static QString fileFor(const QString &id);
 
     // With no file it's off, and can't be turned on.

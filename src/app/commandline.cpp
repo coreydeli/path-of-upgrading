@@ -2,6 +2,7 @@
 #include "app/commandline.h"
 
 #include <QCoreApplication>
+#include <QDir>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -47,7 +48,13 @@ QString CommandLine::helpText()
 
 QString CommandLine::backgroundCommand()
 {
-    return QCoreApplication::applicationName() + u" --"_s + backgroundOption;
+#ifdef Q_OS_WIN
+    // which Windows runs by its whole path
+    const QString program = u'"' + QDir::toNativeSeparators(QCoreApplication::applicationFilePath()) + u'"';
+#else
+    const QString program = QCoreApplication::applicationName();
+#endif
+    return program + u" --"_s + backgroundOption;
 }
 
 } // namespace pou
