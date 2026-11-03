@@ -72,6 +72,10 @@ void moveOverlay(QWindow *window, QScreen *screen, const QPoint &position)
     Layer::get(window)->setMargins({position.x(), position.y(), 0, 0});
     if (remake)
         window->show();
+    else if (window->isVisible())
+        // the margins only count at the surface's next commit, which a window
+        // with nothing new to draw doesn't make
+        window->requestUpdate();
 #endif
 }
 
