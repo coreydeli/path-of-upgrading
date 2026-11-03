@@ -10,8 +10,9 @@ Plasma on Wayland is the first supported desktop, and there is a Windows
 version too. Other desktops may come later.
 
 Get it from the [releases](https://github.com/coreydeli/path-of-upgrading/releases),
-or build it from source. Betas come out first, as pre-releases, for anyone who
-wants the newest changes before they're released.
+or build it from source, as [Installing](#installing) says. Betas come out
+first, as pre-releases, for anyone who wants the newest changes before they're
+released.
 
 ## Features
 
@@ -55,6 +56,122 @@ wants the newest changes before they're released.
 - Can start with your desktop, from a switch on the Popup and Hotkeys page. It
   then starts with only the tray icon, as `path-of-upgrading --background`
   does. It tells you with a notification if the hotkeys couldn't be set up.
+
+## Installing
+
+Each [release](https://github.com/coreydeli/path-of-upgrading/releases) has
+these files:
+
+| System | File |
+| --- | --- |
+| Arch Linux, and distros built from it | `path-of-upgrading-<version>-1-x86_64.pkg.tar.zst` |
+| Debian 13 | `path-of-upgrading_<version>-1_amd64.deb` |
+| Windows 10 and 11, installed | `path-of-upgrading-<version>-setup.exe` |
+| Windows 10 and 11, from any folder | `path-of-upgrading-<version>-windows.zip` |
+| Any other Linux, to build yourself | `path-of-upgrading-<version>.tar.gz` |
+
+The newest release is at the top of the list. A beta's version is like
+`0.1.0beta2` in the Arch package and `0.1.0.beta.2` in the Debian one.
+
+### Arch Linux
+
+The package is built against the newest Arch packages, so update first, then
+install the file you downloaded:
+
+```bash
+sudo pacman -Syu
+sudo pacman -U ./path-of-upgrading-*-x86_64.pkg.tar.zst
+```
+
+pacman installs what it needs with it. For the Plasma look outside Plasma,
+install `qqc2-desktop-style` too.
+
+### Debian 13
+
+apt installs the package with what it needs, when you give it the file's path:
+
+```bash
+sudo apt install ./path-of-upgrading_*_amd64.deb
+```
+
+It is made on Debian 13. Distros based on Debian or Ubuntu with Qt 6.8 and KDE
+Frameworks 6.13 or newer may take it too, but only Debian 13 is tested. If apt
+can't find what it depends on, build it from source instead.
+
+### Other Linux distros
+
+Build it from the source in the release, or from a clone of the repository.
+Install the libraries in [Requirements](#requirements) with your distro's
+package manager first. `.github/scripts/install-arch.sh` and
+`.github/scripts/install-debian.sh` list the package names on Arch and Debian,
+which are close to the names on most distros.
+
+```bash
+tar -xf path-of-upgrading-<version>.tar.gz
+cd path-of-upgrading-<version>
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cmake --install build --prefix ~/.local
+```
+
+That installs it for you alone, with its entry in the app menu. Use
+`sudo cmake --install build` instead to install it for everyone, in
+`/usr/local`.
+
+### Windows
+
+Download the setup exe and open it. It installs for you alone, so it doesn't
+ask for an administrator. It puts the app in
+`AppData\Local\Programs\Path of Upgrading`, with an entry in the Start menu.
+
+The zip has the same program and needs no installing. Unzip it anywhere and
+open `path-of-upgrading.exe` in the `Path of Upgrading` folder.
+
+Neither is signed yet, so the first time you open one, SmartScreen says it
+doesn't know the app. Choose More info, then Run anyway.
+
+### Checking a download
+
+Each release has a `SHA256SUMS` file. Download it into the same folder as the
+files, then on Linux:
+
+```bash
+sha256sum --ignore-missing -c SHA256SUMS
+```
+
+On Windows, in PowerShell, compare what this prints with the line for the file
+in `SHA256SUMS`:
+
+```powershell
+Get-FileHash path-of-upgrading-<version>-setup.exe
+```
+
+### Path of Building
+
+Path of Building is what judges items with your build, and you install it on
+its own. On Linux, the Flatpak from Flathub is the easiest:
+
+```bash
+flatpak install flathub community.pathofbuilding.PathOfBuilding
+```
+
+Open it once for Path of Exile 2, so it downloads what it needs. On Windows,
+use the installer from
+[Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases).
+The app finds either one by itself. Without Path of Building, items are judged
+by the gear score or your stat weights.
+
+### Uninstalling
+
+- Arch Linux: `sudo pacman -R path-of-upgrading`
+- Debian: `sudo apt remove path-of-upgrading`
+- Built from source: `xargs rm < build/install_manifest.txt` in the source
+  folder, with `sudo` if you installed it for everyone
+- Windows, installed: Settings, then Apps, then Path of Upgrading
+- Windows, from the zip: delete the folder
+
+Your settings and characters are kept, in the folders under
+[Your data](#your-data) on Linux, and in AppData on Windows.
 
 ## Requirements
 
@@ -159,15 +276,7 @@ still running. Starting it again brings the window back.
 
 ## Windows
 
-Each release has a Windows installer, `path-of-upgrading-<version>-setup.exe`,
-and a zip of the same program, which runs from any folder. The installer is
-for you alone, so it doesn't ask for an administrator. It puts the app in
-`AppData\Local\Programs\Path of Upgrading`, with an entry in the Start menu,
-and you can uninstall it from Settings, under Apps. Your settings and
-characters stay in AppData when you do.
-
-Neither is signed yet, so the first time you open one, SmartScreen says it
-doesn't know the app. Choose More info, then Run anyway.
+[Installing](#windows) has the installer and the zip.
 
 Path of Building is the one from its own installer,
 [Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases),
