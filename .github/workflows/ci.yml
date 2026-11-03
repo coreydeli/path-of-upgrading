@@ -132,8 +132,9 @@ jobs:
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG=-g0
           -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+      # going on past an error, so each run shows them all
       - name: Build
-        run: cmake --build build
+        run: cmake --build build -- -k 0
       - name: Test
         working-directory: build
         env:
