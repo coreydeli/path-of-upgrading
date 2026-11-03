@@ -107,3 +107,34 @@ jobs:
       - name: Test
         working-directory: build
         run: sh ../.github/scripts/run-tests.sh
+
+  windows:
+    name: Build and test on Windows
+    needs: format
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      # the test files as they are in the repository, not with Windows' line ends
+      - name: Keep the line ends
+        shell: pwsh
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-msys2.sh
+      - name: Configure
+        run: >-
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG=-g0
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        working-directory: build
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --output-on-failure -j4
