@@ -4,6 +4,7 @@
 #include "fakepob.h"
 #include "services/pobengine.h"
 
+#include <QDir>
 #include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -163,7 +164,9 @@ private Q_SLOTS:
         QSignalSpy changed(&o.options, &PobOptions::changed);
         o.pob.setInstall({.folder = u"/games/pob"_s, .program = u"luajit"_s});
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.found(), u"Using Path of Building in /games/pob."_s);
+        // with backslashes on Windows
+        QCOMPARE(o.options.found(),
+                 u"Using Path of Building in "_s + QDir::toNativeSeparators(u"/games/pob"_s) + u'.');
         QCOMPARE(o.options.problem(), QString());
 
         changed.clear();
