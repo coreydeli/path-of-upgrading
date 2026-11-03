@@ -23,6 +23,8 @@ optdepends=(
   'flatpak: Path of Building from Flathub'
   'luajit: to run another install of Path of Building'
 )
+# Linking every test with LTO took longer than building the rest
+options=(!lto)
 # The release builds put the tarball from git archive here, under this name.
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 sha256sums=('SKIP')
