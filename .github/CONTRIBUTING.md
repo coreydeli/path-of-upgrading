@@ -6,9 +6,10 @@ code building, and what a change needs before it can be merged. The
 
 ## Before you start
 
-Linux comes first, with KDE Plasma on Wayland as the first desktop. Windows
-support comes later. Anything specific to an operating system or a desktop
-belongs in `src/platform`, and the rest of the code shouldn't depend on it.
+Linux comes first, with KDE Plasma on Wayland as the first desktop, and
+there is a Windows version too. Anything specific to an operating system or a
+desktop belongs in `src/platform`, and the rest of the code shouldn't depend
+on it. The Windows code is in `src/platform/win`, behind `Q_OS_WIN`.
 
 For anything bigger than a small fix, open an issue first and describe what
 you want to change. That saves you work if it's out of scope or someone is
@@ -40,8 +41,8 @@ Run the tests on the private bus the README describes:
 cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 ```
 
-CI builds on Arch Linux and on Debian 13, checks the formatting, treats
-warnings as errors and runs every test. A change has to pass all of it. The
+CI builds on Arch Linux, on Debian 13 and on Windows in MSYS2, checks the
+formatting, treats warnings as errors and runs every test. A change has to pass all of it. The
 steps are in `.github/workflows/ci.yml`.
 
 ## Branches and pull requests
@@ -83,7 +84,7 @@ The folders split the code like this:
 | --- | --- |
 | `src/core` | Pure logic with no I/O: parsing items, scoring, trade queries, settings and characters |
 | `src/services` | Network and processes: the trade site, poe.ninja and Path of Building |
-| `src/platform` | The operating system: overlay windows, global shortcuts and reading the game through XWayland |
+| `src/platform` | The operating system: overlay windows, global shortcuts and reading the game, through XWayland on Linux |
 | `src/app` | The QML app, its models in C++ and the QML in `src/app/qml` |
 
 Keep comments short and plain. Explain what isn't obvious from the code, and
