@@ -626,7 +626,8 @@ private Q_SLOTS:
         QVERIFY(field->setProperty("text", folder));
         QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
         QCOMPARE(w.settings().pob.location, folder);
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using Path of Building in %1."_s.arg(folder));
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folder)));
         QCOMPARE(w.find(u"foundText"_s)->property("description").toString(), QString());
     }
 
@@ -641,7 +642,8 @@ private Q_SLOTS:
         // once it's there
         QVERIFY(makePob(folder));
         QVERIFY(QMetaObject::invokeMethod(w.find(u"lookAgainButton"_s), "clicked"));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using Path of Building in %1."_s.arg(folder));
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folder)));
     }
 
     void pobSettings()
