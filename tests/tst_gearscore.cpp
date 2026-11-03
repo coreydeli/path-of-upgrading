@@ -38,6 +38,40 @@ const QString greatHelm = u"Item Class: Helmets\nRarity: Rare\nGreat Crown\nAnce
                           "+42% to Cold Resistance\n+40% to Fire Resistance\n+90 to maximum Life\n"
                           "+30% to Chaos Resistance\n80% increased Energy Shield"_s;
 
+// Made-up gear for an Energy Shield attacker and for a spellcaster.
+const QString attackerGloves = u"Item Class: Gloves\nRarity: Rare\nStorm Grip\nWrapped Mitts\n--------\n"
+                               "Energy Shield: 140\n--------\nAdds 9 to 15 Fire damage to Attacks\n"
+                               "12% increased Attack Speed\n+34% to Cold Resistance\n"
+                               "+41% to Fire Resistance\n+48 to maximum Energy Shield\n"
+                               "+150 to Accuracy Rating"_s;
+
+const QString attackerAmulet = u"Item Class: Amulets\nRarity: Rare\nDusk Loop\nJade Amulet\n--------\n"
+                               "+3 to Level of all Melee Skills\n40% increased Critical Damage Bonus\n"
+                               "14% increased Attack Speed\n+60 to maximum Energy Shield\n"
+                               "+38% to Fire Resistance\n+25 to Spirit"_s;
+
+const QString casterAmulet = u"Item Class: Amulets\nRarity: Rare\nDusk Loop\nJade Amulet\n--------\n"
+                             "+3 to Level of all Spell Skills\n28% increased Spell Damage\n"
+                             "10% increased Cast Speed\n+60 to maximum Energy Shield\n"
+                             "+38% to Fire Resistance\n+25 to Spirit"_s;
+
+const QString attackerStaff =
+    u"Item Class: Quarterstaves\nRarity: Rare\nSoul Staff\nLong Quarterstaff\n--------\n"
+    "Physical Damage: 120-220\nFire Damage: 30-60\nCritical Hit Chance: 9.00%\n"
+    "Attacks per Second: 1.50\n--------\nAdds 20 to 40 Fire Damage\n"
+    "15% increased Attack Speed\n+2.5% to Critical Hit Chance\n"
+    "+3 to Level of all Melee Skills"_s;
+
+const QString casterStaff = u"Item Class: Staves\nRarity: Rare\nSoul Staff\nLong Staff\n--------\n"
+                            "Critical Hit Chance: 9.00%\n--------\n+4 to Level of all Spell Skills\n"
+                            "90% increased Spell Damage\n12% increased Cast Speed\n"
+                            "60% increased Critical Hit Chance for Spells"_s;
+
+int scoreWith(const QString &text, QStringView build)
+{
+    return gearScore(item(text), {.build = build.toString()})->score;
+}
+
 } // namespace
 
 class TestGearScore : public QObject
@@ -54,7 +88,7 @@ private Q_SLOTS:
         QCOMPARE(buildProfile(energyShieldProfile)->id, u"es-caster"_s);
         QCOMPARE(buildProfile(minionProfile)->id, u"minion-es"_s);
         QVERIFY(!buildProfile(u"nothing like it"));
-        QCOMPARE(buildProfiles().size(), 3);
+        QCOMPARE(buildProfiles().size(), 4);
         for (const BuildProfile &p : buildProfiles()) {
             for (const ProfileStat &s : p.stats)
                 QVERIFY2(s.pattern.isValid(), qPrintable(p.id + u": "_s + s.label));
@@ -75,7 +109,7 @@ private Q_SLOTS:
         for (const TweakableStat &s : stats)
             labels << s.label;
         QCOMPARE(labels.first(), u"Spell skill levels"_s);
-        QCOMPARE(labels.size(), 16);
+        QCOMPARE(labels.size(), 17);
         QCOMPARE(labels.removeDuplicates(), 0);
 
         const auto groupsOf = [&stats](const QString &label) {
@@ -329,13 +363,150 @@ private Q_SLOTS:
         QCOMPARE(helmet->ideal, 42.0);
     }
 
-    void aSlotTheBuildHasNoUseForScoresNothing()
+    void aStatTheSlotHasNoUseForScoresNothing()
     {
+        // flat life can't roll on a jewel, and its percent is what counts there
         const auto g = gearScore(item(u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
                                       "+20 to maximum Life"_s));
         QCOMPARE(g->score, 0);
         QCOMPARE(g->grade, u"D"_s);
-        QCOMPARE(g->ideal, 1.0);
+        QCOMPARE(g->ideal, 16.5);
+    }
+
+    void theAttackerProfile()
+    {
+        const BuildProfile &p = *buildProfile(energyShieldAttackerProfile);
+        QCOMPARE(p.id, u"es-attacker"_s);
+        QCOMPARE(p.name, u"Energy Shield attacker"_s);
+        // damage per second on weapons, boots keep their speed
+        QCOMPARE(statLabelled(p, u"Weapon DPS"_s)->importance.at(u"Weapon"_s), 10.0);
+        QCOMPARE(statLabelled(p, u"Movement speed"_s)->importance.at(u"Boots"_s), 10.0);
+        // Evasion counts, but less than Energy Shield
+        const ProfileStat *evasion = statLabelled(p, u"Evasion"_s);
+        const ProfileStat *es = statLabelled(p, u"Energy Shield"_s);
+        QVERIFY(evasion && es);
+        QVERIFY(evasion->importance.at(u"Body Armour"_s) < es->importance.at(u"Body Armour"_s));
+        QVERIFY(evasion->importance.at(u"Body Armour"_s) > 0);
+    }
+
+    void attackGearBeatsSpellGearForAnAttacker()
+    {
+        QVERIFY(scoreWith(attackerAmulet, energyShieldAttackerProfile) >= 65);
+        QVERIFY(scoreWith(casterAmulet, energyShieldAttackerProfile) <= 40);
+        QVERIFY(scoreWith(attackerStaff, energyShieldAttackerProfile) >= 50);
+        QVERIFY(scoreWith(casterStaff, energyShieldAttackerProfile) <= 15);
+        QVERIFY(scoreWith(attackerGloves, energyShieldAttackerProfile) >= 45);
+        QVERIFY(scoreWith(attackerGloves, energyShieldAttackerProfile) >
+                scoreWith(attackerGloves, energyShieldProfile));
+    }
+
+    void andTheOtherWayRoundForACaster()
+    {
+        QVERIFY(scoreWith(casterAmulet, energyShieldProfile) >= 60);
+        QVERIFY(scoreWith(attackerAmulet, energyShieldProfile) <= 45);
+        QVERIFY(scoreWith(casterStaff, energyShieldProfile) >= 60);
+        QVERIFY(scoreWith(attackerStaff, energyShieldProfile) <= 40);
+    }
+
+    void theAttackersModsAreNotWasted()
+    {
+        for (const QString &text : {attackerGloves, attackerAmulet, attackerStaff}) {
+            const auto g = gearScore(item(text), {.build = energyShieldAttackerProfile.toString()});
+            QVERIFY2(g->wasted.isEmpty(), qPrintable(g->wasted.join(u", "_s)));
+        }
+    }
+
+    void attackerPatternsMatchTheSiteTexts_data()
+    {
+        QTest::addColumn<QString>("label");
+        QTest::addColumn<QString>("key");
+
+        // as the trade site words them
+        QTest::newRow("levels") << u"Attack skill levels"_s << u"# to Level of all Melee Skills"_s;
+        QTest::newRow("levels, projectile")
+            << u"Attack skill levels"_s << u"# to Level of all Projectile Skills"_s;
+        QTest::newRow("speed") << u"Attack speed"_s << u"#% increased Attack Speed"_s;
+        QTest::newRow("skill speed") << u"Attack speed"_s << u"#% increased Skill Speed"_s;
+        QTest::newRow("crit chance") << u"Crit"_s << u"#% increased Critical Hit Chance for Attacks"_s;
+        QTest::newRow("crit damage") << u"Crit"_s
+                                     << u"#% increased Critical Damage Bonus for Attack Damage"_s;
+        QTest::newRow("flat crit damage") << u"Crit"_s << u"#% to Critical Damage Bonus"_s;
+        QTest::newRow("base crit") << u"Base crit chance"_s << u"#% to Critical Hit Chance"_s;
+        QTest::newRow("physical") << u"Attack damage"_s << u"#% increased Physical Damage"_s;
+        QTest::newRow("elemental with attacks")
+            << u"Attack damage"_s << u"#% increased Elemental Damage with Attacks"_s;
+        QTest::newRow("plain damage") << u"Attack damage"_s << u"#% increased Damage"_s;
+        QTest::newRow("staff damage") << u"Attack damage"_s << u"#% increased Damage with Quarterstaves"_s;
+        QTest::newRow("added physical") << u"Added damage"_s << u"Adds # to # Physical Damage to Attacks"_s;
+        QTest::newRow("added fire") << u"Added damage"_s << u"Adds # to # Fire damage to Attacks"_s;
+        QTest::newRow("added local") << u"Added damage"_s << u"Adds # to # Cold Damage"_s;
+        QTest::newRow("accuracy") << u"Accuracy"_s << u"# to Accuracy Rating"_s;
+        QTest::newRow("accuracy percent") << u"% Accuracy"_s << u"#% increased Accuracy Rating"_s;
+        QTest::newRow("extra energy shield")
+            << u"Extra ES"_s << u"Gain #% of maximum Life as Extra maximum Energy Shield"_s;
+    }
+
+    void attackerPatternsMatchTheSiteTexts()
+    {
+        QFETCH(QString, label);
+        QFETCH(QString, key);
+        const BuildProfile &p = *buildProfile(energyShieldAttackerProfile);
+        // the first stat that covers a key is the one that scores it
+        const auto covering = std::find_if(p.stats.cbegin(), p.stats.cend(), [&key](const ProfileStat &s) {
+            return s.pattern.match(key).hasMatch();
+        });
+        QVERIFY2(covering != p.stats.cend(), qPrintable(key));
+        QCOMPARE(covering->label, label);
+    }
+
+    void attackerPatternsLeaveOutWhatIsNotTheirs()
+    {
+        const BuildProfile &p = *buildProfile(energyShieldAttackerProfile);
+        for (const QString &key : {u"#% increased Spell Damage"_s, u"#% increased Cast Speed"_s,
+                                   u"#% increased Critical Hit Chance for Spells"_s,
+                                   u"Minions deal #% increased Damage"_s, u"# to Level of all Spell Skills"_s,
+                                   u"Allies in your Presence have #% increased Attack Speed"_s}) {
+            for (const ProfileStat &s : p.stats)
+                QVERIFY2(!s.pattern.match(key).hasMatch(), qPrintable(key + u" / "_s + s.label));
+        }
+    }
+
+    void looserProfilesStillDifferFromEachOther()
+    {
+        // spell damage on a jewel counts a little for life builds, and more for casters
+        const QString spell = u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
+                              "20% increased Spell Damage"_s;
+        const int life = scoreWith(spell, defaultBuildProfile);
+        QVERIFY(life > 0);
+        QVERIFY(scoreWith(spell, energyShieldProfile) > life);
+        // and life percent is for life builds
+        const QString health = u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
+                               "8% increased maximum Life"_s;
+        QVERIFY(scoreWith(health, defaultBuildProfile) > 0);
+        QCOMPARE(scoreWith(health, energyShieldProfile), 0);
+    }
+
+    void lifeBuildsCountAHybridsEnergyShieldForHalf()
+    {
+        const QString ring = u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
+                             "+45 to maximum Energy Shield"_s;
+        const auto life = gearScore(item(ring), {.build = defaultBuildProfile.toString()});
+        const auto caster = gearScore(item(ring), {.build = energyShieldProfile.toString()});
+        QVERIFY(life->wasted.isEmpty());
+        QVERIFY(life->score > 0);
+        QVERIFY(life->contributions.first().points < caster->contributions.first().points);
+    }
+
+    void casterProfileCountsSkillSpeedAndSpellCrit()
+    {
+        const BuildProfile &p = *buildProfile(energyShieldProfile);
+        for (const QString &key : {u"#% increased Skill Speed"_s,
+                                   u"#% increased Critical Spell Damage Bonus"_s, u"#% increased Damage"_s}) {
+            const auto covering =
+                std::find_if(p.stats.cbegin(), p.stats.cend(),
+                             [&key](const ProfileStat &s) { return s.pattern.match(key).hasMatch(); });
+            QVERIFY2(covering != p.stats.cend(), qPrintable(key));
+        }
     }
 
     void scoresStopAtOneHundred()

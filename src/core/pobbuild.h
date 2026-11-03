@@ -71,6 +71,9 @@ struct PobBuild
     // What the minions of its main skill deal, zero when that skill doesn't
     // summon any.
     double minionDps = 0;
+    // Its main skill is an attack. Path of Building only saves a hit chance
+    // for those, so a build saved without the numbers counts as not attacking.
+    bool attacks = false;
 };
 
 // Empty when the XML isn't a Path of Building 2 build.

@@ -705,6 +705,7 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
     build.energyShield = stats.player.value(u"EnergyShield"_s);
     // the combined damage, or the hits when it has none
     build.minionDps = std::max(stats.minion.value(u"CombinedDPS"_s), stats.minion.value(u"TotalDPS"_s));
+    build.attacks = stats.player.value(u"HitChance"_s) > 0;
     return build;
 }
 

@@ -228,6 +228,57 @@ private Q_SLOTS:
         QVERIFY(buildProfile(profile));
     }
 
+    void profileForAnAttacker_data()
+    {
+        QTest::addColumn<double>("life");
+        QTest::addColumn<double>("energyShield");
+        QTest::addColumn<double>("minionDps");
+        QTest::addColumn<bool>("attacks");
+        QTest::addColumn<QString>("profile");
+
+        QTest::newRow("energy shield attacker") << 1000.0 << 3000.0 << 0.0 << true << u"es-attacker"_s;
+        QTest::newRow("energy shield caster") << 1000.0 << 3000.0 << 0.0 << false << u"es-caster"_s;
+        QTest::newRow("chaos inoculation") << 1.0 << 3000.0 << 0.0 << true << u"es-attacker"_s;
+        QTest::newRow("twice as much") << 1000.0 << 2000.0 << 0.0 << true << u"life-res"_s;
+        QTest::newRow("life attacker") << 3000.0 << 400.0 << 0.0 << true << u"life-res"_s;
+        QTest::newRow("no numbers") << 0.0 << 0.0 << 0.0 << true << u"life-res"_s;
+        QTest::newRow("minions that attack") << 1000.0 << 5000.0 << 300.0 << true << u"minion-es"_s;
+    }
+
+    void profileForAnAttacker()
+    {
+        QFETCH(double, life);
+        QFETCH(double, energyShield);
+        QFETCH(double, minionDps);
+        QFETCH(bool, attacks);
+        QFETCH(QString, profile);
+        PobBuild build;
+        build.life = life;
+        build.energyShield = energyShield;
+        build.minionDps = minionDps;
+        build.attacks = attacks;
+        QCOMPARE(fittingProfile(build), profile);
+        QVERIFY(buildProfile(profile));
+    }
+
+    void importPicksTheAttackerProfile()
+    {
+        PobBuild build = buildWith({{u"Helmet"_s, {.text = helmet}}});
+        build.life = 1000;
+        build.energyShield = 5000;
+        build.attacks = true;
+
+        const BuildImport done = importBuild(Character{}, build);
+        QCOMPARE(done.character.buildProfile, u"es-attacker"_s);
+        QVERIFY(done.profileChanged);
+
+        // and back to the spellcaster's when it casts
+        build.attacks = false;
+        const BuildImport again = importBuild(done.character, build);
+        QCOMPARE(again.character.buildProfile, u"es-caster"_s);
+        QVERIFY(again.profileChanged);
+    }
+
     void importPicksTheProfile_data()
     {
         QTest::addColumn<QString>("had");

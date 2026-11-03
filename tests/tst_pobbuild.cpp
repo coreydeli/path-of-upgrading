@@ -691,6 +691,20 @@ private Q_SLOTS:
         QCOMPARE(saving({}).minionDps, 0.0);
     }
 
+    void attacksOrCasts()
+    {
+        // Path of Building only saves a hit chance for attacks
+        QVERIFY(saving({{u"HitChance"_s, u"96.5"_s}}).attacks);
+        QVERIFY(saving({{u"Life"_s, u"900"_s}, {u"HitChance"_s, u"100"_s}}).attacks);
+
+        QVERIFY(!saving({{u"Life"_s, u"900"_s}, {u"EnergyShield"_s, u"3000"_s}}).attacks);
+        QVERIFY(!saving({{u"HitChance"_s, u"0"_s}}).attacks);
+        QVERIFY(!saving({{u"HitChance"_s, u"nan"_s}}).attacks);
+        // its minions' hits aren't the player's
+        QVERIFY(!saving({}, {{u"HitChance"_s, u"90"_s}}).attacks);
+        QVERIFY(!saving({}).attacks);
+    }
+
     void notABuild()
     {
         const QString poe1 = joined({

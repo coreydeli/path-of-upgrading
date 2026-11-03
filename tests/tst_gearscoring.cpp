@@ -117,7 +117,8 @@ private Q_SLOTS:
         QVERIFY(!s.scoring.isTweaked());
         QCOMPARE(s.scoring.profiles(),
                  QStringList({u"Life and resistances"_s, u"Energy Shield spellcaster"_s,
-                              u"Minion summoner on Energy Shield"_s, u"None, by my stat weights alone"_s}));
+                              u"Energy Shield attacker"_s, u"Minion summoner on Energy Shield"_s,
+                              u"None, by my stat weights alone"_s}));
         QCOMPARE(s.scoring.levels().size(), 6);
         QCOMPARE(s.scoring.levels().at(asUsual), u"As usual"_s);
     }
@@ -285,8 +286,21 @@ private Q_SLOTS:
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::WhereRole).toString(),
                  u"Counts on Helmet, Gloves, Boots, Amulet, and Ring"_s);
 
-        s.scoring.setProfile(2);
+        s.scoring.setProfile(3);
         QCOMPARE(s.of(u"Intelligence"_s, GearScoring::WhereRole).toString(), u"Counts in every slot"_s);
+    }
+
+    void theAttackersStats()
+    {
+        Scoring s;
+        s.play(tester(u"es-attacker"_s));
+        QCOMPARE(s.scoring.profile(), 2);
+        QCOMPARE(s.scoring.profiles().at(2), u"Energy Shield attacker"_s);
+        QCOMPARE(s.of(u"Weapon DPS"_s, GearScoring::WhereRole).toString(), u"Counts on Weapon"_s);
+        QCOMPARE(s.of(u"Attack speed"_s, GearScoring::WhereRole).toString(),
+                 u"Counts in every slot but Helmet, Body Armour, Boots, and Belt"_s);
+        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QVERIFY(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString().isEmpty());
     }
 
     void setLevel()

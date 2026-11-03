@@ -29,8 +29,9 @@ struct BuildImport
 BuildImport importBuild(const Character &character, const PobBuild &build);
 
 // The gear score profile that suits the build: the minion one when the
-// minions of its main skill deal damage, the Energy Shield one when it has
-// more than twice as much Energy Shield as Life, and the default one
+// minions of its main skill deal damage, the Energy Shield ones when it has
+// more than twice as much Energy Shield as Life (the attacker's when the main
+// skill is an attack, the spellcaster's otherwise), and the default one
 // otherwise.
 QString fittingProfile(const PobBuild &build);
 
