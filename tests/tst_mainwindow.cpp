@@ -1004,7 +1004,7 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"resetButton"_s)->property("enabled").toBool(), false);
 
         // and one picked elsewhere
-        w.app->gearScoring()->setProfile(2);
+        w.app->gearScoring()->setProfile(3);
         QCOMPARE(profile->property("currentText").toString(), u"Minion summoner on Energy Shield"_s);
     }
 
@@ -1038,7 +1038,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.in(u"stats"_s, u"stat:Spell skill levels"_s)));
 
         // and none, by your stat weights alone
-        QVERIFY(activate(profile, 3));
+        QVERIFY(activate(profile, 4));
         QCOMPARE(w.app->character().character().buildProfile, u"none"_s);
         QCOMPARE(profile->property("description").toString(),
                  u"Items are judged by your stat weights alone, with no gear score."_s);
