@@ -7,9 +7,9 @@
 #include "platform/globalshortcuts.h"
 #include "platform/notifier.h"
 #include "platform/secretstore.h"
+#include "platform/singleinstance.h"
 #include "platform/tray.h"
 
-#include <KDBusService>
 #include <KLocalizedQmlContext>
 #include <QApplication>
 #include <QDir>
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
     // Started a second time, this hands over to the first and exits, before
     // anything below is set up.
-    KDBusService service(KDBusService::Unique);
+    const std::unique_ptr<pou::SingleInstance> instance = pou::runOnce();
 
     pickControlsStyle();
 
@@ -82,7 +82,8 @@ int main(int argc, char *argv[])
     const std::unique_ptr<pou::Tray> tray = pou::createTray();
     const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier();
     pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());
-    QObject::connect(&service, &KDBusService::activateRequested, &desktop, &pou::Desktop::startedAgain);
+    QObject::connect(instance.get(), &pou::SingleInstance::startedAgain, &desktop,
+                     &pou::Desktop::startedAgain);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);

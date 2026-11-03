@@ -4,6 +4,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-keysyms xcb-randr xcb-xfixes xcb-xtest)
 
 find_package(Qt6 REQUIRED COMPONENTS DBus Network Widgets)
+find_package(KF6DBusAddons 6.0 REQUIRED)
 find_package(KF6GlobalAccel 6.0 REQUIRED)
 find_package(KF6Notifications 6.0 REQUIRED)
 find_package(KF6StatusNotifierItem 6.0 REQUIRED)
@@ -29,6 +30,7 @@ add_library(pou_platform STATIC
     screenmap.cpp screenmap.h
     secretstore.cpp secretstore.h
     showwindow.cpp showwindow.h
+    singleinstance.cpp singleinstance.h
     tray.cpp tray.h
     xcb/xconnection.cpp xcb/xconnection.h
     xcb/xgameinput.cpp xcb/xgameinput.h
@@ -41,6 +43,6 @@ add_library(pou_platform STATIC
 target_include_directories(pou_platform PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(pou_platform
     PUBLIC Qt6::Gui PkgConfig::XCB Qt6Keychain::Qt6Keychain
-    PRIVATE Qt6::DBus Qt6::Network Qt6::Widgets KF6::GlobalAccel KF6::Notifications KF6::StatusNotifierItem
+    PRIVATE Qt6::DBus Qt6::Network Qt6::Widgets KF6::DBusAddons KF6::GlobalAccel KF6::Notifications KF6::StatusNotifierItem
            KF6::WindowSystem LayerShellQt::Interface
 )

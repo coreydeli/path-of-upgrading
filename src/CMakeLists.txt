@@ -3,8 +3,6 @@ add_subdirectory(services)
 add_subdirectory(platform)
 add_subdirectory(app)
 
-find_package(KF6DBusAddons 6.0 REQUIRED)
-
 qt_add_executable(path-of-upgrading
     main.cpp
 )
@@ -19,7 +17,6 @@ target_link_libraries(path-of-upgrading PRIVATE
     pou_appplugin
     Qt6::Widgets
     Qt6::QuickControls2
-    KF6::DBusAddons
     KF6::I18nQml
 )
 
