@@ -2,6 +2,7 @@
 #include "app/itempopup.h"
 
 #include "core/placement.h"
+#include "platform/logging.h"
 #include "platform/overlay.h"
 
 #include <QQmlComponent>
@@ -66,6 +67,15 @@ void ItemPopup::showMessage(const QString &message, const std::optional<ScreenPo
 void ItemPopup::close()
 {
     hide();
+}
+
+void ItemPopup::moveBy(int dx, int dy)
+{
+    if (!isVisible() || (dx == 0 && dy == 0))
+        return;
+    m_dragged = true;
+    m_at += QPoint(dx, dy);
+    place();
 }
 
 void ItemPopup::setTradeAvailable(bool available)
@@ -155,6 +165,9 @@ void ItemPopup::show(const std::optional<ScreenPoint> &mouse)
     if (!m_window && !makeWindow())
         return;
     m_mouse = mouse;
+    m_dragged = false;
+    if (!mouse && m_settings.position == PopupPosition::Cursor)
+        qCDebug(lcPlacement, "The mouse isn't known, so the popup goes at the top of the screen.");
     place();
     m_window->show();
     const bool byMouse = m_settings.position == PopupPosition::Cursor && mouse;
@@ -163,11 +176,31 @@ void ItemPopup::show(const std::optional<ScreenPoint> &mouse)
 
 void ItemPopup::place()
 {
-    QScreen *screen = screenNamed(m_mouse ? m_mouse->screen : QString());
+    // where you moved it, it stays on that screen
+    QScreen *screen = m_dragged ? m_window->screen() : screenNamed(m_mouse ? m_mouse->screen : QString());
     if (!screen)
         return;
-    const std::optional<QPoint> mouse = m_mouse ? std::optional(m_mouse->position) : std::nullopt;
-    m_at = placePopup(m_settings.position, m_window->size(), screen->size(), mouse);
+    if (m_dragged) {
+        m_at = withinScreen(m_at, m_window->size(), screen->size());
+    } else {
+        const std::optional<QPoint> mouse = m_mouse ? std::optional(m_mouse->position) : std::nullopt;
+        m_at = placePopup(m_settings.position, m_window->size(), screen->size(), mouse);
+    }
+    if (lcPlacement().isDebugEnabled()) {
+        const QString where =
+            m_mouse
+                ? u"%1,%2 on %3"_s.arg(m_mouse->position.x()).arg(m_mouse->position.y()).arg(m_mouse->screen)
+                : u"not known"_s;
+        qCDebug(lcPlacement).noquote()
+            << u"The mouse is %1. The popup is %2x%3 and goes to %4,%5 on %6 (%7x%8)."_s.arg(where)
+                   .arg(m_window->width())
+                   .arg(m_window->height())
+                   .arg(m_at.x())
+                   .arg(m_at.y())
+                   .arg(screen->name())
+                   .arg(screen->size().width())
+                   .arg(screen->size().height());
+    }
     moveOverlay(m_window.get(), screen, m_at);
     m_hider.moved(QRect(m_at, m_window->size()));
 }

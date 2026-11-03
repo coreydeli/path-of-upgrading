@@ -65,6 +65,10 @@ public:
     void updateReport(const ItemReport &report);
     void showMessage(const QString &message, const std::optional<ScreenPoint> &mouse);
     Q_INVOKABLE void close();
+    // For dragging it by its title: moves it that many pixels, and it stays
+    // there for the item it shows now, as when it grows. The next item goes
+    // back to the mouse or where your settings put it.
+    Q_INVOKABLE void moveBy(int dx, int dy);
 
     bool isTradeAvailable() const { return m_tradeAvailable; }
     void setTradeAvailable(bool available);
@@ -129,6 +133,7 @@ private:
     QString m_message;
     std::optional<ScreenPoint> m_mouse; // where it was shown for
     QPoint m_at;                        // and where it went, on the screen
+    bool m_dragged = false;             // and you've moved it since
     bool m_hovered = false;
     bool m_expanded = false;
     bool m_tradeAvailable = false;

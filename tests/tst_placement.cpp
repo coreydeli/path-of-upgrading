@@ -51,6 +51,16 @@ private Q_SLOTS:
         QCOMPARE(placePopup(where, popup, QSize(1920, 1080), mouse), expected);
     }
 
+    void keptOnTheScreen()
+    {
+        const QSize window(400, 300);
+        const QSize screen(1920, 1080);
+        QCOMPARE(withinScreen({100, 100}, window, screen), QPoint(100, 100));
+        QCOMPARE(withinScreen({-50, 2000}, window, screen), QPoint(4, 776));
+        QCOMPARE(withinScreen({1800, 5}, window, screen), QPoint(1516, 5));
+        QCOMPARE(withinScreen({100, 100}, QSize(2000, 1200), screen), QPoint(4, 4));
+    }
+
     void results_data()
     {
         QTest::addColumn<PopupPosition>("popup");

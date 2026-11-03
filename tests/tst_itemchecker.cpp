@@ -554,13 +554,26 @@ private Q_SLOTS:
 
     void copiedYourself()
     {
+        // with the mouse over the item
+        QQmlEngine qml;
+        FakeGameInput input;
+        input.mouseAt = mouseAt(200, 300);
+        ItemChecker checker(&qml, &input);
+        Q_EMIT input.textCopied(itemtexts::helmetNew);
+        QVERIFY(checker.popup().isVisible());
+        QCOMPARE(checker.popup().report().name, u"Doom Visage"_s);
+        QCOMPARE(checker.popup().window()->position(),
+                 placed(checker.popup(), PopupPosition::Cursor, QPoint(200, 300)));
+    }
+
+    void copiedYourselfWithoutTheMouse()
+    {
         // where the mouse isn't known
         QQmlEngine qml;
         FakeGameInput input;
         ItemChecker checker(&qml, &input);
         Q_EMIT input.textCopied(itemtexts::helmetNew);
         QVERIFY(checker.popup().isVisible());
-        QCOMPARE(checker.popup().report().name, u"Doom Visage"_s);
         QCOMPARE(checker.popup().window()->position(),
                  placed(checker.popup(), PopupPosition::Top, std::nullopt));
     }

@@ -60,8 +60,26 @@ Rectangle {
         }
         spacing: Kirigami.Units.smallSpacing
 
+        // the title moves the popup, which the compositor leaves to us
         RowLayout {
             Layout.fillWidth: true
+
+            HoverHandler {
+                cursorShape: Qt.SizeAllCursor
+            }
+
+            DragHandler {
+                target: null
+                acceptedButtons: Qt.LeftButton
+                // as it moves under the mouse, what's left of the drag is how
+                // far it still has to go
+                onCentroidChanged: {
+                    if (active) {
+                        card.popup.moveBy(Math.round(centroid.scenePosition.x - centroid.scenePressPosition.x),
+                                          Math.round(centroid.scenePosition.y - centroid.scenePressPosition.y));
+                    }
+                }
+            }
 
             Kirigami.Heading {
                 Layout.fillWidth: true
