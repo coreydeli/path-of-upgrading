@@ -17,15 +17,23 @@ released.
 ## Features
 
 - Compares the item you check with the one you wear in the same slot. The
-  verdict goes by a gear score for your build, by your own stat weights, or by
-  Path of Building once you have imported a build.
-- The gear score uses a build profile and lets you say how much each stat
-  counts, from not at all to three times as much. Stat weights can be edited
-  or suggested from the gear you wear, and stats you don't care about can be
-  ignored or left out of searches.
+  verdict goes by Path of Building once you have imported a build, by a gear
+  score for your build, or by your own stat weights.
+- Works without a build too. Wear gear or set stat weights before you add a
+  character, and the app makes one called My character and plays it.
+- Judges what an item costs you as well as what it gives. A big drop in
+  damage, Effective HP, Life or Energy Shield counts against it, and "Never
+  lose damage" and "Never lose defences" make either one mean an item is never
+  an upgrade.
+- The gear score uses a build profile: life and resistances, Energy Shield
+  spellcaster, Energy Shield attacker, or minion summoner. You can say how much
+  each stat counts, from not at all to three times as much. Stat weights can
+  be edited or suggested from the gear you wear, and stats you don't care
+  about can be ignored or left out of searches.
 - Imports builds from Path of Building: from a code, a link, a file, or one
   you saved in Path of Building's own folder. It runs Path of Building without
-  its window, so your build's own numbers judge the item.
+  its window, so your build's own numbers judge the item. The import picks the
+  profile that fits the build.
 - Finds Path of Building as the Flatpak from Flathub
   (`community.pathofbuilding.PathOfBuilding`), as other installs of
   rusty-path-of-building, or in a folder you choose.
@@ -42,20 +50,24 @@ released.
   hardcore. Solo self-found turns them off, as there is no trading in it.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
-  score of each slot, the overall score, and the three slots to upgrade first.
-  It also has your resistances, from your build or typed in off the character
-  sheet, so an item that leaves one under the cap says so.
+  score of each slot, the overall score, the three slots to upgrade first, and
+  what each slot needs to score more. It also has your resistances, from your
+  build or typed in off the character sheet, so an item that leaves one under
+  the cap says so.
 - Can sign in to the trade site with your session ID, which is kept in your
   system keyring. Signed out, the site only takes simple searches, so upgrade
   searches look for a few of your build's key stats, and the results window
   rates each listing. Signed in, Path of Building weighs them for your build,
   the way its own trade searches do, or they go by your whole gear score.
+- The popup can be dragged by its title to move it. When you copy an item
+  yourself with Ctrl+C, it appears by the mouse.
 - Stays in the system tray when you close the window. The tray icon shows the
   window, pauses the hotkeys and quits. Starting the program again shows the
   window that is already running, rather than opening a second one.
 - Can start with your desktop, from a switch on the Popup and Hotkeys page. It
   then starts with only the tray icon, as `path-of-upgrading --background`
   does. It tells you with a notification if the hotkeys couldn't be set up.
+
 
 ## Installing
 
