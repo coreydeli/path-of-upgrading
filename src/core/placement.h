@@ -22,6 +22,9 @@ PopupPosition popupPositionFromId(QStringView id);
 QPoint placePopup(PopupPosition where, const QSize &popup, const QSize &screen,
                   const std::optional<QPoint> &mouse);
 
+// Keeps a window of that size on the screen, a few pixels in from the edges.
+QPoint withinScreen(QPoint at, const QSize &window, const QSize &screen);
+
 // Where the results window's top left goes: at the right as far down as the
 // popup is when it's at a side, or at the left when the popup is at the
 // right. It stays a few pixels in from the edges.
