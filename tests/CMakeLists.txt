@@ -92,6 +92,7 @@ pou_add_platform_test(tst_autostart)
 pou_add_platform_test(tst_copykeys)
 pou_add_platform_test(tst_gamewindow)
 pou_add_platform_test(tst_keychainsecretstore)
+pou_add_platform_test(tst_localinstance)
 pou_add_platform_test(tst_notifyrc)
 target_link_libraries(tst_notifyrc PRIVATE KF6::ConfigCore)
 target_compile_definitions(tst_notifyrc PRIVATE APP_ID="${APP_ID}"
