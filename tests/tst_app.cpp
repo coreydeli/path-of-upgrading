@@ -592,11 +592,40 @@ private Q_SLOTS:
 
     void wearForNobody()
     {
+        // which makes a character to wear it, and plays it from then on
         Folders folders;
         Running r(folders);
         r.checked();
+        QVERIFY(r.app.characters().ids().isEmpty());
         r.app.checker().popup().wear(u"Helmet"_s);
-        QCOMPARE(r.app.checker().popup().wearError(), u"There's no character to wear it. Add one first."_s);
+        QCOMPARE(r.app.checker().popup().wearError(), QString());
+        QCOMPARE(r.app.characters().ids().size(), 1);
+        const QString id = r.app.characters().ids().value(0);
+        QCOMPARE(r.app.settings().settings().character, id);
+        QCOMPARE(r.app.character().id(), id);
+        QCOMPARE(r.app.character().character().name, u"My character"_s);
+        QCOMPARE(r.app.characters().find(id)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QCOMPARE(r.app.characterList()->current(), id);
+        QCOMPARE(r.app.characterList()->rowCount(), 1);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+
+        // and it is still the one next time
+        Running again(folders);
+        QCOMPARE(again.app.character().character().name, u"My character"_s);
+        QCOMPARE(again.app.character().character().gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+    }
+
+    void gearScoringForNobody()
+    {
+        // changing how items are judged makes one too
+        Folders folders;
+        Running r(folders);
+        r.app.gearScoring()->setProfile(1);
+        QCOMPARE(r.app.characters().ids().size(), 1);
+        QCOMPARE(r.app.character().character().name, u"My character"_s);
+        QCOMPARE(r.app.character().character().buildProfile, u"es-caster"_s);
+        QCOMPARE(r.app.gearScoring()->profile(), 1);
+        QCOMPARE(r.app.gearScoring()->error(), QString());
     }
 
     void gearScoring()

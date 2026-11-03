@@ -44,12 +44,19 @@ public:
     // when it's given another build or other gear.
     const std::optional<PobStats> &pobStats() const { return m_pobStats; }
 
-    // Puts the item on in the slot and saves that, see pou::wear(). False when
+    // Makes a character and says which it is, or leaves why in *why. See wear().
+    using Starter = std::function<QString(QString *why)>;
+    // For when you wear something or change how items are judged and play
+    // nobody yet. Without one, that fails.
+    void setStarter(const Starter &starter) { m_starter = starter; }
+
+    // Puts the item on in the slot and saves that, see pou::wear(). With
+    // nobody played it makes a character first, see setStarter(). False when
     // it can't go there or it can't be saved, with why in errorString().
     bool wear(const QString &slot, const Item &item);
     bool takeOff(const QString &slot);
-    // Saves a change to how items are judged for it, like its weights. False
-    // when there's none or it can't be saved.
+    // Saves a change to how items are judged for it, like its weights, for a
+    // character it makes if there's none. False when that or the save fails.
     bool change(const std::function<void(Character &)> &edit);
     QString errorString() const { return m_error; }
 
@@ -61,10 +68,14 @@ private:
     void loaded(const QJsonObject &summary);
     void setPobStats(const std::optional<PobStats> &stats);
     bool save(const Character &character);
+    // The character you play, made first when there's none. Null when it
+    // can't be, with why in m_error.
+    const Character *playing();
     bool fail(const QString &why);
 
     CharacterStore *m_store;
     PobEngine *m_pob;
+    Starter m_starter;
     QString m_id;
     Character m_character;
     std::optional<PobBuild> m_build;

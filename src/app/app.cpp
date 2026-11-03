@@ -68,6 +68,13 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_pobOptions(&m_settings, &m_pob)
 {
     m_characterList.load();
+    // so you can wear gear and set weights before adding a character
+    m_character.setStarter([this](QString *why) {
+        const QString id = m_characterList.add(u"My character"_s);
+        if (id.isEmpty())
+            *why = m_characterList.error();
+        return id;
+    });
     connect(&m_character, &ActiveCharacter::changed, this, [this] {
         m_checker.setCharacter(m_character.character(), m_character.build());
         m_finder.setCharacter(m_character.character());
