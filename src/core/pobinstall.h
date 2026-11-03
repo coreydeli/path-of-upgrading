@@ -51,8 +51,8 @@ PobPlaces pobPlaces();
 
 // The Path of Building in the location when that's set, or else the
 // Flatpak's, or else one from rusty-path-of-building installed some other
-// way. On Windows it's the installed one. Empty when there's none, with why in words for people when it's
-// given.
+// way. On Windows it's the installed one. Empty when there's none, with why
+// in words for people when it's given.
 std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why = nullptr);
 
 // Where it keeps the builds you save in it: the folder chosen in its
