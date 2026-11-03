@@ -52,8 +52,10 @@ steps are in `.github/workflows/ci.yml`.
 2. Make small commits, each one a single step. Write each title as a short
    imperative sentence, such as "Keep the popup's place up to date as it
    grows". Don't reuse a commit title.
-3. Open a pull request into `beta` and fill in the template. Keep each pull
-   request to one change.
+3. Open a pull request into `beta` and fill in the template, with its
+   features, fixes and other changes. Keep each pull request to one change.
+   Label it `enhancement`, `bug` or `documentation`, as the release notes
+   are grouped by those labels.
 4. If `beta` moves on while you work, merge it into your branch.
 5. Delete your branch once it's merged.
 
