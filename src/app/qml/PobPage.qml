@@ -156,7 +156,7 @@ FormCard.FormCardPage {
         SwitchRow {
             objectName: "keepDefenceSwitch"
             text: qsTr("Never lose defences")
-            description: qsTr("An item that costs a good part of your effective HP, Life or Energy Shield is never an upgrade.")
+            description: qsTr("An item that costs a good part of your Effective HP, Life or Energy Shield is never an upgrade.")
             checked: pobPage.options.keepDefence
             onToggled: pobPage.options.keepDefence = checked
         }
