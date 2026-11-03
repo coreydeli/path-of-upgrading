@@ -69,6 +69,15 @@ void ItemPopup::close()
     hide();
 }
 
+void ItemPopup::moveBy(int dx, int dy)
+{
+    if (!isVisible() || (dx == 0 && dy == 0))
+        return;
+    m_dragged = true;
+    m_at += QPoint(dx, dy);
+    place();
+}
+
 void ItemPopup::setTradeAvailable(bool available)
 {
     if (available == m_tradeAvailable)
@@ -156,6 +165,7 @@ void ItemPopup::show(const std::optional<ScreenPoint> &mouse)
     if (!m_window && !makeWindow())
         return;
     m_mouse = mouse;
+    m_dragged = false;
     if (!mouse && m_settings.position == PopupPosition::Cursor)
         qCDebug(lcPlacement, "The mouse isn't known, so the popup goes at the top of the screen.");
     place();
@@ -166,11 +176,16 @@ void ItemPopup::show(const std::optional<ScreenPoint> &mouse)
 
 void ItemPopup::place()
 {
-    QScreen *screen = screenNamed(m_mouse ? m_mouse->screen : QString());
+    // where you moved it, it stays on that screen
+    QScreen *screen = m_dragged ? m_window->screen() : screenNamed(m_mouse ? m_mouse->screen : QString());
     if (!screen)
         return;
-    const std::optional<QPoint> mouse = m_mouse ? std::optional(m_mouse->position) : std::nullopt;
-    m_at = placePopup(m_settings.position, m_window->size(), screen->size(), mouse);
+    if (m_dragged) {
+        m_at = withinScreen(m_at, m_window->size(), screen->size());
+    } else {
+        const std::optional<QPoint> mouse = m_mouse ? std::optional(m_mouse->position) : std::nullopt;
+        m_at = placePopup(m_settings.position, m_window->size(), screen->size(), mouse);
+    }
     if (lcPlacement().isDebugEnabled()) {
         const QString where =
             m_mouse

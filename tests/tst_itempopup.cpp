@@ -999,6 +999,81 @@ private Q_SLOTS:
         QVERIFY(popup.isInTheWay());
     }
 
+    void movesWhenDragged()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.moveBy(30, 30);
+        QVERIFY(!popup.isVisible());
+
+        popup.showReport(aReport(), mouseAt(200, 300));
+        const QPoint at = popup.window()->position();
+        popup.moveBy(30, -20);
+        QCOMPARE(popup.window()->position(), at + QPoint(30, -20));
+
+        // to where the mouse is now, which is on it, or a little off it
+        QScreen *screen = QGuiApplication::primaryScreen();
+        input.mouseAt = ScreenPoint{.screen = screen->name(),
+                                    .position = popup.window()->position() - screen->geometry().topLeft() +
+                                                QPoint(20, 1)};
+        QVERIFY(popup.isInTheWay());
+
+        // never off the screen
+        popup.moveBy(100000, 100000);
+        const QPoint corner = popup.window()->position() - screen->geometry().topLeft();
+        QCOMPARE(corner, QPoint(screen->size().width() - popup.window()->width() - 4,
+                                screen->size().height() - popup.window()->height() - 4));
+    }
+
+    void staysWhereItWasMoved()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.moveBy(60, 40);
+        const QPoint moved = popup.window()->position();
+        const int height = popup.window()->height();
+
+        // it grows as Path of Building answers, which doesn't put it back
+        ItemReport longer = aReport();
+        longer.name = u"Storm Veil of the Long Winter Kept Behind the Gate of the Drowned City"_s;
+        popup.updateReport(longer);
+        QTRY_VERIFY(popup.window()->height() > height);
+        QCOMPARE(popup.window()->position(), moved);
+
+        // but the next item goes by the mouse again
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QCOMPARE(popup.window()->position(), placed(popup.window(), PopupPosition::Cursor, QPoint(200, 300)));
+    }
+
+    void draggedByTheTitle()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QQuickWindow *window = popup.window();
+        QVERIFY(QQuickTest::qWaitForPolish(window));
+        const QQuickItem *title = shown(popup, u"Storm Veil"_s);
+        QVERIFY(title);
+        const QPoint at = window->position();
+
+        // with the mouse going 40 across and 25 down from the title, and the
+        // window going under it as it does, so the mouse says where it is in
+        // the window
+        const QPoint start = title->mapToScene(title->boundingRect().center()).toPoint();
+        const QPoint mouse = at + start;
+        QTest::mousePress(window, Qt::LeftButton, {}, start);
+        for (int step = 1; step <= 8; ++step) {
+            const QPoint to = mouse + QPoint(5 * step, 3 * step + step / 8);
+            QTest::mouseMove(window, to - window->position());
+        }
+        QTest::mouseRelease(window, Qt::LeftButton, {}, mouse + QPoint(40, 25) - window->position());
+        QCOMPARE(window->position(), at + QPoint(40, 25));
+    }
+
     void colours()
     {
         QQmlEngine engine;
