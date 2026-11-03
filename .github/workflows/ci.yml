@@ -139,4 +139,15 @@ jobs:
         working-directory: build
         env:
           QT_QPA_PLATFORM: offscreen
-        run: ctest --output-on-failure -j4
+        # ctest shows nothing of what a failed test said here, so they run
+        # again with their logs in files
+        run: |
+          ctest --output-on-failure -j4 && exit 0
+          for name in $(sed 's/^[0-9]*://' Testing/Temporary/LastTestsFailed.log); do
+              echo "::group::$name"
+              tests/$name.exe -o "$name.txt,txt"
+              echo "It ended with $?"
+              cat "$name.txt"
+              echo "::endgroup::"
+          done
+          exit 1
