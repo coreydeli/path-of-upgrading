@@ -83,6 +83,7 @@ jobs:
         run: |
           pkgver=${ARCH_VERSION:-$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)}
           sed -i "s/^pkgver=.*/pkgver=$pkgver/" packaging/arch/PKGBUILD
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git archive --prefix="path-of-upgrading-$pkgver/" \
               -o "packaging/arch/path-of-upgrading-$pkgver.tar.gz" HEAD
       - uses: actions/cache@v6
