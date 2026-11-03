@@ -6,10 +6,12 @@
 #include <QColor>
 #include <QDesktopServices>
 #include <QGuiApplication>
+#include <QLoggingCategory>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QRegularExpression>
 #include <QScreen>
 #include <QSignalSpy>
 #include <QTest>
@@ -176,6 +178,19 @@ private Q_SLOTS:
         popup.showReport(aReport(), std::nullopt);
         QVERIFY(popup.isVisible());
         QCOMPARE(popup.window()->position(), placed(popup.window(), PopupPosition::Top, std::nullopt));
+    }
+
+    void saysWhereItWent()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=true"_s);
+        // the popup grows once it's shown, so there can be more than one
+        QTest::ignoreMessage(QtDebugMsg,
+                             QRegularExpression(u"The mouse is 200,300 on .*goes to 224,\\d+ on"_s));
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=false"_s);
     }
 
     void whereTheSettingsSay()
