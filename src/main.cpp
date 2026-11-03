@@ -21,6 +21,11 @@
 #include <QQuickStyle>
 #include <QWindow>
 
+#ifdef Q_OS_WIN
+#include <KIconTheme>
+#include <QIcon>
+#endif
+
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
 using namespace Qt::Literals::StringLiterals;
@@ -54,6 +59,10 @@ void pickControlsStyle()
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_WIN
+    // Windows has no icon themes, so Breeze comes with the app
+    KIconTheme::initTheme();
+#endif
     QApplication app(argc, argv);
     QApplication::setApplicationName(u"path-of-upgrading"_s);
     QApplication::setApplicationDisplayName(u"Path of Upgrading"_s);
@@ -63,6 +72,10 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain(u"coreydeli.github.io"_s);
     // closing the window leaves it in the tray
     QApplication::setQuitOnLastWindowClosed(false);
+#ifdef Q_OS_WIN
+    // which the desktop file gives it elsewhere
+    QApplication::setWindowIcon(QIcon(u":/icons/" APP_ID ".svg"_s));
+#endif
 
     // --help and --version print and exit here
     pou::CommandLine commandLine;
