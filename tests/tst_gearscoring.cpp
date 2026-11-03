@@ -109,8 +109,10 @@ class TestGearScoring : public QObject
 private Q_SLOTS:
     void nobody()
     {
+        // which has the default profile's stats to change
         Scoring s;
-        QCOMPARE(s.scoring.rowCount(), 0);
+        QCOMPARE(s.scoring.rowCount(), int(tweakableStats(*buildProfile(defaultBuildProfile)).size()));
+        QCOMPARE(s.scoring.profile(), 0);
         QCOMPARE(s.scoring.character(), QString());
         QVERIFY(!s.scoring.isTweaked());
         QCOMPARE(s.scoring.profiles(),
@@ -400,7 +402,7 @@ private Q_SLOTS:
 
         // and nobody
         s.active.setId(u"gone"_s);
-        QCOMPARE(s.scoring.rowCount(), 0);
+        QCOMPARE(s.scoring.rowCount(), int(tweakableStats(*buildProfile(defaultBuildProfile)).size()));
         QCOMPARE(reset.size(), 2);
     }
 };

@@ -89,8 +89,10 @@ private Q_SLOTS:
     void nobody()
     {
         Gear g;
+        // with the main slots to fill, all empty
         QCOMPARE(g.list.character(), QString());
-        QCOMPARE(g.list.rowCount(), 0);
+        QCOMPARE(g.slotNames(), pou::mainSlots());
+        QCOMPARE(g.in(u"Helmet"_s, GearList::NameRole).toString(), QString());
         QVERIFY(!g.list.hasExtras());
     }
 
@@ -177,6 +179,74 @@ private Q_SLOTS:
         for (auto it = bySlot.cbegin(); weakest.size() < 3; ++it)
             weakest << it.value() + u' ' + QString::number(it.key());
         QCOMPARE(g.list.weakest(), weakest.join(u", "_s));
+    }
+
+    void whatToImprove()
+    {
+        Gear g;
+        const Character c = wearing({{u"Helmet"_s, helmet}, {u"Belt"_s, belt}, {u"Jewel 3"_s, jewel}});
+        g.play(c);
+
+        // what the popup would say of the helmet, in its words
+        const GearScore score = *gearScore(helmet, gearScoreOptions(c, u"Helmet"_s));
+        QVERIFY(!score.missing.isEmpty());
+        const QString improve = g.in(u"Helmet"_s, GearList::ImproveRole).toString();
+        QVERIFY(improve.startsWith(u"Missing what your build wants: "_s));
+        QVERIFY(improve.startsWith(missingNote(score)));
+        QCOMPARE(
+            improve,
+            QStringList({missingNote(score), wastedNote(score), weakRollsNote(score)}).join(u' ').trimmed());
+
+        // a unique has no gear score, so nothing to improve
+        QCOMPARE(g.in(u"Belt"_s, GearList::ImproveRole).toString(), QString());
+        QVERIFY(!g.in(u"Jewel 3"_s, GearList::ImproveRole).toString().isEmpty());
+    }
+
+    void whatTheBuildWantsInAnEmptySlot()
+    {
+        Gear g;
+        const Character c = wearing({{u"Helmet"_s, helmet}});
+        g.play(c);
+        const QList<KeyStat> top = topStats(u"Gloves"_s, 3, gearScoreOptions(c, u"Gloves"_s));
+        QVERIFY(!top.isEmpty());
+        QStringList labels;
+        for (const KeyStat &stat : top)
+            labels << stat.label;
+        QCOMPARE(g.in(u"Gloves"_s, GearList::ImproveRole).toString(),
+                 u"Your build wants most: "_s + labels.join(u", "_s) + u'.');
+
+        // before there's a character too, and not by your weights alone
+        Gear nobody;
+        QVERIFY(nobody.in(u"Gloves"_s, GearList::ImproveRole)
+                    .toString()
+                    .startsWith(u"Your build wants most: "_s));
+        Character weights = wearing({});
+        weights.buildProfile = noBuildProfile.toString();
+        nobody.play(weights);
+        QCOMPARE(nobody.in(u"Gloves"_s, GearList::ImproveRole).toString(), QString());
+        QCOMPARE(nobody.in(u"Helmet"_s, GearList::ImproveRole).toString(), QString());
+    }
+
+    void focus()
+    {
+        // on the weakest slot, which the overall test has as the gloves
+        Gear g;
+        const Item gloves =
+            item(u"Gloves"_s, u"Rare"_s, u"Grim Grip"_s, u"Suede Bracers"_s, u"+10 to maximum Life"_s);
+        const Character c = wearing({{u"Helmet"_s, helmet}, {u"Gloves"_s, gloves}});
+        g.play(c);
+        QCOMPARE(g.list.weakest().section(u' ', 0, 0), u"Gloves"_s);
+        QCOMPARE(g.list.focus(),
+                 u"Start with Gloves. "_s + g.in(u"Gloves"_s, GearList::ImproveRole).toString());
+
+        QSignalSpy changed(&g.list, &GearList::changed);
+        QVERIFY(g.active.takeOff(u"Gloves"_s));
+        QVERIFY(changed.size() > 0);
+        QVERIFY(g.list.focus().startsWith(u"Start with Helmet. "_s));
+
+        // and with nothing to rate, nothing to say
+        QVERIFY(g.active.takeOff(u"Helmet"_s));
+        QCOMPARE(g.list.focus(), QString());
     }
 
     void noOverall()

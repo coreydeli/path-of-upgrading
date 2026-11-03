@@ -399,14 +399,10 @@ QStringList gearNotesOf(const GearScore &gear)
     QStringList notes;
     if (!gear.resistNote.isEmpty())
         notes << gear.resistNote;
-    if (!gear.wasted.isEmpty()) {
-        QStringList names;
-        for (const QString &key : gear.wasted)
-            names << statName(key);
-        notes << u"Not used by your build: "_s + names.join(u", "_s) + u'.';
-    }
-    if (!gear.missing.isEmpty())
-        notes << u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
+    if (const QString wasted = wastedNote(gear); !wasted.isEmpty())
+        notes << wasted;
+    if (const QString missing = missingNote(gear); !missing.isEmpty())
+        notes << missing;
     return notes;
 }
 

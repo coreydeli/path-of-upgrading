@@ -163,14 +163,14 @@ void GearScoring::reset()
 
 void GearScoring::refresh()
 {
-    const QString id = m_active->exists() ? idOf(m_active->character()) : QString();
+    const QString id = idOf(m_active->character());
     if (id == m_profile) {
         if (!m_stats.isEmpty())
             Q_EMIT dataChanged(index(0), index(int(m_stats.size()) - 1), {WhereRole, LevelRole});
     } else {
         beginResetModel();
         m_profile = id;
-        const BuildProfile *p = id.isEmpty() ? nullptr : buildProfile(id);
+        const BuildProfile *p = buildProfile(id);
         m_stats = p ? tweakableStats(*p) : QList<TweakableStat>();
         endResetModel();
     }

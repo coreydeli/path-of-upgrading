@@ -33,9 +33,11 @@ FormCard.FormCardPage {
         required property bool fromPob
         required property string score
         required property string grade
+        required property string improve
 
         objectName: "slot:" + slot
         text: slot
+        note: improve
         description: {
             if (name === "")
                 return qsTr("Nothing saved");
@@ -77,7 +79,7 @@ FormCard.FormCardPage {
             objectName: "overallScore"
             visible: gearPage.gear.overall !== ""
             text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
-            description: qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
+            description: gearPage.gear.focus !== "" ? qsTr("Upgrade first: %1\n%2").arg(gearPage.gear.weakest).arg(gearPage.gear.focus) : qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
         }
 
         FormCard.FormDelegateSeparator {
@@ -88,7 +90,7 @@ FormCard.FormCardPage {
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("Add a character or import a build on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
         }
 
         Repeater {
@@ -117,19 +119,16 @@ FormCard.FormCardPage {
 
     FormCard.FormSectionText {
         objectName: "gearHelp"
-        visible: gearPage.gear.character !== ""
         text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
     }
 
     FormCard.FormHeader {
-        visible: resistances.visible
         title: qsTr("Your Resistances")
     }
 
     FormCard.FormCard {
         id: resistances
         objectName: "resistances"
-        visible: gearPage.gear.character !== ""
 
         FormCard.FormTextDelegate {
             id: resistSummary

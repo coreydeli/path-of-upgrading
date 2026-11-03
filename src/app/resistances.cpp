@@ -27,7 +27,7 @@ bool Resistances::isFromSheet() const
 
 void Resistances::setFromSheet(bool fromSheet)
 {
-    if (fromSheet == isFromSheet() || !m_active->exists())
+    if (fromSheet == isFromSheet())
         return;
     if (fromSheet) {
         typeIn(m_live ? m_live->values : PerElement<std::optional<double>>());

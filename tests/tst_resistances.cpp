@@ -87,7 +87,8 @@ private Q_SLOTS:
 
         r.resists.setFromSheet(true);
         QVERIFY(!r.resists.isFromSheet());
-        QCOMPARE(r.resists.error(), QString());
+        // as nothing makes a character in this test
+        QCOMPARE(r.resists.error(), u"There's no character. Add one first."_s);
     }
 
     void notKnownYet()

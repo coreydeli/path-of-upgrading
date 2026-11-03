@@ -764,10 +764,20 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
         QVERIFY(!isVisible(w.find(u"overallScore"_s)));
-        QVERIFY(!isVisible(w.find(u"gearHelp"_s)));
         QVERIFY(!isVisible(w.find(u"gearError"_s)));
         QVERIFY(!isVisible(w.find(u"extras"_s)));
-        QVERIFY(!isVisible(w.find(u"resistances"_s)));
+        // the slots are there to fill, and the rest is as for anyone
+        QVERIFY(isVisible(w.find(u"gearHelp"_s)));
+        QVERIFY(isVisible(w.find(u"resistances"_s)));
+        QObject *helmet = w.find(u"slot:Helmet"_s);
+        QVERIFY(isVisible(helmet));
+        QCOMPARE(helmet->property("description").toString(), u"Nothing saved"_s);
+
+        // and wearing something makes a character
+        QVERIFY(w.app->character().wear(u"Helmet"_s, item(itemtexts::helmetOld)));
+        QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QVERIFY(isVisible(w.find(u"overallScore"_s)));
     }
 
     void gear()
@@ -798,8 +808,18 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"slot:Ring 1"_s)->property("description").toString(),
                  u"Storm Loop, Sapphire Ring, from Path of Building"_s);
 
+        // what would raise its score, and what an empty slot should have
+        QObject *helmetNote = helmet->findChild<QObject *>(u"noteText"_s);
+        const QString improve = w.app->gearList()->index(2).data(GearList::ImproveRole).toString();
+        QVERIFY(improve.startsWith(u"Missing what your build wants: "_s));
+        QVERIFY(isVisible(helmetNote));
+        QCOMPARE(text(helmetNote), improve);
+
         QObject *gloves = w.find(u"slot:Gloves"_s);
         QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
+        QObject *wants = gloves->findChild<QObject *>(u"noteText"_s);
+        QVERIFY(isVisible(wants));
+        QVERIFY(text(wants).startsWith(u"Your build wants most: "_s));
         QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
 
@@ -809,7 +829,9 @@ private Q_SLOTS:
         QVERIFY(!list->overall().isEmpty());
         QCOMPARE(text(overall), u"Overall gear score %1 %2"_s.arg(list->overall(), list->overallGrade()));
         QVERIFY(!list->weakest().isEmpty());
-        QCOMPARE(overall->property("description").toString(), u"Upgrade first: "_s + list->weakest());
+        QVERIFY(list->focus().startsWith(u"Start with "_s));
+        QCOMPARE(overall->property("description").toString(),
+                 u"Upgrade first: "_s + list->weakest() + u'\n' + list->focus());
     }
 
     void gearHeading()
@@ -970,10 +992,16 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearScoreAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
-        QVERIFY(!isVisible(w.find(u"profileBox"_s)));
-        QVERIFY(!isVisible(w.find(u"scoreHelp"_s)));
-        QVERIFY(!isVisible(w.find(u"stats"_s)));
         QVERIFY(!isVisible(w.find(u"scoreError"_s)));
+        // the default profile can be changed all the same
+        QObject *profile = w.find(u"profileBox"_s);
+        QVERIFY(isVisible(profile));
+        QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
+        QVERIFY(isVisible(w.in(u"stats"_s, u"stat:Life"_s)));
+        QVERIFY(activate(profile, 1));
+        QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QCOMPARE(w.app->character().character().name, u"My character"_s);
+        QCOMPARE(w.app->character().character().buildProfile, u"es-caster"_s);
     }
 
     void gearScore()
@@ -1066,12 +1094,15 @@ private Q_SLOTS:
         QVERIFY(w.show(u"weightsAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
         QVERIFY(!isVisible(w.find(u"noWeightsText"_s)));
-        QVERIFY(!isVisible(w.find(u"addStatButton"_s)));
-        QVERIFY(!isVisible(w.find(u"suggestButton"_s)));
-        QVERIFY(!isVisible(w.find(u"resetButton"_s)));
-        QVERIFY(!isVisible(w.find(u"weightsHelp"_s)));
         QVERIFY(!isVisible(w.find(u"weightsError"_s)));
         QVERIFY(!isVisible(w.find(u"undoMessage"_s)));
+        // the default weights can be changed all the same
+        QVERIFY(isVisible(w.find(u"addStatButton"_s)));
+        QVERIFY(isVisible(w.find(u"suggestButton"_s)));
+        QVERIFY(isVisible(w.find(u"weightsHelp"_s)));
+        QVERIFY(isVisible(w.find(u"resetButton"_s)));
+        QVERIFY(!w.find(u"resetButton"_s)->property("enabled").toBool());
+        QVERIFY(w.app->statWeights()->rowCount() > 0);
     }
 
     void weights()
@@ -1361,10 +1392,15 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"ignoredAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
-        QVERIFY(!isVisible(w.find(u"ignoredHelp"_s)));
-        QVERIFY(!isVisible(w.find(u"singleStats"_s)));
         QVERIFY(!isVisible(w.find(u"ignoredError"_s)));
-        QVERIFY(!search(w.page(), [](QObject *o) { return o->objectName().startsWith(u"group:"); }));
+        // the groups can be set all the same
+        QVERIFY(isVisible(w.find(u"ignoredHelp"_s)));
+        QVERIFY(isVisible(w.find(u"singleStats"_s)));
+        QObject *box = w.find(u"group:eleres"_s)->findChild<QObject *>(u"modeBox"_s);
+        QVERIFY(activate(box, 1));
+        QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
+        QCOMPARE(w.app->character().character().name, u"My character"_s);
+        QCOMPARE(w.app->character().character().ignored.size(), 1);
     }
 
     void ignoreGroups()

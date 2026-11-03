@@ -47,12 +47,11 @@ FormCard.FormCardPage {
             objectName: "nobodyText"
             visible: scorePage.scoring.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("Add a character or import a build on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
         }
 
         FormCard.FormComboBoxDelegate {
             objectName: "profileBox"
-            visible: scorePage.scoring.character !== ""
             text: qsTr("Build profile")
             description: scorePage.scoring.summary
             model: scorePage.scoring.profiles

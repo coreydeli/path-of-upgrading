@@ -35,6 +35,9 @@ class GearList : public QAbstractListModel
     // The three main slots with the lowest gear scores, "Gloves 31, Boots 40,
     // Belt 44".
     Q_PROPERTY(QString weakest READ weakest NOTIFY changed)
+    // What to look for first, from the weakest of them that has something to
+    // improve: "Start with Gloves. Missing what your build wants: Life."
+    Q_PROPERTY(QString focus READ focus NOTIFY changed)
     // Why the last change couldn't be made, empty when it could.
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
@@ -47,6 +50,7 @@ public:
         ScoreRole,                   // its gear score, "78", empty when it has none
         GradeRole,                   // "A"
         ExtraRole,                   // not one of the main slots
+        ImproveRole,                 // what would raise its score, empty when there's nothing to say
     };
 
     // They have to outlive it.
@@ -61,6 +65,7 @@ public:
     QString overall() const { return m_overall; }
     QString overallGrade() const { return m_overallGrade; }
     QString weakest() const { return m_weakest; }
+    QString focus() const { return m_focus; }
 
     Q_INVOKABLE bool takeOff(const QString &slot);
 
@@ -76,6 +81,9 @@ private:
         QString slot;
         std::optional<int> score;
         QString grade;
+        // for a worn item the ways its score falls short, for an empty main
+        // slot what the build wants most there
+        QString improve;
     };
 
     void refresh();
@@ -88,6 +96,7 @@ private:
     QString m_overall;
     QString m_overallGrade;
     QString m_weakest;
+    QString m_focus;
     QString m_error;
 };
 
