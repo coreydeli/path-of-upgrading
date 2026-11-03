@@ -21,6 +21,8 @@ struct FakeAnswer
     QList<std::pair<QByteArray, QByteArray>> headers;
     // with no status or headers, as when the site can't be reached
     QNetworkReply::NetworkError error = QNetworkReply::NoError;
+    // or none at all, as from a site that hasn't answered yet
+    bool never = false;
 };
 
 class FakeReply : public QNetworkReply
@@ -35,6 +37,8 @@ public:
         setRequest(request);
         setUrl(request.url());
         open(QIODevice::ReadOnly | QIODevice::Unbuffered);
+        if (answer.never)
+            return;
         // a moment later, as an answer never comes before the request is out
         QTimer::singleShot(0, this, [this, answer] {
             if (answer.error == NoError) {

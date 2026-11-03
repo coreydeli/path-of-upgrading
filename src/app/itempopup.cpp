@@ -169,6 +169,7 @@ void ItemPopup::place()
     const std::optional<QPoint> mouse = m_mouse ? std::optional(m_mouse->position) : std::nullopt;
     m_at = placePopup(m_settings.position, m_window->size(), screen->size(), mouse);
     moveOverlay(m_window.get(), screen, m_at);
+    m_hider.moved(QRect(m_at, m_window->size()));
 }
 
 void ItemPopup::hide()

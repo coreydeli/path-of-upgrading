@@ -16,13 +16,19 @@ ColumnLayout {
     property bool colorblind: false
     // for notes that say how a stat was counted, not how its change reads
     property bool plainNotes: false
+    // in whole pixels, as Qt 6.8's layouts round it down and the widest
+    // number wouldn't fit
+    readonly property int numberWidth: Math.ceil(number.implicitWidth)
 
     spacing: 0
 
-    // the widest a number gets, in bold like the change, so the columns line up
-    TextMetrics {
+    // The widest a number gets, in bold like the change, so the columns line
+    // up. It's a label like theirs, as the style can draw labels wider than
+    // TextMetrics measures.
+    QQC2.Label {
         id: number
 
+        visible: false
         font.bold: true
         text: "+88,888%"
     }
@@ -39,21 +45,21 @@ ColumnLayout {
         }
 
         QQC2.Label {
-            Layout.preferredWidth: number.width
+            Layout.preferredWidth: table.numberWidth
             horizontalAlignment: Text.AlignRight
             font: Kirigami.Theme.smallFont
             text: qsTr("Now")
         }
 
         QQC2.Label {
-            Layout.preferredWidth: number.width
+            Layout.preferredWidth: table.numberWidth
             horizontalAlignment: Text.AlignRight
             font: Kirigami.Theme.smallFont
             text: qsTr("With it")
         }
 
         Item {
-            Layout.preferredWidth: number.width
+            Layout.preferredWidth: table.numberWidth
         }
     }
 
@@ -91,7 +97,7 @@ ColumnLayout {
             }
 
             QQC2.Label {
-                Layout.preferredWidth: number.width
+                Layout.preferredWidth: table.numberWidth
                 Layout.alignment: Qt.AlignTop
                 horizontalAlignment: Text.AlignRight
                 opacity: 0.7
@@ -99,14 +105,14 @@ ColumnLayout {
             }
 
             QQC2.Label {
-                Layout.preferredWidth: number.width
+                Layout.preferredWidth: table.numberWidth
                 Layout.alignment: Qt.AlignTop
                 horizontalAlignment: Text.AlignRight
                 text: change.modelData.to
             }
 
             ToneLabel {
-                Layout.preferredWidth: number.width
+                Layout.preferredWidth: table.numberWidth
                 Layout.alignment: Qt.AlignTop
                 horizontalAlignment: Text.AlignRight
                 font.bold: true

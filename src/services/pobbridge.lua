@@ -84,6 +84,29 @@ local function promptError()
     return text:match("^Error:\n\n(.-)\n[^\n]*\nPress Enter/Escape") or text
 end
 
+-- HeadlessWrapper.lua and Launch.lua start with a "#@" line. LuaJIT used to
+-- skip a first line starting with "#", but newer ones, like the Flatpak's,
+-- only skip "#!", so those are loaded without it.
+local loadfileAsIs = loadfile
+function loadfile(path, ...)
+    local loaded, failure = loadfileAsIs(path, ...)
+    local file = not loaded and path and io.open(path, "rb")
+    if not file then
+        return loaded, failure
+    end
+    local text = file:read("*a")
+    file:close()
+    if text:sub(1, 1) ~= "#" then
+        return loaded, failure
+    end
+    -- keeping its line break, so errors still say the right line
+    return loadstring((text:gsub("^#[^\n]*", "")), "@" .. path)
+end
+
+function dofile(path)
+    return assert(loadfile(path))()
+end
+
 -- When it can't start, Path of Building shows why and waits for Enter.
 local read = io.read
 io.read = function() end

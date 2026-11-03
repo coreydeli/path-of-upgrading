@@ -56,8 +56,28 @@ FormCard.FormCardPage {
                 // changes some other way
                 checked: characterId === charactersPage.characters.current
                 focusPolicy: Qt.StrongFocus
-                background: FormCard.FormDelegateBackground {
-                    control: characterRow
+                // FormDelegateBackground's, but Kirigami Addons 1.7's reads
+                // the row's card, which a removed row no longer has
+                background: Kirigami.ShadowedRectangle {
+                    readonly property var card: characterRow.parent
+                    readonly property real cornerRadius: card?._cornerRadius ?? 0
+                    readonly property real topRadius: card?._firstVisibleItem === characterRow ? cornerRadius : 0
+                    readonly property real bottomRadius: card?._lastVisibleItem === characterRow ? cornerRadius : 0
+
+                    color: Kirigami.Theme.textColor
+                    opacity: !characterRow.enabled ? 0 : characterRow.pressed ? 0.2 : characterRow.visualFocus ? 0.1 : !Kirigami.Settings.tabletMode && characterRow.hovered ? 0.07 : 0
+                    corners {
+                        topLeftRadius: topRadius
+                        topRightRadius: topRadius
+                        bottomLeftRadius: bottomRadius
+                        bottomRightRadius: bottomRadius
+                    }
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Kirigami.Units.shortDuration
+                        }
+                    }
                 }
                 Accessible.role: Accessible.RadioButton
                 Accessible.checkable: true

@@ -147,7 +147,13 @@ class TestItemChecker : public QObject
 
 public:
     // the popup's windows aren't for the screen
-    static void initMain() { qputenv("QT_QPA_PLATFORM", "offscreen"); }
+    static void initMain()
+    {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
+        // platform plugin of its own
+        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
+    }
 
 private Q_SLOTS:
     void initTestCase()
@@ -193,7 +199,6 @@ private Q_SLOTS:
 
         // the mouse is on it, so the game would see that and not the item
         input.mouseAt = onPopup(checker.popup());
-        Q_EMIT input.copyFailed(GameInput::Failure::NothingCopied, {}, std::nullopt);
         checker.check();
         QVERIFY(!checker.popup().isVisible());
         QCOMPARE(input.copies, 2);

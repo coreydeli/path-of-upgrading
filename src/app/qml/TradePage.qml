@@ -50,7 +50,7 @@ FormCard.FormCardPage {
     FormCard.FormCard {
         Layout.topMargin: Kirigami.Units.largeSpacing
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Search the trade site")
             description: qsTr("From the popup, for upgrades and for items like the one you checked.")
@@ -97,7 +97,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "hardcoreSwitch"
             text: qsTr("Hardcore")
             checked: tradePage.options.hardcore
@@ -106,7 +106,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "soloSwitch"
             text: qsTr("Solo self-found")
             description: qsTr("There's no trading in solo self-found, so this turns trade searches off.")
@@ -184,7 +184,7 @@ FormCard.FormCardPage {
 
         FormCard.FormDelegateSeparator {}
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "autoRateSwitch"
             text: qsTr("Go by poe.ninja's rate")
             description: tradePage.options.ninjaRate > 0 ? qsTr("A Divine Orb is %1 Exalted Orbs in %2.").arg(Math.round(tradePage.options.ninjaRate)).arg(tradePage.options.searchedLeague) : qsTr("It hasn't said yet, so it goes by yours.")

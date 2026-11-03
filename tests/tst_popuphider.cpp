@@ -267,6 +267,21 @@ private Q_SLOTS:
         QCOMPARE(hider.isInTheWay(), inTheWay);
     }
 
+    void inTheWayOnceMoved()
+    {
+        // grown, and moved up to stay on the screen
+        FakeGameInput input;
+        PopupHider hider(&input);
+        hider.shown(u"DP-1"_s, popup, true);
+        hider.moved(popup.adjusted(0, -200, 0, 300));
+        input.mouseAt = at(1200, 250);
+        QVERIFY(hider.isInTheWay());
+        input.mouseAt = at(1200, 950);
+        QVERIFY(hider.isInTheWay());
+        input.mouseAt = at(1200, 1010);
+        QVERIFY(!hider.isInTheWay());
+    }
+
     void inTheWayWhenHovered()
     {
         // which is how it's known over the popup, where the mouse isn't

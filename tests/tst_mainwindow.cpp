@@ -158,6 +158,15 @@ struct Window
         window.reset(qobject_cast<QQuickWindow *>(made));
     }
 
+    // The rows a list let go of are only deleted later, and in Qt 6.8 a QML
+    // object that outlives its engine leaves its types for the next engine,
+    // which can't use them.
+    ~Window()
+    {
+        window.reset();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
+
     const Settings &settings() const { return app->settings().settings(); }
 
     // as when you pick it in the sidebar
@@ -230,13 +239,14 @@ struct Window
         return QTest::qWaitFor([this] { return !app->tradeSession()->isBusy(); }, 1000);
     }
 
-    // On the offscreen screen, as a list only makes the rows it shows once
-    // it's laid out.
+    // On the offscreen screen and laid out, as a list only makes the rows it
+    // shows once it's laid out, and Kirigami 6.13 keeps a page disabled until
+    // it's laid out in view.
     bool shown() const
     {
         window->resize(1000, 700);
         window->show();
-        return QTest::qWaitForWindowExposed(window.get());
+        return QTest::qWaitForWindowExposed(window.get()) && settled();
     }
 
     // once what changed is laid out
@@ -320,6 +330,9 @@ public:
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
         qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1");
+        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
+        // platform plugin of its own
+        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
     }
 
 private Q_SLOTS:
@@ -363,6 +376,7 @@ private Q_SLOTS:
     void addCharacter()
     {
         Window w;
+        QVERIFY(w.shown());
         QObject *name = w.find(u"nameField"_s);
         QObject *add = w.find(u"addButton"_s);
         QVERIFY(!add->property("enabled").toBool());
@@ -631,6 +645,7 @@ private Q_SLOTS:
     void pobSettings()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"pobAction"_s));
         const QStringList weighing = {u"damageSlider"_s,     u"resistsSwitch"_s, u"chaosSwitch"_s,
                                       u"keepDamageSwitch"_s, u"spiritSwitch"_s,  u"attributesSwitch"_s};
@@ -667,6 +682,7 @@ private Q_SLOTS:
     void showsPobSettings()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"pobAction"_s));
         Settings settings = w.settings();
         settings.pob.enabled = false;
@@ -680,6 +696,39 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"resistsSwitch"_s)->property("checked").toBool(), false);
         // which only counts toward the caps
         QCOMPARE(w.find(u"chaosSwitch"_s)->property("enabled").toBool(), false);
+    }
+
+    // A click on its switch or on the rest of the row flips it, and it still
+    // follows the setting when that changes somewhere else.
+    void switchRows()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"pobAction"_s));
+        QVERIFY(w.settled());
+        auto *row = qobject_cast<QQuickItem *>(w.find(u"enabledSwitch"_s));
+        QVERIFY(row);
+        auto *flip = row->findChild<QQuickItem *>(u"switch"_s);
+        QVERIFY(flip);
+        QCOMPARE(row->property("checked").toBool(), true);
+
+        QTest::mouseClick(w.window.get(), Qt::LeftButton, {},
+                          flip->mapToScene(QPointF(flip->width() / 2, flip->height() / 2)).toPoint());
+        QCOMPARE(w.settings().pob.enabled, false);
+        QCOMPARE(row->property("checked").toBool(), false);
+        QCOMPARE(flip->property("checked").toBool(), false);
+
+        QTest::mouseClick(w.window.get(), Qt::LeftButton, {},
+                          row->mapToScene(QPointF(20, row->height() / 2)).toPoint());
+        QCOMPARE(w.settings().pob.enabled, true);
+        QCOMPARE(row->property("checked").toBool(), true);
+        QCOMPARE(flip->property("checked").toBool(), true);
+
+        Settings settings = w.settings();
+        settings.pob.enabled = false;
+        QVERIFY(w.app->settings().set(settings));
+        QCOMPARE(row->property("checked").toBool(), false);
+        QCOMPARE(flip->property("checked").toBool(), false);
     }
 
     void pages()
@@ -926,6 +975,7 @@ private Q_SLOTS:
     void gearScore()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"gearScoreAction"_s));
         w.play({});
         QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
@@ -957,6 +1007,7 @@ private Q_SLOTS:
     void statLevels()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"gearScoreAction"_s));
         w.play({});
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
@@ -1022,6 +1073,7 @@ private Q_SLOTS:
     void weights()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
@@ -1057,6 +1109,7 @@ private Q_SLOTS:
     void editWeight()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QObject *life = w.find(u"weight:# to maximum Life"_s)->findChild<QObject *>(u"weightBox"_s);
@@ -1087,6 +1140,7 @@ private Q_SLOTS:
     void noWeights()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         for (const QString &key : defaultWeights().keys())
@@ -1211,6 +1265,7 @@ private Q_SLOTS:
     void nothingToSuggest()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QObject *suggest = w.find(u"suggestButton"_s);
@@ -1223,6 +1278,7 @@ private Q_SLOTS:
     void useSuggestedWeights()
     {
         Window w;
+        QVERIFY(w.shown());
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({{u"Jewel 2"_s, item(jewel)}});
         QObject *suggest = w.find(u"suggestButton"_s);
@@ -1655,6 +1711,10 @@ private Q_SLOTS:
     void noRateYet()
     {
         Window w;
+        // poe.ninja, which is asked once the trade site has said its leagues
+        w.network->answers.last() = {.never = true};
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.app->rates().isRefreshing());
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(w.find(u"autoRateSwitch"_s)->property("description").toString(),
                  u"It hasn't said yet, so it goes by yours."_s);

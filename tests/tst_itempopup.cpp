@@ -132,7 +132,13 @@ class TestItemPopup : public QObject
 
 public:
     // the popup's windows aren't for the screen
-    static void initMain() { qputenv("QT_QPA_PLATFORM", "offscreen"); }
+    static void initMain()
+    {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
+        // platform plugin of its own
+        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
+    }
 
 private Q_SLOTS:
     void init()
@@ -967,6 +973,13 @@ private Q_SLOTS:
         QTRY_VERIFY(popup.window()->height() > height);
         QCOMPARE(popup.window()->position(),
                  placed(popup.window(), PopupPosition::Cursor, QPoint(200, bottom)));
+
+        // and it's in the way all over, the top it grew too
+        QScreen *screen = QGuiApplication::primaryScreen();
+        input.mouseAt = ScreenPoint{.screen = screen->name(),
+                                    .position = popup.window()->position() - screen->geometry().topLeft() +
+                                                QPoint(20, 1)};
+        QVERIFY(popup.isInTheWay());
     }
 
     void colours()

@@ -62,3 +62,5 @@ if(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+include(packaging/debian.cmake)

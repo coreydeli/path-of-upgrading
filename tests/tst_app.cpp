@@ -199,7 +199,13 @@ class TestApp : public QObject
 
 public:
     // the popup's windows aren't for the screen
-    static void initMain() { qputenv("QT_QPA_PLATFORM", "offscreen"); }
+    static void initMain()
+    {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
+        // platform plugin of its own
+        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
+    }
 
 private Q_SLOTS:
     void init() { QTest::failOnWarning(); }

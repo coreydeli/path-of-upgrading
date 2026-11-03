@@ -144,7 +144,7 @@ FormCard.FormCardPage {
             visible: resistSummary.visible
         }
 
-        FormCard.FormSwitchDelegate {
+        SwitchRow {
             objectName: "fromSheetSwitch"
             text: qsTr("Typed in off your character sheet")
             description: qsTr("As the sheet shows them, over the maximum too. They follow your gear from then on.")
