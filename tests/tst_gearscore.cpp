@@ -109,7 +109,7 @@ private Q_SLOTS:
         for (const TweakableStat &s : stats)
             labels << s.label;
         QCOMPARE(labels.first(), u"Spell skill levels"_s);
-        QCOMPARE(labels.size(), 16);
+        QCOMPARE(labels.size(), 17);
         QCOMPARE(labels.removeDuplicates(), 0);
 
         const auto groupsOf = [&stats](const QString &label) {
@@ -363,13 +363,14 @@ private Q_SLOTS:
         QCOMPARE(helmet->ideal, 42.0);
     }
 
-    void aSlotTheBuildHasNoUseForScoresNothing()
+    void aStatTheSlotHasNoUseForScoresNothing()
     {
+        // flat life can't roll on a jewel, and its percent is what counts there
         const auto g = gearScore(item(u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
                                       "+20 to maximum Life"_s));
         QCOMPARE(g->score, 0);
         QCOMPARE(g->grade, u"D"_s);
-        QCOMPARE(g->ideal, 1.0);
+        QCOMPARE(g->ideal, 16.5);
     }
 
     void theAttackerProfile()
@@ -467,6 +468,44 @@ private Q_SLOTS:
                                    u"Allies in your Presence have #% increased Attack Speed"_s}) {
             for (const ProfileStat &s : p.stats)
                 QVERIFY2(!s.pattern.match(key).hasMatch(), qPrintable(key + u" / "_s + s.label));
+        }
+    }
+
+    void looserProfilesStillDifferFromEachOther()
+    {
+        // spell damage on a jewel counts a little for life builds, and more for casters
+        const QString spell = u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
+                              "20% increased Spell Damage"_s;
+        const int life = scoreWith(spell, defaultBuildProfile);
+        QVERIFY(life > 0);
+        QVERIFY(scoreWith(spell, energyShieldProfile) > life);
+        // and life percent is for life builds
+        const QString health = u"Item Class: Jewels\nRarity: Rare\nA\nCobalt Jewel\n--------\n"
+                               "8% increased maximum Life"_s;
+        QVERIFY(scoreWith(health, defaultBuildProfile) > 0);
+        QCOMPARE(scoreWith(health, energyShieldProfile), 0);
+    }
+
+    void lifeBuildsCountAHybridsEnergyShieldForHalf()
+    {
+        const QString ring = u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
+                             "+45 to maximum Energy Shield"_s;
+        const auto life = gearScore(item(ring), {.build = defaultBuildProfile.toString()});
+        const auto caster = gearScore(item(ring), {.build = energyShieldProfile.toString()});
+        QVERIFY(life->wasted.isEmpty());
+        QVERIFY(life->score > 0);
+        QVERIFY(life->contributions.first().points < caster->contributions.first().points);
+    }
+
+    void casterProfileCountsSkillSpeedAndSpellCrit()
+    {
+        const BuildProfile &p = *buildProfile(energyShieldProfile);
+        for (const QString &key : {u"#% increased Skill Speed"_s,
+                                   u"#% increased Critical Spell Damage Bonus"_s, u"#% increased Damage"_s}) {
+            const auto covering =
+                std::find_if(p.stats.cbegin(), p.stats.cend(),
+                             [&key](const ProfileStat &s) { return s.pattern.match(key).hasMatch(); });
+            QVERIFY2(covering != p.stats.cend(), qPrintable(key));
         }
     }
 

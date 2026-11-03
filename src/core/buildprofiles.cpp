@@ -150,8 +150,21 @@ BuildProfile lifeAndResistances()
         },
     };
     p.stats += common(7);
-    p.stats << stat(u"Speed"_s, uR"(^#% increased (Attack|Cast) Speed$)"_s,
-                    PerSlot({{u"Weapon"_s, 4}, {u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Gloves"_s, 3}}), 20);
+    p.stats << stat(
+        u"Speed"_s, uR"(^#% increased (Attack|Cast|Skill) Speed$)"_s,
+        PerSlot({{u"Weapon"_s, 4}, {u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Gloves"_s, 3}, {u"Jewel"_s, 3}}),
+        PerSlot({{u"Jewel"_s, 6}}, 20));
+    // Jewels and jewellery have little else a life build counts, so damage and
+    // life percent count a little there. Hybrid builds get half of the Energy
+    // Shield a spellcaster would.
+    p.stats << stat(
+        u"Damage"_s,
+        damagePattern(u"Physical|Elemental|Fire|Cold|Lightning|Chaos|Attack|Melee|Projectile|Spell"_s),
+        PerSlot({{u"Jewel"_s, 4}, {u"Ring"_s, 2}, {u"Amulet"_s, 2}}),
+        PerSlot({{u"Jewel"_s, 15}, {u"Ring"_s, 30}}, 100));
+    p.stats << exact(u"% Life"_s, u"#% increased maximum Life"_s,
+                     PerSlot({{u"Jewel"_s, 6}, {u"Amulet"_s, 3}}), PerSlot({{u"Jewel"_s, 8}}, 15));
+    p.stats << flatEnergyShield(0.5) << percentEnergyShield(0.5);
     return p;
 }
 
@@ -168,14 +181,15 @@ BuildProfile energyShieldCaster()
                  PerSlot({{u"Weapon"_s, 10}, {u"Offhand"_s, 9}, {u"Amulet"_s, 9}}),
                  PerSlot({{u"Weapon"_s, 5}}, 3), u"# to Level of all Spell Skills"_s),
             stat(
-                u"Spell damage"_s, uR"(^#% increased (Spell|Fire|Cold|Lightning|Chaos|Elemental) Damage$)"_s,
+                u"Spell damage"_s,
+                uR"(^#% increased ((Spell|Fire|Cold|Lightning|Chaos|Elemental) )?Damage$)"_s,
                 PerSlot(
                     {{u"Weapon"_s, 9}, {u"Offhand"_s, 8}, {u"Amulet"_s, 5}, {u"Ring"_s, 4}, {u"Jewel"_s, 7}}),
                 PerSlot({{u"Jewel"_s, 15}, {u"Ring"_s, 30}}, 100), u"#% increased Spell Damage"_s),
-            exact(u"Cast speed"_s, u"#% increased Cast Speed"_s,
-                  PerSlot({{u"Weapon"_s, 7}, {u"Ring"_s, 5}, {u"Amulet"_s, 5}, {u"Jewel"_s, 4}}),
-                  PerSlot({{u"Jewel"_s, 6}}, 25)),
-            stat(u"Crit"_s, uR"(^#% increased Critical (Hit Chance|Damage Bonus)( for Spells)?$)"_s,
+            stat(u"Cast speed"_s, uR"(^#% increased (Cast|Skill) Speed$)"_s,
+                 PerSlot({{u"Weapon"_s, 7}, {u"Ring"_s, 5}, {u"Amulet"_s, 5}, {u"Jewel"_s, 4}}),
+                 PerSlot({{u"Jewel"_s, 6}}, 25), u"#% increased Cast Speed"_s),
+            stat(u"Crit"_s, uR"(^#% increased Critical (Hit Chance( for Spells)?|(Spell )?Damage Bonus)$)"_s,
                  PerSlot({{u"Weapon"_s, 6},
                           {u"Offhand"_s, 5},
                           {u"Amulet"_s, 4},
@@ -185,6 +199,7 @@ BuildProfile energyShieldCaster()
             baseEnergyShield(),
             percentEnergyShield(),
             flatEnergyShield(),
+            extraEnergyShield(),
             mana(),
             spirit(5),
         },
