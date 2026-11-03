@@ -13,6 +13,9 @@ FormCard.FormCardPage {
     required property App app
     readonly property PobOptions options: app.pobOptions
 
+    // which has no Flatpak, but Path of Building's installer
+    readonly property bool windows: Qt.platform.os === "windows"
+
     title: qsTr("Path of Building")
 
     FormCard.FormCard {
@@ -44,7 +47,8 @@ FormCard.FormCardPage {
             id: folderField
             objectName: "folderField"
             label: qsTr("Folder")
-            placeholderText: qsTr("The Flatpak, or the usual places")
+            placeholderText: pobPage.windows ? qsTr("Where its installer puts it")
+                                             : qsTr("The Flatpak, or the usual places")
             text: pobPage.options.location
             onEditingFinished: pobPage.options.location = text
         }
@@ -53,7 +57,8 @@ FormCard.FormCardPage {
 
         FormCard.FormButtonDelegate {
             text: qsTr("Choose a Folder")
-            description: qsTr("For a Path of Building that isn't the Flatpak.")
+            description: pobPage.windows ? qsTr("For a Path of Building you unzipped somewhere.")
+                                         : qsTr("For a Path of Building that isn't the Flatpak.")
             icon.name: "document-open-folder"
             onClicked: folderDialog.open()
         }

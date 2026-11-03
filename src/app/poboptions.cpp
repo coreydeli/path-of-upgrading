@@ -4,6 +4,7 @@
 #include "app/settingsstore.h"
 #include "services/pobengine.h"
 
+#include <QDir>
 #include <algorithm>
 #include <cmath>
 
@@ -89,7 +90,7 @@ QString PobOptions::found() const
         return {};
     if (install->flatpak)
         return u"Using the Path of Building Flatpak."_s;
-    return u"Using Path of Building in %1."_s.arg(install->folder);
+    return u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(install->folder));
 }
 
 QString PobOptions::problem() const
