@@ -22,7 +22,8 @@ plugins=$("$qtpaths" --query QT_INSTALL_PLUGINS)
 echo "QML from $qml and plugins from $plugins"
 
 mkdir "$app"
-cp "$build/src/path-of-upgrading.exe" "$app/"
+# which qt_standard_project_setup puts at the top of the build folder on Windows
+cp "$build/path-of-upgrading.exe" "$app/"
 cp /ucrt64/bin/luajit.exe "$app/"
 cp -r "$qml" "$app/qml"
 cp -r "$plugins"/. "$app/"
