@@ -1,5 +1,4 @@
 find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
-find_package(KF6Config 6.0 REQUIRED)
 
 function(pou_add_test name)
     qt_add_executable(${name} ${name}.cpp ${ARGN})
@@ -88,26 +87,29 @@ pou_add_services_test(tst_installedpob itemtexts.h)
 # the bridge, with the LuaJIT on this computer when there's one
 pou_add_services_test(tst_pobbridge)
 
-pou_add_platform_test(tst_autostart)
 pou_add_platform_test(tst_copykeys)
 pou_add_platform_test(tst_gamewindow)
 pou_add_platform_test(tst_keychainsecretstore)
 pou_add_platform_test(tst_localinstance)
-pou_add_platform_test(tst_notifyrc)
-target_link_libraries(tst_notifyrc PRIVATE KF6::ConfigCore)
-target_compile_definitions(tst_notifyrc PRIVATE APP_ID="${APP_ID}"
-    NOTIFYRC="${PROJECT_SOURCE_DIR}/data/path-of-upgrading.notifyrc")
 pou_add_platform_test(tst_screenmap)
 pou_add_platform_test(tst_showwindow)
 pou_add_platform_test(tst_traynotifier)
 pou_add_platform_test(tst_winkeys)
-# with the X server in DISPLAY, when there's one
-pou_add_platform_test(tst_xconnection)
-pou_add_platform_test(tst_xgameinput)
-pou_add_platform_test(tst_xkeysender)
-pou_add_platform_test(tst_xmonitors)
-pou_add_platform_test(tst_xselectionwatcher)
-pou_add_platform_test(tst_xwindows)
+if(NOT WIN32)
+    pou_add_platform_test(tst_autostart)
+    find_package(KF6Config 6.0 REQUIRED)
+    pou_add_platform_test(tst_notifyrc)
+    target_link_libraries(tst_notifyrc PRIVATE KF6::ConfigCore)
+    target_compile_definitions(tst_notifyrc PRIVATE APP_ID="${APP_ID}"
+        NOTIFYRC="${PROJECT_SOURCE_DIR}/data/path-of-upgrading.notifyrc")
+    # with the X server in DISPLAY, when there's one
+    pou_add_platform_test(tst_xconnection)
+    pou_add_platform_test(tst_xgameinput)
+    pou_add_platform_test(tst_xkeysender)
+    pou_add_platform_test(tst_xmonitors)
+    pou_add_platform_test(tst_xselectionwatcher)
+    pou_add_platform_test(tst_xwindows)
+endif()
 
 pou_add_app_test(tst_activecharacter itemtexts.h)
 pou_use_fakepob(tst_activecharacter)
