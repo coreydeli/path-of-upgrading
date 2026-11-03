@@ -32,6 +32,7 @@ add_library(pou_platform STATIC
     showwindow.cpp showwindow.h
     singleinstance.cpp singleinstance.h
     tray.cpp tray.h
+    traynotifier.cpp traynotifier.h
     win/winkeys.cpp win/winkeys.h
     xcb/xconnection.cpp xcb/xconnection.h
     xcb/xgameinput.cpp xcb/xgameinput.h

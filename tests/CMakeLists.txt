@@ -99,6 +99,7 @@ target_compile_definitions(tst_notifyrc PRIVATE APP_ID="${APP_ID}"
     NOTIFYRC="${PROJECT_SOURCE_DIR}/data/path-of-upgrading.notifyrc")
 pou_add_platform_test(tst_screenmap)
 pou_add_platform_test(tst_showwindow)
+pou_add_platform_test(tst_traynotifier)
 pou_add_platform_test(tst_winkeys)
 # with the X server in DISPLAY, when there's one
 pou_add_platform_test(tst_xconnection)

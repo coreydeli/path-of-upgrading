@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::createSecretStore(),
                   std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
     const std::unique_ptr<pou::Tray> tray = pou::createTray();
-    const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier();
+    const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier(tray.get());
     pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());
     QObject::connect(instance.get(), &pou::SingleInstance::startedAgain, &desktop,
                      &pou::Desktop::startedAgain);

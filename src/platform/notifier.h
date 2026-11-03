@@ -6,6 +6,8 @@
 
 namespace pou {
 
+class Tray;
+
 // Desktop notifications, for the few things worth breaking in on you for.
 class Notifier
 {
@@ -25,7 +27,7 @@ public:
 // has to list.
 QString eventId(Notifier::Event event);
 
-// The one for this desktop.
-std::unique_ptr<Notifier> createNotifier();
+// The one for this desktop, which on Windows shows them from the tray icon.
+std::unique_ptr<Notifier> createNotifier(Tray *tray);
 
 } // namespace pou
