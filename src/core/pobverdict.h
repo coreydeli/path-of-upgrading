@@ -24,6 +24,10 @@ namespace pou {
 // calculate are missing.
 using PobStats = QHash<QString, double>;
 
+// What each resistance point toward a cap is worth on a score, in percent. A
+// point lost under a cap weighs the same in how big a loss it is.
+inline constexpr double resistPointWorth = 0.25;
+
 // What matters to you besides damage and effective HP.
 struct PobPriorities
 {
@@ -32,6 +36,8 @@ struct PobPriorities
     bool resistsFirst = true;
     bool chaos = false;     // chaos resistance counts like the others
     bool keepDamage = true; // an item that costs a good part of your damage is never an upgrade
+    // and neither is one that costs a good part of your effective HP, Life or Energy Shield
+    bool keepDefence = true;
     bool spirit = true;     // running out of Spirit for your minions and auras breaks the build
     bool attributes = true; // and so does not having the attributes for your gear
 
@@ -81,7 +87,8 @@ struct PobVerdict
     double score = 0;
     // What it breaks, in words.
     QStringList breaks;
-    // Those of them that lose resistance under the cap or your damage.
+    // Those of them that lose resistance under the cap, damage or defences,
+    // the biggest first.
     QStringList losses;
 
     // The number the build's damage is judged by, see pobDamageStat().
@@ -89,17 +96,19 @@ struct PobVerdict
     bool losesDamage = false;
     // Unknown when Path of Building didn't calculate it.
     std::optional<PobChange> ehp;
+    // Costs a good part of the effective HP, or of Life or Energy Shield.
+    bool losesDefence = false;
 
     // The resistances that change, without chaos when it's ignored.
     QList<PobResistChange> resists;
     // Points toward the caps, negative when it loses some under them.
     int resistGain = 0;
     // For sorting by resistance: 2 caps one you're short of, 1 adds toward a
-    // cap, 0 changes none and -1 loses resistance or damage.
+    // cap, 0 changes none and -1 loses resistance, damage or defences.
     int resistRank = 0;
 
-    // Of Life, Energy Shield, Mana, Spirit, unreserved Spirit and minion Life
-    // those that change by a point or more.
+    // Of Life, Energy Shield, Armour, Evasion, Mana, Spirit, unreserved Spirit
+    // and minion Life those that change by a point or more.
     QList<PobChange> changes;
 };
 

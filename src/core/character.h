@@ -48,6 +48,9 @@ struct CharacterChange
     QList<TotalChange> totals;
     QList<ResistChange> resists;
     std::optional<TotalChange> overall; // average gear score over the main slots
+    // The Life and Energy Shield your gear gives now, whether the item changes
+    // them or not.
+    double healthBefore = 0;
 };
 
 // A slot's gear score, when there is one.

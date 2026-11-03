@@ -218,7 +218,7 @@ private Q_SLOTS:
                                                                   }));
         QCOMPARE(some.resistRank, 1);
         QVERIFY(capping(some).isEmpty());
-        QCOMPARE(some.score, 6.0);
+        QCOMPARE(some.score, 3.0); // 12 points at a quarter each
     }
 
     void raisingTheCap()
@@ -451,11 +451,11 @@ private Q_SLOTS:
         QCOMPARE(v.verdict, Verdict::DamageLoss);
         QVERIFY(v.losesDamage);
         QCOMPARE(v.resistRank, -1);
-        QCOMPARE(v.breaks, QStringList{u"Minion damage drops 10%"_s});
+        QCOMPARE(v.breaks, QStringList{u"Minion DPS drops 10%"_s});
         QCOMPARE(v.losses, v.breaks);
 
         const PobVerdict own = judgeWithPob({{u"FullDPS"_s, 2000}}, {{u"FullDPS"_s, 1500}});
-        QCOMPARE(own.breaks, QStringList{u"Damage drops 25%"_s});
+        QCOMPARE(own.breaks, QStringList{u"DPS drops 25%"_s});
     }
 
     void damageLossAtFivePercent()
@@ -478,7 +478,7 @@ private Q_SLOTS:
         QCOMPARE(v.verdict, Verdict::DamageLoss);
         QCOMPARE(v.resistRank, -1);
         QCOMPARE(v.damage.percent.value(), -20.1);
-        QCOMPARE(v.breaks, QStringList{u"Minion damage drops 20.1%"_s});
+        QCOMPARE(v.breaks, QStringList{u"Minion DPS drops 20.1%"_s});
 
         // a small dip is judged on the score
         QVERIFY(judgeWithPob(before, with(after, {{u"MinionDPS"_s, 95000}}), options).verdict !=
@@ -488,13 +488,141 @@ private Q_SLOTS:
         QCOMPARE(judgeWithPob(before, after, options).verdict, Verdict::Upgrade);
     }
 
-    void resistLossOverDamageLoss()
+    void biggestLossIsTheVerdict()
     {
-        const PobVerdict v = judgeWithPob(base, with(shortOfLightning, {{u"MinionDPS"_s, 50000}}));
+        // half the damage for 37 points of lightning: the damage is the bigger loss
+        const PobVerdict damage = judgeWithPob(base, with(shortOfLightning, {{u"MinionDPS"_s, 50000}}));
+        QCOMPARE(damage.verdict, Verdict::DamageLoss);
+        QVERIFY(damage.losesDamage);
+        QCOMPARE(damage.resistRank, -1);
+        QCOMPARE(damage.losses, (QStringList{u"Minion DPS drops 50%"_s,
+                                             u"Lightning res drops below the cap (38% of 75%)"_s}));
+        QCOMPARE(damage.breaks, damage.losses);
+
+        // 6% of the damage costs less than that much resistance
+        const PobVerdict resist = judgeWithPob(base, with(shortOfLightning, {{u"MinionDPS"_s, 94000}}));
+        QCOMPARE(resist.verdict, Verdict::ResistLoss);
+        QVERIFY(resist.losesDamage);
+        QCOMPARE(resist.losses, (QStringList{u"Lightning res drops below the cap (38% of 75%)"_s,
+                                             u"Minion DPS drops 6%"_s}));
+    }
+
+    void aSmallResistLossDoesntOverrideABigOne()
+    {
+        // 4 points short of the cap against a fifth of the damage
+        const PobStats after = with(base, {{u"LightningResist"_s, 71},
+                                           {u"LightningResistTotal"_s, 71},
+                                           {u"MissingLightningResist"_s, 4},
+                                           {u"MinionDPS"_s, 80000}});
+        const PobVerdict v = judgeWithPob(base, after);
+        QCOMPARE(v.verdict, Verdict::DamageLoss);
+        QCOMPARE(v.losses.size(), 2);
+        QCOMPARE(v.losses.first(), u"Minion DPS drops 20%"_s);
+    }
+
+    void aTieGoesToResistance()
+    {
+        // 20 points is worth 5%, as is 5% of the damage
+        const PobStats after = with(base, {{u"LightningResist"_s, 55},
+                                           {u"LightningResistTotal"_s, 55},
+                                           {u"MissingLightningResist"_s, 20},
+                                           {u"MinionDPS"_s, 95000}});
+        const PobVerdict v = judgeWithPob(base, after);
         QCOMPARE(v.verdict, Verdict::ResistLoss);
-        QVERIFY(v.losesDamage);
-        QCOMPARE(v.breaks.size(), 2);
-        QCOMPARE(v.losses, v.breaks);
+        QCOMPARE(v.losses.size(), 2);
+        QVERIFY(v.losses.first().startsWith(u"Lightning res"_s));
+    }
+
+    void effectiveHpLoss()
+    {
+        // a little more damage and a fifth less effective HP
+        const PobVerdict v =
+            judgeWithPob(base, with(base, {{u"MinionDPS"_s, 102000}, {u"TotalEHP"_s, 40000}}));
+        QCOMPARE(v.verdict, Verdict::DefenceLoss);
+        QVERIFY(v.losesDefence);
+        QVERIFY(!v.losesDamage);
+        QCOMPARE(v.resistRank, -1);
+        QCOMPARE(v.losses, QStringList{u"Effective HP drops 20%"_s});
+        QCOMPARE(v.breaks, v.losses);
+    }
+
+    void effectiveHpLossAtFivePercent()
+    {
+        QVERIFY(judgeWithPob(base, with(base, {{u"TotalEHP"_s, 47500}})).losesDefence);
+        const PobVerdict v = judgeWithPob(base, with(base, {{u"TotalEHP"_s, 47600}}));
+        QVERIFY(!v.losesDefence);
+        QVERIFY(v.losses.isEmpty());
+    }
+
+    void defenceLossIsBiggerThanResistLoss()
+    {
+        // 37 points of lightning against a quarter of the effective HP
+        const PobVerdict v = judgeWithPob(base, with(shortOfLightning, {{u"TotalEHP"_s, 37500}}));
+        QCOMPARE(v.verdict, Verdict::DefenceLoss);
+        QCOMPARE(v.losses, (QStringList{u"Effective HP drops 25%"_s,
+                                        u"Lightning res drops below the cap (38% of 75%)"_s}));
+        // and a smaller one isn't
+        QCOMPARE(judgeWithPob(base, with(shortOfLightning, {{u"TotalEHP"_s, 46000}})).verdict,
+                 Verdict::ResistLoss);
+    }
+
+    void keepingDefences()
+    {
+        PobPriorities relaxed;
+        relaxed.keepDefence = false;
+        const PobStats after = with(base, {{u"MinionDPS"_s, 110000}, {u"TotalEHP"_s, 40000}});
+        const PobVerdict v = judged(base, after, relaxed);
+        QVERIFY(!v.losesDefence);
+        QVERIFY(v.losses.isEmpty());
+        QVERIFY(v.verdict != Verdict::DefenceLoss);
+        // the headline still weighs it, but no loss line
+        QCOMPARE(v.verdict, Verdict::Downgrade);
+        QVERIFY(judged(base, after).losesDefence);
+    }
+
+    void energyShieldLoss()
+    {
+        // 340 of 1900 Energy Shield, which is 17% of the Life and Energy Shield together
+        const PobStats ci = {{u"MinionDPS"_s, 100000}, {u"Life"_s, 100}, {u"EnergyShield"_s, 1900}};
+        const PobVerdict v =
+            judgeWithPob(ci, with(ci, {{u"EnergyShield"_s, 1560}, {u"MinionDPS"_s, 110000}}));
+        QCOMPARE(v.verdict, Verdict::DefenceLoss);
+        QVERIFY(v.losesDefence);
+        QCOMPARE(v.losses, QStringList{u"Energy Shield drops 340 (18%)"_s});
+        // not at all effective HP, which Path of Building didn't say
+        QVERIFY(!v.ehp);
+    }
+
+    void lifeLoss()
+    {
+        const PobStats life = {{u"FullDPS"_s, 1000}, {u"Life"_s, 4000}, {u"EnergyShield"_s, 0}};
+        const PobVerdict v = judgeWithPob(life, with(life, {{u"Life"_s, 3500}}));
+        QCOMPARE(v.verdict, Verdict::DefenceLoss);
+        QCOMPARE(v.losses, QStringList{u"Life drops 500 (13%)"_s});
+    }
+
+    void aSmallDropOfTheOtherPoolDoesntCount()
+    {
+        // all the Energy Shield of a Life build is a fiftieth of its health
+        const PobStats life = {{u"FullDPS"_s, 1000}, {u"Life"_s, 5000}, {u"EnergyShield"_s, 100}};
+        const PobVerdict v = judgeWithPob(life, with(life, {{u"EnergyShield"_s, 0}}));
+        QVERIFY(!v.losesDefence);
+        QVERIFY(v.losses.isEmpty());
+        // while the same drop of Life does
+        QVERIFY(judgeWithPob(life, with(life, {{u"Life"_s, 4700}})).losesDefence);
+        // and gaining some doesn't
+        QVERIFY(!judgeWithPob(life, with(life, {{u"EnergyShield"_s, 1500}})).losesDefence);
+    }
+
+    void armourAndEvasionAreShown()
+    {
+        const PobStats gear = {{u"FullDPS"_s, 1000}, {u"Armour"_s, 4000}, {u"Evasion"_s, 1000}};
+        const PobVerdict v = judgeWithPob(gear, with(gear, {{u"Armour"_s, 3000}, {u"Evasion"_s, 1500}}));
+        QCOMPARE(v.changes.size(), 2);
+        QCOMPARE(v.changes.at(0).stat, u"Armour"_s);
+        QCOMPARE(v.changes.at(0).percent.value(), -25.0);
+        QCOMPARE(v.changes.at(1).stat, u"Evasion"_s);
+        QCOMPARE(v.changes.at(1).percent.value(), 50.0);
     }
 
     void lossesFirst()

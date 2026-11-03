@@ -33,6 +33,8 @@ const QList<Tracked> &tracked()
          u"# to maximum Energy Shield"_s,
          {u"Amulet"_s, u"Ring 1"_s, u"Ring 2"_s, u"Belt"_s}},
         {u"Life"_s, {u"# to maximum Life"_s}, {}, {}},
+        {u"Armour"_s, {u"[Base] Armour"_s}, {}, {}},
+        {u"Evasion"_s, {u"[Base] Evasion Rating"_s}, {}, {}},
         {u"Mana"_s, {u"# to maximum Mana"_s}, {}, {}},
         {u"Intelligence"_s, {u"# to Intelligence"_s}, {}, {}},
         {u"Strength"_s, {u"# to Strength"_s}, {}, {}},
@@ -113,6 +115,8 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
     for (const Tracked &t : tracked()) {
         const double a = totalFor(before, t);
         const double b = totalFor(after, t);
+        if (t.label == u"Life" || t.label == u"Energy Shield")
+            change.healthBefore += a;
         if (const double delta = roundTo(b - a, 1); delta != 0)
             change.totals << TotalChange{t.label, roundTo(a, 1), roundTo(b, 1), delta};
     }

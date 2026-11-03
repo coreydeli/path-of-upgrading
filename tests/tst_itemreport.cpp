@@ -125,6 +125,7 @@ private Q_SLOTS:
         QTest::newRow("risky") << Verdict::Risky << u"Risky upgrade"_s << Tone::Warning;
         QTest::newRow("resistance") << Verdict::ResistLoss << u"Loses resistance"_s << Tone::Bad;
         QTest::newRow("damage") << Verdict::DamageLoss << u"Loses damage"_s << Tone::Bad;
+        QTest::newRow("defences") << Verdict::DefenceLoss << u"Loses defences"_s << Tone::Bad;
         QTest::newRow("equipped") << Verdict::Equipped << u"Equipped"_s << Tone::Plain;
     }
 
@@ -157,6 +158,8 @@ private Q_SLOTS:
         // which would read like an upgrade
         QTest::newRow("losing resistance for more")
             << PathOfBuilding << Verdict::ResistLoss << 6.0 << none << QString() << QString();
+        QTest::newRow("losing defences for more")
+            << PathOfBuilding << Verdict::DefenceLoss << 6.0 << none << QString() << QString();
         QTest::newRow("losing damage for less")
             << PathOfBuilding << Verdict::DamageLoss << -3.0 << none << u"-3%"_s << u"for your build"_s;
         QTest::newRow("gear score") << GearScores << Verdict::Upgrade << 6.0 << none << u"+6"_s
@@ -457,6 +460,17 @@ private Q_SLOTS:
         const ItemReport report = reportOf(check);
         QCOMPARE(report.losses, QStringList{fire});
         QCOMPARE(report.risks, QStringList{spirit});
+    }
+
+    void defenceLosses()
+    {
+        ItemCheck check = judged(Verdict::DefenceLoss);
+        const QString health = u"Effective HP drops 20%"_s;
+        check.evaluation.risks = {health};
+        check.evaluation.losses = {health};
+        const ItemReport report = reportOf(check);
+        QCOMPARE(report.losses, QStringList{health});
+        QVERIFY(report.risks.isEmpty());
     }
 
     void caps_data()

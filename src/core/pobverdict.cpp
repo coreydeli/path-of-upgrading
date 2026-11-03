@@ -20,8 +20,9 @@ constexpr double downgradeAt = -1;
 // With keepDamage, an item that costs this many percent of your damage loses
 // damage, however much resistance or effective HP it adds.
 constexpr double damageLossAt = 5;
-// With resistsFirst, what each resistance point toward a cap is worth.
-constexpr double resistPoint = 0.5;
+// With keepDefence, an item that costs this many percent of your effective HP,
+// or of your Life and Energy Shield together, loses defences.
+constexpr double defenceLossAt = 5;
 // Going from no damage to some, as when your weapon couldn't use the skill
 // before, counts as this many percent better.
 constexpr double damageFromNothing = 25;
@@ -73,9 +74,18 @@ QString whole(double v)
     return formatNumber(roundHalfUp(v));
 }
 
+// One thing the item costs you and how much, in percent: the biggest of them
+// gives the verdict.
+struct Loss
+{
+    Verdict verdict = Verdict::Same;
+    double size = 0;
+    QString text;
+};
+
 // Returns the points the item adds toward the caps.
 double judgeResists(const PobStats &before, const PobStats &after, const PobVerdictOptions &options,
-                    PobVerdict &v)
+                    PobVerdict &v, QList<Loss> &losses)
 {
     double gain = 0;
     for (Element e : allElements) {
@@ -106,14 +116,19 @@ double judgeResists(const PobStats &before, const PobStats &after, const PobVerd
         const bool drops = r.to < r.from - slack;
         if (counts)
             gain += std::min(r.to, r.max) - std::min(r.from, maxFrom);
+        // each point lost under the cap, as much as one gained is worth
+        const double size =
+            std::max(0.0, std::min(r.from, maxFrom) - std::min(r.to, r.max)) * resistPointWorth;
         if (r.wasCapped && !r.capped && drops) {
             r.lost = true;
-            v.losses << u"%1 res drops below the cap (%2% of %3%)"_s.arg(elementName(e), whole(r.to),
-                                                                         whole(r.max));
+            losses << Loss{
+                Verdict::ResistLoss, size,
+                u"%1 res drops below the cap (%2% of %3%)"_s.arg(elementName(e), whole(r.to), whole(r.max))};
         } else if (!r.wasCapped && drops && counts) {
             r.lost = true;
-            v.losses << u"%1 res goes further under the cap (from %2% to %3%)"_s.arg(
-                elementName(e), whole(r.from), whole(r.to));
+            losses << Loss{Verdict::ResistLoss, size,
+                           u"%1 res goes further under the cap (from %2% to %3%)"_s.arg(
+                               elementName(e), whole(r.from), whole(r.to))};
         }
         r.reachesCap = !r.wasCapped && r.capped && counts;
 
@@ -121,6 +136,35 @@ double judgeResists(const PobStats &before, const PobStats &after, const PobVerd
             v.resists << r;
     }
     return gain;
+}
+
+// Effective HP, or Life or Energy Shield, dropping by a good part. Life and
+// Energy Shield are judged against the two together, so a few points of
+// Energy Shield on a Life build don't count.
+void judgeDefence(const PobStats &before, const PobStats &after, PobVerdict &v, QList<Loss> &losses)
+{
+    if (v.ehp && v.ehp->percent && *v.ehp->percent <= -defenceLossAt) {
+        losses << Loss{Verdict::DefenceLoss, -*v.ehp->percent,
+                       u"Effective HP drops %1%"_s.arg(formatNumber(-*v.ehp->percent))};
+    }
+    const double pool = before.value(u"Life"_s) + before.value(u"EnergyShield"_s);
+    if (pool <= 0)
+        return;
+    static const QList<std::pair<QString, QString>> pools = {
+        {u"Life"_s, u"Life"_s},
+        {u"EnergyShield"_s, u"Energy Shield"_s},
+    };
+    for (const auto &[name, label] : pools) {
+        const std::optional<double> from = stat(before, name);
+        const std::optional<double> to = stat(after, name);
+        if (!from || !to || *from <= 0)
+            continue;
+        const double drop = *from - *to;
+        if (drop <= 0 || drop / pool * 100 < defenceLossAt)
+            continue;
+        losses << Loss{Verdict::DefenceLoss, drop / pool * 100,
+                       u"%1 drops %2 (%3%)"_s.arg(label, whole(drop), whole(drop / *from * 100))};
+    }
 }
 
 void judgeRequirements(const PobStats &before, const PobStats &after, const PobPriorities &priorities,
@@ -184,15 +228,27 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
 
     double score = damagePercent.value_or(0) * damageWeight + ehpPercent.value_or(0) * (1 - damageWeight);
 
-    const double resistGain = judgeResists(before, after, options, v);
+    QList<Loss> losses;
+    const double resistGain = judgeResists(before, after, options, v, losses);
     if (priorities.resistsFirst)
-        score += resistGain * resistPoint;
+        score += resistGain * resistPointWorth;
 
     v.losesDamage = priorities.keepDamage && v.damage.from > 0 && damagePercent.value_or(0) <= -damageLossAt;
     if (v.losesDamage) {
-        v.losses << u"%1 drops %2%"_s.arg(damageStat == u"MinionDPS" ? u"Minion damage"_s : u"Damage"_s,
-                                          formatNumber(std::abs(v.damage.percent.value_or(0))));
+        losses << Loss{Verdict::DamageLoss, -damagePercent.value_or(0),
+                       u"%1 drops %2%"_s.arg(damageStat == u"MinionDPS" ? u"Minion DPS"_s : u"DPS"_s,
+                                             formatNumber(std::abs(v.damage.percent.value_or(0))))};
     }
+    if (priorities.keepDefence) {
+        const qsizetype had = losses.size();
+        judgeDefence(before, after, v, losses);
+        v.losesDefence = losses.size() > had;
+    }
+    // the biggest first, and on a tie resistance, then damage
+    std::stable_sort(losses.begin(), losses.end(),
+                     [](const Loss &a, const Loss &b) { return a.size > b.size; });
+    for (const Loss &loss : std::as_const(losses))
+        v.losses << loss.text;
     judgeRequirements(before, after, priorities, v);
     v.breaks = v.losses + v.breaks;
 
@@ -205,28 +261,24 @@ PobVerdict judgeWithPob(const PobStats &before, const PobStats &after, const Pob
     if (!v.breaks.isEmpty())
         v.verdict = score > 0 ? Verdict::Risky : Verdict::Downgrade;
 
-    const bool losesResist =
-        std::any_of(v.resists.cbegin(), v.resists.cend(), [](const PobResistChange &r) { return r.lost; });
     const bool capsResist = std::any_of(v.resists.cbegin(), v.resists.cend(),
                                         [](const PobResistChange &r) { return r.reachesCap; });
-    // Losing your main damage is never an upgrade, and resistances matter
-    // most: either always shows as a verdict of its own.
-    if (v.losesDamage)
-        v.verdict = Verdict::DamageLoss;
-    if (losesResist)
-        v.verdict = Verdict::ResistLoss;
+    // Losing resistance, damage or defences is never an upgrade: the biggest
+    // of them is the verdict.
+    if (!losses.isEmpty())
+        v.verdict = losses.first().verdict;
 
     v.score = roundTo(score, 1);
     v.resistGain = int(roundHalfUp(resistGain));
-    if (losesResist || v.losesDamage)
+    if (!losses.isEmpty())
         v.resistRank = -1;
     else if (capsResist)
         v.resistRank = 2;
     else if (resistGain > 0)
         v.resistRank = 1;
 
-    for (const QString &name :
-         {u"Life"_s, u"EnergyShield"_s, u"Mana"_s, u"Spirit"_s, u"SpiritUnreserved"_s, u"MinionLife"_s}) {
+    for (const QString &name : {u"Life"_s, u"EnergyShield"_s, u"Armour"_s, u"Evasion"_s, u"Mana"_s,
+                                u"Spirit"_s, u"SpiritUnreserved"_s, u"MinionLife"_s}) {
         const std::optional<double> from = stat(before, name);
         const std::optional<double> to = stat(after, name);
         if (from && to && roundHalfUp(*to - *from) != 0)

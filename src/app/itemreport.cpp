@@ -41,6 +41,8 @@ Words wordsFor(Verdict verdict)
         return {u"Loses resistance"_s, Tone::Bad};
     case Verdict::DamageLoss:
         return {u"Loses damage"_s, Tone::Bad};
+    case Verdict::DefenceLoss:
+        return {u"Loses defences"_s, Tone::Bad};
     case Verdict::Equipped:
         return {u"Equipped"_s, Tone::Plain};
     }
@@ -60,7 +62,9 @@ void putScore(ItemReport &report, const Evaluation &e)
     switch (e.mode) {
     case ScoreMode::PathOfBuilding:
         // a loss with a score above 0 would read like an upgrade
-        if ((r.verdict == Verdict::ResistLoss || r.verdict == Verdict::DamageLoss) && r.delta > 0)
+        if ((r.verdict == Verdict::ResistLoss || r.verdict == Verdict::DamageLoss ||
+             r.verdict == Verdict::DefenceLoss) &&
+            r.delta > 0)
             return;
         report.score = signedNumber(r.delta) + u'%';
         report.scoreLabel = u"for your build"_s;
