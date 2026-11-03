@@ -16,8 +16,8 @@ void showInFront(QWindow *window)
     window->setVisible(true);
 
 #ifdef Q_OS_WIN
-    // which the copy that was started again lets us do
-    window->raise();
+    // which brings it to the top too, as the copy that was started again
+    // lets us
     window->requestActivate();
 #else
     // KWindowSystem only knows X11 and Wayland
