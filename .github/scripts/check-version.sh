@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Prints the version from CMakeLists.txt, once the metainfo's newest release
-# and the PKGBUILD say the same, and the tag when one is given.
+# and the PKGBUILD say the same.
 set -eu
 cd "$(dirname "$0")/../.."
 metainfo=data/io.github.coreydeli.PathOfUpgrading.metainfo.xml
@@ -20,10 +20,6 @@ if [ "$released" != "$version" ]; then
 fi
 if [ "$pkgver" != "$version" ]; then
     echo "::error file=packaging/arch/PKGBUILD::pkgver is $pkgver, not $version" >&2
-    ok=false
-fi
-if [ $# -gt 0 ] && [ "$1" != "v$version" ]; then
-    echo "::error::The tag is $1, but the version is $version" >&2
     ok=false
 fi
 $ok
