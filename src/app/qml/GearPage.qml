@@ -33,9 +33,11 @@ FormCard.FormCardPage {
         required property bool fromPob
         required property string score
         required property string grade
+        required property string improve
 
         objectName: "slot:" + slot
         text: slot
+        note: improve
         description: {
             if (name === "")
                 return qsTr("Nothing saved");
@@ -77,7 +79,7 @@ FormCard.FormCardPage {
             objectName: "overallScore"
             visible: gearPage.gear.overall !== ""
             text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
-            description: qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
+            description: gearPage.gear.focus !== "" ? qsTr("Upgrade first: %1\n%2").arg(gearPage.gear.weakest).arg(gearPage.gear.focus) : qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
         }
 
         FormCard.FormDelegateSeparator {

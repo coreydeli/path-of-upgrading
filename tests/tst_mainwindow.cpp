@@ -808,8 +808,18 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"slot:Ring 1"_s)->property("description").toString(),
                  u"Storm Loop, Sapphire Ring, from Path of Building"_s);
 
+        // what would raise its score, and what an empty slot should have
+        QObject *helmetNote = helmet->findChild<QObject *>(u"noteText"_s);
+        const QString improve = w.app->gearList()->index(2).data(GearList::ImproveRole).toString();
+        QVERIFY(improve.startsWith(u"Missing what your build wants: "_s));
+        QVERIFY(isVisible(helmetNote));
+        QCOMPARE(text(helmetNote), improve);
+
         QObject *gloves = w.find(u"slot:Gloves"_s);
         QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
+        QObject *wants = gloves->findChild<QObject *>(u"noteText"_s);
+        QVERIFY(isVisible(wants));
+        QVERIFY(text(wants).startsWith(u"Your build wants most: "_s));
         QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
 
@@ -819,7 +829,9 @@ private Q_SLOTS:
         QVERIFY(!list->overall().isEmpty());
         QCOMPARE(text(overall), u"Overall gear score %1 %2"_s.arg(list->overall(), list->overallGrade()));
         QVERIFY(!list->weakest().isEmpty());
-        QCOMPARE(overall->property("description").toString(), u"Upgrade first: "_s + list->weakest());
+        QVERIFY(list->focus().startsWith(u"Start with "_s));
+        QCOMPARE(overall->property("description").toString(),
+                 u"Upgrade first: "_s + list->weakest() + u'\n' + list->focus());
     }
 
     void gearHeading()

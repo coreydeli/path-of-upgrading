@@ -12,6 +12,8 @@ FormCard.AbstractFormDelegate {
     id: row
 
     property string description
+    // a line more, in the text's own colour
+    property string note
     // on the left, like a radio button
     property alias leading: leadingRow.data
     default property alias controls: controlsRow.data
@@ -46,6 +48,14 @@ FormCard.AbstractFormDelegate {
                 visible: row.description !== ""
                 text: row.description
                 color: Kirigami.Theme.disabledTextColor
+                wrapMode: Text.Wrap
+            }
+
+            QQC2.Label {
+                objectName: "noteText"
+                Layout.fillWidth: true
+                visible: row.note !== ""
+                text: row.note
                 wrapMode: Text.Wrap
             }
         }
