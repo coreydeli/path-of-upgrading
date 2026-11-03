@@ -42,7 +42,8 @@ public:
 Q_SIGNALS:
     // The game is taking its time to copy.
     void slow();
-    // Whatever the hotkey read, gear or not, and the gear you copied.
+    // Whatever the hotkey read, gear or not, and the gear you copied, with
+    // where the mouse was when it can be told.
     void itemRead(const Item &item, const std::optional<ScreenPoint> &mouse);
     // Why the hotkey read nothing, in words for you.
     void failed(const QString &why, const std::optional<ScreenPoint> &mouse);

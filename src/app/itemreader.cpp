@@ -105,8 +105,9 @@ void ItemReader::copiedByHand(const QString &text)
         return;
     // currency, gems and the like, which you copy to paste somewhere
     const std::optional<Item> item = parseItem(text);
+    // which is where the item was, as you copied it with the mouse over it
     if (item && !item->slot.isEmpty())
-        Q_EMIT itemRead(*item, std::nullopt);
+        Q_EMIT itemRead(*item, m_input->mouse());
 }
 
 void ItemReader::finish()

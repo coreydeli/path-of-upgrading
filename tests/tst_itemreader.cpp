@@ -239,18 +239,26 @@ private Q_SLOTS:
         FakeGameInput game;
         ItemReader reader(&game);
         QSignalSpy read(&reader, &ItemReader::itemRead);
+        // with the mouse over it, as it was for the copy
+        game.mouseAt = overItem;
         Q_EMIT game.textCopied(itemtexts::helmetNew);
         QCOMPARE(read.size(), 1);
-        QVERIFY(!mouseOf(read));
+        QCOMPARE(mouseOf(read), std::optional(overItem));
+
+        // and where it isn't known
+        game.mouseAt.reset();
+        Q_EMIT game.textCopied(itemtexts::helmetNew);
+        QCOMPARE(read.size(), 2);
+        QVERIFY(!read.last().at(1).value<std::optional<ScreenPoint>>());
 
         // not what you copy to paste somewhere else
         Q_EMIT game.textCopied(currency);
         Q_EMIT game.textCopied(u"Hello"_s);
-        QCOMPARE(read.size(), 1);
+        QCOMPARE(read.size(), 2);
 
         reader.setWatchClipboard(false);
         Q_EMIT game.textCopied(itemtexts::helmetNew);
-        QCOMPARE(read.size(), 1);
+        QCOMPARE(read.size(), 2);
     }
 
     void notWhileReading()
