@@ -3,7 +3,8 @@
 # Checks the format, then builds with no warnings, then runs every test, each
 # stage once the one before it has passed. It builds on Arch Linux for the
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
-# supports. Main and beta are checked by the release builds, which run it.
+# supports, and on Windows in MSYS2. Main and beta are checked by the release
+# builds, which run it.
 name: CI
 
 on:
