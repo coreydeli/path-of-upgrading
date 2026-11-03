@@ -67,6 +67,8 @@ jobs:
     container: archlinux:latest
     env:
       LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 400M
     steps:
       # so the checkout is a repository, which the tarball is made from
       - name: Install git
@@ -83,19 +85,29 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=$pkgver/" packaging/arch/PKGBUILD
           git archive --prefix="path-of-upgrading-$pkgver/" \
               -o "packaging/arch/path-of-upgrading-$pkgver.tar.gz" HEAD
-      # makepkg won't run as root. The debug package isn't released, and a
-      # warning fails the build.
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-arch-${{ github.sha }}
+          restore-keys: ccache-arch-
+      # makepkg won't run as root. It compiles with ccache, the debug package
+      # isn't released, and a warning fails the build.
       - name: Set up makepkg
         run: |
           useradd -m builder
-          chown -R builder packaging/arch
+          mkdir -p /ccache
+          chown -R builder packaging/arch /ccache
           cat > /home/builder/.makepkg.conf << 'CONF'
+          BUILDENV=("${BUILDENV[@]/!ccache/ccache}")
           OPTIONS+=(!debug)
           CXXFLAGS+=" -Werror"
           CONF
       - name: Build, test and package
         working-directory: packaging/arch
-        run: runuser -u builder -- makepkg
+        run: |
+          runuser -u builder -- ccache --zero-stats
+          runuser -u builder -- makepkg
+          runuser -u builder -- ccache --show-stats
       - name: Lint the QML
         working-directory: packaging/arch
         run: runuser -u builder -- cmake --build src/build --target pou_app_qmllint
@@ -114,18 +126,29 @@ jobs:
     container: debian:trixie
     env:
       LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 400M
     steps:
       - uses: actions/checkout@v7
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-debian.sh
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-debian-${{ github.sha }}
+          restore-keys: ccache-debian-
       - name: Configure
         env:
           DEBIAN_VERSION: ${{ inputs.debian-version }}
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           ${DEBIAN_VERSION:+"-DPOU_PACKAGE_VERSION=$DEBIAN_VERSION"}
       - name: Build
-        run: cmake --build build
+        run: |
+          ccache --zero-stats
+          cmake --build build
+          ccache --show-stats
       - name: Lint the QML
         run: cmake --build build --target pou_app_qmllint
       - name: Test
@@ -155,6 +178,9 @@ jobs:
     defaults:
       run:
         shell: msys2 {0}
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 400M
     steps:
       # the test files as they are in the repository, not with Windows' line ends
       - name: Keep the line ends
@@ -167,13 +193,21 @@ jobs:
           update: true
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-msys2.sh
+      - uses: actions/cache@v6
+        with:
+          path: .ccache
+          key: ccache-windows-${{ github.sha }}
+          restore-keys: ccache-windows-
       - name: Configure
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       # going on past an error, so each run shows them all
       - name: Build
-        run: cmake --build build -- -k 0
+        run: |
+          ccache --zero-stats
+          cmake --build build -- -k 0
+          ccache --show-stats
       - name: Test
         working-directory: build
         env:
