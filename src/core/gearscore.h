@@ -70,6 +70,17 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
 
 QString gearGrade(int score);
 
+// What would raise a gear score, in the words the popup uses. Each is empty
+// when there's nothing to say.
+//   "Missing what your build wants: Life, Fire res."
+QString missingNote(const GearScore &gear);
+//   "Not used by your build: #% increased Rarity of Items found."
+QString wastedNote(const GearScore &gear);
+// The stats rolled under a share of an excellent roll, the weakest first and
+// three at most, "Weak rolls: Life 40%, Cold res 35% of an excellent roll."
+// Runes aren't rolls, so they're left out.
+QString weakRollsNote(const GearScore &gear, int underPercent = 50);
+
 // Points per unit of a stat for the build in that slot, with your tweaks; 0
 // when the build doesn't want it there.
 double usefulness(const QString &slot, const QString &key, const GearScoreOptions &options = {});

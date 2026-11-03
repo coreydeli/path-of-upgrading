@@ -442,6 +442,55 @@ private Q_SLOTS:
         QCOMPARE(gearScore(armoured)->missing, QStringList{u"Lightning res"_s});
     }
 
+    void notesToImprove()
+    {
+        GearScore g;
+        QCOMPARE(missingNote(g), QString());
+        QCOMPARE(wastedNote(g), QString());
+        QCOMPARE(weakRollsNote(g), QString());
+
+        g.missing = {u"Life"_s, u"Fire res"_s};
+        g.wasted = {u"#% increased Rarity of Items found"_s};
+        QCOMPARE(missingNote(g), u"Missing what your build wants: Life, Fire res."_s);
+        QCOMPARE(wastedNote(g), u"Not used by your build: #% increased Rarity of Items found."_s);
+    }
+
+    void weakRollsAreTheWeakestThree()
+    {
+        const auto part = [](const QString &label, int quality, StatOrigin origin = StatOrigin::Mod) {
+            return GearContribution{
+                .key = label, .label = label, .value = 1, .quality = quality, .points = 1, .origin = origin};
+        };
+        GearScore g;
+        g.contributions = {part(u"Life"_s, 40), part(u"Cold res"_s, 35), part(u"Armour"_s, 90),
+                           part(u"Fire res"_s, 30),
+                           // from two mods, so it is not weak
+                           part(u"Fire res"_s, 25), part(u"Spirit"_s, 20),
+                           part(u"Mana"_s, 10, StatOrigin::Socket), part(u"Lightning res"_s, 45),
+                           // and not under, only up to
+                           part(u"Strength"_s, 50)};
+        QCOMPARE(weakRollsNote(g), u"Weak rolls: Spirit 20%, Cold res 35%, Life 40% of an excellent roll."_s);
+        QCOMPARE(weakRollsNote(g, 25), u"Weak rolls: Spirit 20% of an excellent roll."_s);
+        QCOMPARE(weakRollsNote(g, 20), QString());
+    }
+
+    void notesFromAnItem()
+    {
+        // a bare body armour has nothing but what it lacks
+        const auto bare = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB"_s));
+        QCOMPARE(missingNote(*bare),
+                 u"Missing what your build wants: Armour / Evasion, Energy Shield, Life."_s);
+        QCOMPARE(wastedNote(*bare), QString());
+        QCOMPARE(weakRollsNote(*bare), QString());
+
+        // and a roll of a tenth of an excellent one
+        const auto weak = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB\n--------\n"
+                                         "+10 to maximum Life\n10% increased Rarity of Items found"_s));
+        QVERIFY(weak->contributions.first().quality < 50);
+        QVERIFY(weakRollsNote(*weak).startsWith(u"Weak rolls: Life "_s));
+        QCOMPARE(wastedNote(*weak), u"Not used by your build: #% increased Rarity of Items found."_s);
+    }
+
     void topStatsIncludeThoseWorthFour()
     {
         QStringList labels;

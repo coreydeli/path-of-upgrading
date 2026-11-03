@@ -196,6 +196,46 @@ QString gearGrade(int score)
     return u"D"_s;
 }
 
+QString missingNote(const GearScore &gear)
+{
+    if (gear.missing.isEmpty())
+        return {};
+    return u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
+}
+
+QString wastedNote(const GearScore &gear)
+{
+    if (gear.wasted.isEmpty())
+        return {};
+    QStringList names;
+    for (const QString &key : gear.wasted)
+        names << statName(key);
+    return u"Not used by your build: "_s + names.join(u", "_s) + u'.';
+}
+
+QString weakRollsNote(const GearScore &gear, int underPercent)
+{
+    // one stat can come from several mods
+    QList<std::pair<QString, int>> byLabel;
+    for (const GearContribution &c : gear.contributions) {
+        if (c.origin == StatOrigin::Socket)
+            continue;
+        const auto it = std::ranges::find(byLabel, c.label, &std::pair<QString, int>::first);
+        if (it != byLabel.end())
+            it->second += c.quality;
+        else
+            byLabel.append({c.label, c.quality});
+    }
+    byLabel.removeIf([underPercent](const auto &part) { return part.second >= underPercent; });
+    if (byLabel.isEmpty())
+        return {};
+    std::ranges::stable_sort(byLabel, {}, &std::pair<QString, int>::second);
+    QStringList parts;
+    for (qsizetype i = 0; i < std::min<qsizetype>(3, byLabel.size()); ++i)
+        parts << u"%1 %2%"_s.arg(byLabel.at(i).first).arg(byLabel.at(i).second);
+    return u"Weak rolls: "_s + parts.join(u", "_s) + u" of an excellent roll."_s;
+}
+
 double usefulness(const QString &slot, const QString &key, const GearScoreOptions &options)
 {
     const BuildProfile *profile = buildProfile(options.build);
