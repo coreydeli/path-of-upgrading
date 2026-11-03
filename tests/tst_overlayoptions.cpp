@@ -215,6 +215,9 @@ private Q_SLOTS:
 
     void startWithDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Options o;
         QVERIFY(!o.options.startsWithDesktop());
         QVERIFY(o.options.startError().isEmpty());
@@ -241,6 +244,9 @@ private Q_SLOTS:
 
     void startFailed()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Options o;
         // a file where the folder should be
         QFile blocker(o.dir.filePath(u"autostart"_s));
@@ -262,6 +268,9 @@ private Q_SLOTS:
 
     void startRemovedByHand()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Options o;
         o.options.setStartWithDesktop(true);
         QVERIFY(QFile::remove(o.dir.filePath(u"autostart/made-up.desktop"_s)));

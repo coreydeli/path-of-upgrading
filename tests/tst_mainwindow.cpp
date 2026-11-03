@@ -1926,6 +1926,9 @@ private Q_SLOTS:
 
     void startWithDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         QVERIFY(w.show(u"overlayAction"_s));
         QObject *start = w.find(u"startSwitch"_s);
@@ -1945,6 +1948,9 @@ private Q_SLOTS:
 
     void startsWithDesktopAlready()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         w.app->overlayOptions()->setStartWithDesktop(true);
         QVERIFY(w.show(u"overlayAction"_s));
@@ -1953,6 +1959,9 @@ private Q_SLOTS:
 
     void startFailed()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         // a file where the folder should be
         QFile blocker(w.dir.filePath(u"autostart"_s));
@@ -1979,6 +1988,9 @@ private Q_SLOTS:
 
     void startRemovedByHand()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         w.app->overlayOptions()->setStartWithDesktop(true);
         QVERIFY(w.show(u"overlayAction"_s));
