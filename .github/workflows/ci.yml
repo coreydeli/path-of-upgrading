@@ -143,11 +143,13 @@ jobs:
         # again with their logs in files
         run: |
           ctest --output-on-failure -j4 && exit 0
-          for name in $(sed 's/^[0-9]*://' Testing/Temporary/LastTestsFailed.log); do
+          # in the folder ctest runs them in, from the top of the build folder,
+          # where qt_standard_project_setup puts the programs on Windows
+          cd tests
+          for name in $(sed 's/^[0-9]*://' ../Testing/Temporary/LastTestsFailed.log); do
               echo "::group::$name"
-              tests/$name.exe -o "$name.txt,txt"
-              echo "It ended with $?"
-              cat "$name.txt"
+              ../$name.exe -o "$name.txt,txt" || echo "It ended with $?"
+              cat "$name.txt" || true
               echo "::endgroup::"
           done
           exit 1
