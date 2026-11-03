@@ -3,12 +3,12 @@
 # Checks the format, then builds with no warnings, then runs every test, each
 # stage once the one before it has passed. It builds on Arch Linux for the
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
-# supports. A release runs it too.
+# supports. Main and beta are checked by the release builds, which run it.
 name: CI
 
 on:
   push:
-    branches: ['**']
+    branches-ignore: [main, beta]
   pull_request:
   workflow_call:
 
@@ -17,8 +17,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # every merge to main keeps its own result
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  # every merge to main or beta keeps its own result
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/beta' }}
 
 jobs:
   format:

@@ -9,8 +9,9 @@ It is a native Qt 6 application, written in C++ and QML with Kirigami. KDE
 Plasma on Wayland is the first supported desktop. Other desktops and Windows
 may come later.
 
-This is version 0.1.0 and there are no releases yet, so for now you build it
-from source.
+Get it from the [releases](https://github.com/coreydeli/path-of-upgrading/releases),
+or build it from source. Betas come out first, as pre-releases, for anyone who
+wants the newest changes before they're released.
 
 ## Features
 
@@ -102,6 +103,15 @@ file, the icon and the AppStream metainfo.
 Each release on GitHub has an Arch Linux package and a Debian 13 package. To
 make them yourself, run `makepkg` in `packaging/arch`, or `cpack` in the build
 folder on Debian.
+
+## Releases
+
+Work is done on short branches off `beta` and merged back into it. Each merge
+into `beta` makes a pre-release, like `v0.1.0-beta.2`, with the packages and
+the changes since the last one. Merging `beta` into `main` releases the version
+in `CMakeLists.txt` as the latest release, and the next beta needs a new
+version. The version is also in the metainfo's newest release and the PKGBUILD,
+and CI checks they say the same.
 
 ## Tests
 
