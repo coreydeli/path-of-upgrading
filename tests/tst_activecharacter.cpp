@@ -355,7 +355,9 @@ private Q_SLOTS:
         QVERIFY(c.active.wear(u"Ring 1"_s, item(itemtexts::advancedRing)));
         QCOMPARE(c.started, 1);
         QCOMPARE(c.store.ids().size(), 1);
-        QCOMPARE(c.active.character().gear.keys(), (QStringList{u"Helmet"_s, u"Ring 1"_s}));
+        QStringList worn = c.active.character().gear.keys();
+        worn.sort();
+        QCOMPARE(worn, (QStringList{u"Helmet"_s, u"Ring 1"_s}));
     }
 
     void wearMakesOneThatPlaysItself()
