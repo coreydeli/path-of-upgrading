@@ -106,17 +106,34 @@ class TestStatWeights : public QObject
 private Q_SLOTS:
     void nobody()
     {
+        // which has the default weights
         Weighing w;
-        QCOMPARE(w.weights.rowCount(), 0);
-        QVERIFY(w.weights.keys().isEmpty());
+        QCOMPARE(w.weights.rowCount(), int(defaultWeights().size()));
+        QVERIFY(w.weights.isDefault());
         QCOMPARE(w.weights.character(), QString());
         QVERIFY(w.weights.suggestions().isEmpty());
         QVERIFY(!w.weights.suggestsNew());
         QCOMPARE(w.weights.undoable(), QString());
+    }
 
-        QSignalSpy dataChanged(&w.weights, &StatWeights::dataChanged);
-        w.active.reload();
-        QCOMPARE(dataChanged.size(), 0);
+    void addForNobody()
+    {
+        // which makes a character to have it
+        Weighing w;
+        w.active.setStarter([&w](QString *) {
+            Character c = tester();
+            c.name = u"Newcomer"_s;
+            return w.store.add(c).value_or(QString());
+        });
+        w.weights.add(rarity);
+        QCOMPARE(w.weights.error(), QString());
+        QCOMPARE(w.weights.character(), u"Newcomer"_s);
+        QCOMPARE(w.saved(), [] {
+            Weights expected = defaultWeights();
+            expected.insert(rarity, 1);
+            return expected;
+        }());
+        QVERIFY(w.keys().contains(rarity));
     }
 
     void rows()
@@ -442,7 +459,7 @@ private Q_SLOTS:
 
         // and nobody
         w.active.setId(u"gone"_s);
-        QCOMPARE(w.weights.rowCount(), 0);
+        QCOMPARE(w.weights.rowCount(), int(defaultWeights().size()));
     }
 };
 

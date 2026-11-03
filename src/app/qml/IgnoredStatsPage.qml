@@ -82,7 +82,7 @@ FormCard.FormCardPage {
             objectName: "nobodyText"
             visible: ignoredPage.ignored.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("Add a character or import a build on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
         }
 
         Repeater {
@@ -107,7 +107,6 @@ FormCard.FormCardPage {
 
     FormCard.FormSectionText {
         objectName: "ignoredHelp"
-        visible: ignoredPage.ignored.character !== ""
         text: qsTr("An ignored stat counts for nothing in the gear score and your weights, and the trade searches leave it out. An excluded one is ignored too, and the trade searches skip every listing that has it.")
     }
 
@@ -119,7 +118,6 @@ FormCard.FormCardPage {
     FormCard.FormCard {
         id: singleStats
         objectName: "singleStats"
-        visible: ignoredPage.ignored.character !== ""
 
         Repeater {
             id: statRows

@@ -76,7 +76,7 @@ FormCard.FormCardPage {
             objectName: "nobodyText"
             visible: weightsPage.weights.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("Add a character or import a build on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
         }
 
         Repeater {
@@ -88,19 +88,17 @@ FormCard.FormCardPage {
 
         FormCard.FormTextDelegate {
             objectName: "noWeightsText"
-            visible: weightsPage.weights.character !== "" && weightRows.count === 0
+            visible: weightRows.count === 0
             text: qsTr("You have no weights.")
             description: qsTr("Every item comes to 0 by them. Add some, suggest some from your gear, or go back to the defaults.")
             textItem.wrapMode: Text.Wrap
         }
 
         FormCard.FormDelegateSeparator {
-            visible: weightsPage.weights.character !== ""
         }
 
         FormCard.FormButtonDelegate {
             objectName: "addStatButton"
-            visible: weightsPage.weights.character !== ""
             text: qsTr("Add a Stat")
             icon.name: "list-add"
             onClicked: statPicker.open()
@@ -108,7 +106,6 @@ FormCard.FormCardPage {
 
         FormCard.FormButtonDelegate {
             objectName: "suggestButton"
-            visible: weightsPage.weights.character !== ""
             enabled: weightsPage.weights.suggestions.length > 0
             text: qsTr("Suggest from Your Gear")
             description: enabled ? "" : qsTr("Your gear has no stats to suggest weights for.")
@@ -118,7 +115,6 @@ FormCard.FormCardPage {
 
         FormCard.FormButtonDelegate {
             objectName: "resetButton"
-            visible: weightsPage.weights.character !== ""
             enabled: !weightsPage.weights.defaults
             text: qsTr("Back to the Defaults")
             icon.name: "edit-reset"
@@ -141,7 +137,6 @@ FormCard.FormCardPage {
 
     FormCard.FormSectionText {
         objectName: "weightsHelp"
-        visible: weightsPage.weights.character !== ""
         text: qsTr("A weight is what one of a stat is worth to you, in points. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 life. The popup judges items by them when the gear score has no build profile, and so does searching the trade site by your weights.")
     }
 

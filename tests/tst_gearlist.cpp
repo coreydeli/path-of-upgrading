@@ -89,8 +89,10 @@ private Q_SLOTS:
     void nobody()
     {
         Gear g;
+        // with the main slots to fill, all empty
         QCOMPARE(g.list.character(), QString());
-        QCOMPARE(g.list.rowCount(), 0);
+        QCOMPARE(g.slotNames(), pou::mainSlots());
+        QCOMPARE(g.in(u"Helmet"_s, GearList::NameRole).toString(), QString());
         QVERIFY(!g.list.hasExtras());
     }
 

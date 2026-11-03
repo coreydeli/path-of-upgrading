@@ -96,23 +96,22 @@ void GearList::refresh()
 
     beginResetModel();
     m_rows.clear();
-    if (m_active->exists()) {
-        for (const QString &slot : allSlots()) {
-            const auto item = character.gear.constFind(slot);
-            if (item == character.gear.cend()) {
-                if (mainSlots().contains(slot))
-                    m_rows << Row{.slot = slot};
-                continue;
-            }
-            Row row{.slot = slot};
-            const std::optional<GearScore> score =
-                gearScore(*item, gearScoreOptions(character, slot, m_priorities));
-            if (score && score->isRated()) {
-                row.score = score->score;
-                row.grade = score->grade;
-            }
-            m_rows << row;
+    // the main slots are there to fill even before there's a character
+    for (const QString &slot : allSlots()) {
+        const auto item = character.gear.constFind(slot);
+        if (item == character.gear.cend()) {
+            if (mainSlots().contains(slot))
+                m_rows << Row{.slot = slot};
+            continue;
         }
+        Row row{.slot = slot};
+        const std::optional<GearScore> score =
+            gearScore(*item, gearScoreOptions(character, slot, m_priorities));
+        if (score && score->isRated()) {
+            row.score = score->score;
+            row.grade = score->grade;
+        }
+        m_rows << row;
     }
 
     // the scores worked out above

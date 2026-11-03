@@ -95,13 +95,13 @@ private Q_SLOTS:
         Ignoring i;
         QCOMPARE(i.ignored.rowCount(), 0);
         QCOMPARE(i.ignored.character(), QString());
-        QVERIFY(i.ignored.groups().isEmpty());
+        QCOMPARE(i.ignored.groups().size(), ignorePresets().size());
         QVERIFY(i.ignored.keys().isEmpty());
         QCOMPARE(i.ignored.modes(), QStringList({u"Counts"_s, u"Ignored"_s, u"Excluded"_s}));
 
-        // and there's no one to change
+        // as nothing makes a character in this test
         i.ignored.add(life);
-        QCOMPARE(i.ignored.error(), QString());
+        QCOMPARE(i.ignored.error(), u"There's no character. Add one first."_s);
     }
 
     void groups()
@@ -322,7 +322,7 @@ private Q_SLOTS:
         // and nobody
         i.active.setId(u"gone"_s);
         QCOMPARE(i.ignored.rowCount(), 0);
-        QVERIFY(i.ignored.groups().isEmpty());
+        QCOMPARE(i.ignored.groups().size(), ignorePresets().size());
     }
 };
 

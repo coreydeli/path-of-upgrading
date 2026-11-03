@@ -160,7 +160,7 @@ void StatWeights::refresh()
     if (m_undo && (m_undo->id != m_active->id() || !m_active->exists()))
         m_undo.reset();
 
-    QStringList keys = m_active->exists() ? character.weights.keys() : QStringList();
+    QStringList keys = character.weights.keys();
     sortStats(keys);
     if (keys == m_keys) {
         if (!m_keys.isEmpty())
