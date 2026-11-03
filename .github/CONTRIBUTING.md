@@ -78,6 +78,9 @@ anything newer than those.
 - Put designated initializers in declaration order.
 - Match the naming and idiom of the code around your change.
 
+The [style guide](../docs/style-guide.md) has the rest, for the code and for the
+text people read in the app and the docs.
+
 The folders split the code like this:
 
 | Folder | What goes there |
