@@ -192,7 +192,9 @@ void PobEngine::start()
     connect(process, &QProcess::readyReadStandardError, this, [this, process] {
         // what Path of Building prints, which is only for finding out why
         // something didn't work
-        const QByteArray printed = process->readAllStandardError();
+        QByteArray printed = process->readAllStandardError();
+        // without the \r Windows puts before each \n
+        printed.removeIf([](char c) { return c == '\r'; });
         qCDebug(lcPob, "%s", printed.trimmed().constData());
         m_printed.append(printed);
         if (m_printed.size() > maxPrinted)
