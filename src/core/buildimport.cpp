@@ -96,7 +96,7 @@ QString fittingProfile(const PobBuild &build)
     if (build.minionDps > 0)
         return minionProfile.toString();
     if (build.energyShield > build.life * 2)
-        return energyShieldProfile.toString();
+        return (build.attacks ? energyShieldAttackerProfile : energyShieldProfile).toString();
     return defaultBuildProfile.toString();
 }
 
