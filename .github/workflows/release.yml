@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: MIT
 #
 # Each push to main or beta makes a release on GitHub, with the source, an Arch
-# Linux package and a Debian 13 package, and the changes since the last one.
+# Linux package, a Debian 13 package, a Windows installer and zip, and the
+# changes since the last one.
 # Main releases the version in CMakeLists.txt as the latest release, once. Beta
 # releases it as a pre-release, v0.1.0-beta.1 and on, until that version is
 # out. The source comes first, then every check CI makes, then the packages,
@@ -152,10 +153,53 @@ jobs:
           path: build/path-of-upgrading_*.deb
           if-no-files-found: error
 
+  windows:
+    name: Windows installer and zip
+    needs: [source, checks]
+    if: >-
+      ${{ !cancelled() && !failure()
+      && (github.event_name == 'pull_request' || needs.source.outputs.release == 'true') }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Keep the line ends
+        shell: pwsh
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-msys2.sh
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+      - name: Build
+        run: cmake --build build
+      - name: Make the installer and the zip
+        env:
+          TAG: ${{ needs.source.outputs.tag }}
+          VERSION: ${{ needs.source.outputs.version }}
+        run: |
+          mkdir dist
+          cd dist
+          sh ../.github/scripts/package-windows.sh ../build "$VERSION" "${TAG#v}"
+      # They aren't signed yet, so Windows warns about them when they're
+      # opened. Signing them would go here.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+          if-no-files-found: error
+
   release:
     name: Release
     if: needs.source.outputs.release == 'true' && github.event_name == 'push'
-    needs: [source, checks, arch, debian]
+    needs: [source, checks, arch, debian, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write

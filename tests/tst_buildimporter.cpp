@@ -88,7 +88,13 @@ struct Importer
         return id;
     }
 
-    QString builds() const { return dir.filePath(u"pob/userdata/Path of Building (PoE2)/Builds"_s); }
+    PobInstall pob() const
+    {
+        return {.folder = dir.filePath(u"pob"_s),
+                .program = u"luajit"_s,
+                .userFolder = dir.filePath(u"pob/userdata/Path of Building (PoE2)"_s)};
+    }
+    QString builds() const { return pob().userFolder + u"/Builds"_s; }
 };
 
 } // namespace
@@ -445,7 +451,7 @@ private Q_SLOTS:
 
         // before you've saved any
         QSignalSpy changed(&i.importer, &BuildImporter::buildsChanged);
-        i.engine.setInstall({.folder = i.dir.filePath(u"pob"_s), .program = u"luajit"_s});
+        i.engine.setInstall(i.pob());
         QCOMPARE(changed.size(), 1);
         QCOMPARE(i.importer.buildsFolder(), i.builds());
         QVERIFY(i.importer.builds().isEmpty());
@@ -477,7 +483,7 @@ private Q_SLOTS:
     void savedBuildsFromTheStart()
     {
         Importer i;
-        i.engine.setInstall({.folder = i.dir.filePath(u"pob"_s), .program = u"luajit"_s});
+        i.engine.setInstall(i.pob());
         QVERIFY(writeFile(i.builds() + u"/Witch.xml"_s, "<PathOfBuilding2/>"));
         BuildImporter later(&i.list, &i.engine, &i.network);
         QCOMPARE(later.buildsFolder(), i.builds());

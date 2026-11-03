@@ -12,6 +12,9 @@ using namespace Qt::Literals::StringLiterals;
 namespace pou {
 namespace {
 
+// how long a message stays, in milliseconds
+constexpr int messageTime = 10000;
+
 // Named after the app's desktop file, as the icon is.
 QString appId()
 {
@@ -27,7 +30,12 @@ KdeTray::KdeTray(QObject *parent)
 {
     m_item->setCategory(KStatusNotifierItem::ApplicationStatus);
     m_item->setTitle(QGuiApplication::applicationDisplayName());
+#ifdef Q_OS_WIN
+    // which has no icon theme with ours in it
+    m_item->setIconByPixmap(QGuiApplication::windowIcon());
+#else
     m_item->setIconByName(appId());
+#endif
     m_item->setToolTip(appId(), QGuiApplication::applicationDisplayName(), QString());
     // Passive would let the tray tuck it away
     m_item->setStatus(KStatusNotifierItem::Active);
@@ -56,6 +64,11 @@ void KdeTray::setPaused(bool paused)
 {
     m_pause->setChecked(paused);
     m_item->setToolTipSubTitle(paused ? u"The hotkeys are paused."_s : QString());
+}
+
+void KdeTray::showMessage(const QString &title, const QString &text)
+{
+    m_item->showMessage(title, text, appId(), messageTime);
 }
 
 } // namespace pou

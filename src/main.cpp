@@ -7,9 +7,9 @@
 #include "platform/globalshortcuts.h"
 #include "platform/notifier.h"
 #include "platform/secretstore.h"
+#include "platform/singleinstance.h"
 #include "platform/tray.h"
 
-#include <KDBusService>
 #include <KLocalizedQmlContext>
 #include <QApplication>
 #include <QDir>
@@ -20,6 +20,11 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
 #include <QWindow>
+
+#ifdef Q_OS_WIN
+#include <KIconTheme>
+#include <QIcon>
+#endif
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
@@ -54,6 +59,10 @@ void pickControlsStyle()
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_WIN
+    // Windows has no icon themes, so Breeze comes with the app
+    KIconTheme::initTheme();
+#endif
     QApplication app(argc, argv);
     QApplication::setApplicationName(u"path-of-upgrading"_s);
     QApplication::setApplicationDisplayName(u"Path of Upgrading"_s);
@@ -63,6 +72,10 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain(u"coreydeli.github.io"_s);
     // closing the window leaves it in the tray
     QApplication::setQuitOnLastWindowClosed(false);
+#ifdef Q_OS_WIN
+    // which the desktop file gives it elsewhere
+    QApplication::setWindowIcon(QIcon(u":/icons/" APP_ID ".svg"_s));
+#endif
 
     // --help and --version print and exit here
     pou::CommandLine commandLine;
@@ -70,7 +83,7 @@ int main(int argc, char *argv[])
 
     // Started a second time, this hands over to the first and exits, before
     // anything below is set up.
-    KDBusService service(KDBusService::Unique);
+    const std::unique_ptr<pou::SingleInstance> instance = pou::runOnce();
 
     pickControlsStyle();
 
@@ -80,9 +93,10 @@ int main(int argc, char *argv[])
     pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::createSecretStore(),
                   std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
     const std::unique_ptr<pou::Tray> tray = pou::createTray();
-    const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier();
+    const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier(tray.get());
     pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());
-    QObject::connect(&service, &KDBusService::activateRequested, &desktop, &pou::Desktop::startedAgain);
+    QObject::connect(instance.get(), &pou::SingleInstance::startedAgain, &desktop,
+                     &pou::Desktop::startedAgain);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);

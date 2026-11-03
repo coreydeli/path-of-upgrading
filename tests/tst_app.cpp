@@ -13,6 +13,7 @@
 #include "itemtexts.h"
 #include "tradefixtures.h"
 
+#include <QDir>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -202,6 +203,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Fusion, as on Linux, as Windows' own style can't draw offscreen
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
         // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
         // platform plugin of its own
         qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
@@ -332,7 +335,7 @@ private Q_SLOTS:
         r.app.pobOptions()->setLocation(folders.pob.folder.path());
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
         QCOMPARE(r.app.pobOptions()->found(),
-                 u"Using Path of Building in %1."_s.arg(folders.pob.folder.path()));
+                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folders.pob.folder.path())));
 
         QVERIFY(r.app.overlayOptions()->setCheckKey(QKeySequence(u"F6"_s)));
         QCOMPARE(r.shortcuts->keys.value(u"check-item"_s), QKeySequence(u"F6"_s));
@@ -491,6 +494,9 @@ private Q_SLOTS:
 
     void startsWithTheDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         const QString name = QGuiApplication::applicationDisplayName();
         const QString file = QGuiApplication::desktopFileName();
         QGuiApplication::setApplicationDisplayName(u"Made-up Program"_s);
@@ -524,6 +530,9 @@ private Q_SLOTS:
 
     void foldersOnTheDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         QTemporaryDir config;
         qputenv("XDG_CONFIG_HOME", config.path().toUtf8());
         const QString file = QGuiApplication::desktopFileName();

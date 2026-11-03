@@ -6,8 +6,8 @@ build. It can also search the trade site for better items, look for items like
 the one you checked, and find bases to craft on.
 
 It is a native Qt 6 application, written in C++ and QML with Kirigami. KDE
-Plasma on Wayland is the first supported desktop. Other desktops and Windows
-may come later.
+Plasma on Wayland is the first supported desktop, and there is a Windows
+version too. Other desktops may come later.
 
 Get it from the [releases](https://github.com/coreydeli/path-of-upgrading/releases),
 or build it from source. Betas come out first, as pre-releases, for anyone who
@@ -156,6 +156,29 @@ from KDE, so it can be changed in System Settings as well as in the app.
 Closing the window leaves the program running in the tray. On a desktop with
 no tray, such as GNOME without an extension for it, nothing shows that it is
 still running. Starting it again brings the window back.
+
+## Windows
+
+Each release has a Windows installer, `path-of-upgrading-<version>-setup.exe`,
+and a zip of the same program, which runs from any folder. The installer is
+for you alone, so it doesn't ask for an administrator. It puts the app in
+`AppData\Local\Programs\Path of Upgrading`, with an entry in the Start menu,
+and you can uninstall it from Settings, under Apps. Your settings and
+characters stay in AppData when you do.
+
+Neither is signed yet, so the first time you open one, SmartScreen says it
+doesn't know the app. Choose More info, then Run anyway.
+
+Path of Building is the one from its own installer,
+[Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases),
+which goes in `%APPDATA%\Path of Building Community (PoE2)`. The app comes with
+the LuaJIT that runs it. A copy you unzipped somewhere else can be picked on
+the Path of Building page.
+
+Play in windowed fullscreen, as the popup can't be drawn over the game in
+exclusive fullscreen. The hotkeys are changed in the app, on the Popup and
+Hotkeys page, which also has the switch to start it when you sign in. Session
+IDs are kept in the Windows Credential Manager.
 
 ## Credits
 

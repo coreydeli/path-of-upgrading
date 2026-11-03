@@ -329,6 +329,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Fusion, as on Linux, as Windows' own style can't draw offscreen
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
         qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1");
         // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
         // platform plugin of its own
@@ -624,7 +626,8 @@ private Q_SLOTS:
         QVERIFY(field->setProperty("text", folder));
         QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
         QCOMPARE(w.settings().pob.location, folder);
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using Path of Building in %1."_s.arg(folder));
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folder)));
         QCOMPARE(w.find(u"foundText"_s)->property("description").toString(), QString());
     }
 
@@ -639,7 +642,8 @@ private Q_SLOTS:
         // once it's there
         QVERIFY(makePob(folder));
         QVERIFY(QMetaObject::invokeMethod(w.find(u"lookAgainButton"_s), "clicked"));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using Path of Building in %1."_s.arg(folder));
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folder)));
     }
 
     void pobSettings()
@@ -1924,6 +1928,9 @@ private Q_SLOTS:
 
     void startWithDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         QVERIFY(w.show(u"overlayAction"_s));
         QObject *start = w.find(u"startSwitch"_s);
@@ -1943,6 +1950,9 @@ private Q_SLOTS:
 
     void startsWithDesktopAlready()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         w.app->overlayOptions()->setStartWithDesktop(true);
         QVERIFY(w.show(u"overlayAction"_s));
@@ -1951,6 +1961,9 @@ private Q_SLOTS:
 
     void startFailed()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         // a file where the folder should be
         QFile blocker(w.dir.filePath(u"autostart"_s));
@@ -1977,6 +1990,9 @@ private Q_SLOTS:
 
     void startRemovedByHand()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Window w;
         w.app->overlayOptions()->setStartWithDesktop(true);
         QVERIFY(w.show(u"overlayAction"_s));

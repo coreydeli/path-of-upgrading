@@ -1,0 +1,98 @@
+# SPDX-License-Identifier: MIT
+name: Bug report
+description: Something doesn't work the way it should.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Search the open issues first, in case it's already known.
+
+        Don't include your session ID (POESESSID), your settings file or your own Path of Building builds.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what it did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did, in order.
+      placeholder: |
+        1. Press the hotkey over an item
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: item
+    attributes:
+      label: Item text
+      description: If the problem is with an item, copy it in the game (Ctrl+C over the item) and paste it here.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What `path-of-upgrading --version` prints.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: desktop
+    attributes:
+      label: Desktop
+      options:
+        - KDE Plasma on Wayland
+        - KDE Plasma on X11
+        - Another desktop (say which below)
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How you installed it
+      options:
+        - Built from source
+        - Arch Linux package
+        - Debian 13 package
+        - Something else (say below)
+    validations:
+      required: true
+  - type: dropdown
+    id: path-of-building
+    attributes:
+      label: Path of Building
+      description: How Path of Building is set up for the app.
+      options:
+        - Flatpak
+        - Another install
+        - Not set up
+  - type: textarea
+    id: terminal
+    attributes:
+      label: Terminal output
+      description: If the app printed anything when the problem happened, paste it here.
+      render: shell
+  - type: textarea
+    id: details
+    attributes:
+      label: Anything else
+      description: Screenshots, which game settings you use, or anything that might help.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open issues and didn't find this one.
+          required: true
+        - label: I've removed my session ID, settings and builds from anything I've pasted.
+          required: true

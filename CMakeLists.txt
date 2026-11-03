@@ -63,4 +63,6 @@ if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-include(packaging/debian.cmake)
+if(NOT WIN32)
+    include(packaging/debian.cmake)
+endif()

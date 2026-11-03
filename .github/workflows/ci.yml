@@ -3,7 +3,8 @@
 # Checks the format, then builds with no warnings, then runs every test, each
 # stage once the one before it has passed. It builds on Arch Linux for the
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
-# supports. Main and beta are checked by the release builds, which run it.
+# supports, and on Windows in MSYS2. Main and beta are checked by the release
+# builds, which run it.
 name: CI
 
 on:
@@ -107,3 +108,48 @@ jobs:
       - name: Test
         working-directory: build
         run: sh ../.github/scripts/run-tests.sh
+
+  windows:
+    name: Build and test on Windows
+    needs: format
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      # the test files as they are in the repository, not with Windows' line ends
+      - name: Keep the line ends
+        shell: pwsh
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-msys2.sh
+      - name: Configure
+        run: >-
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG=-g0
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+      # going on past an error, so each run shows them all
+      - name: Build
+        run: cmake --build build -- -k 0
+      - name: Test
+        working-directory: build
+        env:
+          QT_QPA_PLATFORM: offscreen
+        # ctest shows nothing of what a failed test said here, so they run
+        # again with their logs in files
+        run: |
+          ctest --output-on-failure -j4 && exit 0
+          # in the folder ctest runs them in, from the top of the build folder,
+          # where qt_standard_project_setup puts the programs on Windows
+          cd tests
+          for name in $(sed 's/^[0-9]*://' ../Testing/Temporary/LastTestsFailed.log); do
+              echo "::group::$name"
+              ../$name.exe -o "$name.txt,txt" || echo "It ended with $?"
+              cat "$name.txt" || true
+              echo "::endgroup::"
+          done
+          exit 1

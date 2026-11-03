@@ -153,6 +153,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Fusion, as on Linux, as Windows' own style can't draw offscreen
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
         // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
         // platform plugin of its own
         qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");

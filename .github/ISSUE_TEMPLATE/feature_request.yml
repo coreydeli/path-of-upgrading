@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: MIT
+name: Feature request
+description: Suggest something the app could do.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search the open issues first, in case someone has already suggested it.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the situation, so it's clear what the change would help with.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+      description: The change you have in mind, if you have one.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything else you tried or considered?
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open issues and didn't find this one.
+          required: true

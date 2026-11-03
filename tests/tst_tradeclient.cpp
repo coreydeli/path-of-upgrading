@@ -7,6 +7,7 @@
 #include <QElapsedTimer>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QSet>
 #include <QSignalSpy>
 #include <QTest>
 
@@ -273,7 +274,12 @@ private Q_SLOTS:
             QVERIFY(finishes(reply));
         QCOMPARE_GE(clock.elapsed(), 1250);
         QCOMPARE(network.sent.size(), 6);
-        QCOMPARE(network.sent[3].request.url(), tradeSearchUrl(u"Runes of Aldur"_s));
+        // in any order, as each kind waits on its own
+        QSet<QUrl> went;
+        for (qsizetype i = 3; i < network.sent.size(); ++i)
+            went << network.sent[i].request.url();
+        QCOMPARE(went, (QSet<QUrl>{tradeSearchUrl(u"Runes of Aldur"_s), tradeFetchUrl({u"x2"_s}, u"Ab3dE9"_s),
+                                   tradeDataUrl(u"leagues"_s)}));
     }
 
     void countsRequestsFromElsewhere_data()
