@@ -68,7 +68,7 @@ jobs:
     env:
       LANG: C.UTF-8
       CCACHE_DIR: /ccache
-      CCACHE_MAXSIZE: 400M
+      CCACHE_MAXSIZE: 100M
     steps:
       # so the checkout is a repository, which the tarball is made from
       - name: Install git
@@ -128,7 +128,7 @@ jobs:
     env:
       LANG: C.UTF-8
       CCACHE_DIR: /ccache
-      CCACHE_MAXSIZE: 400M
+      CCACHE_MAXSIZE: 100M
     steps:
       - uses: actions/checkout@v7
       - name: Install the build tools and libraries
@@ -181,7 +181,7 @@ jobs:
         shell: msys2 {0}
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_MAXSIZE: 400M
+      CCACHE_MAXSIZE: 100M
     steps:
       # the test files as they are in the repository, not with Windows' line ends
       - name: Keep the line ends
