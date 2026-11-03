@@ -584,6 +584,18 @@ private Q_SLOTS:
         QVERIFY(health.losses.last().startsWith(u"Fire res"_s));
     }
 
+    void aTieGoesToResistanceWithoutPathOfBuilding()
+    {
+        // 30 points of fire res is worth 7.5, as is 90 of the 1200 Life
+        const Equipped gear = {{u"Amulet"_s, amulet(u"+200 to maximum Life\n+30% to Fire Resistance"_s)}};
+        Character c = wearing(gear);
+        c.resists = resists(gear, 75, {}, {}, {});
+        const Evaluation e = evaluate(lifeAmulet(110), c);
+        QCOMPARE(e.losses.size(), 2);
+        QCOMPARE(e.comparison.verdict, Verdict::ResistLoss);
+        QVERIFY(e.losses.first().startsWith(u"Fire res"_s));
+    }
+
     void pathOfBuildingsJudgement()
     {
         const Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});
