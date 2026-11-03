@@ -4,9 +4,29 @@
 #include <QCoreApplication>
 #include <QSignalSpy>
 #include <QTest>
+#include <QThread>
+#include <memory>
 
 using namespace Qt::Literals::StringLiterals;
 using namespace pou;
+
+namespace {
+
+// Started again, as another program would be, while the first one reads what
+// it's handed. On Windows it can't hand it over any other way, as the pipe
+// holds nothing until the first one reads it.
+bool claimElsewhere(const QString &name, const QStringList &arguments)
+{
+    bool claimed = true;
+    const std::unique_ptr<QThread> thread(
+        QThread::create([&] { claimed = LocalInstance(name).claim(arguments); }));
+    thread->start();
+    while (!thread->wait(10))
+        QCoreApplication::processEvents();
+    return claimed;
+}
+
+} // namespace
 
 class TestLocalInstance : public QObject
 {
@@ -38,15 +58,13 @@ private Q_SLOTS:
         QVERIFY(first.claim({u"path-of-upgrading"_s}));
         QSignalSpy started(&first, &LocalInstance::startedAgain);
 
-        LocalInstance second(m_name);
-        QVERIFY(!second.claim({u"path-of-upgrading"_s, u"--background"_s}));
+        QVERIFY(!claimElsewhere(m_name, {u"path-of-upgrading"_s, u"--background"_s}));
         QTRY_COMPARE(started.size(), 1);
         QCOMPARE(started.first().first().toStringList(),
                  (QStringList{u"path-of-upgrading"_s, u"--background"_s}));
 
         // and again
-        LocalInstance third(m_name);
-        QVERIFY(!third.claim({u"path-of-upgrading"_s}));
+        QVERIFY(!claimElsewhere(m_name, {u"path-of-upgrading"_s}));
         QTRY_COMPARE(started.size(), 2);
         QCOMPARE(started.last().first().toStringList(), QStringList{u"path-of-upgrading"_s});
     }
@@ -60,8 +78,7 @@ private Q_SLOTS:
         LocalInstance next(m_name);
         QVERIFY(next.claim({u"path-of-upgrading"_s}));
         QSignalSpy started(&next, &LocalInstance::startedAgain);
-        LocalInstance after(m_name);
-        QVERIFY(!after.claim({u"path-of-upgrading"_s}));
+        QVERIFY(!claimElsewhere(m_name, {u"path-of-upgrading"_s}));
         QTRY_COMPARE(started.size(), 1);
     }
 };
