@@ -28,6 +28,7 @@ class PobOptions : public QObject
     Q_PROPERTY(bool resistsFirst READ resistsFirst WRITE setResistsFirst NOTIFY changed)
     Q_PROPERTY(bool chaos READ chaos WRITE setChaos NOTIFY changed)
     Q_PROPERTY(bool keepDamage READ keepDamage WRITE setKeepDamage NOTIFY changed)
+    Q_PROPERTY(bool keepDefence READ keepDefence WRITE setKeepDefence NOTIFY changed)
     Q_PROPERTY(bool spirit READ spirit WRITE setSpirit NOTIFY changed)
     Q_PROPERTY(bool attributes READ attributes WRITE setAttributes NOTIFY changed)
 
@@ -53,6 +54,8 @@ public:
     void setChaos(bool chaos);
     bool keepDamage() const { return pob().priorities.keepDamage; }
     void setKeepDamage(bool keep);
+    bool keepDefence() const { return pob().priorities.keepDefence; }
+    void setKeepDefence(bool keep);
     bool spirit() const { return pob().priorities.spirit; }
     void setSpirit(bool spirit);
     bool attributes() const { return pob().priorities.attributes; }

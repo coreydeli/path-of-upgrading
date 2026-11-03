@@ -751,7 +751,8 @@ private Q_SLOTS:
         QCOMPARE(changed.first().at(0).toModelIndex().row(), 0);
         QCOMPARE(changed.first().at(1).toModelIndex().row(), 1);
         QCOMPARE(changed.first().at(2).value<QList<int>>(), (QList<int>{TradeResults::VerdictRole}));
-        QCOMPARE(verdictIn(site, 1).verdict, u"Downgrade"_s);
+        // 140 less Life than the better one is a loss of its own
+        QCOMPARE(verdictIn(site, 1).verdict, u"Loses defences"_s);
     }
 
     // there's room for four, and resistance over the cap either way doesn't

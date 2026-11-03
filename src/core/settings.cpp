@@ -75,6 +75,7 @@ Settings loadSettings(const QSettings &store)
     read(store, u"pob/resistsFirst"_s, pob.priorities.resistsFirst);
     read(store, u"pob/chaos"_s, pob.priorities.chaos);
     read(store, u"pob/keepDamage"_s, pob.priorities.keepDamage);
+    read(store, u"pob/keepDefence"_s, pob.priorities.keepDefence);
     read(store, u"pob/spirit"_s, pob.priorities.spirit);
     read(store, u"pob/attributes"_s, pob.priorities.attributes);
 
@@ -115,6 +116,7 @@ void saveSettings(QSettings &store, const Settings &s)
     store.setValue(u"pob/resistsFirst"_s, pob.priorities.resistsFirst);
     store.setValue(u"pob/chaos"_s, pob.priorities.chaos);
     store.setValue(u"pob/keepDamage"_s, pob.priorities.keepDamage);
+    store.setValue(u"pob/keepDefence"_s, pob.priorities.keepDefence);
     store.setValue(u"pob/spirit"_s, pob.priorities.spirit);
     store.setValue(u"pob/attributes"_s, pob.priorities.attributes);
 

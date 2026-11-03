@@ -122,6 +122,7 @@ private Q_SLOTS:
             [](Settings &s) { s.pob.priorities.resistsFirst = false; },
             [](Settings &s) { s.pob.priorities.chaos = true; },
             [](Settings &s) { s.pob.priorities.keepDamage = false; },
+            [](Settings &s) { s.pob.priorities.keepDefence = false; },
             [](Settings &s) { s.pob.priorities.spirit = false; },
             [](Settings &s) { s.pob.priorities.attributes = false; },
             [](Settings &s) { s.overlay.hotkey = u"F5"_s; },

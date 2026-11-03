@@ -48,6 +48,7 @@ private Q_SLOTS:
             .resistsFirst = false,
             .chaos = true,
             .keepDamage = false,
+            .keepDefence = false,
             .spirit = false,
             .attributes = false,
         };
@@ -59,6 +60,7 @@ private Q_SLOTS:
         QCOMPARE(o.options.resistsFirst(), false);
         QCOMPARE(o.options.chaos(), true);
         QCOMPARE(o.options.keepDamage(), false);
+        QCOMPARE(o.options.keepDefence(), false);
         QCOMPARE(o.options.spirit(), false);
         QCOMPARE(o.options.attributes(), false);
     }
@@ -73,9 +75,10 @@ private Q_SLOTS:
         o.options.setResistsFirst(false);
         o.options.setChaos(true);
         o.options.setKeepDamage(false);
+        o.options.setKeepDefence(false);
         o.options.setSpirit(false);
         o.options.setAttributes(false);
-        QCOMPARE(changed.size(), 8);
+        QCOMPARE(changed.size(), 9);
 
         PobSettings pob;
         pob.enabled = false;
@@ -85,6 +88,7 @@ private Q_SLOTS:
             .resistsFirst = false,
             .chaos = true,
             .keepDamage = false,
+            .keepDefence = false,
             .spirit = false,
             .attributes = false,
         };
@@ -92,7 +96,7 @@ private Q_SLOTS:
         QCOMPARE(SettingsStore(o.dir.filePath(u"settings.conf"_s)).settings().pob, pob);
 
         o.options.setChaos(true);
-        QCOMPARE(changed.size(), 8);
+        QCOMPARE(changed.size(), 9);
     }
 
     void andBack()
@@ -102,12 +106,14 @@ private Q_SLOTS:
         o.options.setResistsFirst(false);
         o.options.setChaos(true);
         o.options.setKeepDamage(false);
+        o.options.setKeepDefence(false);
         o.options.setSpirit(false);
         o.options.setAttributes(false);
         o.options.setEnabled(true);
         o.options.setResistsFirst(true);
         o.options.setChaos(false);
         o.options.setKeepDamage(true);
+        o.options.setKeepDefence(true);
         o.options.setSpirit(true);
         o.options.setAttributes(true);
         QCOMPARE(o.saved(), PobSettings());

@@ -16,6 +16,12 @@ namespace {
 constexpr int upgradeAt = 6;
 constexpr int smallUpgradeAt = 3;
 constexpr int downgradeAt = -3;
+// Without Path of Building, Life or Energy Shield dropping by this many
+// percent of your Life and Energy Shield together is a loss. Only the gear's
+// share is known, so this much more is taken for the rest, about what the tree
+// and your level give.
+constexpr double healthLossAt = 5;
+constexpr double healthBesidesGear = 1000;
 
 Verdict gearVerdict(int delta)
 {
@@ -38,6 +44,40 @@ double capOf(const LiveResists &resists, Element e)
 bool resistCounts(const ResistChange &r, const Character &character, const PobPriorities &priorities)
 {
     return r.element != Element::Chaos || (!character.chaosInoculation && (priorities.chaos || !r.wasUnder));
+}
+
+// Life or Energy Shield dropping by a good part, in words, with how big the
+// biggest is, in percent of the two together. The line has the percent of the one.
+struct HealthLoss
+{
+    QStringList lines;
+    double size = 0;
+};
+
+HealthLoss healthLosses(const CharacterChange &change)
+{
+    HealthLoss out;
+    const double health = change.healthBefore + healthBesidesGear;
+    for (const TotalChange &t : change.totals) {
+        if ((t.label != u"Life" && t.label != u"Energy Shield") || t.delta >= 0)
+            continue;
+        const double ofBoth = -t.delta / health * 100;
+        if (ofBoth < healthLossAt)
+            continue;
+        out.lines << u"%1 drops %2 (%3%)"_s.arg(t.label, formatNumber(-t.delta),
+                                                formatNumber(roundHalfUp(-t.delta / t.from * 100)));
+        out.size = std::max(out.size, ofBoth);
+    }
+    return out;
+}
+
+// How far a resistance falls under its cap, as big a loss as that many points
+// gained would be a gain.
+double resistLossSize(const ResistChange &r)
+{
+    if (!r.from || !r.to)
+        return 0;
+    return std::max(0.0, std::min(*r.from, r.cap) - *r.to) * resistPointWorth;
 }
 
 double deltaOf(const CharacterChange &change, QStringView label)
@@ -188,15 +228,25 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         else if (rc.wasUnder && rc.delta > 0)
             e.resistRank = std::max(e.resistRank, 1);
     }
+    double resistSize = 0;
+    for (const ResistChange &rc : std::as_const(e.resistLosses))
+        resistSize += resistLossSize(rc);
+    const HealthLoss health = priorities.keepDefence ? healthLosses(*e.change) : HealthLoss();
+    // the biggest first, and on a tie resistance
+    const bool healthFirst = health.size > resistSize;
+    for (const QString &line : health.lines) {
+        e.risks.insert(healthFirst ? 0 : e.risks.size(), line);
+        e.losses.insert(healthFirst ? 0 : e.losses.size(), line);
+    }
     if (const double levels = deltaOf(*e.change, u"Minion skill levels"); levels < 0) {
         e.risks << (levels == -1 ? u"Minion skills lose a level"_s
                                  : u"Minion skills lose %1 levels"_s.arg(formatNumber(-levels)));
     }
     if (!e.risks.isEmpty() && (r.verdict == Verdict::Upgrade || r.verdict == Verdict::Small))
         r.verdict = Verdict::Risky;
-    // resistances matter most
-    if (!e.resistLosses.isEmpty()) {
-        r.verdict = Verdict::ResistLoss;
+    // never an upgrade, and the biggest loss is the verdict
+    if (!e.resistLosses.isEmpty() || !health.lines.isEmpty()) {
+        r.verdict = healthFirst ? Verdict::DefenceLoss : Verdict::ResistLoss;
         e.resistRank = -1;
     }
     return e;

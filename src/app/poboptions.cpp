@@ -73,6 +73,11 @@ void PobOptions::setKeepDamage(bool keep)
     change([&](PobSettings &pob) { pob.priorities.keepDamage = keep; });
 }
 
+void PobOptions::setKeepDefence(bool keep)
+{
+    change([&](PobSettings &pob) { pob.priorities.keepDefence = keep; });
+}
+
 void PobOptions::setSpirit(bool spirit)
 {
     change([&](PobSettings &pob) { pob.priorities.spirit = spirit; });

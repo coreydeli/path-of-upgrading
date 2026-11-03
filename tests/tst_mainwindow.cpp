@@ -651,17 +651,20 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.shown());
         QVERIFY(w.show(u"pobAction"_s));
-        const QStringList weighing = {u"damageSlider"_s,     u"resistsSwitch"_s, u"chaosSwitch"_s,
-                                      u"keepDamageSwitch"_s, u"spiritSwitch"_s,  u"attributesSwitch"_s};
+        const QStringList weighing = {u"damageSlider"_s,     u"resistsSwitch"_s,     u"chaosSwitch"_s,
+                                      u"keepDamageSwitch"_s, u"keepDefenceSwitch"_s, u"spiritSwitch"_s,
+                                      u"attributesSwitch"_s};
         for (const QString &name : weighing)
             QVERIFY2(w.find(name)->property("enabled").toBool(), qPrintable(name));
         QVERIFY(toggle(w.find(u"chaosSwitch"_s)));
         QVERIFY(toggle(w.find(u"keepDamageSwitch"_s)));
+        QVERIFY(toggle(w.find(u"keepDefenceSwitch"_s)));
         QVERIFY(toggle(w.find(u"spiritSwitch"_s)));
         QVERIFY(toggle(w.find(u"attributesSwitch"_s)));
         const PobPriorities &priorities = w.settings().pob.priorities;
         QCOMPARE(priorities.chaos, true);
         QCOMPARE(priorities.keepDamage, false);
+        QCOMPARE(priorities.keepDefence, false);
         QCOMPARE(priorities.spirit, false);
         QCOMPARE(priorities.attributes, false);
 
