@@ -162,6 +162,7 @@ FormCard.AbstractFormDelegate {
                 Layout.alignment: Qt.AlignVCenter
                 visible: row.score !== ""
                 text: qsTr("Gear score %1 %2").arg(row.score).arg(row.grade)
+                color: Style.grade(row.grade, Kirigami.Theme)
                 font.weight: Font.DemiBold
             }
 
