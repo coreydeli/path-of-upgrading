@@ -192,7 +192,9 @@ by the gear score or your stat weights.
 - Windows, from the zip: delete the folder
 
 Your settings and characters are kept, in the folders under
-[Your data](#your-data) on Linux, and in AppData on Windows.
+[Your data](#your-data) on Linux, and in AppData on Windows. On Linux the
+autostart entry stays too, so turn off Start with the desktop before you
+uninstall.
 
 ## Requirements
 
@@ -278,8 +280,10 @@ an X server of their own from `xvfb-run`.
 - `~/.cache/path-of-upgrading` has what it learned from the trade site and
   poe.ninja
 
-If you turn on Start with the desktop, there is also an entry in
-`~/.config/autostart`, which you can turn off in System Settings too.
+The app writes an entry to `~/.config/autostart` the first time it starts, so it
+can start with your desktop. You can turn that off with the Start with the
+desktop switch, or in System Settings. Removing the package doesn't remove the
+entry, so turn the switch off before you uninstall.
 
 The session ID is not in any of them. It is in the system keyring.
 
