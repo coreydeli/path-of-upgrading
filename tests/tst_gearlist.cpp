@@ -190,7 +190,7 @@ private Q_SLOTS:
         QVERIFY(!score.missing.isEmpty());
         const QList<QStringList> notes = notesOf(g.in(u"Helmet"_s, GearList::NotesRole));
         QCOMPARE(notes.first(), (QStringList{u"Missing"_s, score.missing.join(u", "_s)}));
-        QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.wasted.isEmpty()) +
+        QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.notScored.isEmpty()) +
                                    int(!weakRolls(score).isEmpty()));
 
         // a unique has no gear score, so nothing to improve
@@ -207,12 +207,12 @@ private Q_SLOTS:
         const Character c = wearing({{u"Body Armour"_s, armour}});
         g.play(c);
         const GearScore score = *gearScore(armour, gearScoreOptions(c, u"Body Armour"_s));
-        QVERIFY(!score.wasted.isEmpty());
+        QVERIFY(!score.notScored.isEmpty());
         QVERIFY(!weakRolls(score).isEmpty());
         QCOMPARE(notesOf(g.in(u"Body Armour"_s, GearList::NotesRole)),
                  (QList<QStringList>{
                      {u"Missing"_s, score.missing.join(u", "_s)},
-                     {u"Not used"_s, wastedStats(score).join(u", "_s)},
+                     {u"Not scored"_s, notScoredStats(score).join(u", "_s)},
                      {u"Weak rolls"_s, weakRolls(score).join(u", "_s) + u" of an excellent roll"_s}}));
     }
 

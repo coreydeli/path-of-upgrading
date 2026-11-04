@@ -20,8 +20,8 @@ QList<GearNote> notesOf(const GearScore &gear)
     QList<GearNote> notes;
     if (!gear.missing.isEmpty())
         notes << GearNote{.label = u"Missing"_s, .text = gear.missing.join(u", "_s)};
-    if (!gear.wasted.isEmpty())
-        notes << GearNote{.label = u"Not used"_s, .text = wastedStats(gear).join(u", "_s)};
+    if (!gear.notScored.isEmpty())
+        notes << GearNote{.label = u"Not scored"_s, .text = notScoredStats(gear).join(u", "_s)};
     if (const QStringList weak = weakRolls(gear); !weak.isEmpty())
         notes << GearNote{.label = u"Weak rolls"_s, .text = weak.join(u", "_s) + u" of an excellent roll"_s};
     return notes;
