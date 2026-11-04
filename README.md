@@ -52,10 +52,12 @@ released.
   hardcore. Solo self-found turns them off, as there is no trading in it.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
-  score of each slot, the overall score, the three slots to upgrade first, and
-  what each slot needs to score more. It also has your resistances, from your
-  build or typed in off the character sheet, so an item that leaves one under
-  the cap says so.
+  score of each slot, the overall score, and what each slot needs to score
+  more. Its Recommended Upgrades card lists up to three slots to upgrade first,
+  with the stats to look for in a better item. Each slot with an item also has
+  Find an Upgrade, which searches the trade site when trade searches are on.
+  The gear page also has your resistances, from your build or typed in off the
+  character sheet, so an item that leaves one under the cap says so.
 - Spreads the settings pages across a wide window. Their cards flow into up to
   three columns, and stack again on a narrow one. On the gear page, your
   resistances and the other worn items sit beside the main gear.
