@@ -291,10 +291,15 @@ QT_NO_URL_CAST_FROM_STRING  QT_USE_QSTRINGBUILDER  QT_NO_FOREACH  QT_NO_KEYWORDS
   import org.kde.kirigamiaddons.formcard as FormCard
   ```
 
-- A settings page is a `FormCard.FormCardPage` with a `title`. Its rows sit in
+- A settings page is a `ColumnsPage` with a `title`. `ColumnsPage.qml` is a
+  `FormCard.FormCardPage` that flows its cards into up to three columns on a
+  wide window, and stacks them on a narrow one. Its rows sit in
   `FormCard.FormCard` cards, a card with a title gets a `FormCard.FormHeader`,
-  and a `FormCard.FormDelegateSeparator {}` goes between rows in a card. See
-  `TradePage.qml`.
+  and a `FormCard.FormDelegateSeparator {}` goes between rows in a card. Set
+  `minColumnWidth` and `maxColumnWidth` when a page's cards need more or less
+  room. See `TradePage.qml`.
+- Help text under a card is `SectionText`, which is as wide as the card it goes
+  with. `FormSectionText` has a width limit, so it doesn't line up with a card.
 - Use the app's own rows, not the Kirigami Addons ones:
   - `SwitchRow` for a switch, with `text`, `description`, `checked` and `onToggled`
   - `FormRow` for a row with controls on the right, such as the session ID field in `TradePage.qml`
