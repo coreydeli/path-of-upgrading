@@ -61,6 +61,19 @@ private Q_SLOTS:
         QCOMPARE(c.checked.rowCount(), 0);
     }
 
+    void limit()
+    {
+        // what the page says, and how many the history keeps
+        Checked c;
+        QCOMPARE(c.checked.limit(), 30);
+        QCOMPARE(c.checked.property("limit").toInt(), 30);
+        for (int i = 0; i < 40; ++i)
+            c.history.add(
+                item(u"Item Class: Rings\nRarity: Rare\nRing "_s + QString::number(i) +
+                     u"\nSapphire Ring\n--------\nItem Level: 75\n--------\n+10 to maximum Life"_s));
+        QCOMPARE(c.checked.rowCount(), c.checked.limit());
+    }
+
     void newestFirst()
     {
         Checked c;
