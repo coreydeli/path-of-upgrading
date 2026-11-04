@@ -134,6 +134,12 @@ Kirigami.ApplicationWindow {
         value: root.app.appearance.appColors
     }
 
+    Binding {
+        target: Style
+        property: "headingFamily"
+        value: root.app.appearance.headingFamily
+    }
+
     // The pages wait here while they aren't shown, so they keep where you
     // were on them.
     Item {

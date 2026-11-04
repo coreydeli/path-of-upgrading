@@ -10,6 +10,8 @@ import org.kde.kirigami as Kirigami
 QtObject {
     // set by the main window, from the Appearance settings
     property bool appColors: false
+    // the family the headings are set in, which is Cinzel unless it's changed
+    property string headingFamily: "Cinzel"
 
     // the item colors the game's players read at a glance
     function rarity(rarity: string, theme): color {
@@ -93,7 +95,7 @@ QtObject {
     // capitals, its lower case are small ones, so it's used as it is.
     function titleFont(base: font): font {
         return Qt.font({
-            family: "Cinzel",
+            family: headingFamily,
             pointSize: base.pointSize,
             weight: Font.Bold,
             letterSpacing: 0.5
