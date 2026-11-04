@@ -5,10 +5,10 @@
 # changes since the last one.
 # Main releases the version in CMakeLists.txt as the latest release, once. Beta
 # releases it as a pre-release, v0.1.0-beta.1 and on, until that version is
-# out. The source comes first, then every check CI makes, then the packages,
-# then the release, each once the stages before it have passed. Pull requests
-# that change how they're made build the packages too, without releasing
-# anything.
+# out. The source comes first, then CI's build of each platform, which tests
+# it and makes its package, then the release, each once the stages before it
+# have passed. Pull requests that change how they're made build the packages
+# too, without releasing anything.
 name: Release
 
 on:
@@ -17,16 +17,18 @@ on:
   pull_request:
     paths:
       - .github/workflows/release.yml
+      - .github/workflows/ci.yml
       - .github/scripts/**
       - packaging/**
 
 permissions:
   contents: read
 
-# one at a time, so two betas can't take the same number
+# One at a time, so two betas can't take the same number. A pull request only
+# needs its latest push.
 concurrency:
   group: packages-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   source:
@@ -51,155 +53,35 @@ jobs:
           else
               sh .github/scripts/release-tag.sh >> "$GITHUB_OUTPUT"
           fi
-      - name: Make the tarballs
+      - name: Make the tarball
         env:
           TAG: ${{ steps.version.outputs.tag }}
-          ARCH_VERSION: ${{ steps.version.outputs.arch-version }}
         run: |
           name=path-of-upgrading-${TAG#v}
           git archive --prefix="$name/" -o "$name.tar.gz" HEAD
-          mkdir arch
-          name=path-of-upgrading-$ARCH_VERSION
-          git archive --prefix="$name/" -o "arch/$name.tar.gz" HEAD
       - uses: actions/upload-artifact@v7
         with:
           name: dist-source
           path: path-of-upgrading-*.tar.gz
           if-no-files-found: error
-      # named as the PKGBUILD has it
-      - uses: actions/upload-artifact@v7
-        with:
-          name: arch-source
-          path: arch/path-of-upgrading-*.tar.gz
-          if-no-files-found: error
 
-  checks:
-    name: Checks
-    # a pull request has them from CI already
-    if: github.event_name == 'push'
+  build:
+    name: Build
     needs: source
+    # The packages come from the build the tests ran on. Without anything to
+    # release, a push is only checked.
     uses: ./.github/workflows/ci.yml
-
-  arch:
-    name: Arch Linux package
-    needs: [source, checks]
-    # once the checks have passed, or without them on a pull request, and
-    # only when there's something to release
-    if: >-
-      ${{ !cancelled() && !failure()
-      && (github.event_name == 'pull_request' || needs.source.outputs.release == 'true') }}
-    runs-on: ubuntu-latest
-    container: archlinux:latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install the build tools and libraries
-        run: sh .github/scripts/install-arch.sh
-      # where makepkg looks for the PKGBUILD's source before downloading it
-      - uses: actions/download-artifact@v8
-        with:
-          name: arch-source
-          path: packaging/arch
-      - name: Build and test the package
-        working-directory: packaging/arch
-        env:
-          ARCH_VERSION: ${{ needs.source.outputs.arch-version }}
-        # makepkg won't run as root
-        run: |
-          sed -i "s/^pkgver=.*/pkgver=$ARCH_VERSION/" PKGBUILD
-          useradd -m builder
-          chown -R builder .
-          runuser -u builder -- makepkg
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist-arch
-          # not the debug package
-          path: packaging/arch/path-of-upgrading-[0-9]*.pkg.tar.zst
-          if-no-files-found: error
-
-  debian:
-    name: Debian 13 package
-    needs: [source, checks]
-    if: >-
-      ${{ !cancelled() && !failure()
-      && (github.event_name == 'pull_request' || needs.source.outputs.release == 'true') }}
-    runs-on: ubuntu-latest
-    container: debian:trixie
-    env:
-      LANG: C.UTF-8
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install the build tools and libraries
-        run: sh .github/scripts/install-debian.sh
-      - name: Configure
-        run: >-
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DPOU_PACKAGE_VERSION=${{ needs.source.outputs.debian-version }}
-      - name: Build
-        run: cmake --build build
-      - name: Test
-        working-directory: build
-        run: sh ../.github/scripts/run-tests.sh
-      - name: Make the package
-        working-directory: build
-        run: cpack
-      # which fails when a package it depends on has the wrong name
-      - name: Install the package
-        run: |
-          apt-get install -y ./build/path-of-upgrading_*.deb
-          QT_QPA_PLATFORM=offscreen path-of-upgrading --version
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist-debian
-          path: build/path-of-upgrading_*.deb
-          if-no-files-found: error
-
-  windows:
-    name: Windows installer and zip
-    needs: [source, checks]
-    if: >-
-      ${{ !cancelled() && !failure()
-      && (github.event_name == 'pull_request' || needs.source.outputs.release == 'true') }}
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: Keep the line ends
-        shell: pwsh
-        run: git config --global core.autocrlf false
-      - uses: actions/checkout@v7
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-      - name: Install the build tools and libraries
-        run: sh .github/scripts/install-msys2.sh
-      - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-      - name: Build
-        run: cmake --build build
-      - name: Make the installer and the zip
-        env:
-          TAG: ${{ needs.source.outputs.tag }}
-          VERSION: ${{ needs.source.outputs.version }}
-        run: |
-          mkdir dist
-          cd dist
-          sh ../.github/scripts/package-windows.sh ../build "$VERSION" "${TAG#v}"
-      # They aren't signed yet, so Windows warns about them when they're
-      # opened. Signing them would go here.
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist-windows
-          path: |
-            dist/*.exe
-            dist/*.zip
-          if-no-files-found: error
+    with:
+      package: ${{ github.event_name == 'pull_request' || needs.source.outputs.release == 'true' }}
+      version: ${{ needs.source.outputs.version }}
+      tag: ${{ needs.source.outputs.tag }}
+      arch-version: ${{ needs.source.outputs.arch-version }}
+      debian-version: ${{ needs.source.outputs.debian-version }}
 
   release:
     name: Release
     if: needs.source.outputs.release == 'true' && github.event_name == 'push'
-    needs: [source, checks, arch, debian, windows]
+    needs: [source, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -208,7 +90,6 @@ jobs:
         with:
           # for the commits since the last release
           fetch-depth: 0
-      # not the builds the checks handed on
       - uses: actions/download-artifact@v8
         with:
           pattern: dist-*

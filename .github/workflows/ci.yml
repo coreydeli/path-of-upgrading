@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: MIT
 #
-# Checks the format, then builds with no warnings, then runs every test, each
+# Checks the format, then builds with no warnings and runs every test, each
 # stage once the one before it has passed. It builds on Arch Linux for the
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
-# supports, and on Windows in MSYS2. Main and beta are checked by the release
-# builds, which run it.
+# supports, and on Windows in MSYS2. Each is built once, as it's released, and
+# the packages come from that build when release.yml asks for them. Main and
+# beta are checked by the release builds, which run it.
 name: CI
 
 on:
@@ -12,6 +13,23 @@ on:
     branches-ignore: [main, beta]
   pull_request:
   workflow_call:
+    inputs:
+      package:
+        description: Make the packages as well
+        type: boolean
+        default: false
+      version:
+        type: string
+        default: ""
+      tag:
+        type: string
+        default: ""
+      arch-version:
+        type: string
+        default: ""
+      debian-version:
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -25,9 +43,12 @@ jobs:
   format:
     name: Format
     # A branch of this repository is checked when it's pushed, which a pull
-    # request from it shows, so pull requests are only checked from forks.
-    # The other stages wait on this one, so they're left out with it.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    # request from it shows, so pull requests are only checked from forks, or
+    # when the release builds ask for the packages. The other stages wait on
+    # this one, so they're left out with it.
+    if: >-
+      github.event_name == 'push' || inputs.package
+      || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
@@ -37,85 +58,130 @@ jobs:
       - name: Check the format
         run: git ls-files -z '*.cpp' '*.h' | xargs -0 clang-format --dry-run -Werror
 
-  build:
-    name: Build on ${{ matrix.name }}
+  # The package is made by makepkg, which builds it from the tarball of the
+  # source, tests it and packs it in one go.
+  arch:
+    name: Arch Linux
     needs: format
     runs-on: ubuntu-latest
-    container: ${{ matrix.image }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Arch Linux
-            image: archlinux:latest
-            distro: arch
-          - name: Debian 13
-            image: debian:trixie
-            distro: debian
+    container: archlinux:latest
     env:
       LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 100M
+    steps:
+      # so the checkout is a repository, which the tarball is made from
+      - name: Install git
+        run: pacman -Syu --noconfirm --needed git
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-arch.sh
+      # where makepkg looks for the PKGBUILD's source before downloading it
+      - name: Make the source tarball
+        env:
+          ARCH_VERSION: ${{ inputs.arch-version }}
+        run: |
+          pkgver=${ARCH_VERSION:-$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)}
+          sed -i "s/^pkgver=.*/pkgver=$pkgver/" packaging/arch/PKGBUILD
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git archive --prefix="path-of-upgrading-$pkgver/" \
+              -o "packaging/arch/path-of-upgrading-$pkgver.tar.gz" HEAD
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-arch-${{ github.sha }}
+          restore-keys: ccache-arch-
+      # makepkg won't run as root. It compiles with ccache, the debug package
+      # isn't released, and a warning fails the build.
+      - name: Set up makepkg
+        run: |
+          useradd -m builder
+          mkdir -p /ccache
+          chown -R builder packaging/arch /ccache
+          cat > /home/builder/.makepkg.conf << 'CONF'
+          BUILDENV=("${BUILDENV[@]/!ccache/ccache}")
+          OPTIONS+=(!debug)
+          CXXFLAGS+=" -Werror"
+          CONF
+      - name: Build, test and package
+        working-directory: packaging/arch
+        run: |
+          runuser -u builder -- ccache --zero-stats
+          runuser -u builder -- makepkg
+          runuser -u builder -- ccache --show-stats
+      - name: Lint the QML
+        working-directory: packaging/arch
+        run: runuser -u builder -- cmake --build src/build --target pou_app_qmllint
+      - uses: actions/upload-artifact@v7
+        if: inputs.package
+        with:
+          name: dist-arch
+          # not the debug package
+          path: packaging/arch/path-of-upgrading-[0-9]*.pkg.tar.zst
+          if-no-files-found: error
+
+  debian:
+    name: Debian 13
+    needs: format
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    env:
+      LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 100M
     steps:
       - uses: actions/checkout@v7
       - name: Install the build tools and libraries
-        run: sh .github/scripts/install-${{ matrix.distro }}.sh
-      # with no debug info, which would make the build too big to hand on
+        run: sh .github/scripts/install-debian.sh
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-debian-${{ github.sha }}
+          restore-keys: ccache-debian-
       - name: Configure
+        env:
+          DEBIAN_VERSION: ${{ inputs.debian-version }}
         run: >-
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG=-g0
-          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          ${DEBIAN_VERSION:+"-DPOU_PACKAGE_VERSION=$DEBIAN_VERSION"}
       - name: Build
-        run: cmake --build build
+        run: |
+          ccache --zero-stats
+          cmake --build build
+          ccache --show-stats
       - name: Lint the QML
         run: cmake --build build --target pou_app_qmllint
-      # in a tarball, which keeps the programs runnable, and without what was
-      # only needed to link them
-      - name: Pack the build
-        run: tar -cf build.tar --exclude='*.o' --exclude='*.a' build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: build-${{ matrix.distro }}
-          path: build.tar
-          if-no-files-found: error
-          retention-days: 1
-
-  test:
-    name: Test on ${{ matrix.name }}
-    needs: build
-    runs-on: ubuntu-latest
-    container: ${{ matrix.image }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Arch Linux
-            image: archlinux:latest
-            distro: arch
-          - name: Debian 13
-            image: debian:trixie
-            distro: debian
-    env:
-      LANG: C.UTF-8
-    steps:
-      # in the same folder as the build, which the tests find their files by
-      - uses: actions/checkout@v7
-      - name: Install the build tools and libraries
-        run: sh .github/scripts/install-${{ matrix.distro }}.sh
-      - uses: actions/download-artifact@v8
-        with:
-          name: build-${{ matrix.distro }}
-      - name: Unpack the build
-        run: tar -xf build.tar
       - name: Test
         working-directory: build
         run: sh ../.github/scripts/run-tests.sh
+      - name: Make the package
+        if: inputs.package
+        working-directory: build
+        run: cpack
+      # which fails when a package it depends on has the wrong name
+      - name: Install the package
+        if: inputs.package
+        run: |
+          apt-get install -y ./build/path-of-upgrading_*.deb
+          QT_QPA_PLATFORM=offscreen path-of-upgrading --version
+      - uses: actions/upload-artifact@v7
+        if: inputs.package
+        with:
+          name: dist-debian
+          path: build/path-of-upgrading_*.deb
+          if-no-files-found: error
 
   windows:
-    name: Build and test on Windows
+    name: Windows
     needs: format
     runs-on: windows-latest
     defaults:
       run:
         shell: msys2 {0}
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 100M
     steps:
       # the test files as they are in the repository, not with Windows' line ends
       - name: Keep the line ends
@@ -128,13 +194,21 @@ jobs:
           update: true
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-msys2.sh
+      - uses: actions/cache@v6
+        with:
+          path: .ccache
+          key: ccache-windows-${{ github.sha }}
+          restore-keys: ccache-windows-
       - name: Configure
         run: >-
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG=-g0
-          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       # going on past an error, so each run shows them all
       - name: Build
-        run: cmake --build build -- -k 0
+        run: |
+          ccache --zero-stats
+          cmake --build build -- -k 0
+          ccache --show-stats
       - name: Test
         working-directory: build
         env:
@@ -153,3 +227,22 @@ jobs:
               echo "::endgroup::"
           done
           exit 1
+      - name: Make the installer and the zip
+        if: inputs.package
+        env:
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir dist
+          cd dist
+          sh ../.github/scripts/package-windows.sh ../build "$VERSION" "${TAG#v}"
+      # They aren't signed yet, so Windows warns about them when they're
+      # opened. Signing them would go here.
+      - uses: actions/upload-artifact@v7
+        if: inputs.package
+        with:
+          name: dist-windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+          if-no-files-found: error

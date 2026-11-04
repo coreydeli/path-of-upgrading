@@ -9,7 +9,7 @@ set -eu
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
-    build-essential cmake ninja-build pkgconf git ca-certificates dpkg-dev file \
+    build-essential cmake ninja-build pkgconf git ccache ca-certificates dpkg-dev file \
     qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools \
     libkirigami-dev kirigami-addons-dev libkf6declarative-dev libkf6i18n-dev \
     libkf6dbusaddons-dev libkf6config-dev libkf6globalaccel-dev libkf6notifications-dev \

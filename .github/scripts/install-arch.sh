@@ -7,7 +7,7 @@
 # bridge to Path of Building in its test.
 set -eu
 pacman -Syu --noconfirm --needed \
-    base-devel cmake ninja git \
+    base-devel cmake ninja git ccache \
     qt6-base qt6-declarative \
     kirigami kirigami-addons kdeclarative ki18n kdbusaddons kconfig \
     kglobalaccel knotifications kstatusnotifieritem kwindowsystem \

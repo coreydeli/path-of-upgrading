@@ -8,7 +8,7 @@ set -eu
 p=mingw-w64-ucrt-x86_64
 pacman -S --noconfirm --needed \
     zip \
-    $p-gcc $p-cmake $p-ninja $p-pkgconf \
+    $p-gcc $p-cmake $p-ninja $p-pkgconf $p-ccache \
     $p-qt6-base $p-qt6-declarative $p-qt6-svg \
     $p-extra-cmake-modules $p-kirigami $p-kirigami-addons $p-kdeclarative $p-ki18n \
     $p-kstatusnotifieritem $p-kiconthemes $p-qqc2-desktop-style $p-breeze-icons \
