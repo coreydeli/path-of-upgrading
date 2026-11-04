@@ -150,8 +150,17 @@ FormCard.FormCardPage {
             objectName: "folderField"
             label: qsTr("Folder")
             placeholderText: qsTr("Leave empty to use the one found")
-            text: pobPage.options.location
+            // Set from the options by hand, as Kirigami Addons 1.7 drops a
+            // binding on this one
+            Component.onCompleted: text = pobPage.options.location
             onEditingFinished: pobPage.options.location = text
+            Connections {
+                target: pobPage.options
+                function onChanged() {
+                    if (folderField.text !== pobPage.options.location)
+                        folderField.text = pobPage.options.location
+                }
+            }
         }
 
         FormCard.FormDelegateSeparator {}
