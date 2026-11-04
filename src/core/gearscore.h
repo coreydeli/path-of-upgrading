@@ -70,6 +70,13 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
 
 QString gearGrade(int score);
 
+// The stats that keep a gear score down, one to a string. The notes below are
+// built on them.
+//   the mods the build has no use for, by name: "#% increased Rarity of Items found"
+QStringList wastedStats(const GearScore &gear);
+//   the weakest rolls, "Life 40%", under that share of an excellent roll
+QStringList weakRolls(const GearScore &gear, int underPercent = 50);
+
 // What would raise a gear score, in the words the popup uses. Each is empty
 // when there's nothing to say.
 //   "Missing what your build wants: Life, Fire res."
