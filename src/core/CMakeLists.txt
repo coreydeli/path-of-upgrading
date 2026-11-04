@@ -20,6 +20,7 @@ add_library(pou_core STATIC
     placement.cpp placement.h
     pobbuild.cpp pobbuild.h
     pobeval.cpp pobeval.h
+    pobguide.cpp pobguide.h
     pobinstall.cpp pobinstall.h
     pobverdict.cpp pobverdict.h
     pobweighing.cpp pobweighing.h

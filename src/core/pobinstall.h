@@ -67,12 +67,24 @@ struct PobLookup
     std::optional<PobInstall> install;
     PobProblem problem = PobProblem::NotInstalled; // when there's no install
     QString why;                                   // in words for people, the same
+    QString folder; // the Path of Building that has no LuaJIT to run it, for NoLuajit
 };
 
 // The Path of Building in the location when that's set, or else the
 // Flatpak's, or else one from rusty-path-of-building installed some other
 // way. On Windows it's the installed one.
 PobLookup lookForPob(const PobPlaces &places, const QString &location);
+
+// One of the places it looks.
+struct PobPlace
+{
+    QString label;
+    QString path;
+    bool present = false;
+};
+
+// The places that findPob() looks in for the location, in the order it looks.
+QList<PobPlace> searchedPlaces(const PobPlaces &places, const QString &location);
 
 // The same, as only the install: empty when there's none, with why in
 // words for people when it's given.

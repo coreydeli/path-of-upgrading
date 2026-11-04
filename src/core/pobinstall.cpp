@@ -185,11 +185,42 @@ PobLookup lookForPob(const PobPlaces &places, const QString &location)
         return notFound(PobProblem::NotOpened,
                         u"Open Path of Building PoE 2 once, so it downloads what it needs."_s);
     }
-    if (hasPob(native))
-        return notFound(PobProblem::NoLuajit,
-                        u"Running Path of Building needs LuaJIT, which isn't installed."_s);
+    if (hasPob(native)) {
+        PobLookup lookup = notFound(PobProblem::NoLuajit,
+                                    u"Running Path of Building needs LuaJIT, which isn't installed."_s);
+        lookup.folder = native;
+        return lookup;
+    }
     return notFound(PobProblem::NotInstalled, u"Path of Building isn't installed. Get it from Flathub with: "
                                               u"flatpak install flathub %1"_s.arg(pobFlatpakId));
+}
+
+QList<PobPlace> searchedPlaces(const PobPlaces &places, const QString &location)
+{
+    if (!location.isEmpty()) {
+        const QString folder = QDir::cleanPath(location);
+        return {{u"The folder you chose"_s, folder, hasPob(folder) || hasPob(folder + u"/src"_s)}};
+    }
+    if (!places.appData.isEmpty()) {
+        const QString folder = places.appData + windowsFolder;
+        return {{u"Where its installer puts it"_s, folder, hasPob(folder)}};
+    }
+
+    QList<PobPlace> list;
+    for (qsizetype i = 0; i < places.flatpakInstallations.size(); ++i) {
+        const QString &installation = places.flatpakInstallations[i];
+        const QString app = installation + u"/app/"_s + pobFlatpakId;
+        list << PobPlace{i == 0 ? u"The Flatpak, installed for you"_s
+                                : u"The Flatpak, installed for everyone"_s,
+                         app, QFileInfo::exists(app + u"/current/active"_s)};
+    }
+    const QString sandboxed = places.home + u"/.var/app/"_s + pobFlatpakId + u"/data"_s + poe2Folder;
+    const QString native = places.dataHome + poe2Folder;
+    list << PobPlace{u"The Flatpak's files for Path of Exile 2"_s, sandboxed, hasPob(sandboxed)}
+         << PobPlace{u"Not from the Flatpak"_s, native, hasPob(native)}
+         << PobPlace{u"The flatpak command"_s, places.flatpak, !places.flatpak.isEmpty()}
+         << PobPlace{u"LuaJIT"_s, places.luajit, !places.luajit.isEmpty()};
+    return list;
 }
 
 std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why)
