@@ -148,7 +148,7 @@ private Q_SLOTS:
 
     void overall()
     {
-        // over the main slots, the weakest first
+        // over the main slots
         Gear g;
         const Item gloves =
             item(u"Gloves"_s, u"Rare"_s, u"Grim Grip"_s, u"Suede Bracers"_s, u"+10 to maximum Life"_s);
@@ -161,24 +161,13 @@ private Q_SLOTS:
                                      {u"Belt"_s, belt},
                                      {u"Jewel 1"_s, jewel}});
         g.play(c);
-        QMap<int, QString> bySlot;
         QList<int> main;
-        for (const QString &slot : {u"Helmet"_s, u"Ring 1"_s, u"Gloves"_s, u"Boots"_s}) {
-            const int score = gearScore(c.gear.value(slot), gearScoreOptions(c, slot))->score;
-            bySlot.insert(score, slot);
-            main << score;
-        }
-        // they're all different, so the order is clear
-        QCOMPARE(bySlot.size(), 4);
-        QCOMPARE(bySlot.first(), u"Gloves"_s);
+        for (const QString &slot : {u"Helmet"_s, u"Ring 1"_s, u"Gloves"_s, u"Boots"_s})
+            main << gearScore(c.gear.value(slot), gearScoreOptions(c, slot))->score;
 
         const double average = std::round((main[0] + main[1] + main[2] + main[3]) / 4.0);
         QCOMPARE(g.list.overall(), QString::number(average));
         QCOMPARE(g.list.overallGrade(), gearGrade(int(average)));
-        QStringList weakest;
-        for (auto it = bySlot.cbegin(); weakest.size() < 3; ++it)
-            weakest << it.value() + u' ' + QString::number(it.key());
-        QCOMPARE(g.list.weakest(), weakest.join(u", "_s));
     }
 
     // the notes of a slot, as the pairs the window shows
@@ -250,44 +239,18 @@ private Q_SLOTS:
         QCOMPARE(notesOf(nobody.in(u"Helmet"_s, GearList::NotesRole)), QList<QStringList>());
     }
 
-    void focus()
-    {
-        // on the weakest slot, which the overall test has as the gloves
-        Gear g;
-        const Item gloves =
-            item(u"Gloves"_s, u"Rare"_s, u"Grim Grip"_s, u"Suede Bracers"_s, u"+10 to maximum Life"_s);
-        const Character c = wearing({{u"Helmet"_s, helmet}, {u"Gloves"_s, gloves}});
-        g.play(c);
-        QCOMPARE(g.list.weakest().section(u' ', 0, 0), u"Gloves"_s);
-        // only the first thing to do, the rest is in the slot's notes
-        const GearScore score = *gearScore(gloves, gearScoreOptions(c, u"Gloves"_s));
-        QCOMPARE(g.list.focus(), u"Start with Gloves. "_s + missingNote(score));
-        QVERIFY(notesOf(g.in(u"Gloves"_s, GearList::NotesRole)).size() > 1);
-
-        QSignalSpy changed(&g.list, &GearList::changed);
-        QVERIFY(g.active.takeOff(u"Gloves"_s));
-        QVERIFY(changed.size() > 0);
-        QVERIFY(g.list.focus().startsWith(u"Start with Helmet. "_s));
-
-        // and with nothing to rate, nothing to say
-        QVERIFY(g.active.takeOff(u"Helmet"_s));
-        QCOMPARE(g.list.focus(), QString());
-    }
-
     void noOverall()
     {
         Gear g;
         g.play(wearing({{u"Belt"_s, belt}, {u"Jewel 1"_s, jewel}}));
         QCOMPARE(g.list.overall(), QString());
         QCOMPARE(g.list.overallGrade(), QString());
-        QCOMPARE(g.list.weakest(), QString());
 
         // nor by your weights alone
         Character c = wearing({{u"Helmet"_s, helmet}});
         c.buildProfile = noBuildProfile.toString();
         g.play(c);
         QCOMPARE(g.list.overall(), QString());
-        QCOMPARE(g.list.weakest(), QString());
     }
 
     void sameName()

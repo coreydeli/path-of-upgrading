@@ -53,6 +53,8 @@ qt_add_qml_module(pou_app
         qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
+        qml/RecommendationCard.qml
+        qml/RecommendationRow.qml
         qml/ResultRow.qml
         qml/ResultsCard.qml
         qml/ResultsWindow.qml

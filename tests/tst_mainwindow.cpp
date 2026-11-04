@@ -861,10 +861,66 @@ private Q_SLOTS:
         const GearList *list = w.app->gearList();
         QVERIFY(!list->overall().isEmpty());
         QCOMPARE(text(overall), u"Overall gear score %1 %2"_s.arg(list->overall(), list->overallGrade()));
-        QVERIFY(!list->weakest().isEmpty());
-        QVERIFY(list->focus().startsWith(u"Start with "_s));
-        QCOMPARE(overall->property("description").toString(),
-                 u"Upgrade first: "_s + list->weakest() + u'\n' + list->focus());
+    }
+
+    void recommendedUpgrades()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        QObject *card = w.find(u"recommendedUpgrades"_s);
+
+        // empty slots first, each saying what to look for, and nothing to search
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}, {u"Ring 1"_s, item(itemtexts::advancedRing)}});
+        const RecommendedUpgrades *upgrades = w.app->recommendedUpgrades();
+        QCOMPARE(upgrades->rowCount(), 3);
+        QVERIFY(isVisible(card));
+        for (int i = 0; i < upgrades->rowCount(); ++i) {
+            const QString slot = upgrades->index(i).data(RecommendedUpgrades::SlotRole).toString();
+            QObject *row = w.find(u"recommendation:"_s + slot);
+            QVERIFY(isVisible(row));
+            QCOMPARE(text(row->findChild<QObject *>(u"slotName"_s)), slot);
+            QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)), u"Nothing saved"_s);
+            const QString lookFor = upgrades->index(i).data(RecommendedUpgrades::LookForRole).toString();
+            QVERIFY(lookFor.contains(u" or more"_s));
+            QCOMPARE(text(row->findChild<QObject *>(u"lookFor"_s)), lookFor);
+            QVERIFY(!isVisible(row->findChild<QObject *>(u"findButton"_s)));
+            QVERIFY(!isVisible(row->findChild<QObject *>(u"tradeStatus"_s)));
+        }
+
+        // with every main slot worn, the lowest gear scores
+        w.play({{u"Weapon"_s, item(itemtexts::helmetOld)},
+                {u"Offhand"_s, item(itemtexts::helmetOld)},
+                {u"Helmet"_s, item(itemtexts::helmetOld)},
+                {u"Body Armour"_s, item(itemtexts::helmetOld)},
+                {u"Gloves"_s, item(itemtexts::helmetOld)},
+                {u"Boots"_s, item(itemtexts::helmetOld)},
+                {u"Belt"_s, item(itemtexts::helmetOld)},
+                {u"Amulet"_s, item(itemtexts::helmetOld)},
+                {u"Ring 1"_s, item(itemtexts::advancedRing)},
+                {u"Ring 2"_s, item(itemtexts::advancedRing)}});
+        QCOMPARE(upgrades->rowCount(), 3);
+        const QString slot = upgrades->index(0).data(RecommendedUpgrades::SlotRole).toString();
+        QObject *row = w.find(u"recommendation:"_s + slot);
+        QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)),
+                 upgrades->index(0).data(RecommendedUpgrades::NameRole).toString());
+        QVERIFY(isVisible(row->findChild<QObject *>(u"gearScore"_s)));
+
+        // trade searches are on, so it offers one, which says how it's going
+        QVERIFY(upgrades->isTradeAvailable());
+        QObject *find = row->findChild<QObject *>(u"findButton"_s);
+        QVERIFY(isVisible(find));
+        w.network->answers = {{.never = true}};
+        QVERIFY(QMetaObject::invokeMethod(find, "clicked"));
+        QVERIFY(isVisible(row->findChild<QObject *>(u"tradeStatus"_s)));
+        QCOMPARE(text(row->findChild<QObject *>(u"tradeStatusText"_s)), u"Searching the trade site"_s);
+        QVERIFY(!find->property("enabled").toBool());
+        QVERIFY(!isVisible(row->findChild<QObject *>(u"showResultsButton"_s)));
+
+        // and with trade off, none
+        Settings settings = w.settings();
+        settings.trade.enabled = false;
+        QVERIFY(w.app->settings().set(settings));
+        QVERIFY(!isVisible(w.find(u"recommendation:"_s + slot)->findChild<QObject *>(u"findButton"_s)));
     }
 
     void gearHeading()
