@@ -90,6 +90,7 @@ std::optional<Character> characterFromJson(const QJsonObject &o)
     // before this was kept, only you could have set a profile
     c.profilePicked = o.value(u"profilePicked").toBool(!c.buildProfile.isEmpty());
     c.tweaks = numbersFromJson(o.value(u"tweaks").toObject());
+    renameCriticalTweaks(c.tweaks, c.buildProfile);
     if (o.value(u"resists").isObject())
         c.resists = resistRecordFromJson(o.value(u"resists").toObject());
     c.chaosInoculation = o.value(u"chaosInoculation").toBool();
