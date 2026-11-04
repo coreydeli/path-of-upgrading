@@ -56,6 +56,9 @@ released.
   what each slot needs to score more. It also has your resistances, from your
   build or typed in off the character sheet, so an item that leaves one under
   the cap says so.
+- Spreads the settings pages across a wide window. Their cards flow into up to
+  three columns, and stack again on a narrow one. On the gear page, your
+  resistances and the other worn items sit beside the main gear.
 - Can sign in to the trade site with your session ID, which is kept in your
   system keyring. Signed out, the site only takes simple searches, so upgrade
   searches look for a few of your build's key stats, and the results window
