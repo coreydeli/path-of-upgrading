@@ -322,6 +322,59 @@ private Q_SLOTS:
         QCOMPARE(pobBuildsFolder(*pob), folder + u"/Builds"_s);
     }
 
+    void problems()
+    {
+        Computer computer;
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NotInstalled);
+
+        // the Flatpak is there, without Path of Building downloaded
+        QVERIFY(computer.installFlatpak());
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NotOpened);
+
+        // Path of Building in the data folder, with nothing to run it
+        Computer native;
+        QVERIFY(addPob(native.places.dataHome + u"/RustyPathOfBuilding2"_s));
+        native.places.luajit.clear();
+        QCOMPARE(lookForPob(native.places, {}).problem, PobProblem::NoLuajit);
+
+        // in the words findPob gives
+        QString why;
+        QVERIFY(!findPob(native.places, {}, &why));
+        QCOMPARE(lookForPob(native.places, {}).why, why);
+        QVERIFY(lookForPob(computer.places, {}).install == std::nullopt);
+    }
+
+    void folderProblems()
+    {
+        Computer computer;
+        const QString empty = computer.dir.filePath(u"empty"_s);
+        QVERIFY(QDir().mkpath(empty));
+        QCOMPARE(lookForPob(computer.places, empty).problem, PobProblem::NothingInFolder);
+
+        const QString poe1 = computer.dir.filePath(u"poe1"_s);
+        QVERIFY(addPob(poe1, poe1Manifest));
+        QCOMPARE(lookForPob(computer.places, poe1).problem, PobProblem::ForPoe1);
+
+        const QString folder = computer.dir.filePath(u"pob"_s);
+        QVERIFY(addPob(folder));
+        computer.places.luajit.clear();
+        QCOMPARE(lookForPob(computer.places, folder).problem, PobProblem::FolderNoLuajit);
+
+        // the folder you set, even when the Flatpak is fine
+        QVERIFY(computer.installFlatpak());
+        QVERIFY(addPob(computer.flatpakFolder()));
+        QVERIFY(!lookForPob(computer.places, empty).install);
+    }
+
+    void windowsProblems()
+    {
+        WindowsComputer computer;
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NotInstalledOnWindows);
+        QVERIFY(addPob(computer.installFolder()));
+        computer.places.luajit.clear();
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NoLuajitOnWindows);
+    }
+
     void buildsFolder()
     {
         Computer computer;

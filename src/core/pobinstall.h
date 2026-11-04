@@ -49,10 +49,33 @@ struct PobPlaces
 // The places on this computer.
 PobPlaces pobPlaces();
 
+// Why there's none to run.
+enum class PobProblem {
+    NotInstalled,          // no Flatpak, and nothing in the data folder
+    NotOpened,             // the Flatpak is there, but hasn't downloaded Path of Building for Path of Exile 2
+    NoLuajit,              // it's in the data folder, with nothing to run it
+    NotInstalledOnWindows, // not where its installer puts it
+    NoLuajitOnWindows,
+    NothingInFolder, // in the folder you set
+    ForPoe1,         // in the folder you set
+    FolderNoLuajit,  // in the folder you set
+};
+
+// What looking for Path of Building found.
+struct PobLookup
+{
+    std::optional<PobInstall> install;
+    PobProblem problem = PobProblem::NotInstalled; // when there's no install
+    QString why;                                   // in words for people, the same
+};
+
 // The Path of Building in the location when that's set, or else the
 // Flatpak's, or else one from rusty-path-of-building installed some other
-// way. On Windows it's the installed one. Empty when there's none, with why
-// in words for people when it's given.
+// way. On Windows it's the installed one.
+PobLookup lookForPob(const PobPlaces &places, const QString &location);
+
+// The same, as only the install: empty when there's none, with why in
+// words for people when it's given.
 std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why = nullptr);
 
 // Where it keeps the builds you save in it: the folder chosen in its
