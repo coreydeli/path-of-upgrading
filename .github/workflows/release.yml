@@ -40,6 +40,7 @@ jobs:
       release: ${{ steps.version.outputs.release }}
       arch-version: ${{ steps.version.outputs.arch-version }}
       debian-version: ${{ steps.version.outputs.debian-version }}
+      beta: ${{ steps.version.outputs.beta }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -77,6 +78,7 @@ jobs:
       tag: ${{ needs.source.outputs.tag }}
       arch-version: ${{ needs.source.outputs.arch-version }}
       debian-version: ${{ needs.source.outputs.debian-version }}
+      beta: ${{ needs.source.outputs.beta == 'true' }}
 
   release:
     name: Release
