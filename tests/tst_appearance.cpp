@@ -158,6 +158,17 @@ private Q_SLOTS:
         QCOMPARE(look.appearance.colors(), u"app"_s);
     }
 
+    // the Plasma style reads its colors from the scheme the app names
+    void namesTheSchemeForTheStyle()
+    {
+        Look look;
+        QCOMPARE(qApp->property("KDE_COLOR_SCHEME_PATH").toString(), QStringLiteral(COLORS));
+        look.appearance.setColors(u"desktop"_s);
+        QVERIFY(qApp->property("KDE_COLOR_SCHEME_PATH").toString().isEmpty());
+        look.appearance.setColors(u"app"_s);
+        QCOMPARE(qApp->property("KDE_COLOR_SCHEME_PATH").toString(), QStringLiteral(COLORS));
+    }
+
     void aMissingSchemeLeavesTheDesktopsColors()
     {
         const QColor before = window();

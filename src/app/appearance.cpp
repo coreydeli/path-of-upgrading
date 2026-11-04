@@ -97,6 +97,9 @@ bool Appearance::activateScheme()
         m_error = u"The app's colors couldn't be loaded, so it has your desktop's."_s;
         return false;
     }
+    // The Plasma style takes its colors from the scheme this names, not from
+    // the palette. It's what the color scheme manager sets too.
+    qApp->setProperty("KDE_COLOR_SCHEME_PATH", m_schemeFile);
     QGuiApplication::setPalette(KColorScheme::createApplicationPalette(config));
     return true;
 }
