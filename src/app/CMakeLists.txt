@@ -22,6 +22,7 @@ qt_add_library(pou_app STATIC
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
+    recommendedupgrades.cpp recommendedupgrades.h
     resistances.cpp resistances.h
     resultspanel.cpp resultspanel.h
     settingsstore.cpp settingsstore.h
@@ -54,6 +55,8 @@ qt_add_qml_module(pou_app
         qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
+        qml/RecommendationCard.qml
+        qml/RecommendationRow.qml
         qml/ResultRow.qml
         qml/ResultsCard.qml
         qml/ResultsWindow.qml

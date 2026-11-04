@@ -8,6 +8,7 @@
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
+#include "fakeopener.h"
 #include "fakepob.h"
 #include "fakesecretstore.h"
 #include "itemtexts.h"
@@ -158,8 +159,8 @@ struct Running
         , keyring(theirKeyring)
         , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
-              std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
-              folders.places(), folders.paths)
+              std::unique_ptr<SecretStore>(keyring), std::make_unique<FakeOpener>(),
+              std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths)
     {}
 
     // once the keyring has said, which it does a moment after the app starts
@@ -334,8 +335,8 @@ private Q_SLOTS:
         Running r(folders);
         r.app.pobOptions()->setLocation(folders.pob.folder.path());
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
-        QCOMPARE(r.app.pobOptions()->found(),
-                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folders.pob.folder.path())));
+        QCOMPARE(r.app.pobOptions()->headline(), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(r.app.pobOptions()->installedAt(), QDir::toNativeSeparators(folders.pob.folder.path()));
 
         QVERIFY(r.app.overlayOptions()->setCheckKey(QKeySequence(u"F6"_s)));
         QCOMPARE(r.shortcuts->keys.value(u"check-item"_s), QKeySequence(u"F6"_s));

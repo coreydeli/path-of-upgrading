@@ -14,6 +14,7 @@
 #include "app/itemhistory.h"
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
+#include "app/recommendedupgrades.h"
 #include "app/resistances.h"
 #include "app/resultspanel.h"
 #include "app/settingsstore.h"
@@ -44,6 +45,7 @@ namespace pou {
 
 class GameInput;
 class GlobalShortcuts;
+class Opener;
 class SecretStore;
 
 // What the app runs while it's open: the hotkeys, the item checker with its
@@ -59,6 +61,7 @@ class App : public QObject
     Q_PROPERTY(pou::CharacterList *characterList READ characterList CONSTANT)
     Q_PROPERTY(pou::BuildImporter *buildImporter READ buildImporter CONSTANT)
     Q_PROPERTY(pou::GearList *gearList READ gearList CONSTANT)
+    Q_PROPERTY(pou::RecommendedUpgrades *recommendedUpgrades READ recommendedUpgrades CONSTANT)
     Q_PROPERTY(pou::Resistances *resistances READ resistances CONSTANT)
     Q_PROPERTY(pou::GearScoring *gearScoring READ gearScoring CONSTANT)
     Q_PROPERTY(pou::StatWeights *statWeights READ statWeights CONSTANT)
@@ -87,8 +90,9 @@ public:
     // The engine has to outlive it. Path of Building is looked for in the
     // places, see findPob().
     App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-        std::unique_ptr<SecretStore> secrets, std::unique_ptr<QNetworkAccessManager> network,
-        const PobPlaces &places, const Paths &paths, QObject *parent = nullptr);
+        std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
+        std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
+        QObject *parent = nullptr);
     ~App() override;
 
     // Looks for Path of Building again, as once you've installed it.
@@ -116,6 +120,7 @@ public:
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
     GearList *gearList() { return &m_gearList; }
+    RecommendedUpgrades *recommendedUpgrades() { return &m_upgrades; }
     Resistances *resistances() { return &m_resistances; }
     GearScoring *gearScoring() { return &m_gearScoring; }
     StatWeights *statWeights() { return &m_statWeights; }
@@ -145,6 +150,7 @@ private:
     ItemHistory m_history;
     QString m_pobLocation; // where it was last looked for
     std::unique_ptr<SecretStore> m_secrets;
+    std::unique_ptr<Opener> m_opener;
     std::unique_ptr<QNetworkAccessManager> m_network;
     TradeClient m_tradeClient;
     TradeSession m_tradeSession;
@@ -157,6 +163,7 @@ private:
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;
+    RecommendedUpgrades m_upgrades;
     Resistances m_resistances;
     GearScoring m_gearScoring;
     StatWeights m_statWeights;

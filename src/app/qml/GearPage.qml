@@ -31,6 +31,21 @@ ColumnsPage {
     }
 
     FormCard.FormHeader {
+        visible: recommended.visible
+        title: qsTr("Recommended Upgrades")
+    }
+
+    RecommendationCard {
+        id: recommended
+        upgrades: gearPage.app.recommendedUpgrades
+    }
+
+    SectionText {
+        visible: recommended.visible
+        text: qsTr("The slots where a better item helps most, and the stats to look for in it. Empty slots come first, then the lowest gear scores.")
+    }
+
+    FormCard.FormHeader {
         title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
     }
 
@@ -40,7 +55,6 @@ ColumnsPage {
             objectName: "overallScore"
             visible: gearPage.gear.overall !== ""
             text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
-            description: gearPage.gear.focus !== "" ? qsTr("Upgrade first: %1\n%2").arg(gearPage.gear.weakest).arg(gearPage.gear.focus) : qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
         }
 
         FormCard.FormTextDelegate {

@@ -14,6 +14,7 @@ add_library(pou_platform STATIC
     localinstance.cpp localinstance.h
     logging.cpp logging.h
     notifier.cpp notifier.h
+    opener.cpp opener.h
     overlay.cpp overlay.h
     screenmap.cpp screenmap.h
     secretstore.cpp secretstore.h
