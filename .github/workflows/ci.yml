@@ -5,7 +5,8 @@
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
 # supports, and on Windows in MSYS2. Each is built once, as it's released, and
 # the packages come from that build when release.yml asks for them. Main and
-# beta are checked by the release builds, which run it.
+# beta are checked by the release builds, which run it. A change to nothing
+# but the docs isn't built, except on those.
 name: CI
 
 on:
@@ -40,15 +41,35 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/beta' }}
 
 jobs:
-  format:
-    name: Format
-    # A branch of this repository is checked when it's pushed, which a pull
-    # request from it shows, so pull requests are only checked from forks, or
-    # when the release builds ask for the packages. The other stages wait on
-    # this one, so they're left out with it.
+  # A branch of this repository is checked when it's pushed, which a pull
+  # request from it shows, so pull requests are only checked from forks, or
+  # when the release builds ask for the packages. Format waits on this, and
+  # the other stages on Format, so they're left out with it. A change to
+  # nothing but the docs is left out too, and shows as skipped.
+  changes:
+    name: Changes
     if: >-
       github.event_name == 'push' || inputs.package
       || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.code.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # to find where a branch left beta
+          fetch-depth: 0
+      - name: Check what changed
+        id: code
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: sh .github/scripts/changed-code.sh >> "$GITHUB_OUTPUT"
+
+  format:
+    name: Format
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
@@ -59,7 +80,9 @@ jobs:
         run: git ls-files -z '*.cpp' '*.h' | xargs -0 clang-format --dry-run -Werror
 
   # The package is made by makepkg, which builds it from the tarball of the
-  # source, tests it and packs it in one go.
+  # source, tests it and packs it in one go. The libraries aren't cached here
+  # or on Debian: the runners download them in seconds, and it's unpacking
+  # them that takes the time.
   arch:
     name: Arch Linux
     needs: format
@@ -84,7 +107,7 @@ jobs:
           pkgver=${ARCH_VERSION:-$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)}
           sed -i "s/^pkgver=.*/pkgver=$pkgver/" packaging/arch/PKGBUILD
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git archive --prefix="path-of-upgrading-$pkgver/" \
+          git archive --prefix="path-of-upgrading-${pkgver%%beta*}/" \
               -o "packaging/arch/path-of-upgrading-$pkgver.tar.gz" HEAD
       - uses: actions/cache@v6
         with:
@@ -192,8 +215,26 @@ jobs:
         with:
           msystem: UCRT64
           update: true
+      # The download is the slowest part of installing here, so the packages
+      # are kept for the week, and a new week takes the old ones and updates
+      # them. setup-msys2 empties its package folder after its own cache, so
+      # this one is the install's.
+      - name: Find the week
+        id: week
+        shell: bash
+        run: echo "week=$(date +%G-%V)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/msys64/var/cache/pacman/pkg
+          key: msys2-packages-${{ hashFiles('.github/scripts/install-msys2.sh') }}-${{ steps.week.outputs.week }}
+          restore-keys: |
+            msys2-packages-${{ hashFiles('.github/scripts/install-msys2.sh') }}-
+            msys2-packages-
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-msys2.sh
+      # so a new week's cache doesn't keep last week's versions as well
+      - name: Drop the old package versions
+        run: paccache -r -f -k1
       - uses: actions/cache@v6
         with:
           path: .ccache
