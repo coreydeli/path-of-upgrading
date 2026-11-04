@@ -43,8 +43,8 @@ in QML.
   - `u"Searches need the trade site's list of stats, and it sent an empty one."_s`
 - When the message can't say the fix, the control beside it can. On the Path
   of Building page, `Path of Building wasn't found.` sits above the Look Again
-  button, whose description says `Once you've installed it, or opened it for
-  Path of Exile 2 the first time.`
+  button, whose description says `Use it after you install Path of Building, or
+  open it for Path of Exile 2 for the first time.`
 - Log text is short and plain too. Pass a `QString` to `%s` through
   `qPrintable()`, as `ItemPopup::makeWindow` does.
 
@@ -354,8 +354,9 @@ QT_NO_URL_CAST_FROM_STRING  QT_USE_QSTRINGBUILDER  QT_NO_FOREACH  QT_NO_KEYWORDS
   ID, in a fixture or a commit.
 - Window tests run offscreen. `initMain` sets `QT_QPA_PLATFORM=offscreen`, and
   the tests call `QTest::failOnWarning()`.
-- A test must not touch the clipboard, map a visible window, send XTest input,
-  register a real global shortcut or set off a desktop prompt.
+- A test must not touch the clipboard, open a page in the browser, map a visible
+  window, send XTest input, register a real global shortcut or set off a desktop
+  prompt.
 - Use a normal string literal in a test, not a raw string, when the text has an
   apostrophe or `//` in it, as moc then skips the file.
 - Break the code on purpose to check a new test fails, before you rely on it.

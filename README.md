@@ -35,10 +35,10 @@ released.
   its window, so your build's own numbers judge the item. The import picks the
   profile that fits the build.
 - Finds Path of Building as the Flatpak from Flathub
-  (`community.pathofbuilding.PathOfBuilding`), as other installs of
-  rusty-path-of-building, or in a folder you choose.
-  When it can't be found, the Path of Building page says where it looked and
-  what to do, with buttons for Discover, Flathub and the install command.
+  (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
+  installer on Windows, or in a folder you choose. When it can't be found or
+  won't work, the Path of Building page says why and what to do, with buttons
+  for Discover, Flathub, the install command and, on Windows, the download page.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
