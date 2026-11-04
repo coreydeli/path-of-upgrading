@@ -74,6 +74,7 @@ FormCard.FormCardDialog {
                 Layout.fillWidth: true
                 text: fontRow.text
                 font: fontRow.font
+                color: fontRow.highlighted ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
                 elide: Text.ElideRight
             }
 
