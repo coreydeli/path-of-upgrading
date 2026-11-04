@@ -90,6 +90,7 @@ Settings loadSettings(const QSettings &store)
     read(store, u"overlay/colorblind"_s, overlay.colorblind);
     read(store, u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds, 2, 120);
     read(store, u"overlay/paused"_s, overlay.paused);
+    read(store, u"overlay/startChosen"_s, overlay.startChosen);
     return s;
 }
 
@@ -131,6 +132,7 @@ void saveSettings(QSettings &store, const Settings &s)
     store.setValue(u"overlay/colorblind"_s, overlay.colorblind);
     store.setValue(u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds);
     store.setValue(u"overlay/paused"_s, overlay.paused);
+    store.setValue(u"overlay/startChosen"_s, overlay.startChosen);
 }
 
 } // namespace pou

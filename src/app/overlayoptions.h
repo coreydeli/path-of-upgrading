@@ -17,7 +17,7 @@ class SettingsStore;
 // The popup's settings and the hotkeys, as the settings window shows them,
 // saved as soon as they're changed. The position goes by its id, "cursor".
 // Whether the program starts with the desktop is the desktop's to keep, so
-// it's read from there.
+// it's read from there. The settings only remember that it's been settled.
 class OverlayOptions : public QObject
 {
     Q_OBJECT
@@ -75,6 +75,9 @@ public:
     void setStartWithDesktop(bool start);
     // Why it couldn't be changed, or empty.
     QString startError() const;
+    // Turns it on the first time, as it starts with the desktop unless you
+    // turn it off. After that it's left as it is, even when it's off.
+    void startByDefault();
     // Reads it again, as it can be changed by hand while the program waits
     // in the tray.
     Q_INVOKABLE void lookAtStart();

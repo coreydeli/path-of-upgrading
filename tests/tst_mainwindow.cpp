@@ -2154,30 +2154,21 @@ private Q_SLOTS:
 #endif
         Window w;
         QVERIFY(w.show(u"overlayAction"_s));
+        // which it is until you turn it off
         QObject *start = w.find(u"startSwitch"_s);
-        QCOMPARE(start->property("checked").toBool(), false);
+        QCOMPARE(start->property("checked").toBool(), true);
+        QVERIFY(QFile::exists(w.dir.filePath(u"autostart/made-up.desktop"_s)));
         QVERIFY(!isVisible(w.find(u"startError"_s)));
         QVERIFY(!isVisible(w.find(u"startErrorSeparator"_s)));
 
         QVERIFY(toggle(start));
-        QVERIFY(w.app->overlayOptions()->startsWithDesktop());
-        QVERIFY(QFile::exists(w.dir.filePath(u"autostart/made-up.desktop"_s)));
-        QCOMPARE(start->property("checked").toBool(), true);
-
-        QVERIFY(toggle(start));
+        QVERIFY(!w.app->overlayOptions()->startsWithDesktop());
         QVERIFY(!QFile::exists(w.dir.filePath(u"autostart/made-up.desktop"_s)));
         QCOMPARE(start->property("checked").toBool(), false);
-    }
 
-    void startsWithDesktopAlready()
-    {
-#ifdef Q_OS_WIN
-        QSKIP("On Windows it starts from the registry, which the tests keep out of");
-#endif
-        Window w;
-        w.app->overlayOptions()->setStartWithDesktop(true);
-        QVERIFY(w.show(u"overlayAction"_s));
-        QCOMPARE(w.find(u"startSwitch"_s)->property("checked").toBool(), true);
+        QVERIFY(toggle(start));
+        QVERIFY(QFile::exists(w.dir.filePath(u"autostart/made-up.desktop"_s)));
+        QCOMPARE(start->property("checked").toBool(), true);
     }
 
     void startFailed()
@@ -2186,7 +2177,9 @@ private Q_SLOTS:
         QSKIP("On Windows it starts from the registry, which the tests keep out of");
 #endif
         Window w;
-        // a file where the folder should be
+        // off, with a file where the folder should be
+        w.app->overlayOptions()->setStartWithDesktop(false);
+        QVERIFY(QDir(w.dir.filePath(u"autostart"_s)).removeRecursively());
         QFile blocker(w.dir.filePath(u"autostart"_s));
         QVERIFY(blocker.open(QIODevice::WriteOnly));
         blocker.close();
@@ -2215,7 +2208,6 @@ private Q_SLOTS:
         QSKIP("On Windows it starts from the registry, which the tests keep out of");
 #endif
         Window w;
-        w.app->overlayOptions()->setStartWithDesktop(true);
         QVERIFY(w.show(u"overlayAction"_s));
         QVERIFY(w.shown());
         QObject *start = w.find(u"startSwitch"_s);
