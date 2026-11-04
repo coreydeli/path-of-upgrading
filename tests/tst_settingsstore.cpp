@@ -18,7 +18,30 @@ private Q_SLOTS:
     {
         QTemporaryDir dir;
         const SettingsStore store(dir.filePath(u"settings.conf"_s));
-        QCOMPARE(store.settings(), Settings());
+        // with trade searches as the build starts them
+        Settings first;
+        first.trade.enabled = isBetaBuild();
+        QCOMPARE(store.settings(), first);
+    }
+
+    void tradeChoice()
+    {
+        // kept for the next run, while what it starts with is not
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"settings.conf"_s);
+        {
+            SettingsStore store(path);
+            Settings settings = store.settings();
+            settings.overlay.paused = true;
+            QVERIFY(store.set(settings));
+        }
+        QCOMPARE(QSettings(path, QSettings::IniFormat).contains(u"trade/enabled"_s), false);
+
+        SettingsStore store(path);
+        Settings settings = store.settings();
+        settings.trade.enabled = !isBetaBuild();
+        QVERIFY(store.set(settings));
+        QCOMPARE(SettingsStore(path).settings().trade.enabled, !isBetaBuild());
     }
 
     void saved()
@@ -42,7 +65,7 @@ private Q_SLOTS:
         const QString path = dir.filePath(u"settings.conf"_s);
         SettingsStore store(path);
         QSignalSpy changed(&store, &SettingsStore::changed);
-        QVERIFY(store.set(Settings()));
+        QVERIFY(store.set(store.settings()));
         QVERIFY(changed.isEmpty());
         QVERIFY(!QFile::exists(path));
     }

@@ -187,6 +187,7 @@ void App::followTrade()
     m_trade.setSettings(m_settings.settings().trade);
     m_finder.setSettings(m_settings.settings());
     m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
+    m_checker.popup().setTradeNote(m_trade.unavailable());
     m_upgrades.setTradeAvailable(m_trade.unavailable().isEmpty());
     m_resultsPanel.setUnavailable(m_trade.unavailable());
     m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());

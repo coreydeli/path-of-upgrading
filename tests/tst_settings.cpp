@@ -18,7 +18,68 @@ private Q_SLOTS:
     {
         QTemporaryDir dir;
         const QSettings empty(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
-        QCOMPARE(loadSettings(empty), Settings());
+        Settings expected;
+        expected.trade.enabled = isBetaBuild();
+        QCOMPARE(loadSettings(empty), expected);
+    }
+
+    void theBuildSaysIfItIsABeta()
+    {
+        // from the CMake option the build was made with
+        QCOMPARE(isBetaBuild(), POU_EXPECT_BETA == 1);
+    }
+
+    void tradeStartsByTheBuild()
+    {
+        QTemporaryDir dir;
+        const QSettings empty(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+        QVERIFY(loadSettings(empty, true).trade.enabled);
+        QVERIFY(!loadSettings(empty, false).trade.enabled);
+    }
+
+    void tradeChoiceIsKept()
+    {
+        QTemporaryDir dir;
+        QSettings store(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+        store.setValue(u"trade/enabled"_s, true);
+        QVERIFY(loadSettings(store, false).trade.enabled);
+        store.setValue(u"trade/enabled"_s, false);
+        QVERIFY(!loadSettings(store, true).trade.enabled);
+    }
+
+    void tradeNotChosenIsNotSaved()
+    {
+        // so a beta and a release each start it their own way
+        for (const bool beta : {false, true}) {
+            QTemporaryDir dir;
+            QSettings store(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+            Settings s = loadSettings(store, beta);
+            s.overlay.hotkey = u"F5"_s;
+            saveSettings(store, s, beta);
+            QVERIFY(!store.contains(u"trade/enabled"_s));
+            QCOMPARE(store.value(u"overlay/hotkey"_s).toString(), u"F5"_s);
+            QCOMPARE(loadSettings(store, !beta).trade.enabled, !beta);
+        }
+    }
+
+    void tradeChoiceIsSaved()
+    {
+        for (const bool beta : {false, true}) {
+            QTemporaryDir dir;
+            QSettings store(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+            Settings s = loadSettings(store, beta);
+            s.trade.enabled = !beta;
+            saveSettings(store, s, beta);
+            QCOMPARE(store.value(u"trade/enabled"_s).toBool(), !beta);
+            QCOMPARE(loadSettings(store, !beta).trade.enabled, !beta);
+
+            // and changing your mind back to what the build starts with is
+            // a choice too
+            s.trade.enabled = beta;
+            saveSettings(store, s, beta);
+            QCOMPARE(store.value(u"trade/enabled"_s).toBool(), beta);
+            QCOMPARE(loadSettings(store, !beta).trade.enabled, beta);
+        }
     }
 
     void popupStaysAMinuteUnlessSet()
@@ -93,24 +154,31 @@ private Q_SLOTS:
     {
         QTest::addColumn<bool>("enabled");
         QTest::addColumn<bool>("soloSelfFound");
+        QTest::addColumn<bool>("beta");
         QTest::addColumn<QString>("why");
-        const QString off = u"Trade searches are turned off in the settings."_s;
+        const QString how = u"Turn them on with Search the trade site, on the Trade page."_s;
+        const QString off = u"Trade searches are turned off. "_s + how;
+        const QString testing =
+            u"Trade searches are off in this release while they're still being tested. "_s + how;
         const QString solo = u"There's no trading in solo self-found, so trade searches are off."_s;
-        QTest::newRow("on") << true << false << QString();
-        QTest::newRow("turned off") << false << false << off;
-        QTest::newRow("solo self-found") << true << true << solo;
-        QTest::newRow("both") << false << true << off;
+        QTest::newRow("on") << true << false << false << QString();
+        QTest::newRow("on in a beta") << true << false << true << QString();
+        QTest::newRow("turned off in a beta") << false << false << true << off;
+        QTest::newRow("off in a release") << false << false << false << testing;
+        QTest::newRow("solo self-found") << true << true << false << solo;
+        QTest::newRow("both") << false << true << true << off;
     }
 
     void tradeOff()
     {
         QFETCH(bool, enabled);
         QFETCH(bool, soloSelfFound);
+        QFETCH(bool, beta);
         QFETCH(QString, why);
         TradeSettings trade;
         trade.enabled = enabled;
         trade.league.soloSelfFound = soloSelfFound;
-        QCOMPARE(tradeUnavailable(trade), why);
+        QCOMPARE(tradeUnavailable(trade, beta), why);
     }
 
     void everySettingHasItsOwnKey()

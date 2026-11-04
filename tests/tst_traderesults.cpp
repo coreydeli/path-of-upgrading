@@ -567,7 +567,7 @@ private Q_SLOTS:
         QTest::addColumn<bool>("soloSelfFound");
         QTest::addColumn<QString>("why");
 
-        QTest::newRow("off") << false << false << u"Trade searches are turned off in the settings."_s;
+        QTest::newRow("off") << false << false << tradeUnavailable({.enabled = false});
         QTest::newRow("solo self-found")
             << true << true << u"There's no trading in solo self-found, so trade searches are off."_s;
     }
@@ -615,7 +615,7 @@ private Q_SLOTS:
         site.searcher.setSettings(TradeSettings{.enabled = false});
         site.results.loadMore();
         QVERIFY(!site.results.isBusy());
-        QCOMPARE(site.results.error(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(site.results.error(), tradeUnavailable({.enabled = false}));
         QCOMPARE(site.results.rowCount(), 10);
         QCOMPARE(site.network.sent.size(), 1);
     }

@@ -386,7 +386,7 @@ private Q_SLOTS:
         QSignalSpy finished(&trading.finder, &TradeFinder::finished);
         checker.popup().findOnTrade(TradeFinder::Kind::Upgrades);
         QVERIFY(finished.wait());
-        QCOMPARE(checker.popup().trade(), failedReport(u"Trade searches are turned off in the settings."_s));
+        QCOMPARE(checker.popup().trade(), failedReport(tradeUnavailable({.enabled = false})));
     }
 
     // the site couldn't be searched, so the popup offers it for you to try
@@ -412,6 +412,39 @@ private Q_SLOTS:
         QCOMPARE(trade, failedReport(trading.finder.errorString(), trading.finder.errorUrl()));
         QVERIFY(trade.url.path().startsWith(u"/trade2/search/poe2/Standard"_s));
         QVERIFY(trade.url.hasQuery());
+    }
+
+    // the site turns down a search for having too many filters, which the
+    // popup says, and which doesn't stop the next
+    void tradeSearchTooComplex()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        trading.network.answers << FakeAnswer{.status = 400,
+                                              .body = R"({"error":{"message":"Query is too complex."}})",
+                                              .headers = {{"X-Rate-Limit-Ip", "30:10:0"}}};
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QSignalSpy finished(&trading.finder, &TradeFinder::finished);
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(finished.wait());
+
+        const TradeReport trade = checker.popup().trade();
+        QVERIFY(trade.failed);
+        QVERIFY(!trade.busy);
+        QCOMPARE(trade.status, u"The trade site says the search has too many filters."_s);
+        QCOMPARE(trade, failedReport(trading.finder.errorString()));
+        QVERIFY(!trading.finder.isBusy());
+
+        // so asking again works
+        trading.network.answers << FakeAnswer{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"};
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(finished.wait());
+        QCOMPARE(checker.popup().trade().status, u"2 listed in Standard"_s);
+        QVERIFY(!checker.popup().trade().failed);
     }
 
     void tradeWaitsItsTurn()

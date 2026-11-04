@@ -44,6 +44,9 @@ class ItemPopup : public QObject
     // Whether there are trade searches, for its buttons that search the
     // trade site for gear like the item.
     Q_PROPERTY(bool tradeAvailable READ isTradeAvailable NOTIFY tradeChanged)
+    // Why there aren't any, and how to turn them on, shown in place of the
+    // buttons. Empty when there are, or when nothing says.
+    Q_PROPERTY(QString tradeNote READ tradeNote NOTIFY tradeChanged)
     // How the last one for the item went, see findOnTrade().
     Q_PROPERTY(pou::TradeReport trade READ trade NOTIFY tradeChanged)
     // Why the item couldn't be saved as what you wear, see wear().
@@ -72,6 +75,8 @@ public:
 
     bool isTradeAvailable() const { return m_tradeAvailable; }
     void setTradeAvailable(bool available);
+    QString tradeNote() const { return m_tradeNote; }
+    void setTradeNote(const QString &note);
     TradeReport trade() const { return m_trade; }
     // What there is to say of a search for the item it has. Each item starts
     // with none.
@@ -137,6 +142,7 @@ private:
     bool m_hovered = false;
     bool m_expanded = false;
     bool m_tradeAvailable = false;
+    QString m_tradeNote;
     TradeReport m_trade;
     QString m_wearError;
 };

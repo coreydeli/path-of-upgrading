@@ -86,6 +86,14 @@ void ItemPopup::setTradeAvailable(bool available)
     Q_EMIT tradeChanged();
 }
 
+void ItemPopup::setTradeNote(const QString &note)
+{
+    if (note == m_tradeNote)
+        return;
+    m_tradeNote = note;
+    Q_EMIT tradeChanged();
+}
+
 void ItemPopup::setTrade(const TradeReport &trade)
 {
     if (trade == m_trade)
