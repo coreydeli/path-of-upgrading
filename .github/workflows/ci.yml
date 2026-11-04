@@ -5,7 +5,8 @@
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
 # supports, and on Windows in MSYS2. Each is built once, as it's released, and
 # the packages come from that build when release.yml asks for them. Main and
-# beta are checked by the release builds, which run it.
+# beta are checked by the release builds, which run it. A change to nothing
+# but the docs isn't built, except on those.
 name: CI
 
 on:
@@ -40,15 +41,35 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/beta' }}
 
 jobs:
-  format:
-    name: Format
-    # A branch of this repository is checked when it's pushed, which a pull
-    # request from it shows, so pull requests are only checked from forks, or
-    # when the release builds ask for the packages. The other stages wait on
-    # this one, so they're left out with it.
+  # A branch of this repository is checked when it's pushed, which a pull
+  # request from it shows, so pull requests are only checked from forks, or
+  # when the release builds ask for the packages. Format waits on this, and
+  # the other stages on Format, so they're left out with it. A change to
+  # nothing but the docs is left out too, and shows as skipped.
+  changes:
+    name: Changes
     if: >-
       github.event_name == 'push' || inputs.package
       || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.code.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # to find where a branch left beta
+          fetch-depth: 0
+      - name: Check what changed
+        id: code
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: sh .github/scripts/changed-code.sh >> "$GITHUB_OUTPUT"
+
+  format:
+    name: Format
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
