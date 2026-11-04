@@ -2,6 +2,7 @@
 #include "app/app.h"
 #include "app/commandline.h"
 #include "app/desktop.h"
+#include "app/fonts.h"
 #include "core/pobinstall.h"
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
@@ -72,6 +73,7 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain(u"coreydeli.github.io"_s);
     // closing the window leaves it in the tray
     QApplication::setQuitOnLastWindowClosed(false);
+    pou::addBundledFonts();
 #ifdef Q_OS_WIN
     // which the desktop file gives it elsewhere
     QApplication::setWindowIcon(QIcon(u":/icons/" APP_ID ".svg"_s));
