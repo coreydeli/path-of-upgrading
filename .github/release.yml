@@ -11,6 +11,12 @@ changelog:
     - title: Documentation
       labels:
         - documentation
+    - title: CI
+      labels:
+        - ci
+    - title: Maintenance
+      labels:
+        - maintenance
     - title: Other changes
       labels:
         - "*"
