@@ -129,7 +129,7 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
                 continue;
             }
             if ((x.origin == StatOrigin::Mod || x.origin == StatOrigin::Implicit) && !isInBase(item, x.key))
-                result.wasted << x.key;
+                result.notScored << x.key;
             continue;
         }
 
@@ -203,19 +203,19 @@ QString missingNote(const GearScore &gear)
     return u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
 }
 
-QStringList wastedStats(const GearScore &gear)
+QStringList notScoredStats(const GearScore &gear)
 {
     QStringList names;
-    for (const QString &key : gear.wasted)
+    for (const QString &key : gear.notScored)
         names << statName(key);
     return names;
 }
 
-QString wastedNote(const GearScore &gear)
+QString notScoredNote(const GearScore &gear)
 {
-    if (gear.wasted.isEmpty())
+    if (gear.notScored.isEmpty())
         return {};
-    return u"Not used by your build: "_s + wastedStats(gear).join(u", "_s) + u'.';
+    return u"Not in the gear score: "_s + notScoredStats(gear).join(u", "_s) + u'.';
 }
 
 QStringList weakRolls(const GearScore &gear, int underPercent)

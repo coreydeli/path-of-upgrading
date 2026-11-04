@@ -113,7 +113,10 @@ FormCard.FormCardPage {
         }
     }
 
-    onColumnCountChanged: arrange()
+    // Not through arrange(), so the columns always fit the width. Kirigami 6.13
+    // (Debian 13) gives the page its width a moment after the window shows,
+    // and a placing put off till then left the old columns for that moment.
+    onColumnCountChanged: place()
     Component.onCompleted: {
         collect();
         place();

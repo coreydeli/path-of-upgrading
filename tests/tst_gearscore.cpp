@@ -109,7 +109,7 @@ private Q_SLOTS:
         for (const TweakableStat &s : stats)
             labels << s.label;
         QCOMPARE(labels.first(), u"Spell skill levels"_s);
-        QCOMPARE(labels.size(), 17);
+        QCOMPARE(labels.size(), 20);
         QCOMPARE(labels.removeDuplicates(), 0);
 
         const auto groupsOf = [&stats](const QString &label) {
@@ -125,6 +125,13 @@ private Q_SLOTS:
                  (QStringList{u"Offhand"_s, u"Helmet"_s, u"Body Armour"_s, u"Gloves"_s, u"Boots"_s, u"Belt"_s,
                               u"Amulet"_s, u"Ring"_s}));
         QCOMPARE(groupsOf(u"Life"_s), ratedGroups().mid(1, 8));
+        // the utility stats count where the game rolls them
+        QCOMPARE(groupsOf(u"Stun threshold"_s),
+                 (QStringList{u"Offhand"_s, u"Body Armour"_s, u"Boots"_s, u"Belt"_s, u"Jewel"_s}));
+        QCOMPARE(groupsOf(u"ES recharge"_s), (QStringList{u"Offhand"_s, u"Helmet"_s, u"Body Armour"_s,
+                                                          u"Gloves"_s, u"Boots"_s, u"Jewel"_s}));
+        QCOMPARE(groupsOf(u"Mana regen"_s),
+                 (QStringList{u"Offhand"_s, u"Belt"_s, u"Amulet"_s, u"Ring"_s, u"Jewel"_s}));
     }
 
     void perSlotValues()
@@ -170,8 +177,8 @@ private Q_SLOTS:
         QCOMPARE(great->score, 89);
         QCOMPARE(great->grade, u"S"_s);
         QCOMPARE(great->ideal, 38.0);
-        // local Energy Shield % is already in the base value, so it isn't wasted
-        QVERIFY(great->wasted.isEmpty());
+        // local Energy Shield % is already in the base value, so it isn't listed
+        QVERIFY(great->notScored.isEmpty());
         QCOMPARE(great->contributions.first().label, u"Minion skill levels"_s);
         QCOMPARE(great->contributions.first().quality, 115);
 
@@ -183,7 +190,7 @@ private Q_SLOTS:
         QVERIFY(junk->score < 30);
         QCOMPARE(junk->grade, u"D"_s);
         QCOMPARE(junk->missing, QStringList{u"Minion skill levels"_s});
-        QCOMPARE(junk->wasted.size(), 2);
+        QCOMPARE(junk->notScored.size(), 2);
     }
 
     void ignoredStatsLeaveTheIdeal()
@@ -412,7 +419,7 @@ private Q_SLOTS:
     {
         for (const QString &text : {attackerGloves, attackerAmulet, attackerStaff}) {
             const auto g = gearScore(item(text), {.build = energyShieldAttackerProfile.toString()});
-            QVERIFY2(g->wasted.isEmpty(), qPrintable(g->wasted.join(u", "_s)));
+            QVERIFY2(g->notScored.isEmpty(), qPrintable(g->notScored.join(u", "_s)));
         }
     }
 
@@ -492,7 +499,7 @@ private Q_SLOTS:
                              "+45 to maximum Energy Shield"_s;
         const auto life = gearScore(item(ring), {.build = defaultBuildProfile.toString()});
         const auto caster = gearScore(item(ring), {.build = energyShieldProfile.toString()});
-        QVERIFY(life->wasted.isEmpty());
+        QVERIFY(life->notScored.isEmpty());
         QVERIFY(life->score > 0);
         QVERIFY(life->contributions.first().points < caster->contributions.first().points);
     }
@@ -531,21 +538,21 @@ private Q_SLOTS:
         QCOMPARE(g->ideal, 19.0);
     }
 
-    void modsThatNetToNothingAreNotWasted()
+    void modsThatNetToNothingAreNotListed()
     {
         const auto g = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
                                       "20% increased Stun Threshold\n20% reduced Stun Threshold\n"
                                       "15% reduced Flask Charges Gained"_s));
-        QVERIFY(g->wasted.isEmpty());
+        QVERIFY(g->notScored.isEmpty());
     }
 
-    void unwantedImplicitsAreWastedButRunesAndBasesAreNot()
+    void unwantedImplicitsAreNotScoredButRunesAndBasesAreNot()
     {
         const auto g = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
                                       "20% increased Stun Threshold (implicit)\n--------\n"
                                       "15% increased Flask Charges Gained\n--------\n"
                                       "12% increased Light Radius (rune)"_s));
-        QCOMPARE(g->wasted,
+        QCOMPARE(g->notScored,
                  (QStringList{u"#% increased Stun Threshold"_s, u"#% increased Flask Charges Gained"_s}));
     }
 
@@ -617,13 +624,13 @@ private Q_SLOTS:
     {
         GearScore g;
         QCOMPARE(missingNote(g), QString());
-        QCOMPARE(wastedNote(g), QString());
+        QCOMPARE(notScoredNote(g), QString());
         QCOMPARE(weakRollsNote(g), QString());
 
         g.missing = {u"Life"_s, u"Fire res"_s};
-        g.wasted = {u"#% increased Rarity of Items found"_s};
+        g.notScored = {u"#% increased Rarity of Items found"_s};
         QCOMPARE(missingNote(g), u"Missing what your build wants: Life, Fire res."_s);
-        QCOMPARE(wastedNote(g), u"Not used by your build: #% increased Rarity of Items found."_s);
+        QCOMPARE(notScoredNote(g), u"Not in the gear score: #% increased Rarity of Items found."_s);
     }
 
     void weakRollsAreTheWeakestThree()
@@ -650,15 +657,16 @@ private Q_SLOTS:
         QCOMPARE(weakRolls(g, 20), QStringList());
     }
 
-    void wastedStatsAreNamed()
+    void notScoredStatsAreNamed()
     {
         GearScore g;
-        QCOMPARE(wastedStats(g), QStringList());
-        g.wasted = {u"#% increased Rarity of Items found"_s, u"[Base] Evasion Rating"_s};
+        QCOMPARE(notScoredStats(g), QStringList());
+        g.notScored = {u"#% increased Rarity of Items found"_s, u"[Base] Evasion Rating"_s};
         // the item's own stats lose their tag
-        QCOMPARE(wastedStats(g), (QStringList{u"#% increased Rarity of Items found"_s, u"Evasion Rating"_s}));
-        QCOMPARE(wastedNote(g),
-                 u"Not used by your build: #% increased Rarity of Items found, Evasion Rating."_s);
+        QCOMPARE(notScoredStats(g),
+                 (QStringList{u"#% increased Rarity of Items found"_s, u"Evasion Rating"_s}));
+        QCOMPARE(notScoredNote(g),
+                 u"Not in the gear score: #% increased Rarity of Items found, Evasion Rating."_s);
     }
 
     void notesFromAnItem()
@@ -667,7 +675,7 @@ private Q_SLOTS:
         const auto bare = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB"_s));
         QCOMPARE(missingNote(*bare),
                  u"Missing what your build wants: Armour / Evasion, Energy Shield, Life."_s);
-        QCOMPARE(wastedNote(*bare), QString());
+        QCOMPARE(notScoredNote(*bare), QString());
         QCOMPARE(weakRollsNote(*bare), QString());
 
         // and a roll of a tenth of an excellent one
@@ -675,7 +683,145 @@ private Q_SLOTS:
                                          "+10 to maximum Life\n10% increased Rarity of Items found"_s));
         QVERIFY(weak->contributions.first().quality < 50);
         QVERIFY(weakRollsNote(*weak).startsWith(u"Weak rolls: Life "_s));
-        QCOMPARE(wastedNote(*weak), u"Not used by your build: #% increased Rarity of Items found."_s);
+        QCOMPARE(notScoredNote(*weak), u"Not in the gear score: #% increased Rarity of Items found."_s);
+    }
+
+    void utilityStatsCountWhereTheGameRollsThem_data()
+    {
+        QTest::addColumn<QString>("build");
+        QTest::addColumn<QString>("itemClass");
+        QTest::addColumn<QString>("line");
+        QTest::addColumn<QString>("label");
+
+        // stun threshold, for every profile
+        for (const char *build : {"life-res", "es-caster", "es-attacker", "minion-es"}) {
+            QTest::addRow("stun threshold boots %s", build)
+                << QString::fromLatin1(build) << u"Boots"_s << u"+300 to Stun Threshold"_s
+                << u"Stun threshold"_s;
+        }
+        QTest::newRow("stun threshold body armour")
+            << u"life-res"_s << u"Body Armours"_s << u"+250 to Stun Threshold"_s << u"Stun threshold"_s;
+        QTest::newRow("stun threshold belt")
+            << u"es-caster"_s << u"Belts"_s << u"+250 to Stun Threshold"_s << u"Stun threshold"_s;
+        QTest::newRow("stun threshold shield")
+            << u"life-res"_s << u"Shields"_s << u"+250 to Stun Threshold"_s << u"Stun threshold"_s;
+        QTest::newRow("stun threshold jewel")
+            << u"es-attacker"_s << u"Jewels"_s << u"12% increased Stun Threshold"_s << u"Stun threshold"_s;
+        // Energy Shield recharge, for the Energy Shield profiles
+        for (const char *build : {"es-caster", "es-attacker", "minion-es"}) {
+            QTest::addRow("recharge rate boots %s", build)
+                << QString::fromLatin1(build) << u"Boots"_s << u"18% increased Energy Shield Recharge Rate"_s
+                << u"ES recharge"_s;
+        }
+        QTest::newRow("recharge rate helmet")
+            << u"es-caster"_s << u"Helmets"_s << u"18% increased Energy Shield Recharge Rate"_s
+            << u"ES recharge"_s;
+        QTest::newRow("recharge start jewel")
+            << u"es-caster"_s << u"Jewels"_s << u"12% faster start of Energy Shield Recharge"_s
+            << u"ES recharge"_s;
+        // life regeneration and flasks, for the life profile
+        QTest::newRow("life regen belt")
+            << u"life-res"_s << u"Belts"_s << u"25.5 Life Regeneration per second"_s << u"Life regen"_s;
+        QTest::newRow("life regen jewel")
+            << u"life-res"_s << u"Jewels"_s << u"8% increased Life Regeneration rate"_s << u"Life regen"_s;
+        QTest::newRow("flask recovery belt")
+            << u"life-res"_s << u"Belts"_s << u"38% increased Flask Life Recovery rate"_s
+            << u"Flask life recovery"_s;
+        QTest::newRow("flask recovery jewel")
+            << u"life-res"_s << u"Jewels"_s << u"12% increased Life Recovery from Flasks"_s
+            << u"Flask life recovery"_s;
+        // mana regeneration, for the casters
+        QTest::newRow("mana regen ring")
+            << u"es-caster"_s << u"Rings"_s << u"65% increased Mana Regeneration Rate"_s << u"Mana regen"_s;
+        QTest::newRow("mana regen minion amulet")
+            << u"minion-es"_s << u"Amulets"_s << u"65% increased Mana Regeneration Rate"_s << u"Mana regen"_s;
+    }
+
+    void utilityStatsCountWhereTheGameRollsThem()
+    {
+        QFETCH(QString, build);
+        QFETCH(QString, itemClass);
+        QFETCH(QString, line);
+        QFETCH(QString, label);
+
+        const auto g =
+            gearScore(item(u"Item Class: "_s + itemClass + u"\nRarity: Rare\nA\nB\n--------\n"_s + line),
+                      {.build = build});
+        QVERIFY(g && g->isRated());
+        QVERIFY2(g->notScored.isEmpty(), qPrintable(g->notScored.join(u", "_s)));
+        QCOMPARE(g->contributions.size(), 1);
+        QCOMPARE(g->contributions.first().label, label);
+        QVERIFY(g->score > 0);
+    }
+
+    void utilityStatsAreNotScoredWhereTheGameDoesNotRollThem_data()
+    {
+        QTest::addColumn<QString>("build");
+        QTest::addColumn<QString>("itemClass");
+        QTest::addColumn<QString>("line");
+
+        QTest::newRow("stun threshold on a ring")
+            << u"life-res"_s << u"Rings"_s << u"+250 to Stun Threshold"_s;
+        QTest::newRow("stun threshold on a helmet")
+            << u"es-caster"_s << u"Helmets"_s << u"+250 to Stun Threshold"_s;
+        QTest::newRow("flat stun threshold on a jewel")
+            << u"es-caster"_s << u"Jewels"_s << u"+250 to Stun Threshold"_s;
+        QTest::newRow("recharge rate on a belt")
+            << u"es-caster"_s << u"Belts"_s << u"18% increased Energy Shield Recharge Rate"_s;
+        QTest::newRow("recharge rate on a life profile")
+            << u"life-res"_s << u"Boots"_s << u"18% increased Energy Shield Recharge Rate"_s;
+        QTest::newRow("life regen on gloves")
+            << u"life-res"_s << u"Gloves"_s << u"10 Life Regeneration per second"_s;
+        QTest::newRow("life regen on an attacker")
+            << u"es-attacker"_s << u"Belts"_s << u"25 Life Regeneration per second"_s;
+        QTest::newRow("mana regen on a helmet")
+            << u"es-caster"_s << u"Helmets"_s << u"30% increased Mana Regeneration Rate"_s;
+        QTest::newRow("mana regen on an attacker")
+            << u"es-attacker"_s << u"Rings"_s << u"65% increased Mana Regeneration Rate"_s;
+    }
+
+    void utilityStatsAreNotScoredWhereTheGameDoesNotRollThem()
+    {
+        QFETCH(QString, build);
+        QFETCH(QString, itemClass);
+        QFETCH(QString, line);
+
+        const auto g =
+            gearScore(item(u"Item Class: "_s + itemClass + u"\nRarity: Rare\nA\nB\n--------\n"_s + line),
+                      {.build = build});
+        QVERIFY(g && g->isRated());
+        QCOMPARE(g->score, 0);
+        QCOMPARE(g->notScored.size(), 1);
+    }
+
+    void utilityStatsStayWorthALittle()
+    {
+        // an excellent roll of each is worth only a few points beside the main stats
+        const auto boots = gearScore(item(u"Item Class: Boots\nRarity: Rare\nA\nB\n--------\n"
+                                          "+352 to Stun Threshold"_s));
+        QCOMPARE(boots->contributions.first().quality, 100);
+        QCOMPARE(boots->contributions.first().points, 1.5);
+        QVERIFY(boots->score <= 5);
+
+        // the top roll of the body armour's rank is lower than the boots'
+        const auto body = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB\n--------\n"
+                                         "+304 to Stun Threshold"_s));
+        QCOMPARE(body->contributions.first().quality, 100);
+    }
+
+    void utilityStatsAddToTheScoreOfARealItem()
+    {
+        const QString base =
+            u"Item Class: Boots\nRarity: Rare\nA\nB\n--------\nEnergy Shield: 100\n--------\n"
+            "+60 to maximum Life\n+30% increased Movement Speed\n"_s;
+        const GearScoreOptions options{.build = u"es-caster"_s};
+        const int plain = gearScore(item(base), options)->score;
+        const int with =
+            gearScore(item(base + u"+200 to Stun Threshold\n18% increased Energy Shield Recharge Rate"_s),
+                      options)
+                ->score;
+        QVERIFY(with > plain);
+        QVERIFY(with - plain <= 8);
     }
 
     void topStatsIncludeThoseWorthFour()

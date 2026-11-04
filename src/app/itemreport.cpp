@@ -403,8 +403,8 @@ QStringList gearNotesOf(const GearScore &gear)
     QStringList notes;
     if (!gear.resistNote.isEmpty())
         notes << gear.resistNote;
-    if (const QString wasted = wastedNote(gear); !wasted.isEmpty())
-        notes << wasted;
+    if (const QString unscored = notScoredNote(gear); !unscored.isEmpty())
+        notes << unscored;
     if (const QString missing = missingNote(gear); !missing.isEmpty())
         notes << missing;
     return notes;
