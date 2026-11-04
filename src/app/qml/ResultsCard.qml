@@ -37,8 +37,7 @@ Rectangle {
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
     color: Kirigami.Theme.backgroundColor
     radius: Kirigami.Units.cornerRadius
-    border.color: Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor,
-                                                          Kirigami.Theme.textColor, 0.2)
+    border.color: Style.frame(Kirigami.Theme)
 
     ColumnLayout {
         id: content

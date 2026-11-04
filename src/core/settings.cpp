@@ -42,7 +42,27 @@ void read(const QSettings &store, const QString &key, int &value, int low, int h
 
 } // namespace
 
-bool isBetaBuild()
+QString colorThemeId(ColorTheme theme)
+{
+    return theme == ColorTheme::Desktop ? u"desktop"_s : u"app"_s;
+}
+
+ColorTheme colorThemeFromId(QStringView id)
+{
+    return id == u"desktop" ? ColorTheme::Desktop : ColorTheme::App;
+}
+
+QString decorationsId(Decorations decorations)
+{
+    return decorations == Decorations::Plain ? u"plain"_s : u"full"_s;
+}
+
+Decorations decorationsFromId(QStringView id)
+{
+    return id == u"plain" ? Decorations::Plain : Decorations::Full;
+}
+
+QString tradeUnavailable(const TradeSettings &settings)
 {
     return POU_BETA_BUILD != 0;
 }
@@ -101,6 +121,10 @@ Settings loadSettings(const QSettings &store, bool beta)
     read(store, u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds, 2, 120);
     read(store, u"overlay/paused"_s, overlay.paused);
     read(store, u"overlay/startChosen"_s, overlay.startChosen);
+
+    AppearanceSettings &appearance = s.appearance;
+    appearance.colors = colorThemeFromId(store.value(u"appearance/theme"_s).toString());
+    appearance.decorations = decorationsFromId(store.value(u"appearance/decorations"_s).toString());
     return s;
 }
 
@@ -145,6 +169,10 @@ void saveSettings(QSettings &store, const Settings &s, bool beta)
     store.setValue(u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds);
     store.setValue(u"overlay/paused"_s, overlay.paused);
     store.setValue(u"overlay/startChosen"_s, overlay.startChosen);
+
+    const AppearanceSettings &appearance = s.appearance;
+    store.setValue(u"appearance/theme"_s, colorThemeId(appearance.colors));
+    store.setValue(u"appearance/decorations"_s, decorationsId(appearance.decorations));
 }
 
 } // namespace pou

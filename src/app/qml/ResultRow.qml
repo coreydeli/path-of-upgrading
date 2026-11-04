@@ -153,7 +153,7 @@ Item {
 
                 QQC2.Label {
                     visible: text !== ""
-                    opacity: 0.7
+                    color: Style.grade(row.verdict.gearGrade, Kirigami.Theme)
                     font: Kirigami.Theme.smallFont
                     text: row.verdict.gearScore
                 }

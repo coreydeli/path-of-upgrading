@@ -66,12 +66,37 @@ struct OverlaySettings
     friend bool operator==(const OverlaySettings &, const OverlaySettings &) = default;
 };
 
+// Whose colors the app uses.
+enum class ColorTheme {
+    App,    // its own, from the color scheme that comes with it
+    Desktop // the desktop's
+};
+QString colorThemeId(ColorTheme theme);
+ColorTheme colorThemeFromId(QStringView id);
+
+// How much is drawn besides the colors.
+enum class Decorations {
+    Full, // corner pieces, the glow, gauges and the popup's animation
+    Plain
+};
+QString decorationsId(Decorations decorations);
+Decorations decorationsFromId(QStringView id);
+
+struct AppearanceSettings
+{
+    ColorTheme colors = ColorTheme::App;
+    Decorations decorations = Decorations::Full;
+
+    friend bool operator==(const AppearanceSettings &, const AppearanceSettings &) = default;
+};
+
 struct Settings
 {
     QString character; // id of the one you play, see CharacterStore
     TradeSettings trade;
     PobSettings pob;
     OverlaySettings overlay;
+    AppearanceSettings appearance;
 
     friend bool operator==(const Settings &, const Settings &) = default;
 };

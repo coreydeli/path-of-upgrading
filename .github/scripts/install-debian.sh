@@ -12,7 +12,7 @@ apt-get install -y --no-install-recommends \
     build-essential cmake ninja-build pkgconf git ccache ca-certificates dpkg-dev file \
     qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools \
     libkirigami-dev kirigami-addons-dev libkf6declarative-dev libkf6i18n-dev \
-    libkf6dbusaddons-dev libkf6config-dev libkf6globalaccel-dev libkf6notifications-dev \
+    libkf6dbusaddons-dev libkf6config-dev libkf6colorscheme-dev libkf6globalaccel-dev libkf6notifications-dev \
     libkf6statusnotifieritem-dev libkf6windowsystem-dev \
     liblayershellqtinterface-dev qtkeychain-qt6-dev zlib1g-dev \
     libxcb1-dev libxcb-keysyms1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-xtest0-dev \

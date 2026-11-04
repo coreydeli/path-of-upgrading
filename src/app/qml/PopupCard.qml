@@ -22,20 +22,6 @@ Rectangle {
                                        || report.gearNotes.length > 0
     readonly property tradeReport trade: popup.trade
 
-    // the game's colours for them
-    function rarityColor(rarity: string): color {
-        switch (rarity) {
-        case "Magic":
-            return "#8888ff";
-        case "Rare":
-            return "#ffff77";
-        case "Unique":
-            return "#af6025";
-        default:
-            return Kirigami.Theme.textColor;
-        }
-    }
-
     // dark whatever the desktop's colours, like the game
     Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
     Kirigami.Theme.inherit: false
@@ -44,8 +30,7 @@ Rectangle {
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
     color: Kirigami.Theme.backgroundColor
     radius: Kirigami.Units.cornerRadius
-    border.color: Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor,
-                                                          Kirigami.Theme.textColor, 0.2)
+    border.color: Style.frame(Kirigami.Theme)
 
     HoverHandler {
         onHoveredChanged: card.popup.hovered = hovered
@@ -86,7 +71,7 @@ Rectangle {
                 level: 3
                 wrapMode: Text.Wrap
                 text: card.popup.message || card.report.name
-                color: card.popup.message ? Kirigami.Theme.textColor : card.rarityColor(card.report.rarity)
+                color: card.popup.message ? Kirigami.Theme.textColor : Style.rarity(card.report.rarity, Kirigami.Theme)
             }
 
             QQC2.ToolButton {
@@ -183,6 +168,7 @@ Rectangle {
 
             QQC2.Label {
                 font.bold: true
+                color: Style.grade(card.report.gearGrade, Kirigami.Theme)
                 text: card.report.gearScore + " " + card.report.gearGrade
             }
 

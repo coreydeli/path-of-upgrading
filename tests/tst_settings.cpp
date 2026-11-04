@@ -115,6 +115,8 @@ private Q_SLOTS:
         s.overlay.colorblind = true;
         s.overlay.autoHideSeconds = 30;
         s.overlay.paused = true;
+        s.appearance.colors = ColorTheme::Desktop;
+        s.appearance.decorations = Decorations::Plain;
         s.overlay.startChosen = true;
 
         QTemporaryDir dir;
@@ -128,6 +130,8 @@ private Q_SLOTS:
         // readable by people too
         QCOMPARE(again.value(u"trade/league"_s).toString(), u"Runes of Aldur"_s);
         QCOMPARE(again.value(u"overlay/position"_s).toString(), u"top"_s);
+        QCOMPARE(again.value(u"appearance/theme"_s).toString(), u"desktop"_s);
+        QCOMPARE(again.value(u"appearance/decorations"_s).toString(), u"plain"_s);
     }
 
     void outOfRange()
@@ -140,6 +144,8 @@ private Q_SLOTS:
         store.setValue(u"trade/budgetMax"_s, u"nan"_s);
         store.setValue(u"trade/status"_s, u"whenever"_s);
         store.setValue(u"overlay/position"_s, u"sideways"_s);
+        store.setValue(u"appearance/theme"_s, u"neon"_s);
+        store.setValue(u"appearance/decorations"_s, u"lots"_s);
 
         const Settings s = loadSettings(store);
         QCOMPARE(s.overlay.autoHideSeconds, 120);
@@ -148,6 +154,8 @@ private Q_SLOTS:
         QCOMPARE(s.trade.budget.max, 0.0);
         QCOMPARE(s.trade.status, ListingStatus::Available);
         QCOMPARE(s.overlay.position, PopupPosition::Cursor);
+        QCOMPARE(s.appearance.colors, ColorTheme::App);
+        QCOMPARE(s.appearance.decorations, Decorations::Full);
     }
 
     void tradeOff_data()
@@ -214,6 +222,8 @@ private Q_SLOTS:
             [](Settings &s) { s.overlay.colorblind = true; },
             [](Settings &s) { s.overlay.autoHideSeconds = 30; },
             [](Settings &s) { s.overlay.paused = true; },
+            [](Settings &s) { s.appearance.colors = ColorTheme::Desktop; },
+            [](Settings &s) { s.appearance.decorations = Decorations::Plain; },
             [](Settings &s) { s.overlay.startChosen = true; },
         };
 
