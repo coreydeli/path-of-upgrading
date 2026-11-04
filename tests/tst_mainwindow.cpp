@@ -2151,6 +2151,19 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.colors, ColorTheme::App);
     }
 
+    // the popup and the results window read it from the same engine
+    void styleFollowsTheColors()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        auto *style = w.qml.singletonInstance<QObject *>("PathOfUpgrading", "Style");
+        QVERIFY(style);
+        QCOMPARE(style->property("appColors").toBool(), true);
+        w.app->appearance()->setColors(u"desktop"_s);
+        QCOMPARE(style->property("appColors").toBool(), false);
+        w.app->appearance()->setColors(u"app"_s);
+        QCOMPARE(style->property("appColors").toBool(), true);
+    }
+
     void showsAppearanceSettings()
     {
         Window w;
