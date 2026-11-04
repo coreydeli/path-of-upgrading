@@ -4,6 +4,7 @@
 #include "app/commandline.h"
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
+#include "platform/opener.h"
 #include "platform/secretstore.h"
 
 #include <QCoreApplication>
@@ -29,8 +30,9 @@ App::Paths App::defaultPaths()
 }
 
 App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-         std::unique_ptr<SecretStore> secrets, std::unique_ptr<QNetworkAccessManager> network,
-         const PobPlaces &places, const Paths &paths, QObject *parent)
+         std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
+         std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
+         QObject *parent)
     : QObject(parent)
     , m_places(places)
     , m_settings(paths.settings)
@@ -42,6 +44,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_hotkeys(m_shortcuts.get())
     , m_history(paths.data + u"/history.json"_s)
     , m_secrets(std::move(secrets))
+    , m_opener(std::move(opener))
     , m_network(std::move(network))
     , m_tradeClient(m_network.get())
     , m_tradeSession(m_secrets.get(), &m_tradeClient)
@@ -65,7 +68,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
                                     .exec = CommandLine::backgroundCommand(),
                                     .icon = QGuiApplication::desktopFileName()})
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
-    , m_pobOptions(&m_settings, &m_pob)
+    , m_pobOptions(&m_settings, &m_pob, m_places, m_opener.get())
 {
     m_characterList.load();
     // so you can wear gear and set weights before adding a character

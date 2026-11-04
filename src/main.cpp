@@ -6,6 +6,7 @@
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
 #include "platform/notifier.h"
+#include "platform/opener.h"
 #include "platform/secretstore.h"
 #include "platform/singleinstance.h"
 #include "platform/tray.h"
@@ -91,7 +92,8 @@ int main(int argc, char *argv[])
     KLocalization::setupLocalizedContext(&engine);
     // made after the engine so it goes first, as its popup and results windows come from the engine
     pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::createSecretStore(),
-                  std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(), pou::App::defaultPaths());
+                  pou::createOpener(), std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(),
+                  pou::App::defaultPaths());
     const std::unique_ptr<pou::Tray> tray = pou::createTray();
     const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier(tray.get());
     pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());

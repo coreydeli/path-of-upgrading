@@ -43,6 +43,7 @@ namespace pou {
 
 class GameInput;
 class GlobalShortcuts;
+class Opener;
 class SecretStore;
 
 // What the app runs while it's open: the hotkeys, the item checker with its
@@ -84,8 +85,9 @@ public:
     // The engine has to outlive it. Path of Building is looked for in the
     // places, see findPob().
     App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-        std::unique_ptr<SecretStore> secrets, std::unique_ptr<QNetworkAccessManager> network,
-        const PobPlaces &places, const Paths &paths, QObject *parent = nullptr);
+        std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
+        std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
+        QObject *parent = nullptr);
     ~App() override;
 
     // Looks for Path of Building again, as once you've installed it.
@@ -141,6 +143,7 @@ private:
     ItemHistory m_history;
     QString m_pobLocation; // where it was last looked for
     std::unique_ptr<SecretStore> m_secrets;
+    std::unique_ptr<Opener> m_opener;
     std::unique_ptr<QNetworkAccessManager> m_network;
     TradeClient m_tradeClient;
     TradeSession m_tradeSession;
