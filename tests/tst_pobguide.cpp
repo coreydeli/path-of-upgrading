@@ -279,7 +279,8 @@ private Q_SLOTS:
         QVERIFY(line(u"The Flatpak, installed for everyone: "_s).endsWith(u", found"));
         QVERIFY(line(u"The Flatpak's files for Path of Exile 2: "_s).endsWith(u", not there"));
         QVERIFY(line(u"Not from the Flatpak: "_s).endsWith(u", found"));
-        QCOMPARE(line(u"The flatpak command: "_s), u"The flatpak command: /usr/bin/flatpak, found"_s);
+        QCOMPARE(line(u"The flatpak command: "_s),
+                 u"The flatpak command: %1, found"_s.arg(QDir::toNativeSeparators(u"/usr/bin/flatpak"_s)));
         QCOMPARE(line(u"LuaJIT: "_s), u"LuaJIT: not found"_s);
     }
 
