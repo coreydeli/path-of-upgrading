@@ -101,6 +101,85 @@ ProfileStat spirit(double importance)
                  PerSlot({{u"Body Armour"_s, importance}, {u"Amulet"_s, importance}}), 60);
 }
 
+// The utility stats below are worth a little to every build. Their slots and
+// top rolls are the ones the game can roll (poe2db.tw, the mods of each item
+// class), so a stat is only counted where it can come from.
+
+// Flat on boots, body armour, belts and shields. Jewels roll a percentage.
+ProfileStat stunThreshold()
+{
+    return exact(u"Stun threshold"_s, u"# to Stun Threshold"_s,
+                 PerSlot({{u"Boots"_s, 1.5}, {u"Body Armour"_s, 1.5}, {u"Belt"_s, 1.5}, {u"Offhand"_s, 1.5}}),
+                 PerSlot({{u"Boots"_s, 352}}, 304));
+}
+
+ProfileStat percentStunThreshold()
+{
+    return exact(u"Stun threshold"_s, u"#% increased Stun Threshold"_s, PerSlot({{u"Jewel"_s, 1}}), 16);
+}
+
+// On armour with Energy Shield, shields and foci. Jewels roll how soon it
+// starts instead.
+ProfileStat energyShieldRecharge(double importance)
+{
+    return exact(u"ES recharge"_s, u"#% increased Energy Shield Recharge Rate"_s,
+                 PerSlot({{u"Helmet"_s, importance},
+                          {u"Body Armour"_s, importance},
+                          {u"Gloves"_s, importance},
+                          {u"Boots"_s, importance},
+                          {u"Offhand"_s, importance}}),
+                 PerSlot({{u"Body Armour"_s, 27}, {u"Offhand"_s, 27}}, 19));
+}
+
+ProfileStat energyShieldRechargeStart(double importance)
+{
+    return exact(u"ES recharge"_s, u"#% faster start of Energy Shield Recharge"_s,
+                 PerSlot({{u"Jewel"_s, importance}}), 15);
+}
+
+ProfileStat manaRegeneration(double importance)
+{
+    return exact(u"Mana regen"_s, u"#% increased Mana Regeneration Rate"_s,
+                 PerSlot({{u"Ring"_s, importance},
+                          {u"Amulet"_s, importance},
+                          {u"Belt"_s, importance},
+                          {u"Offhand"_s, importance},
+                          {u"Jewel"_s, importance}}),
+                 PerSlot({{u"Jewel"_s, 15}}, 69));
+}
+
+ProfileStat lifeRegeneration(double importance)
+{
+    return exact(u"Life regen"_s, u"# Life Regeneration per second"_s,
+                 PerSlot({{u"Body Armour"_s, importance},
+                          {u"Helmet"_s, importance},
+                          {u"Boots"_s, importance},
+                          {u"Belt"_s, importance},
+                          {u"Amulet"_s, importance},
+                          {u"Ring"_s, importance}}),
+                 PerSlot({{u"Body Armour"_s, 36},
+                          {u"Amulet"_s, 33},
+                          {u"Belt"_s, 29},
+                          {u"Helmet"_s, 23},
+                          {u"Boots"_s, 23},
+                          {u"Ring"_s, 18}}));
+}
+
+ProfileStat percentLifeRegeneration(double importance)
+{
+    return exact(u"Life regen"_s, u"#% increased Life Regeneration rate"_s,
+                 PerSlot({{u"Jewel"_s, importance}}), 10);
+}
+
+// Life flasks are a belt prefix, and jewels roll the same thing.
+ProfileStat flaskLifeRecovery(double importance)
+{
+    return stat(u"Flask life recovery"_s,
+                uR"(^#% increased Flask Life Recovery rate$|^#% increased Life Recovery from Flasks$)"_s,
+                PerSlot({{u"Belt"_s, importance}, {u"Jewel"_s, importance}}),
+                PerSlot({{u"Jewel"_s, 15}}, 40));
+}
+
 // "#% increased <kind> Damage" for the kinds, and the plain "Damage" some
 // jewels roll, plus the attack versions with their own wording.
 QString damagePattern(const QString &kinds)
@@ -122,6 +201,8 @@ QList<ProfileStat> common(double lifeImportance)
         stat(u"Attributes"_s, uR"(^# to (Strength|Dexterity|Intelligence)$)"_s, PerSlot({{u"Jewel"_s, 0}}, 2),
              35),
         rarity(),
+        stunThreshold(),
+        percentStunThreshold(),
     };
 }
 
@@ -165,6 +246,7 @@ BuildProfile lifeAndResistances()
     p.stats << exact(u"% Life"_s, u"#% increased maximum Life"_s,
                      PerSlot({{u"Jewel"_s, 6}, {u"Amulet"_s, 3}}), PerSlot({{u"Jewel"_s, 8}}, 15));
     p.stats << flatEnergyShield(0.5) << percentEnergyShield(0.5);
+    p.stats << lifeRegeneration(2) << percentLifeRegeneration(2) << flaskLifeRecovery(1.5);
     return p;
 }
 
@@ -202,6 +284,9 @@ BuildProfile energyShieldCaster()
             extraEnergyShield(),
             mana(),
             spirit(5),
+            energyShieldRecharge(2),
+            energyShieldRechargeStart(2),
+            manaRegeneration(1.5),
         },
     };
     p.stats += common(3);
@@ -285,6 +370,8 @@ BuildProfile energyShieldAttacker()
                          1)),
             mana(),
             spirit(4),
+            energyShieldRecharge(2),
+            energyShieldRechargeStart(2),
         },
     };
     p.stats += common(3);
@@ -350,20 +437,13 @@ BuildProfile minionSummoner()
             exact(u"Cast speed"_s, u"#% increased Cast Speed"_s,
                   PerSlot({{u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Offhand"_s, 3}, {u"Jewel"_s, 2}}),
                   PerSlot({{u"Jewel"_s, 6}}, 25)),
-            stat(
-                u"ES recharge"_s,
-                uR"(^#% increased Energy Shield Recharge Rate$|^#% faster start of Energy Shield Recharge$)"_s,
-                PerSlot({{u"Offhand"_s, 2},
-                         {u"Body Armour"_s, 2},
-                         {u"Helmet"_s, 2},
-                         {u"Belt"_s, 2},
-                         {u"Amulet"_s, 2},
-                         {u"Jewel"_s, 3}}),
-                PerSlot({{u"Jewel"_s, 25}}, 40)),
-            stat(u"Mana regen"_s, uR"(^#% increased Mana Regeneration Rate$)"_s,
-                 PerSlot({{u"Ring"_s, 1.5}, {u"Amulet"_s, 1.5}, {u"Offhand"_s, 1.5}}), 40),
-            stat(u"Life regen"_s, uR"(^# Life Regeneration per second$)"_s, PerSlot({{u"Jewel"_s, 0}}, 1),
-                 15),
+            energyShieldRecharge(2),
+            energyShieldRechargeStart(2),
+            manaRegeneration(1.5),
+            lifeRegeneration(1),
+            percentLifeRegeneration(1),
+            stunThreshold(),
+            percentStunThreshold(),
             rarity(),
         },
     };
