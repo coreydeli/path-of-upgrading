@@ -2067,6 +2067,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"overlayAction"_s));
         QObject *position = w.find(u"positionBox"_s);
         QCOMPARE(position->property("currentText").toString(), u"Next to the mouse"_s);
+        QCOMPARE(w.spinBox(u"autoHide"_s)->property("value").toInt(), 60);
         QVERIFY(activate(position, 2));
         QCOMPARE(w.settings().overlay.position, PopupPosition::Right);
 
