@@ -7,6 +7,7 @@
 
 #include <QSet>
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <numeric>
 
@@ -279,6 +280,11 @@ QList<KeyStat> topStats(const QString &slot, int count, const GearScoreOptions &
     std::stable_sort(out.begin(), out.end(),
                      [](const KeyStat &a, const KeyStat &b) { return a.importance > b.importance; });
     return out.mid(0, count);
+}
+
+double searchMinimum(double cap)
+{
+    return cap >= 5 ? std::floor(cap * 0.55) : std::max(1.0, std::floor(cap * 0.5));
 }
 
 QList<SearchWeight> searchWeights(const QString &slot, const GearScoreOptions &options)
