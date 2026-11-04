@@ -2,7 +2,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as QQC2
+import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
@@ -15,6 +15,8 @@ FormCard.FormCardPage {
     readonly property Resistances resists: app.resistances
 
     title: qsTr("Your Gear")
+    // how wide a card gets before it stops growing with the window
+    readonly property real fullWidth: Kirigami.Units.gridUnit * 70
 
     // One of them, typed in off the character sheet.
     component ResistField: NumberField {
@@ -23,57 +25,19 @@ FormCard.FormCardPage {
         maximum: 500
     }
 
-    // A slot and what's in it.
-    component SlotRow: FormRow {
-        id: slotRow
-
-        required property string slot
-        required property string name
-        required property string base
-        required property bool fromPob
-        required property string score
-        required property string grade
-        required property string improve
-
-        objectName: "slot:" + slot
-        text: slot
-        note: improve
-        description: {
-            if (name === "")
-                return qsTr("Nothing saved");
-            const parts = [name];
-            if (base !== "")
-                parts.push(base);
-            if (fromPob)
-                parts.push(qsTr("from Path of Building"));
-            return parts.join(", ");
-        }
-
-        QQC2.Label {
-            objectName: "gearScore"
-            visible: slotRow.score !== ""
-            text: qsTr("Gear score %1 %2").arg(slotRow.score).arg(slotRow.grade)
-        }
-
-        QQC2.ToolButton {
-            objectName: "takeOffButton"
-            visible: slotRow.name !== ""
-            text: qsTr("Take Off")
-            icon.name: "list-remove"
-            display: QQC2.AbstractButton.IconOnly
-            Accessible.name: qsTr("Take Off %1").arg(slotRow.slot)
-            QQC2.ToolTip.text: text
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-            onClicked: gearPage.gear.takeOff(slotRow.slot)
-        }
+    // A slot, which takes itself off when asked.
+    component GearSlot: SlotRow {
+        onTakeOffAsked: gearPage.gear.takeOff(slot)
     }
 
     FormCard.FormHeader {
+        maximumWidth: gearPage.fullWidth
         title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
     }
 
     FormCard.FormCard {
+        maximumWidth: gearPage.fullWidth
+
         FormCard.FormTextDelegate {
             id: overall
             objectName: "overallScore"
@@ -82,21 +46,22 @@ FormCard.FormCardPage {
             description: gearPage.gear.focus !== "" ? qsTr("Upgrade first: %1\n%2").arg(gearPage.gear.weakest).arg(gearPage.gear.focus) : qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
         }
 
-        FormCard.FormDelegateSeparator {
-            visible: overall.visible
-        }
-
         FormCard.FormTextDelegate {
+            id: nobody
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
             text: qsTr("You play nobody yet.")
             description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
         }
 
+        FormCard.FormDelegateSeparator {
+            visible: overall.visible || nobody.visible
+        }
+
         Repeater {
             model: gearPage.gear
 
-            delegate: SlotRow {
+            delegate: GearSlot {
                 required property bool extra
 
                 visible: !extra
@@ -118,15 +83,18 @@ FormCard.FormCardPage {
     }
 
     FormCard.FormSectionText {
+        Layout.maximumWidth: gearPage.fullWidth
         objectName: "gearHelp"
         text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
     }
 
     FormCard.FormHeader {
+        maximumWidth: gearPage.fullWidth
         title: qsTr("Your Resistances")
     }
 
     FormCard.FormCard {
+        maximumWidth: gearPage.fullWidth
         id: resistances
         objectName: "resistances"
 
@@ -220,11 +188,13 @@ FormCard.FormCardPage {
     }
 
     FormCard.FormHeader {
+        maximumWidth: gearPage.fullWidth
         visible: extras.visible
         title: qsTr("Weapon Swap, Flasks, Charms and Jewels")
     }
 
     FormCard.FormCard {
+        maximumWidth: gearPage.fullWidth
         id: extras
         objectName: "extras"
         visible: gearPage.gear.hasExtras
@@ -232,7 +202,7 @@ FormCard.FormCardPage {
         Repeater {
             model: gearPage.gear
 
-            delegate: SlotRow {
+            delegate: GearSlot {
                 required property bool extra
 
                 visible: extra

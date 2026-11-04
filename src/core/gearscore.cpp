@@ -203,17 +203,22 @@ QString missingNote(const GearScore &gear)
     return u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
 }
 
+QStringList wastedStats(const GearScore &gear)
+{
+    QStringList names;
+    for (const QString &key : gear.wasted)
+        names << statName(key);
+    return names;
+}
+
 QString wastedNote(const GearScore &gear)
 {
     if (gear.wasted.isEmpty())
         return {};
-    QStringList names;
-    for (const QString &key : gear.wasted)
-        names << statName(key);
-    return u"Not used by your build: "_s + names.join(u", "_s) + u'.';
+    return u"Not used by your build: "_s + wastedStats(gear).join(u", "_s) + u'.';
 }
 
-QString weakRollsNote(const GearScore &gear, int underPercent)
+QStringList weakRolls(const GearScore &gear, int underPercent)
 {
     // one stat can come from several mods
     QList<std::pair<QString, int>> byLabel;
@@ -227,12 +232,18 @@ QString weakRollsNote(const GearScore &gear, int underPercent)
             byLabel.append({c.label, c.quality});
     }
     byLabel.removeIf([underPercent](const auto &part) { return part.second >= underPercent; });
-    if (byLabel.isEmpty())
-        return {};
     std::ranges::stable_sort(byLabel, {}, &std::pair<QString, int>::second);
     QStringList parts;
     for (qsizetype i = 0; i < std::min<qsizetype>(3, byLabel.size()); ++i)
         parts << u"%1 %2%"_s.arg(byLabel.at(i).first).arg(byLabel.at(i).second);
+    return parts;
+}
+
+QString weakRollsNote(const GearScore &gear, int underPercent)
+{
+    const QStringList parts = weakRolls(gear, underPercent);
+    if (parts.isEmpty())
+        return {};
     return u"Weak rolls: "_s + parts.join(u", "_s) + u" of an excellent roll."_s;
 }
 

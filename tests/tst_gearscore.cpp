@@ -643,6 +643,22 @@ private Q_SLOTS:
         QCOMPARE(weakRollsNote(g), u"Weak rolls: Spirit 20%, Cold res 35%, Life 40% of an excellent roll."_s);
         QCOMPARE(weakRollsNote(g, 25), u"Weak rolls: Spirit 20% of an excellent roll."_s);
         QCOMPARE(weakRollsNote(g, 20), QString());
+
+        // the same stats, one to a string
+        QCOMPARE(weakRolls(g), (QStringList{u"Spirit 20%"_s, u"Cold res 35%"_s, u"Life 40%"_s}));
+        QCOMPARE(weakRolls(g, 25), QStringList{u"Spirit 20%"_s});
+        QCOMPARE(weakRolls(g, 20), QStringList());
+    }
+
+    void wastedStatsAreNamed()
+    {
+        GearScore g;
+        QCOMPARE(wastedStats(g), QStringList());
+        g.wasted = {u"#% increased Rarity of Items found"_s, u"[Base] Evasion Rating"_s};
+        // the item's own stats lose their tag
+        QCOMPARE(wastedStats(g), (QStringList{u"#% increased Rarity of Items found"_s, u"Evasion Rating"_s}));
+        QCOMPARE(wastedNote(g),
+                 u"Not used by your build: #% increased Rarity of Items found, Evasion Rating."_s);
     }
 
     void notesFromAnItem()

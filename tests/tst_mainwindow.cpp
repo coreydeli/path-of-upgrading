@@ -93,6 +93,22 @@ QObject *search(QObject *object, const std::function<bool(QObject *)> &wanted)
     return search(object, wanted, seen);
 }
 
+// Every one with the name, in the order they were laid out.
+QList<QObject *> findAll(QObject *object, const QString &name)
+{
+    QList<QObject *> found;
+    QSet<QObject *> seen;
+    search(
+        object,
+        [&](QObject *o) {
+            if (o->objectName() == name)
+                found << o;
+            return false;
+        },
+        seen);
+    return found;
+}
+
 // one of a dialog's buttons, by what it says
 QObject *button(QObject *dialog, const QString &text)
 {
@@ -797,9 +813,12 @@ private Q_SLOTS:
         QVERIFY(isVisible(helmet));
         QCOMPARE(text(helmet), u"Helmet"_s);
         QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm"_s);
-        QObject *description = helmet->findChild<QObject *>(u"descriptionText"_s);
-        QVERIFY(isVisible(description));
-        QCOMPARE(text(description), u"Grim Crown, Visored Helm"_s);
+        // the slot, then the item and its base, each on its own line
+        QCOMPARE(text(helmet->findChild<QObject *>(u"slotName"_s)), u"Helmet"_s);
+        QCOMPARE(text(helmet->findChild<QObject *>(u"itemName"_s)), u"Grim Crown"_s);
+        QObject *base = helmet->findChild<QObject *>(u"itemBase"_s);
+        QVERIFY(isVisible(base));
+        QCOMPARE(text(base), u"Visored Helm"_s);
         QObject *score = search(helmet, [](QObject *o) { return o->objectName() == u"gearScore"; });
         QVERIFY(isVisible(score));
         const QString number = w.app->gearList()->index(2).data(GearList::ScoreRole).toString();
@@ -812,17 +831,28 @@ private Q_SLOTS:
                  u"Storm Loop, Sapphire Ring, from Path of Building"_s);
 
         // what would raise its score, and what an empty slot should have
-        QObject *helmetNote = helmet->findChild<QObject *>(u"noteText"_s);
-        const QString improve = w.app->gearList()->index(2).data(GearList::ImproveRole).toString();
-        QVERIFY(improve.startsWith(u"Missing what your build wants: "_s));
-        QVERIFY(isVisible(helmetNote));
-        QCOMPARE(text(helmetNote), improve);
+        // each way it falls short on a line of its own, with the stats beside the label
+        const auto notes = w.app->gearList()->index(2).data(GearList::NotesRole).value<QList<GearNote>>();
+        QVERIFY(!notes.isEmpty());
+        QCOMPARE(notes.first().label, u"Missing"_s);
+        const QList<QObject *> labels = findAll(helmet, u"noteLabel"_s);
+        const QList<QObject *> texts = findAll(helmet, u"noteText"_s);
+        QCOMPARE(labels.size(), notes.size());
+        QCOMPARE(texts.size(), notes.size());
+        for (qsizetype i = 0; i < notes.size(); ++i) {
+            QVERIFY(isVisible(labels.at(i)));
+            QCOMPARE(text(labels.at(i)), notes.at(i).label);
+            QCOMPARE(text(texts.at(i)), notes.at(i).text);
+        }
 
         QObject *gloves = w.find(u"slot:Gloves"_s);
         QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
-        QObject *wants = gloves->findChild<QObject *>(u"noteText"_s);
-        QVERIFY(isVisible(wants));
-        QVERIFY(text(wants).startsWith(u"Your build wants most: "_s));
+        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Nothing saved"_s);
+        QVERIFY(!isVisible(gloves->findChild<QObject *>(u"itemBase"_s)));
+        QObject *wantsLabel = findAll(gloves, u"noteLabel"_s).value(0);
+        QVERIFY(isVisible(wantsLabel));
+        QCOMPARE(text(wantsLabel), u"Wants most"_s);
+        QVERIFY(!text(findAll(gloves, u"noteText"_s).value(0)).isEmpty());
         QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
 
