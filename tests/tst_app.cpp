@@ -503,8 +503,7 @@ private Q_SLOTS:
         QGuiApplication::setDesktopFileName(u"io.example.MadeUp"_s);
         Folders folders;
         Running r(folders);
-        QVERIFY(!r.app.overlayOptions()->startsWithDesktop());
-        r.app.overlayOptions()->setStartWithDesktop(true);
+        // as it is the first time
         QVERIFY(r.app.overlayOptions()->startsWithDesktop());
 
         QFile entry(folders.paths.autostart);
@@ -516,6 +515,23 @@ private Q_SLOTS:
         QVERIFY(text.contains(u"\nIcon=io.example.MadeUp\n"_s));
         QGuiApplication::setApplicationDisplayName(name);
         QGuiApplication::setDesktopFileName(file);
+    }
+
+    void startsWithTheDesktopUnlessTurnedOff()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Folders folders;
+        {
+            Running first(folders);
+            QVERIFY(first.app.overlayOptions()->startsWithDesktop());
+            QVERIFY(QFile::exists(folders.paths.autostart));
+            first.app.overlayOptions()->setStartWithDesktop(false);
+        }
+        Running again(folders);
+        QVERIFY(!again.app.overlayOptions()->startsWithDesktop());
+        QVERIFY(!QFile::exists(folders.paths.autostart));
     }
 
     void withoutAFileToStartFrom()
