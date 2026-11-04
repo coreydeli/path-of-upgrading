@@ -74,10 +74,22 @@ enum class Decorations {
 QString decorationsId(Decorations decorations);
 Decorations decorationsFromId(QStringView id);
 
+// What headingFont says for "the same as the text".
+constexpr QStringView sameAsText = u"text";
+
+// The smallest and largest text size to ask for, in points.
+constexpr double smallestTextSize = 6;
+constexpr double largestTextSize = 32;
+
 struct AppearanceSettings
 {
     ColorTheme colors = ColorTheme::App;
     Decorations decorations = Decorations::Full;
+    // Empty is the app's own heading font, "text" is the text font, and else
+    // a font family.
+    QString headingFont;
+    QString textFont;    // a font family, empty is the desktop's
+    double textSize = 0; // in points, 0 is the desktop's
 
     friend bool operator==(const AppearanceSettings &, const AppearanceSettings &) = default;
 };
