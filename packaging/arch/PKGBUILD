@@ -11,7 +11,7 @@ license=(MIT)
 depends=(
   gcc-libs glibc
   qt6-base qt6-declarative qt6-wayland
-  kirigami kirigami-addons kdeclarative ki18n kdbusaddons kglobalaccel
+  kirigami kirigami-addons kdeclarative ki18n kdbusaddons kcolorscheme kglobalaccel
   knotifications kstatusnotifieritem kwindowsystem
   layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib
   hicolor-icon-theme

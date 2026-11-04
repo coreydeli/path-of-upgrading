@@ -29,6 +29,9 @@ cp -r "$qml" "$app/qml"
 cp -r "$plugins"/. "$app/"
 mkdir "$app/data"
 cp /ucrt64/bin/data/icontheme.rcc "$app/data/"
+# where the app looks for its colors, as Qt's data folders include data next to the program
+mkdir "$app/data/color-schemes"
+cp "$repo/data/color-schemes/PathOfUpgrading.colors" "$app/data/color-schemes/"
 # where Qt looks for the plugins and the QML, as it would look in MSYS2's
 cat > "$app/qt.conf" << 'CONF'
 [Paths]
