@@ -213,8 +213,26 @@ jobs:
         with:
           msystem: UCRT64
           update: true
+      # The download is the slowest part of installing here, so the packages
+      # are kept for the week, and a new week takes the old ones and updates
+      # them. setup-msys2 empties its package folder after its own cache, so
+      # this one is the install's.
+      - name: Find the week
+        id: week
+        shell: bash
+        run: echo "week=$(date +%G-%V)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/msys64/var/cache/pacman/pkg
+          key: msys2-packages-${{ hashFiles('.github/scripts/install-msys2.sh') }}-${{ steps.week.outputs.week }}
+          restore-keys: |
+            msys2-packages-${{ hashFiles('.github/scripts/install-msys2.sh') }}-
+            msys2-packages-
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-msys2.sh
+      # so a new week's cache doesn't keep last week's versions as well
+      - name: Drop the old package versions
+        run: paccache -r -f -k1
       - uses: actions/cache@v6
         with:
           path: .ccache
