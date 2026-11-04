@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 #include "app/appearance.h"
 
+#include "app/fonts.h"
 #include "app/settingsstore.h"
 
 #include <KColorScheme>
 #include <KColorSchemeManager>
 #include <KSharedConfig>
 #include <QFileInfo>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QModelIndex>
+#include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -18,9 +21,17 @@ Appearance::Appearance(SettingsStore *settings, const QString &schemeFile, QObje
     : QObject(parent)
     , m_settings(settings)
     , m_schemeFile(schemeFile)
+    , m_desktopFont(QGuiApplication::font())
+    , m_font(m_desktopFont)
 {
     connect(settings, &SettingsStore::changed, this, &Appearance::follow);
     follow();
+}
+
+Appearance::~Appearance()
+{
+    if (QGuiApplication::font() != m_desktopFont)
+        QGuiApplication::setFont(m_desktopFont);
 }
 
 const AppearanceSettings &Appearance::appearance() const
@@ -57,6 +68,29 @@ void Appearance::setDecorations(const QString &decorations)
     change([&](AppearanceSettings &appearance) { appearance.decorations = decorationsFromId(decorations); });
 }
 
+void Appearance::setHeadingFont(const QString &family)
+{
+    change([&](AppearanceSettings &appearance) { appearance.headingFont = family; });
+}
+
+void Appearance::setTextFont(const QString &family)
+{
+    change([&](AppearanceSettings &appearance) { appearance.textFont = family; });
+}
+
+void Appearance::setTextSize(double points)
+{
+    // 0 is the desktop's, and the rest stays where it's readable
+    if (points > 0)
+        points = std::clamp(points, smallestTextSize, largestTextSize);
+    change([&](AppearanceSettings &appearance) { appearance.textSize = std::max(points, 0.0); });
+}
+
+QStringList Appearance::families() const
+{
+    return scalableFamilies();
+}
+
 void Appearance::follow()
 {
     const bool wasApp = m_appColors;
@@ -76,8 +110,51 @@ void Appearance::follow()
             m_appColors = false;
         }
     }
-    if (m_appColors != wasApp || m_error != hadError)
+    followFonts();
+    // what the colors and fonts came to, and the choices that go with them
+    const bool different = appearance() != m_seen;
+    m_seen = appearance();
+    if (m_appColors != wasApp || m_error != hadError || different)
         Q_EMIT changed();
+}
+
+void Appearance::followFonts()
+{
+    const AppearanceSettings &chosen = appearance();
+    QStringList missing;
+
+    QFont font = m_desktopFont;
+    if (!chosen.textFont.isEmpty()) {
+        if (QFontDatabase::hasFamily(chosen.textFont))
+            font.setFamily(chosen.textFont);
+        else
+            missing << chosen.textFont;
+    }
+    if (chosen.textSize > 0)
+        font.setPointSizeF(chosen.textSize);
+    if (font != m_font) {
+        m_font = font;
+        QGuiApplication::setFont(font);
+    }
+
+    if (chosen.headingFont.isEmpty()) {
+        m_headingFamily = headingFontFamily();
+    } else if (chosen.headingFont == sameAsText) {
+        m_headingFamily = font.family();
+    } else if (QFontDatabase::hasFamily(chosen.headingFont)) {
+        m_headingFamily = chosen.headingFont;
+    } else {
+        m_headingFamily = headingFontFamily();
+        missing << chosen.headingFont;
+    }
+
+    m_fontsError.clear();
+    if (!missing.isEmpty()) {
+        missing.removeDuplicates();
+        m_fontsError =
+            missing.join(u", "_s) + (missing.size() == 1 ? u" isn't installed, so the default is used."_s
+                                                         : u" aren't installed, so the defaults are used."_s);
+    }
 }
 
 bool Appearance::activateScheme()

@@ -12,6 +12,13 @@ QString headingFontFamily()
     return u"Cinzel"_s;
 }
 
+QStringList scalableFamilies()
+{
+    QStringList families = QFontDatabase::families();
+    families.removeIf([](const QString &family) { return !QFontDatabase::isSmoothlyScalable(family); });
+    return families;
+}
+
 bool addBundledFonts()
 {
     // a variable font, so the one file has every weight
