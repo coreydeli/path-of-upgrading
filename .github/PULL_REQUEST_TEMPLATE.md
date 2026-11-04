@@ -21,7 +21,7 @@
 ## Checklist
 
 - [ ] The pull request is into `beta`
-- [ ] It has the `enhancement` label for a feature, `bug` for a fix, or `documentation` for docs, so the release notes group it
+- [ ] The title starts with its kind (`Feature:`, `Bug:`, `Docs:`, `CI:` or `Maintenance:`), and the label matches (`enhancement`, `bug`, `documentation`, `ci` or `maintenance`), so the release notes group it
 - [ ] It builds with no warnings
 - [ ] `clang-format` has run on the files I changed
 - [ ] `ctest` passes on the private bus, as the README says
