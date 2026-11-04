@@ -5,6 +5,10 @@ if(NOT WIN32)
     install(FILES icons/${APP_ID}.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
     # the notifications, which Plasma finds by the application's name
     install(FILES path-of-upgrading.notifyrc DESTINATION ${CMAKE_INSTALL_DATADIR}/knotifications6)
+    # the app's own color scheme, not in the color-schemes folder System
+    # Settings lists
+    install(FILES color-schemes/PathOfUpgrading.colors
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/path-of-upgrading/color-schemes)
 endif()
 
 # The desktop file and the metainfo are checked when their checkers are
