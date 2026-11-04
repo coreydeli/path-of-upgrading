@@ -6,6 +6,7 @@
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
+#include "fakeopener.h"
 #include "fakepob.h"
 #include "fakesecretstore.h"
 #include "itemtexts.h"
@@ -147,6 +148,7 @@ struct Window
     QQmlEngine qml;
     FakeGlobalShortcuts *shortcuts = new FakeGlobalShortcuts;
     FakeSecretStore *keyring = new FakeSecretStore;
+    FakeOpener *opener = new FakeOpener;
     FakeNetwork *network = online();
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
@@ -156,7 +158,8 @@ struct Window
         shortcuts->available = hotkeys;
         app = std::make_unique<App>(
             &qml, std::make_unique<FakeGameInput>(), std::unique_ptr<GlobalShortcuts>(shortcuts),
-            std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
+            std::unique_ptr<SecretStore>(keyring), std::unique_ptr<Opener>(opener),
+            std::unique_ptr<QNetworkAccessManager>(network),
             PobPlaces{.home = dir.path(), .dataHome = dir.path(), .luajit = QStringLiteral(FAKEPOB)},
             App::Paths{.settings = dir.filePath(u"settings.conf"_s),
                        .data = dir.filePath(u"data"_s),
@@ -627,9 +630,33 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.show(u"pobAction"_s));
-        QObject *found = w.find(u"foundText"_s);
-        QCOMPARE(text(found), u"Path of Building wasn't found."_s);
-        QVERIFY(found->property("description").toString().startsWith(u"Path of Building isn't installed."_s));
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QVERIFY(w.find(u"stepsText"_s)->property("description").toString().startsWith(u"1. "_s));
+        QVERIFY(!isVisible(w.find(u"installedAtText"_s)));
+        // nothing is opened or copied until you click for it
+        QVERIFY(w.opener->opened.isEmpty());
+        QVERIFY(w.opener->copied.isEmpty());
+    }
+
+    // for someone who has never heard of a Flatpak
+    void pobGettingIt()
+    {
+        Window w;
+        QVERIFY(w.show(u"pobAction"_s));
+        QCOMPARE(w.find(u"copyCommandButton"_s)->property("description").toString(),
+                 u"flatpak install flathub community.pathofbuilding.PathOfBuilding"_s);
+        QVERIFY(!isVisible(w.find(u"installerButton"_s)));
+
+        QVERIFY(click(w.find(u"discoverButton"_s)));
+        QCOMPARE(w.opener->opened,
+                 QList<QUrl>{QUrl(u"appstream://community.pathofbuilding.PathOfBuilding"_s)});
+        QVERIFY(click(w.find(u"flathubButton"_s)));
+        QCOMPARE(w.opener->opened.last(),
+                 QUrl(u"https://flathub.org/apps/community.pathofbuilding.PathOfBuilding"_s));
+        QVERIFY(w.opener->copied.isEmpty());
+        QVERIFY(click(w.find(u"copyCommandButton"_s)));
+        QCOMPARE(w.opener->copied,
+                 QStringList{u"flatpak install flathub community.pathofbuilding.PathOfBuilding"_s});
     }
 
     void pobFolder()
@@ -642,9 +669,44 @@ private Q_SLOTS:
         QVERIFY(field->setProperty("text", folder));
         QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
         QCOMPARE(w.settings().pob.location, folder);
-        QCOMPARE(text(w.find(u"foundText"_s)),
-                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folder)));
-        QCOMPARE(w.find(u"foundText"_s)->property("description").toString(), QString());
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(w.find(u"installedAtText"_s)->property("description").toString(),
+                 QDir::toNativeSeparators(folder));
+        QVERIFY(isVisible(w.find(u"installedAtText"_s)));
+        QVERIFY(isVisible(w.find(u"buildsAtText"_s)));
+        QVERIFY(!isVisible(w.find(u"stepsText"_s)));
+        QVERIFY(!isVisible(w.find(u"discoverButton"_s)));
+    }
+
+    void pobFolderNoGood()
+    {
+        Window w;
+        QVERIFY(w.show(u"pobAction"_s));
+        QVERIFY(!isVisible(w.find(u"usualPlacesButton"_s)));
+        // there's no Path of Building in it
+        w.app->pobOptions()->setLocation(w.pob.folder.path());
+        QCOMPARE(text(w.find(u"foundText"_s)), u"There's no Path of Building in the folder you chose."_s);
+        QVERIFY(text(w.find(u"folderNote"_s)).contains(u"HeadlessWrapper.lua"_s));
+        QVERIFY(isVisible(w.find(u"usualPlacesButton"_s)));
+        QVERIFY(click(w.find(u"usualPlacesButton"_s)));
+        QCOMPARE(w.settings().pob.location, QString());
+        QCOMPARE(text(w.find(u"folderField"_s)), QString());
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QVERIFY(!isVisible(w.find(u"usualPlacesButton"_s)));
+    }
+
+    void pobWhereItLooks()
+    {
+        Window w;
+        QVERIFY(w.show(u"pobAction"_s));
+        QVERIFY(!isVisible(w.find(u"placesText"_s)));
+        QCOMPARE(text(w.find(u"placesButton"_s)), u"Show Where It Looks"_s);
+        QVERIFY(click(w.find(u"placesButton"_s)));
+        QVERIFY(isVisible(w.find(u"placesText"_s)));
+        QCOMPARE(text(w.find(u"placesButton"_s)), u"Hide Where It Looks"_s);
+        QVERIFY(text(w.find(u"placesText"_s)).contains(u"Not from the Flatpak: "_s));
+        QVERIFY(click(w.find(u"placesButton"_s)));
+        QVERIFY(!isVisible(w.find(u"placesText"_s)));
     }
 
     void lookAgain()
@@ -653,13 +715,12 @@ private Q_SLOTS:
         QVERIFY(w.show(u"pobAction"_s));
         const QString folder = w.pob.folder.path();
         w.app->pobOptions()->setLocation(folder);
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)), u"There's no Path of Building in the folder you chose."_s);
 
         // once it's there
         QVERIFY(makePob(folder));
         QVERIFY(QMetaObject::invokeMethod(w.find(u"lookAgainButton"_s), "clicked"));
-        QCOMPARE(text(w.find(u"foundText"_s)),
-                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folder)));
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
     }
 
     void pobSettings()
