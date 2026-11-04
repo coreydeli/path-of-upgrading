@@ -238,8 +238,9 @@ private Q_SLOTS:
     void startingIsNotASetting()
     {
         Options o;
+        const Settings before = o.settings.settings();
         o.options.setStartWithDesktop(true);
-        QCOMPARE(o.settings.settings(), Settings());
+        QCOMPARE(o.settings.settings(), before);
     }
 
     void startFailed()

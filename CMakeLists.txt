@@ -54,6 +54,9 @@ qt_standard_project_setup(REQUIRES 6.8)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml)
 
 option(BUILD_TESTING "Build the unit tests" ON)
+# The release builds of a beta turn this on. Trade searches start on in a beta,
+# and off in a release until they've been tested more, see isBetaBuild().
+option(POU_BETA "Build a beta, which has trade searches on until you turn them off" OFF)
 
 add_subdirectory(src)
 add_subdirectory(data)

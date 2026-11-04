@@ -42,18 +42,28 @@ void read(const QSettings &store, const QString &key, int &value, int low, int h
 
 } // namespace
 
-QString tradeUnavailable(const TradeSettings &settings)
+bool isBetaBuild()
 {
-    if (!settings.enabled)
-        return u"Trade searches are turned off in the settings."_s;
+    return POU_BETA_BUILD != 0;
+}
+
+QString tradeUnavailable(const TradeSettings &settings, bool beta)
+{
+    if (!settings.enabled) {
+        const QString how = u"Turn them on with Search the trade site, on the Trade page."_s;
+        if (beta)
+            return u"Trade searches are turned off. "_s + how;
+        return u"Trade searches are off in this release while they're still being tested. "_s + how;
+    }
     if (!settings.league.canTrade())
         return u"There's no trading in solo self-found, so trade searches are off."_s;
     return {};
 }
 
-Settings loadSettings(const QSettings &store)
+Settings loadSettings(const QSettings &store, bool beta)
 {
     Settings s;
+    s.trade.enabled = beta;
     read(store, u"character"_s, s.character);
 
     TradeSettings &trade = s.trade;
@@ -93,12 +103,14 @@ Settings loadSettings(const QSettings &store)
     return s;
 }
 
-void saveSettings(QSettings &store, const Settings &s)
+void saveSettings(QSettings &store, const Settings &s, bool beta)
 {
     store.setValue(u"character"_s, s.character);
 
     const TradeSettings &trade = s.trade;
-    store.setValue(u"trade/enabled"_s, trade.enabled);
+    // once it's been chosen, it's kept
+    if (trade.enabled != beta || store.contains(u"trade/enabled"_s))
+        store.setValue(u"trade/enabled"_s, trade.enabled);
     store.setValue(u"trade/league"_s, trade.league.name);
     store.setValue(u"trade/hardcore"_s, trade.league.hardcore);
     store.setValue(u"trade/ssf"_s, trade.league.soloSelfFound);
