@@ -109,6 +109,14 @@ Kirigami.ApplicationWindow {
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(overlayPage)
+            },
+            Kirigami.Action {
+                objectName: "appearanceAction"
+                text: qsTr("Appearance")
+                icon.name: "preferences-desktop-theme"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(appearancePage)
             }
         ]
     }
@@ -171,6 +179,11 @@ Kirigami.ApplicationWindow {
         OverlayPage {
             id: overlayPage
             options: root.app.overlayOptions
+        }
+
+        AppearancePage {
+            id: appearancePage
+            appearance: root.app.appearance
         }
     }
 }

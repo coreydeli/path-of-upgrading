@@ -2,6 +2,7 @@
 qt_add_library(pou_app STATIC
     activecharacter.cpp activecharacter.h
     app.cpp app.h
+    appearance.cpp appearance.h
     buildimporter.cpp buildimporter.h
     characterlist.cpp characterlist.h
     checkeditems.cpp checkeditems.h
@@ -36,6 +37,7 @@ qt_add_library(pou_app STATIC
 qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
+        qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml
         qml/CharactersPage.qml
@@ -70,4 +72,5 @@ target_link_libraries(pou_app PUBLIC
     pou_services
     Qt6::Qml
     Qt6::Quick
+    KF6::ColorScheme
 )

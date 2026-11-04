@@ -114,6 +114,9 @@ endif()
 pou_add_app_test(tst_activecharacter itemtexts.h)
 pou_use_fakepob(tst_activecharacter)
 pou_add_app_test(tst_characterlist itemtexts.h)
+pou_add_app_test(tst_appearance)
+target_compile_definitions(tst_appearance PRIVATE
+    COLORS="${PROJECT_SOURCE_DIR}/data/color-schemes/PathOfUpgrading.colors")
 pou_add_app_test(tst_commandline)
 pou_add_app_test(tst_desktop fakeglobalshortcuts.h fakenotifier.h faketray.h)
 pou_add_app_test(tst_gearlist)
@@ -153,4 +156,6 @@ pou_use_fakepob(tst_app)
 pou_add_qml_test(tst_mainwindow fakegameinput.h fakenetwork.h fakeglobalshortcuts.h itemtexts.h
                  tradefixtures.h)
 pou_use_fakepob(tst_mainwindow)
+target_compile_definitions(tst_mainwindow PRIVATE
+    COLORS="${PROJECT_SOURCE_DIR}/data/color-schemes/PathOfUpgrading.colors")
 target_link_libraries(tst_mainwindow PRIVATE KF6::I18nQml)

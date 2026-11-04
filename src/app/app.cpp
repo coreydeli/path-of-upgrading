@@ -19,12 +19,26 @@ App::Paths App::defaultPaths()
 {
     // ~/.config/path-of-upgradingrc, ~/.local/share/path-of-upgrading,
     // ~/.cache/path-of-upgrading and the entry in ~/.config/autostart
+    //
+    // The color scheme is in the data folders, and a build folder run can
+    // name the one in the source.
+    QString colors = qEnvironmentVariable("PATH_OF_UPGRADING_COLORS");
+    if (colors.isEmpty()) {
+#ifdef Q_OS_WIN
+        // where KDE's programs on Windows have theirs, in the data folder next to the program
+        const QString relative = u"color-schemes/PathOfUpgrading.colors"_s;
+#else
+        const QString relative = u"path-of-upgrading/color-schemes/PathOfUpgrading.colors"_s;
+#endif
+        colors = QStandardPaths::locate(QStandardPaths::GenericDataLocation, relative);
+    }
     return {
         .settings = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + u'/' +
                     QCoreApplication::applicationName() + u"rc"_s,
         .data = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation),
         .cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation),
         .autostart = Autostart::fileFor(QGuiApplication::desktopFileName()),
+        .colors = colors,
     };
 }
 
@@ -66,6 +80,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
                                     .icon = QGuiApplication::desktopFileName()})
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
     , m_pobOptions(&m_settings, &m_pob)
+    , m_appearance(&m_settings, paths.colors)
 {
     m_characterList.load();
     // so you can wear gear and set weights before adding a character

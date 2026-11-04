@@ -30,6 +30,7 @@
 #include <QQuickWindow>
 #include <QSet>
 #include <QSignalSpy>
+#include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QtQuickTest/quicktest.h>
@@ -151,7 +152,9 @@ struct Window
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
 
-    explicit Window(bool hotkeys = true, bool startHidden = false)
+    // The app's colors are only on when there's a scheme file for them, as
+    // they go on the whole program.
+    explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {})
     {
         shortcuts->available = hotkeys;
         app = std::make_unique<App>(
@@ -161,7 +164,8 @@ struct Window
             App::Paths{.settings = dir.filePath(u"settings.conf"_s),
                        .data = dir.filePath(u"data"_s),
                        .cache = dir.filePath(u"cache"_s),
-                       .autostart = dir.filePath(u"autostart/made-up.desktop"_s)});
+                       .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
+                       .colors = colors});
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
         QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
@@ -179,6 +183,8 @@ struct Window
     // which can't use them.
     ~Window()
     {
+        // for the next test's colors
+        app->appearance()->setColors(u"desktop"_s);
         window.reset();
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     }
@@ -354,6 +360,12 @@ public:
     }
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        // so the desktop's color settings are neither read nor written
+        QStandardPaths::setTestModeEnabled(true);
+    }
+
     void init() { QTest::failOnWarning(); }
 
     void opens()
@@ -2113,6 +2125,44 @@ private Q_SLOTS:
         w.window->requestActivate();
         QTRY_VERIFY(w.window->isActive());
         QCOMPARE(start->property("checked").toBool(), false);
+    }
+
+    void appearanceDefaults()
+    {
+        Window w;
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"colorsBox"_s)->property("currentText").toString(), u"Path of Upgrading"_s);
+        QCOMPARE(w.find(u"decorationsBox"_s)->property("currentText").toString(), u"Full"_s);
+        // there's no scheme in this window, and the page says so
+        QCOMPARE(w.find(u"colorsError"_s)->property("visible").toBool(), true);
+        QCOMPARE(text(w.find(u"colorsError"_s)), w.app->appearance()->colorsError());
+    }
+
+    void appearanceSettings()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"colorsError"_s)->property("visible").toBool(), false);
+        QVERIFY(activate(w.find(u"colorsBox"_s), 1));
+        QCOMPARE(w.settings().appearance.colors, ColorTheme::Desktop);
+        QVERIFY(activate(w.find(u"decorationsBox"_s), 1));
+        QCOMPARE(w.settings().appearance.decorations, Decorations::Plain);
+        QVERIFY(activate(w.find(u"colorsBox"_s), 0));
+        QCOMPARE(w.settings().appearance.colors, ColorTheme::App);
+    }
+
+    void showsAppearanceSettings()
+    {
+        Window w;
+        Settings settings = w.settings();
+        settings.appearance.colors = ColorTheme::Desktop;
+        settings.appearance.decorations = Decorations::Plain;
+        QVERIFY(w.app->settings().set(settings));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"colorsBox"_s)->property("currentText").toString(), u"Your desktop's"_s);
+        QCOMPARE(w.find(u"decorationsBox"_s)->property("currentText").toString(), u"Plain"_s);
+        // and nothing to say about colors it wasn't asked for
+        QCOMPARE(w.find(u"colorsError"_s)->property("visible").toBool(), false);
     }
 
     void showsPopupSettings()
