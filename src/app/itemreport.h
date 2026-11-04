@@ -111,7 +111,7 @@ public:
     // What the gear score is made of: the points each stat the build wants
     // adds to yours and to the item's, out of 100, biggest change first.
     QList<ReportFigure> gearParts;
-    // What kept it from counting more: stats the build has no use for, what
+    // What kept it from counting more: stats the gear score doesn't rate, what
     // it doesn't have, and resistances you're near the cap on.
     QStringList gearNotes;
     // Resistance or damage it loses, which matters more than its risks.

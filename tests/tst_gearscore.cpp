@@ -170,8 +170,8 @@ private Q_SLOTS:
         QCOMPARE(great->score, 89);
         QCOMPARE(great->grade, u"S"_s);
         QCOMPARE(great->ideal, 38.0);
-        // local Energy Shield % is already in the base value, so it isn't wasted
-        QVERIFY(great->wasted.isEmpty());
+        // local Energy Shield % is already in the base value, so it isn't listed
+        QVERIFY(great->notScored.isEmpty());
         QCOMPARE(great->contributions.first().label, u"Minion skill levels"_s);
         QCOMPARE(great->contributions.first().quality, 115);
 
@@ -183,7 +183,7 @@ private Q_SLOTS:
         QVERIFY(junk->score < 30);
         QCOMPARE(junk->grade, u"D"_s);
         QCOMPARE(junk->missing, QStringList{u"Minion skill levels"_s});
-        QCOMPARE(junk->wasted.size(), 2);
+        QCOMPARE(junk->notScored.size(), 2);
     }
 
     void ignoredStatsLeaveTheIdeal()
@@ -412,7 +412,7 @@ private Q_SLOTS:
     {
         for (const QString &text : {attackerGloves, attackerAmulet, attackerStaff}) {
             const auto g = gearScore(item(text), {.build = energyShieldAttackerProfile.toString()});
-            QVERIFY2(g->wasted.isEmpty(), qPrintable(g->wasted.join(u", "_s)));
+            QVERIFY2(g->notScored.isEmpty(), qPrintable(g->notScored.join(u", "_s)));
         }
     }
 
@@ -492,7 +492,7 @@ private Q_SLOTS:
                              "+45 to maximum Energy Shield"_s;
         const auto life = gearScore(item(ring), {.build = defaultBuildProfile.toString()});
         const auto caster = gearScore(item(ring), {.build = energyShieldProfile.toString()});
-        QVERIFY(life->wasted.isEmpty());
+        QVERIFY(life->notScored.isEmpty());
         QVERIFY(life->score > 0);
         QVERIFY(life->contributions.first().points < caster->contributions.first().points);
     }
@@ -531,21 +531,21 @@ private Q_SLOTS:
         QCOMPARE(g->ideal, 19.0);
     }
 
-    void modsThatNetToNothingAreNotWasted()
+    void modsThatNetToNothingAreNotListed()
     {
         const auto g = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
                                       "20% increased Stun Threshold\n20% reduced Stun Threshold\n"
                                       "15% reduced Flask Charges Gained"_s));
-        QVERIFY(g->wasted.isEmpty());
+        QVERIFY(g->notScored.isEmpty());
     }
 
-    void unwantedImplicitsAreWastedButRunesAndBasesAreNot()
+    void unwantedImplicitsAreNotScoredButRunesAndBasesAreNot()
     {
         const auto g = gearScore(item(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n"
                                       "20% increased Stun Threshold (implicit)\n--------\n"
                                       "15% increased Flask Charges Gained\n--------\n"
                                       "12% increased Light Radius (rune)"_s));
-        QCOMPARE(g->wasted,
+        QCOMPARE(g->notScored,
                  (QStringList{u"#% increased Stun Threshold"_s, u"#% increased Flask Charges Gained"_s}));
     }
 
@@ -617,13 +617,13 @@ private Q_SLOTS:
     {
         GearScore g;
         QCOMPARE(missingNote(g), QString());
-        QCOMPARE(wastedNote(g), QString());
+        QCOMPARE(notScoredNote(g), QString());
         QCOMPARE(weakRollsNote(g), QString());
 
         g.missing = {u"Life"_s, u"Fire res"_s};
-        g.wasted = {u"#% increased Rarity of Items found"_s};
+        g.notScored = {u"#% increased Rarity of Items found"_s};
         QCOMPARE(missingNote(g), u"Missing what your build wants: Life, Fire res."_s);
-        QCOMPARE(wastedNote(g), u"Not used by your build: #% increased Rarity of Items found."_s);
+        QCOMPARE(notScoredNote(g), u"Not in the gear score: #% increased Rarity of Items found."_s);
     }
 
     void weakRollsAreTheWeakestThree()
@@ -650,15 +650,16 @@ private Q_SLOTS:
         QCOMPARE(weakRolls(g, 20), QStringList());
     }
 
-    void wastedStatsAreNamed()
+    void notScoredStatsAreNamed()
     {
         GearScore g;
-        QCOMPARE(wastedStats(g), QStringList());
-        g.wasted = {u"#% increased Rarity of Items found"_s, u"[Base] Evasion Rating"_s};
+        QCOMPARE(notScoredStats(g), QStringList());
+        g.notScored = {u"#% increased Rarity of Items found"_s, u"[Base] Evasion Rating"_s};
         // the item's own stats lose their tag
-        QCOMPARE(wastedStats(g), (QStringList{u"#% increased Rarity of Items found"_s, u"Evasion Rating"_s}));
-        QCOMPARE(wastedNote(g),
-                 u"Not used by your build: #% increased Rarity of Items found, Evasion Rating."_s);
+        QCOMPARE(notScoredStats(g),
+                 (QStringList{u"#% increased Rarity of Items found"_s, u"Evasion Rating"_s}));
+        QCOMPARE(notScoredNote(g),
+                 u"Not in the gear score: #% increased Rarity of Items found, Evasion Rating."_s);
     }
 
     void notesFromAnItem()
@@ -667,7 +668,7 @@ private Q_SLOTS:
         const auto bare = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB"_s));
         QCOMPARE(missingNote(*bare),
                  u"Missing what your build wants: Armour / Evasion, Energy Shield, Life."_s);
-        QCOMPARE(wastedNote(*bare), QString());
+        QCOMPARE(notScoredNote(*bare), QString());
         QCOMPARE(weakRollsNote(*bare), QString());
 
         // and a roll of a tenth of an excellent one
@@ -675,7 +676,7 @@ private Q_SLOTS:
                                          "+10 to maximum Life\n10% increased Rarity of Items found"_s));
         QVERIFY(weak->contributions.first().quality < 50);
         QVERIFY(weakRollsNote(*weak).startsWith(u"Weak rolls: Life "_s));
-        QCOMPARE(wastedNote(*weak), u"Not used by your build: #% increased Rarity of Items found."_s);
+        QCOMPARE(notScoredNote(*weak), u"Not in the gear score: #% increased Rarity of Items found."_s);
     }
 
     void topStatsIncludeThoseWorthFour()

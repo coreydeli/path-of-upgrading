@@ -408,22 +408,22 @@ private Q_SLOTS:
         Evaluation &e = check.evaluation;
         const QString capped = u"Fire res: you're already capped, so it doesn't count."_s;
         e.gear = GearScore{.score = 50,
-                           .wasted = {u"#% increased Light Radius"_s, u"[Base] Evasion Rating"_s},
+                           .notScored = {u"#% increased Light Radius"_s, u"[Base] Evasion Rating"_s},
                            .missing = {u"Life"_s, u"Movement speed"_s},
                            .ideal = 40,
                            .resistNote = capped};
         QCOMPARE(reportOf(check).gearNotes,
-                 (QStringList{capped, u"Not used by your build: #% increased Light Radius, Evasion Rating."_s,
+                 (QStringList{capped, u"Not in the gear score: #% increased Light Radius, Evasion Rating."_s,
                               u"Missing what your build wants: Life, Movement speed."_s}));
 
         e.gear->resistNote.clear();
-        e.gear->wasted.clear();
+        e.gear->notScored.clear();
         QCOMPARE(reportOf(check).gearNotes,
                  QStringList{u"Missing what your build wants: Life, Movement speed."_s});
         e.gear->missing.clear();
-        e.gear->wasted = {u"# to Accuracy Rating"_s};
-        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Not used by your build: # to Accuracy Rating."_s});
-        e.gear->wasted.clear();
+        e.gear->notScored = {u"# to Accuracy Rating"_s};
+        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Not in the gear score: # to Accuracy Rating."_s});
+        e.gear->notScored.clear();
         QCOMPARE(reportOf(check).gearNotes, QStringList());
     }
 
@@ -434,7 +434,7 @@ private Q_SLOTS:
         e.gear =
             GearScore{.score = 70,
                       .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}},
-                      .wasted = {u"#% increased Light Radius"_s},
+                      .notScored = {u"#% increased Light Radius"_s},
                       .ideal = 50};
         QVERIFY(!reportOf(check).gearParts.isEmpty());
         QVERIFY(!reportOf(check).gearNotes.isEmpty());
