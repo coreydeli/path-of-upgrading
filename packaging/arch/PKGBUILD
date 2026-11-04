@@ -7,7 +7,7 @@ pkgrel=1
 pkgdesc='Path of Exile 2 item overlay that checks items against your build'
 arch=(x86_64)
 url='https://github.com/coreydeli/path-of-upgrading'
-license=(MIT)
+license=(MIT OFL-1.1)
 depends=(
   gcc-libs glibc
   qt6-base qt6-declarative qt6-wayland

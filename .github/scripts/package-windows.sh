@@ -58,6 +58,7 @@ if ldd "$app/path-of-upgrading.exe" | grep -i 'not found'; then
 fi
 
 cp "$repo/LICENSE" "$app/LICENSE.txt"
+cp "$repo/data/fonts/OFL.txt" "$app/OFL-Cinzel.txt"
 zip -qr "path-of-upgrading-$label-windows.zip" "${app##*/}"
 makensis -V2 -DVERSION="$version" -DLABEL="$label" -DAPP="$(cygpath -w "$app")" \
     -DOUTFILE="$(cygpath -w "$out/path-of-upgrading-$label-setup.exe")" \

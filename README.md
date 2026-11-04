@@ -322,6 +322,8 @@ IDs are kept in the Windows Credential Manager.
 - [rusty-path-of-building](https://github.com/meehl/rusty-path-of-building)
   (MIT) is what makes Path of Building run on Linux, and it is the Flatpak on
   Flathub. Path of Upgrading finds Path of Building where it puts it.
+- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by The Cinzel Project Authors
+  (SIL Open Font License 1.1, in `data/fonts`), which the app carries.
 - Currency rates come from [poe.ninja](https://poe.ninja), and the listings
   from the official [Path of Exile trade site](https://www.pathofexile.com/trade2).
 - Path of Exile is a trademark of Grinding Gear Games. This project isn't
@@ -329,4 +331,5 @@ IDs are kept in the Windows Credential Manager.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). The Cinzel font is under the SIL Open Font License 1.1,
+see [OFL.txt](data/fonts/OFL.txt).

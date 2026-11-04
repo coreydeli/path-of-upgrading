@@ -36,6 +36,7 @@ ResultVerdict resultVerdict(const ItemCheck &check)
         out.score = report.score + u' ' + report.scoreLabel;
     if (!report.gearScore.isEmpty()) {
         out.gearScore = u"Gear score %1 %2"_s.arg(report.gearScore, report.gearGrade);
+        out.gearGrade = report.gearGrade;
         if (!report.yourGearScore.isEmpty())
             out.gearScore += u", yours "_s + report.yourGearScore;
     }

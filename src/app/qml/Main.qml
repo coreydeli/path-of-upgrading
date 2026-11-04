@@ -127,6 +127,13 @@ Kirigami.ApplicationWindow {
         id: pages
     }
 
+    // the popup and the results window are in this engine too
+    Binding {
+        target: Style
+        property: "appColors"
+        value: root.app.appearance.appColors
+    }
+
     // The pages wait here while they aren't shown, so they keep where you
     // were on them.
     Item {

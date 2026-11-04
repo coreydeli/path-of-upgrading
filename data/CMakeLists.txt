@@ -9,6 +9,9 @@ if(NOT WIN32)
     # Settings lists
     install(FILES color-schemes/PathOfUpgrading.colors
         DESTINATION ${CMAKE_INSTALL_DATADIR}/path-of-upgrading/color-schemes)
+    # the font in the program has its license with it
+    install(FILES fonts/OFL.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${CMAKE_PROJECT_NAME}
+        RENAME OFL-Cinzel.txt)
 endif()
 
 # The desktop file and the metainfo are checked when their checkers are
