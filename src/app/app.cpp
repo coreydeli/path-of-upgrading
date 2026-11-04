@@ -158,6 +158,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     // which have the keys they had last time, when they've been changed on
     // the desktop since
     followKeys();
+    m_overlayOptions.startByDefault();
 }
 
 App::~App() = default;
