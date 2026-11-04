@@ -54,8 +54,11 @@ steps are in `.github/workflows/ci.yml`.
    grows". Don't reuse a commit title.
 3. Open a pull request into `beta` and fill in the template, with its
    features, fixes and other changes. Keep each pull request to one change.
-   Label it `enhancement`, `bug` or `documentation`, as the release notes
-   are grouped by those labels.
+   Start its title with its kind and a colon: `Feature:`, `Bug:`, `Docs:`,
+   `CI:` or `Maintenance:`, then a short sentence, such as "Feature: Spread
+   the settings pages across a wide window". Give it the label that matches
+   (`enhancement`, `bug`, `documentation`, `ci` or `maintenance`), as the
+   release notes are grouped by those labels.
 4. If `beta` moves on while you work, merge it into your branch.
 5. Delete your branch once it's merged.
 

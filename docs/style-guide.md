@@ -374,6 +374,13 @@ QT_NO_URL_CAST_FROM_STRING  QT_USE_QSTRINGBUILDER  QT_NO_FOREACH  QT_NO_KEYWORDS
 - Open the pull request into `beta`, and fill in
   [the template](../.github/PULL_REQUEST_TEMPLATE.md): what changed, how it was tested, and
   the checklist.
+- Start each pull request title with its kind and a colon, then a short sentence:
+  `Feature:` (label `enhancement`), `Bug:` (`bug`), `Docs:` (`documentation`),
+  `CI:` (`ci`, for builds, tests and releases on GitHub Actions) or
+  `Maintenance:` (`maintenance`, for revision passes and tidying with no change
+  in behaviour). For example `Feature: Spread the settings pages across a wide
+  window` and `Bug: Stop calling unrated stats not used`. Commit titles don't
+  get the kind.
 - Keep each pull request to one change.
 - Delete the branch once it's merged, locally and on GitHub.
 
