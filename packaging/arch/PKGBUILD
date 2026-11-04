@@ -29,8 +29,12 @@ options=(!lto)
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 
+# A beta is cut from the version it leads up to, so the release builds unpack it
+# there. The paths stay the same from one beta to the next, and ccache hits.
+_srcdir=$pkgname-${pkgver%%beta*}
+
 build() {
-  cmake -B build -S "$pkgname-$pkgver" -G Ninja \
+  cmake -B build -S "$_srcdir" -G Ninja \
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr
   cmake --build build
@@ -38,10 +42,10 @@ build() {
 
 check() {
   cd build
-  sh "../$pkgname-$pkgver/.github/scripts/run-tests.sh"
+  sh "../$_srcdir/.github/scripts/run-tests.sh"
 }
 
 package() {
   DESTDIR="$pkgdir" cmake --install build
-  install -Dm644 "$pkgname-$pkgver/LICENSE" -t "$pkgdir/usr/share/licenses/$pkgname"
+  install -Dm644 "$_srcdir/LICENSE" -t "$pkgdir/usr/share/licenses/$pkgname"
 }
