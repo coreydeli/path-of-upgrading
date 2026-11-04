@@ -6,7 +6,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// The items you checked lately, to have the popup show again.
+// The history of the items you checked, to have the popup show again.
 ColumnsPage {
     id: checkedPage
 
@@ -14,7 +14,7 @@ ColumnsPage {
     required property OverlayOptions options
     readonly property string key: options.checkKey.toString()
 
-    title: qsTr("Checked Items")
+    title: qsTr("Item History")
 
     // An item you checked, and what it is.
     component ItemRow: FormRow {
@@ -59,6 +59,11 @@ ColumnsPage {
     FormCard.FormHeader {
         objectName: "checkedHeader"
         title: qsTr("Newest First")
+    }
+
+    SectionText {
+        objectName: "historyIntro"
+        text: qsTr("Every item you check in the game with the hotkey is kept here, the newest first, up to the last %1. When the list is full, the oldest drops off.").arg(checkedPage.checkedItems.limit)
     }
 
     FormCard.FormCard {
