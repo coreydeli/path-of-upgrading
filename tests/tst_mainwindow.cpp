@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
+#include "app/fonts.h"
 #include "core/datafiles.h"
 #include "core/parser.h"
 #include "core/weights.h"
@@ -16,6 +17,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
+#include <QFontDatabase>
 #include <QJSEngine>
 #include <QJSValue>
 #include <QJsonArray>
@@ -2176,6 +2178,154 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"decorationsBox"_s)->property("currentText").toString(), u"Plain"_s);
         // and nothing to say about colors it wasn't asked for
         QCOMPARE(w.find(u"colorsError"_s)->property("visible").toBool(), false);
+    }
+
+    void headingStyleFollowsTheFonts()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        auto *style = w.qml.singletonInstance<QObject *>("PathOfUpgrading", "Style");
+        QVERIFY(style);
+        QCOMPARE(style->property("headingFamily").toString(), u"Cinzel"_s);
+        const QString family = scalableFamilies().value(0);
+        w.app->appearance()->setHeadingFont(family);
+        QCOMPARE(style->property("headingFamily").toString(), family);
+        w.app->appearance()->setHeadingFont(QString());
+        QCOMPARE(style->property("headingFamily").toString(), u"Cinzel"_s);
+    }
+
+    void fontsDefaults()
+    {
+        Window w;
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(), u"Cinzel"_s);
+        QCOMPARE(w.find(u"textFontButton"_s)->property("description").toString(), u"Your desktop's"_s);
+        QCOMPARE(w.find(u"desktopSizeSwitch"_s)->property("checked").toBool(), true);
+        QVERIFY(!isVisible(w.find(u"textSize"_s)));
+        QVERIFY(!isVisible(w.find(u"fontsError"_s)));
+        QVERIFY(!isVisible(w.find(u"headingFontPicker"_s)));
+    }
+
+    void showsFontSettings()
+    {
+        Window w;
+        Settings settings = w.settings();
+        settings.appearance.headingFont = u"text"_s;
+        settings.appearance.textFont = scalableFamilies().value(0);
+        settings.appearance.textSize = 12.5;
+        QVERIFY(w.app->settings().set(settings));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(),
+                 u"The same as the text"_s);
+        QCOMPARE(w.find(u"textFontButton"_s)->property("description").toString(),
+                 settings.appearance.textFont);
+        QCOMPARE(w.find(u"desktopSizeSwitch"_s)->property("checked").toBool(), false);
+        QVERIFY(isVisible(w.find(u"textSize"_s)));
+        QCOMPARE(w.spinBox(u"textSize"_s)->property("value").toInt(), 125);
+    }
+
+    void pickHeadingFont()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QObject *dialog = w.find(u"headingFontPicker"_s);
+        QVERIFY(click(w.find(u"headingFontButton"_s)));
+        QVERIFY(isVisible(dialog));
+        // Cinzel and the same as the text come first
+        QVERIFY(w.in(u"headingFontPicker"_s, u"font:"_s));
+        QVERIFY(w.settled());
+        QVERIFY(click(w.in(u"headingFontPicker"_s, u"font:text"_s)));
+        QCOMPARE(w.settings().appearance.headingFont, u"text"_s);
+        QTRY_VERIFY(!isVisible(dialog));
+        QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(),
+                 u"The same as the text"_s);
+
+        const QString family = scalableFamilies().value(0);
+        QVERIFY(click(w.find(u"headingFontButton"_s)));
+        QVERIFY(w.settled());
+        QVERIFY(click(w.in(u"headingFontPicker"_s, u"font:"_s + family)));
+        QCOMPARE(w.settings().appearance.headingFont, family);
+        QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(), family);
+    }
+
+    void pickTextFont()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"appearanceAction"_s));
+        const QString family = scalableFamilies().value(0);
+        QVERIFY(click(w.find(u"textFontButton"_s)));
+        QVERIFY(w.in(u"textFontPicker"_s, u"fontSearch"_s)->setProperty("text", family.toLower()));
+        QVERIFY(w.settled());
+        QVERIFY(press(w.in(u"textFontPicker"_s, u"fontSearch"_s), Qt::Key_Return));
+        QCOMPARE(w.settings().appearance.textFont.toLower(), family.toLower());
+        QCOMPARE(QGuiApplication::font().family().toLower(), family.toLower());
+
+        // and back to the desktop's, which is first when there are no words
+        QVERIFY(click(w.find(u"textFontButton"_s)));
+        QCOMPARE(text(w.in(u"textFontPicker"_s, u"fontSearch"_s)), QString());
+        QVERIFY(press(w.in(u"textFontPicker"_s, u"fontSearch"_s), Qt::Key_Return));
+        QCOMPARE(w.settings().appearance.textFont, QString());
+    }
+
+    void pickFontByKeys()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QVERIFY(click(w.find(u"textFontButton"_s)));
+        QObject *search = w.in(u"textFontPicker"_s, u"fontSearch"_s);
+        QVERIFY(w.settled());
+        // the desktop's is first, so the next one is the first font
+        QVERIFY(press(search, Qt::Key_Down));
+        QVERIFY(press(search, Qt::Key_Return));
+        QCOMPARE(w.settings().appearance.textFont, scalableFamilies().value(0));
+    }
+
+    void noFontFound()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QVERIFY(click(w.find(u"textFontButton"_s)));
+        QVERIFY(!isVisible(w.in(u"textFontPicker"_s, u"noFonts"_s)));
+        QVERIFY(w.in(u"textFontPicker"_s, u"fontSearch"_s)->setProperty("text", u"no such font anywhere"_s));
+        QVERIFY(w.settled());
+        QVERIFY(isVisible(w.in(u"textFontPicker"_s, u"noFonts"_s)));
+        // nothing to pick, so enter changes nothing
+        QVERIFY(press(w.in(u"textFontPicker"_s, u"fontSearch"_s), Qt::Key_Return));
+        QCOMPARE(w.settings().appearance.textFont, QString());
+    }
+
+    void chooseTextSize()
+    {
+        Window w;
+        QVERIFY(w.show(u"appearanceAction"_s));
+        const double desktop = w.app->appearance()->desktopTextSize();
+        QVERIFY(toggle(w.find(u"desktopSizeSwitch"_s)));
+        QCOMPARE(w.settings().appearance.textSize, std::round(desktop));
+        QVERIFY(isVisible(w.find(u"textSize"_s)));
+
+        QVERIFY(setValue(w.spinBox(u"textSize"_s), 135, "valueModified"));
+        QCOMPARE(w.settings().appearance.textSize, 13.5);
+        QCOMPARE(QGuiApplication::font().pointSizeF(), 13.5);
+
+        QVERIFY(toggle(w.find(u"desktopSizeSwitch"_s)));
+        QCOMPARE(w.settings().appearance.textSize, 0.0);
+        QCOMPARE(QGuiApplication::font().pointSizeF(), desktop);
+        QVERIFY(!isVisible(w.find(u"textSize"_s)));
+    }
+
+    void saysWhichFontIsMissing()
+    {
+        Window w;
+        Settings settings = w.settings();
+        settings.appearance.textFont = u"Made Up Grotesque"_s;
+        QVERIFY(w.app->settings().set(settings));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QObject *error = w.find(u"fontsError"_s);
+        QVERIFY(isVisible(error));
+        QCOMPARE(text(error), u"Made Up Grotesque isn't installed, so the default is used."_s);
     }
 
     void showsPopupSettings()
