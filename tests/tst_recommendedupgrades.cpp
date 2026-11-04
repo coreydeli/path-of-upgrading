@@ -296,7 +296,7 @@ private Q_SLOTS:
         QVERIFY(site.waitsForIt(u"Helmet"_s));
         const TradeReport report = site.tradeOf(u"Helmet"_s);
         QVERIFY(report.failed);
-        QCOMPARE(report.status, u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(report.status, tradeUnavailable({.enabled = false}));
         QVERIFY(site.network.sent.isEmpty());
     }
 

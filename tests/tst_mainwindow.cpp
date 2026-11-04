@@ -159,6 +159,8 @@ struct Window
     explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {})
     {
         shortcuts->available = hotkeys;
+        // with trade searches on, which only a beta starts with
+        SettingsStore(dir.filePath(u"settings.conf"_s)).set(Settings());
         app = std::make_unique<App>(
             &qml, std::make_unique<FakeGameInput>(), std::unique_ptr<GlobalShortcuts>(shortcuts),
             std::unique_ptr<SecretStore>(keyring), std::unique_ptr<Opener>(opener),
@@ -845,7 +847,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"ignoredAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
         QVERIFY(w.show(u"checkedAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Checked Items"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Item History"_s);
         QVERIFY(w.show(u"charactersAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
@@ -1693,6 +1695,21 @@ private Q_SLOTS:
                  "the Popup and Hotkeys page."_s);
     }
 
+    void itemHistoryName()
+    {
+        Window w;
+        // the sidebar entry
+        QCOMPARE(text(w.window->findChild<QObject *>(u"checkedAction"_s)), u"Item History"_s);
+        QVERIFY(w.show(u"checkedAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Item History"_s);
+        // it says what it is, also before there is anything in it
+        QObject *intro = w.find(u"historyIntro"_s);
+        QVERIFY(isVisible(intro));
+        QCOMPARE(text(intro), u"Every item you check in the game with the hotkey is kept here, the newest "
+                              "first, up to the last 30. When the list is full, the oldest drops off."_s);
+        QVERIFY(isVisible(w.find(u"noItemsText"_s)));
+    }
+
     void checkedItems()
     {
         Window w;
@@ -1861,9 +1878,26 @@ private Q_SLOTS:
         QVERIFY(w.show(u"tradeAction"_s));
         QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
         QCOMPARE(w.settings().trade.enabled, false);
-        // as the switch says so
-        QCOMPARE(w.find(u"unavailableText"_s)->property("visible").toBool(), false);
+        // and the page says why, and how to turn it on again
+        QObject *unavailable = w.find(u"unavailableText"_s);
+        QCOMPARE(unavailable->property("visible").toBool(), true);
+        QCOMPARE(text(unavailable), tradeUnavailable({.enabled = false}));
+        QVERIFY(text(unavailable).contains(u"Search the trade site"_s));
         QVERIFY(!w.app->checker().popup().isTradeAvailable());
+        QCOMPARE(w.app->checker().popup().tradeNote(), text(unavailable));
+
+        QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
+        QCOMPARE(w.find(u"unavailableText"_s)->property("visible").toBool(), false);
+        QVERIFY(w.app->checker().popup().tradeNote().isEmpty());
+    }
+
+    void stillTesting()
+    {
+        // a release says so under the switch, and a beta says nothing of it
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        const QString description = w.find(u"enabledSwitch"_s)->property("description").toString();
+        QCOMPARE(description.contains(u"still being tested"_s), !isBetaBuild());
     }
 
     void cardsInColumns()

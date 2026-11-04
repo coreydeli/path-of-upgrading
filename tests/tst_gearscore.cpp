@@ -169,6 +169,31 @@ private Q_SLOTS:
                 .hasMatch());
     }
 
+    void criticalStatsAreSpelledOut()
+    {
+        // a short "crit" doesn't say which critical stat it is
+        static const QRegularExpression shortCrit(uR"(\bcrit\b)"_s,
+                                                  QRegularExpression::CaseInsensitiveOption);
+        for (const BuildProfile &p : buildProfiles()) {
+            for (const ProfileStat &s : p.stats)
+                QVERIFY2(!shortCrit.match(s.label).hasMatch(), qPrintable(p.id + u": "_s + s.label));
+        }
+
+        const ProfileStat *spells =
+            statLabelled(*buildProfile(u"es-caster"), u"Spell critical hit chance and damage bonus"_s);
+        QVERIFY(spells);
+        QVERIFY(spells->pattern.match(u"#% increased Critical Hit Chance for Spells"_s).hasMatch());
+        QVERIFY(spells->pattern.match(u"#% increased Critical Spell Damage Bonus"_s).hasMatch());
+
+        const BuildProfile &attacks = *buildProfile(u"es-attacker");
+        const ProfileStat *attack = statLabelled(attacks, u"Attack critical hit chance and damage bonus"_s);
+        QVERIFY(attack);
+        QVERIFY(attack->pattern.match(u"#% increased Critical Hit Chance for Attacks"_s).hasMatch());
+        QVERIFY(statLabelled(attacks, u"Base critical hit chance"_s));
+
+        QVERIFY(statLabelled(*buildProfile(u"minion-es"), u"Minion critical hit chance and damage bonus"_s));
+    }
+
     void ratesForTheBuild()
     {
         const GearScoreOptions minions{.build = u"minion-es"_s};
@@ -444,11 +469,13 @@ private Q_SLOTS:
             << u"Attack skill levels"_s << u"# to Level of all Projectile Skills"_s;
         QTest::newRow("speed") << u"Attack speed"_s << u"#% increased Attack Speed"_s;
         QTest::newRow("skill speed") << u"Attack speed"_s << u"#% increased Skill Speed"_s;
-        QTest::newRow("crit chance") << u"Crit"_s << u"#% increased Critical Hit Chance for Attacks"_s;
-        QTest::newRow("crit damage") << u"Crit"_s
+        QTest::newRow("crit chance") << u"Attack critical hit chance and damage bonus"_s
+                                     << u"#% increased Critical Hit Chance for Attacks"_s;
+        QTest::newRow("crit damage") << u"Attack critical hit chance and damage bonus"_s
                                      << u"#% increased Critical Damage Bonus for Attack Damage"_s;
-        QTest::newRow("flat crit damage") << u"Crit"_s << u"#% to Critical Damage Bonus"_s;
-        QTest::newRow("base crit") << u"Base crit chance"_s << u"#% to Critical Hit Chance"_s;
+        QTest::newRow("flat crit damage")
+            << u"Attack critical hit chance and damage bonus"_s << u"#% to Critical Damage Bonus"_s;
+        QTest::newRow("base crit") << u"Base critical hit chance"_s << u"#% to Critical Hit Chance"_s;
         QTest::newRow("physical") << u"Attack damage"_s << u"#% increased Physical Damage"_s;
         QTest::newRow("elemental with attacks")
             << u"Attack damage"_s << u"#% increased Elemental Damage with Attacks"_s;

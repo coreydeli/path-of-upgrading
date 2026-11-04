@@ -34,9 +34,15 @@ sha256sums=('SKIP')
 _srcdir=$pkgname-${pkgver%%beta*}
 
 build() {
+  # trade searches start on in a beta, and off in a release
+  local beta=OFF
+  if [[ $pkgver == *beta* ]]; then
+    beta=ON
+  fi
   cmake -B build -S "$_srcdir" -G Ninja \
     -DCMAKE_BUILD_TYPE=None \
-    -DCMAKE_INSTALL_PREFIX=/usr
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DPOU_BETA=$beta
   cmake --build build
 }
 

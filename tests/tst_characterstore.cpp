@@ -108,6 +108,25 @@ private Q_SLOTS:
         QCOMPARE(characterFromJson(saved).value().profilePicked, picked);
     }
 
+    void oldCriticalTweaksKeepTheirLevel()
+    {
+        // tweaks go by label, and the critical labels used to be short
+        const auto load = [](const QString &profile, const QJsonObject &tweaks) {
+            return characterFromJson({{u"buildProfile"_s, profile}, {u"tweaks"_s, tweaks}}).value().tweaks;
+        };
+        const QString spells = u"Spell critical hit chance and damage bonus"_s;
+        const QString attacks = u"Attack critical hit chance and damage bonus"_s;
+
+        QCOMPARE(load(u"es-caster"_s, {{u"Crit"_s, 2}, {u"Spirit"_s, 0.5}}),
+                 (ProfileTweaks{{spells, 2}, {u"Spirit"_s, 0.5}}));
+        QCOMPARE(load(u"es-attacker"_s, {{u"Crit"_s, 3}, {u"Base crit chance"_s, 0.5}}),
+                 (ProfileTweaks{{attacks, 3}, {u"Base critical hit chance"_s, 0.5}}));
+        QCOMPARE(load(u"minion-es"_s, {{u"Minion crit"_s, 1.5}}),
+                 (ProfileTweaks{{u"Minion critical hit chance and damage bonus"_s, 1.5}}));
+        // already under the new label, so that one stays
+        QCOMPARE(load(u"es-caster"_s, {{u"Crit"_s, 2}, {spells, 0}}), (ProfileTweaks{{spells, 0}}));
+    }
+
     void noWeightsAtAll()
     {
         const Character bare = characterFromJson({{u"weights"_s, QJsonObject()}}).value();

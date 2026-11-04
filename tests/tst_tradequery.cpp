@@ -773,7 +773,8 @@ private Q_SLOTS:
         QCOMPARE(q.current, 1827.4);
         QCOMPARE(q.groupMin, 1828.0);
         QCOMPARE(group.value(u"value").toObject(), minimum(1828));
-        QCOMPARE(q.parts, QStringList({u"Minion damage"_s, u"Minion crit"_s, u"Mana"_s, u"Intelligence"_s}));
+        QCOMPARE(q.parts, QStringList({u"Minion damage"_s, u"Minion critical hit chance and damage bonus"_s,
+                                       u"Mana"_s, u"Intelligence"_s}));
         QCOMPARE(q.filters, 6);
         QCOMPARE(q.dropped, 0);
         QCOMPARE(q.body.value(u"sort").toObject(), QJsonObject({{u"statgroup.0"_s, u"desc"_s}}));
