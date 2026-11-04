@@ -7,7 +7,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // The items you checked lately, to have the popup show again.
-FormCard.FormCardPage {
+ColumnsPage {
     id: checkedPage
 
     required property CheckedItems checkedItems
@@ -92,7 +92,7 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "checkedHelp"
         visible: itemRows.count > 0
         text: qsTr("Check Again shows an item in the popup again, judged for the character you play now. Forgetting the items doesn't forget their stats, which the stat picker still offers.")

@@ -27,16 +27,6 @@ QList<GearNote> notesOf(const GearScore &gear)
     return notes;
 }
 
-// The first of them, in the words the popup uses.
-QString firstNoteOf(const GearScore &gear)
-{
-    for (const QString &note : {missingNote(gear), notScoredNote(gear), weakRollsNote(gear)}) {
-        if (!note.isEmpty())
-            return note;
-    }
-    return {};
-}
-
 // What the build wants most in a slot with nothing in it.
 QList<GearNote> wantedIn(const QString &slot, const GearScoreOptions &options)
 {
@@ -145,11 +135,8 @@ void GearList::refresh()
         const GearScoreOptions options = gearScoreOptions(character, slot, m_priorities);
         if (item == character.gear.cend()) {
             if (mainSlots().contains(slot))
-                m_rows << Row{.slot = slot,
-                              .score = std::nullopt,
-                              .grade = {},
-                              .notes = wantedIn(slot, options),
-                              .todo = {}};
+                m_rows << Row{
+                    .slot = slot, .score = std::nullopt, .grade = {}, .notes = wantedIn(slot, options)};
             continue;
         }
         Row row{.slot = slot};
@@ -158,7 +145,6 @@ void GearList::refresh()
             row.score = score->score;
             row.grade = score->grade;
             row.notes = notesOf(*score);
-            row.todo = firstNoteOf(*score);
         }
         m_rows << row;
     }
@@ -174,26 +160,6 @@ void GearList::refresh()
     const std::optional<double> overall = overallGearScore(character.gear, slotScore);
     m_overall = overall ? QString::number(*overall) : QString();
     m_overallGrade = overall ? gearGrade(int(*overall)) : QString();
-
-    QList<const Row *> rated;
-    for (const Row &row : std::as_const(m_rows)) {
-        if (row.score && mainSlots().contains(row.slot))
-            rated << &row;
-    }
-    std::stable_sort(rated.begin(), rated.end(),
-                     [](const Row *a, const Row *b) { return *a->score < *b->score; });
-    QStringList weakest;
-    for (const Row *row : rated.first(std::min<qsizetype>(3, rated.size())))
-        weakest << row->slot + u' ' + QString::number(*row->score);
-    m_weakest = weakest.join(u", "_s);
-    // the weakest first, for one that says what to do
-    m_focus.clear();
-    for (const Row *row : rated) {
-        if (!row->todo.isEmpty()) {
-            m_focus = u"Start with %1. %2"_s.arg(row->slot, row->todo);
-            break;
-        }
-    }
     endResetModel();
     Q_EMIT changed();
 }

@@ -8,7 +8,7 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // What the gear score of the character you play goes by: a build profile,
 // and how much each of its stats counts.
-FormCard.FormCardPage {
+ColumnsPage {
     id: scorePage
 
     required property GearScoring scoring
@@ -73,7 +73,7 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "scoreHelp"
         visible: stats.visible
         text: qsTr("The gear score rates an item from 0 to 100 by how much it has of what the profile wants in its slot. You can make a stat count for more or less below, for this character only.")

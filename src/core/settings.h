@@ -57,8 +57,11 @@ struct OverlaySettings
     double scale = 1;         // popup size
     bool compact = true;      // the rest of the popup behind More
     bool colorblind = false;  // blue for better and orange for worse
-    int autoHideSeconds = 12; // while the mouse isn't over the popup
+    int autoHideSeconds = 60; // while the mouse isn't over the popup
     bool paused = false;      // the hotkey and the clipboard do nothing
+    // Starting with the desktop has been settled, by the first start turning it
+    // on or by you choosing. Until then it's on by default.
+    bool startChosen = false;
 
     friend bool operator==(const OverlaySettings &, const OverlaySettings &) = default;
 };

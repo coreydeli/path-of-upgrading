@@ -428,8 +428,7 @@ CraftBaseSearch craftBaseSearch(const Item &item, const QList<KeyStat> &keyStats
             result.unmatched << k.key;
             continue;
         }
-        const double min = k.cap >= 5 ? std::floor(k.cap * 0.55) : std::max(1.0, std::floor(k.cap * 0.5));
-        wanted.append(statFilter(m->id, {{u"min"_s, min}}));
+        wanted.append(statFilter(m->id, {{u"min"_s, searchMinimum(k.cap)}}));
     }
     QJsonArray openAffix;
     for (const QString &key : {u"# Empty Prefix Modifiers"_s, u"# Empty Suffix Modifiers"_s}) {

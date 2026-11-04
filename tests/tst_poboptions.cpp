@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "app/poboptions.h"
 #include "app/settingsstore.h"
+#include "fakeopener.h"
 #include "fakepob.h"
 #include "services/pobengine.h"
 
@@ -22,7 +23,15 @@ struct Options
     QTemporaryDir dir;
     SettingsStore settings{dir.filePath(u"settings.conf"_s)};
     PobEngine pob;
-    PobOptions options{&settings, &pob};
+    // a computer with flatpak and LuaJIT, and no Path of Building
+    PobPlaces places{
+        .home = dir.path(),
+        .dataHome = dir.filePath(u"data"_s),
+        .flatpak = u"/usr/bin/flatpak"_s,
+        .luajit = u"/usr/bin/luajit"_s,
+    };
+    FakeOpener opener;
+    PobOptions options{&settings, &pob, places, &opener};
 
     const PobSettings &saved() const { return settings.settings().pob; }
 };
@@ -164,21 +173,27 @@ private Q_SLOTS:
     void found()
     {
         Options o;
-        QCOMPARE(o.options.found(), QString());
-        QCOMPARE(o.options.problem(), u"There's no Path of Building to run."_s);
+        QCOMPARE(o.options.installedAt(), QString());
+        QCOMPARE(o.options.headline(), u"Path of Building wasn't found."_s);
 
         QSignalSpy changed(&o.options, &PobOptions::changed);
-        o.pob.setInstall({.folder = u"/games/pob"_s, .program = u"luajit"_s});
+        o.pob.setInstall({.folder = u"/data/RustyPathOfBuilding2"_s,
+                          .program = u"luajit"_s,
+                          .userFolder = u"/data/RustyPathOfBuilding2/userdata"_s});
         QVERIFY(!changed.isEmpty());
+        QCOMPARE(o.options.headline(), u"Using the Path of Building in your data folder."_s);
         // with backslashes on Windows
-        QCOMPARE(o.options.found(),
-                 u"Using Path of Building in "_s + QDir::toNativeSeparators(u"/games/pob"_s) + u'.');
-        QCOMPARE(o.options.problem(), QString());
+        QCOMPARE(o.options.installedAt(), QDir::toNativeSeparators(u"/data/RustyPathOfBuilding2"_s));
+        QCOMPARE(o.options.buildsAt(),
+                 QDir::toNativeSeparators(u"/data/RustyPathOfBuilding2/userdata/Builds"_s));
+        QVERIFY(o.options.steps().isEmpty());
+        QVERIFY(!o.options.offersFlatpak());
 
         changed.clear();
         o.pob.setInstall({.folder = u"/flatpak/pob"_s, .program = u"flatpak"_s, .flatpak = true});
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.found(), u"Using the Path of Building Flatpak."_s);
+        QCOMPARE(o.options.headline(), u"Using Path of Building from Flathub."_s);
+        QVERIFY(o.options.details().first().contains(u"hidden folder"));
     }
 
     void notFound()
@@ -188,8 +203,34 @@ private Q_SLOTS:
         QSignalSpy changed(&o.options, &PobOptions::changed);
         o.pob.setUnavailable(u"There's no Path of Building."_s);
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.found(), QString());
-        QCOMPARE(o.options.problem(), u"There's no Path of Building."_s);
+        QCOMPARE(o.options.headline(), u"Path of Building wasn't found."_s);
+        QCOMPARE(o.options.installedAt(), QString());
+        QCOMPARE(o.options.steps().size(), 3);
+        QVERIFY(o.options.offersFlatpak());
+        QCOMPARE(o.options.installCommand(),
+                 u"flatpak install flathub community.pathofbuilding.PathOfBuilding"_s);
+        QCOMPARE(o.options.places().size(), 4);
+    }
+
+    void aFolderThatIsNoGood()
+    {
+        Options o;
+        const QString empty = o.dir.filePath(u"empty"_s);
+        QVERIFY(QDir().mkpath(empty));
+        QVERIFY(!o.options.folderProblem());
+        QSignalSpy changed(&o.options, &PobOptions::changed);
+        o.options.setLocation(empty);
+        QVERIFY(!changed.isEmpty());
+        QVERIFY(o.options.folderProblem());
+        QCOMPARE(o.options.headline(), u"There's no Path of Building in the folder you chose."_s);
+        QVERIFY(o.options.folderNote().contains(u"HeadlessWrapper.lua"));
+        QCOMPARE(o.options.places().size(), 1);
+
+        o.options.useUsualPlaces();
+        QCOMPARE(o.options.location(), QString());
+        QVERIFY(!o.options.folderProblem());
+        QCOMPARE(o.options.headline(), u"Path of Building wasn't found."_s);
+        QCOMPARE(o.saved().location, QString());
     }
 
     void couldNotStart()
@@ -205,9 +246,41 @@ private Q_SLOTS:
         QVERIFY(reply->isFinished() || finished.wait());
         QCOMPARE(o.pob.state(), PobEngine::State::Failed);
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.problem(), u"The fake didn't start."_s);
+        QCOMPARE(o.options.headline(), u"Path of Building was found, but it wouldn't start."_s);
+        QVERIFY(o.options.details().contains(u"The fake didn't start."_s));
+        QCOMPARE(o.options.steps().size(), 2);
         // it's still the one it uses
-        QVERIFY(!o.options.found().isEmpty());
+        QVERIFY(!o.options.installedAt().isEmpty());
+    }
+
+    void opensAndCopiesOnlyWhenAsked()
+    {
+        Options o;
+        QVERIFY(o.opener.opened.isEmpty());
+        QVERIFY(o.opener.copied.isEmpty());
+        o.options.openDiscover();
+        o.options.openFlathub();
+        o.options.openInstaller();
+        o.options.copyInstallCommand();
+        QCOMPARE(o.opener.opened,
+                 (QList<QUrl>{
+                     QUrl(u"appstream://community.pathofbuilding.PathOfBuilding"_s),
+                     QUrl(u"https://flathub.org/apps/community.pathofbuilding.PathOfBuilding"_s),
+                     QUrl(u"https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases"_s)}));
+        QCOMPARE(o.opener.copied,
+                 QStringList{u"flatpak install flathub community.pathofbuilding.PathOfBuilding"_s});
+    }
+
+    void withoutAnOpener()
+    {
+        QTemporaryDir dir;
+        SettingsStore settings(dir.filePath(u"settings.conf"_s));
+        PobEngine pob;
+        PobOptions options(&settings, &pob, {}, nullptr);
+        options.openDiscover();
+        options.openFlathub();
+        options.openInstaller();
+        options.copyInstallCommand();
     }
 };
 

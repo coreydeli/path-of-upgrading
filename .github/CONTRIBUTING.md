@@ -42,8 +42,12 @@ cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 ```
 
 CI builds on Arch Linux, on Debian 13 and on Windows in MSYS2, checks the
-formatting, treats warnings as errors and runs every test. A change has to pass all of it. The
-steps are in `.github/workflows/ci.yml`.
+formatting, treats warnings as errors and runs every test. A change has to
+pass all of it. The steps are in `.github/workflows/ci.yml`.
+
+A change to nothing but Markdown files, the `docs` folder or the issue forms
+skips those builds, and they show as skipped, which counts as a pass. Pushes
+to `main` and `beta` always build.
 
 ## Branches and pull requests
 
@@ -112,15 +116,17 @@ fine. The `#` in stat lines stays, as the trade site uses it.
 Every piece of logic gets a QTest test. Put it in `tests/tst_<name>.cpp` and
 add it to `tests/CMakeLists.txt` with the helper that fits, such as
 `pou_add_test` or `pou_add_app_test`. The fakes in `tests/`, such as
-`fakenetwork.h` and `fakegameinput.h`, stand in for the network, the game and
-the other things a test shouldn't touch.
+`fakenetwork.h`, `fakegameinput.h` and `fakeopener.h`, stand in for the network,
+the game, the browser and the clipboard, and the other things a test shouldn't
+touch.
 
 - Use made-up names and items in fixtures. Don't copy your own Path of Building
   builds into the tests, and don't commit them.
 - Window tests run offscreen. `initMain` sets `QT_QPA_PLATFORM=offscreen`, and
   the tests call `QTest::failOnWarning()`.
-- Tests must not touch the clipboard, map visible windows, send XTest input,
-  register real global shortcuts or set off desktop prompts.
+- Tests must not touch the clipboard, open a page in the browser, map visible
+  windows, send XTest input, register real global shortcuts or set off desktop
+  prompts.
 - Test fakes don't use `Q_OBJECT`.
 - In a test, use normal strings rather than a raw string with an apostrophe or
   `//` in it, as moc then skips the file.

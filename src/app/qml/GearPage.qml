@@ -2,12 +2,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // What the character you play wears, which items are judged against.
-FormCard.FormCardPage {
+ColumnsPage {
     id: gearPage
 
     required property App app
@@ -15,8 +14,9 @@ FormCard.FormCardPage {
     readonly property Resistances resists: app.resistances
 
     title: qsTr("Your Gear")
-    // how wide a card gets before it stops growing with the window
-    readonly property real fullWidth: Kirigami.Units.gridUnit * 70
+    // the slots need room to put their notes beside them
+    minColumnWidth: Kirigami.Units.gridUnit * 44
+    maxColumnWidth: Kirigami.Units.gridUnit * 60
 
     // One of them, typed in off the character sheet.
     component ResistField: NumberField {
@@ -31,19 +31,30 @@ FormCard.FormCardPage {
     }
 
     FormCard.FormHeader {
-        maximumWidth: gearPage.fullWidth
+        visible: recommended.visible
+        title: qsTr("Recommended Upgrades")
+    }
+
+    RecommendationCard {
+        id: recommended
+        upgrades: gearPage.app.recommendedUpgrades
+    }
+
+    SectionText {
+        visible: recommended.visible
+        text: qsTr("The slots where a better item helps most, and the stats to look for in it. Empty slots come first, then the lowest gear scores.")
+    }
+
+    FormCard.FormHeader {
         title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
     }
 
     FormCard.FormCard {
-        maximumWidth: gearPage.fullWidth
-
         FormCard.FormTextDelegate {
             id: overall
             objectName: "overallScore"
             visible: gearPage.gear.overall !== ""
             text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
-            description: gearPage.gear.focus !== "" ? qsTr("Upgrade first: %1\n%2").arg(gearPage.gear.weakest).arg(gearPage.gear.focus) : qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
         }
 
         FormCard.FormTextDelegate {
@@ -82,19 +93,16 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
-        Layout.maximumWidth: gearPage.fullWidth
+    SectionText {
         objectName: "gearHelp"
         text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
     }
 
     FormCard.FormHeader {
-        maximumWidth: gearPage.fullWidth
         title: qsTr("Your Resistances")
     }
 
     FormCard.FormCard {
-        maximumWidth: gearPage.fullWidth
         id: resistances
         objectName: "resistances"
 
@@ -188,13 +196,11 @@ FormCard.FormCardPage {
     }
 
     FormCard.FormHeader {
-        maximumWidth: gearPage.fullWidth
         visible: extras.visible
         title: qsTr("Weapon Swap, Flasks, Charms and Jewels")
     }
 
     FormCard.FormCard {
-        maximumWidth: gearPage.fullWidth
         id: extras
         objectName: "extras"
         visible: gearPage.gear.hasExtras

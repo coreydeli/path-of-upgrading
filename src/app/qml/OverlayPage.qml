@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // The hotkey and how the popup over the game looks.
-FormCard.FormCardPage {
+ColumnsPage {
     id: overlayPage
 
     required property OverlayOptions options
@@ -184,8 +184,9 @@ FormCard.FormCardPage {
 
         NumberField {
             objectName: "autoHide"
-            label: qsTr("Seconds until it hides")
-            description: qsTr("It stays while the mouse is over it.")
+            label: qsTr("Popup Timeout")
+            description: qsTr("How many seconds the popup stays up before it hides. "
+                              + "It stays while the mouse is over it.")
             minimum: 2
             maximum: 120
             value: overlayPage.options.autoHideSeconds
