@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // The hotkey and how the popup over the game looks.
-FormCard.FormCardPage {
+ColumnsPage {
     id: overlayPage
 
     required property OverlayOptions options

@@ -10,7 +10,7 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // Your characters, the one you play, and the Path of Building builds you
 // import for them.
-FormCard.FormCardPage {
+ColumnsPage {
     id: charactersPage
 
     required property App app

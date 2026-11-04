@@ -2,12 +2,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // What the character you play wears, which items are judged against.
-FormCard.FormCardPage {
+ColumnsPage {
     id: gearPage
 
     required property App app
@@ -15,8 +14,9 @@ FormCard.FormCardPage {
     readonly property Resistances resists: app.resistances
 
     title: qsTr("Your Gear")
-    // how wide a card gets before it stops growing with the window
-    readonly property real fullWidth: Kirigami.Units.gridUnit * 70
+    // the slots need room to put their notes beside them
+    minColumnWidth: Kirigami.Units.gridUnit * 44
+    maxColumnWidth: Kirigami.Units.gridUnit * 60
 
     // One of them, typed in off the character sheet.
     component ResistField: NumberField {
@@ -31,13 +31,10 @@ FormCard.FormCardPage {
     }
 
     FormCard.FormHeader {
-        maximumWidth: gearPage.fullWidth
         title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
     }
 
     FormCard.FormCard {
-        maximumWidth: gearPage.fullWidth
-
         FormCard.FormTextDelegate {
             id: overall
             objectName: "overallScore"
@@ -82,19 +79,16 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
-        Layout.maximumWidth: gearPage.fullWidth
+    SectionText {
         objectName: "gearHelp"
         text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
     }
 
     FormCard.FormHeader {
-        maximumWidth: gearPage.fullWidth
         title: qsTr("Your Resistances")
     }
 
     FormCard.FormCard {
-        maximumWidth: gearPage.fullWidth
         id: resistances
         objectName: "resistances"
 
@@ -188,13 +182,11 @@ FormCard.FormCardPage {
     }
 
     FormCard.FormHeader {
-        maximumWidth: gearPage.fullWidth
         visible: extras.visible
         title: qsTr("Weapon Swap, Flasks, Charms and Jewels")
     }
 
     FormCard.FormCard {
-        maximumWidth: gearPage.fullWidth
         id: extras
         objectName: "extras"
         visible: gearPage.gear.hasExtras

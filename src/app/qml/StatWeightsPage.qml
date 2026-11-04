@@ -9,7 +9,7 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // What each stat is worth to the character you play, for judging items
 // without a build profile and searching the trade site by your weights.
-FormCard.FormCardPage {
+ColumnsPage {
     id: weightsPage
 
     required property StatWeights weights
@@ -135,7 +135,7 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "weightsHelp"
         text: qsTr("A weight is what one of a stat is worth to you, in points. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 life. The popup judges items by them when the gear score has no build profile, and so does searching the trade site by your weights.")
     }

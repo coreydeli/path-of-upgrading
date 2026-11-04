@@ -8,7 +8,7 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // The stats the character you play doesn't want counted, a group at a time
 // or one by one.
-FormCard.FormCardPage {
+ColumnsPage {
     id: ignoredPage
 
     required property IgnoredStats ignored
@@ -105,7 +105,7 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "ignoredHelp"
         text: qsTr("An ignored stat counts for nothing in the gear score and your weights, and the trade searches leave it out. An excluded one is ignored too, and the trade searches skip every listing that has it.")
     }

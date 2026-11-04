@@ -1737,6 +1737,40 @@ private Q_SLOTS:
         QVERIFY(!w.app->checker().popup().isTradeAvailable());
     }
 
+    void cardsInColumns()
+    {
+        Window w;
+        QVERIFY(w.rated());
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.shown());
+        const auto pos = [&](const QString &name) {
+            const auto *item = qobject_cast<QQuickItem *>(w.find(name));
+            return item ? item->mapToScene(QPointF(0, 0)) : QPointF(-1, -1);
+        };
+
+        // narrow, they're in one column, in the order they're written
+        w.window->resize(700, 1400);
+        QTRY_VERIFY(w.settled() && pos(u"leagueBox"_s).x() == pos(u"budgetMin"_s).x());
+        QCOMPARE(pos(u"sellersBox"_s).x(), pos(u"leagueBox"_s).x());
+        QCOMPARE(pos(u"currencyBox"_s).x(), pos(u"leagueBox"_s).x());
+        QVERIFY(pos(u"leagueBox"_s).y() < pos(u"sellersBox"_s).y());
+        QVERIFY(pos(u"sellersBox"_s).y() < pos(u"budgetMin"_s).y());
+        QVERIFY(pos(u"budgetMin"_s).y() < pos(u"sessionField"_s).y());
+
+        // wide, they're beside each other
+        w.window->resize(1900, 900);
+        QTRY_VERIFY(w.settled() && pos(u"leagueBox"_s).x() > pos(u"budgetMin"_s).x());
+        QVERIFY(pos(u"sellersBox"_s).x() > pos(u"leagueBox"_s).x());
+        QVERIFY(pos(u"sessionField"_s).x() > pos(u"leagueBox"_s).x());
+
+        // and narrow again, they're back in the order they were written in
+        w.window->resize(700, 1400);
+        QTRY_VERIFY(w.settled() && pos(u"leagueBox"_s).x() == pos(u"budgetMin"_s).x());
+        QVERIFY(pos(u"leagueBox"_s).y() < pos(u"sellersBox"_s).y());
+        QVERIFY(pos(u"sellersBox"_s).y() < pos(u"budgetMin"_s).y());
+        QVERIFY(pos(u"budgetMin"_s).y() < pos(u"sessionField"_s).y());
+    }
+
     void budget()
     {
         Window w;
