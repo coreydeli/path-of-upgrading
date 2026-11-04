@@ -833,7 +833,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"ignoredAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
         QVERIFY(w.show(u"checkedAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Checked Items"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Item History"_s);
         QVERIFY(w.show(u"charactersAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
@@ -1679,6 +1679,21 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"noItemsText"_s)->property("description").toString(),
                  u"Hover over an item in the game and press the hotkey for checking one. You can set it on "
                  "the Popup and Hotkeys page."_s);
+    }
+
+    void itemHistoryName()
+    {
+        Window w;
+        // the sidebar entry
+        QCOMPARE(text(w.window->findChild<QObject *>(u"checkedAction"_s)), u"Item History"_s);
+        QVERIFY(w.show(u"checkedAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Item History"_s);
+        // it says what it is, also before there is anything in it
+        QObject *intro = w.find(u"historyIntro"_s);
+        QVERIFY(isVisible(intro));
+        QCOMPARE(text(intro), u"Every item you check in the game with the hotkey is kept here, the newest "
+                              "first, up to the last 30. When the list is full, the oldest drops off."_s);
+        QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 
     void checkedItems()
