@@ -105,6 +105,10 @@ struct KeyStat
 // key, most important first. Resistances are left out.
 QList<KeyStat> topStats(const QString &slot, int count = 2, const GearScoreOptions &options = {});
 
+// The least of a stat worth searching for, from how much a top roll of it
+// gives: a bit over half of it, and at least 1.
+double searchMinimum(double cap);
+
 // One part of a slot's gear score, as a trade search weight.
 struct SearchWeight
 {

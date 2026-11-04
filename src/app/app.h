@@ -13,6 +13,7 @@
 #include "app/itemhistory.h"
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
+#include "app/recommendedupgrades.h"
 #include "app/resistances.h"
 #include "app/resultspanel.h"
 #include "app/settingsstore.h"
@@ -59,6 +60,7 @@ class App : public QObject
     Q_PROPERTY(pou::CharacterList *characterList READ characterList CONSTANT)
     Q_PROPERTY(pou::BuildImporter *buildImporter READ buildImporter CONSTANT)
     Q_PROPERTY(pou::GearList *gearList READ gearList CONSTANT)
+    Q_PROPERTY(pou::RecommendedUpgrades *recommendedUpgrades READ recommendedUpgrades CONSTANT)
     Q_PROPERTY(pou::Resistances *resistances READ resistances CONSTANT)
     Q_PROPERTY(pou::GearScoring *gearScoring READ gearScoring CONSTANT)
     Q_PROPERTY(pou::StatWeights *statWeights READ statWeights CONSTANT)
@@ -115,6 +117,7 @@ public:
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
     GearList *gearList() { return &m_gearList; }
+    RecommendedUpgrades *recommendedUpgrades() { return &m_upgrades; }
     Resistances *resistances() { return &m_resistances; }
     GearScoring *gearScoring() { return &m_gearScoring; }
     StatWeights *statWeights() { return &m_statWeights; }
@@ -156,6 +159,7 @@ private:
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;
+    RecommendedUpgrades m_upgrades;
     Resistances m_resistances;
     GearScoring m_gearScoring;
     StatWeights m_statWeights;

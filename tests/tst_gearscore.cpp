@@ -274,6 +274,16 @@ private Q_SLOTS:
         QCOMPARE(weightLabelled(weights, u"Lightning res"_s)->need, std::nullopt);
     }
 
+    void searchMinimums()
+    {
+        QCOMPARE(searchMinimum(100), 55.0);
+        QCOMPARE(searchMinimum(35), 19.0);
+        QCOMPARE(searchMinimum(5), 2.0);
+        // small caps are halved, and a stat is never asked for none
+        QCOMPARE(searchMinimum(4), 2.0);
+        QCOMPARE(searchMinimum(1), 1.0);
+    }
+
     void topStatsAndUsefulness()
     {
         const QList<KeyStat> boots = topStats(u"Boots"_s);

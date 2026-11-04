@@ -25,6 +25,7 @@ add_library(pou_core STATIC
     pobverdict.cpp pobverdict.h
     pobweighing.cpp pobweighing.h
     ratelimit.cpp ratelimit.h
+    recommendations.cpp recommendations.h
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
