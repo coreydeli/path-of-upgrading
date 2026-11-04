@@ -42,6 +42,12 @@ class TestOverlayOptions : public QObject
 private Q_SLOTS:
     void init() { QTest::failOnWarning(); }
 
+    void popupTimeoutStartsAtAMinute()
+    {
+        Options o;
+        QCOMPARE(o.options.autoHideSeconds(), 60);
+    }
+
     void readsTheSettings()
     {
         Options o;

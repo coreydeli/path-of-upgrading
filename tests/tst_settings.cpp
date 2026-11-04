@@ -21,6 +21,16 @@ private Q_SLOTS:
         QCOMPARE(loadSettings(empty), Settings());
     }
 
+    void popupStaysAMinuteUnlessSet()
+    {
+        QTemporaryDir dir;
+        QSettings store(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+        QCOMPARE(loadSettings(store).overlay.autoHideSeconds, 60);
+        // a saved one is kept, even the old default
+        store.setValue(u"overlay/autoHideSeconds"_s, 12);
+        QCOMPARE(loadSettings(store).overlay.autoHideSeconds, 12);
+    }
+
     void roundTrip()
     {
         Settings s;
