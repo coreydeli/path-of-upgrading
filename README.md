@@ -67,6 +67,8 @@ released.
 - Can start with your desktop, from a switch on the Popup and Hotkeys page. It
   then starts with only the tray icon, as `path-of-upgrading --background`
   does. It tells you with a notification if the hotkeys couldn't be set up.
+- Has dark colors of its own, as a KDE color scheme, or follows your desktop's
+  colors, from the Appearance page.
 
 
 ## Installing
