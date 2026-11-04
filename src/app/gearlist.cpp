@@ -14,24 +14,38 @@ using namespace Qt::Literals::StringLiterals;
 namespace pou {
 namespace {
 
-// The ways a gear score falls short, a sentence each.
-QString improvementsOf(const GearScore &gear)
+// The ways a gear score falls short, a note each.
+QList<GearNote> notesOf(const GearScore &gear)
 {
-    QStringList notes;
+    QList<GearNote> notes;
+    if (!gear.missing.isEmpty())
+        notes << GearNote{.label = u"Missing"_s, .text = gear.missing.join(u", "_s)};
+    if (!gear.wasted.isEmpty())
+        notes << GearNote{.label = u"Not used"_s, .text = wastedStats(gear).join(u", "_s)};
+    if (const QStringList weak = weakRolls(gear); !weak.isEmpty())
+        notes << GearNote{.label = u"Weak rolls"_s, .text = weak.join(u", "_s) + u" of an excellent roll"_s};
+    return notes;
+}
+
+// The first of them, in the words the popup uses.
+QString firstNoteOf(const GearScore &gear)
+{
     for (const QString &note : {missingNote(gear), wastedNote(gear), weakRollsNote(gear)}) {
         if (!note.isEmpty())
-            notes << note;
+            return note;
     }
-    return notes.join(u' ');
+    return {};
 }
 
 // What the build wants most in a slot with nothing in it.
-QString wantedIn(const QString &slot, const GearScoreOptions &options)
+QList<GearNote> wantedIn(const QString &slot, const GearScoreOptions &options)
 {
     QStringList labels;
     for (const KeyStat &stat : topStats(slot, 3, options))
         labels << stat.label;
-    return labels.isEmpty() ? QString() : u"Your build wants most: "_s + labels.join(u", "_s) + u'.';
+    if (labels.isEmpty())
+        return {};
+    return {GearNote{.label = u"Wants most"_s, .text = labels.join(u", "_s)}};
 }
 
 } // namespace
@@ -80,8 +94,11 @@ QVariant GearList::data(const QModelIndex &index, int role) const
         return row.grade;
     case ExtraRole:
         return !mainSlots().contains(row.slot);
-    case ImproveRole:
-        return row.improve;
+    case NotesRole:
+        return QVariant::fromValue(row.notes);
+    case FirstRole:
+        return index.row() == 0 ||
+               mainSlots().contains(m_rows.at(index.row() - 1).slot) != mainSlots().contains(row.slot);
     }
     return {};
 }
@@ -89,8 +106,9 @@ QVariant GearList::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> GearList::roleNames() const
 {
     return {
-        {SlotRole, "slot"},   {NameRole, "name"},   {BaseRole, "base"},   {FromPobRole, "fromPob"},
-        {ScoreRole, "score"}, {GradeRole, "grade"}, {ExtraRole, "extra"}, {ImproveRole, "improve"},
+        {SlotRole, "slot"},       {NameRole, "name"},   {BaseRole, "base"},
+        {FromPobRole, "fromPob"}, {ScoreRole, "score"}, {GradeRole, "grade"},
+        {ExtraRole, "extra"},     {NotesRole, "notes"}, {FirstRole, "first"},
     };
 }
 
@@ -127,8 +145,11 @@ void GearList::refresh()
         const GearScoreOptions options = gearScoreOptions(character, slot, m_priorities);
         if (item == character.gear.cend()) {
             if (mainSlots().contains(slot))
-                m_rows << Row{
-                    .slot = slot, .score = std::nullopt, .grade = {}, .improve = wantedIn(slot, options)};
+                m_rows << Row{.slot = slot,
+                              .score = std::nullopt,
+                              .grade = {},
+                              .notes = wantedIn(slot, options),
+                              .todo = {}};
             continue;
         }
         Row row{.slot = slot};
@@ -136,7 +157,8 @@ void GearList::refresh()
         if (score && score->isRated()) {
             row.score = score->score;
             row.grade = score->grade;
-            row.improve = improvementsOf(*score);
+            row.notes = notesOf(*score);
+            row.todo = firstNoteOf(*score);
         }
         m_rows << row;
     }
@@ -167,8 +189,8 @@ void GearList::refresh()
     // the weakest first, for one that says what to do
     m_focus.clear();
     for (const Row *row : rated) {
-        if (!row->improve.isEmpty()) {
-            m_focus = u"Start with %1. %2"_s.arg(row->slot, row->improve);
+        if (!row->todo.isEmpty()) {
+            m_focus = u"Start with %1. %2"_s.arg(row->slot, row->todo);
             break;
         }
     }

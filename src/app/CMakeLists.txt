@@ -56,6 +56,7 @@ qt_add_qml_module(pou_app
         qml/ResultsWindow.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
+        qml/SlotRow.qml
         qml/SwitchRow.qml
         qml/ToneLabel.qml
         qml/TradePage.qml
