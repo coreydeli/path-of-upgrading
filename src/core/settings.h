@@ -52,7 +52,7 @@ struct OverlaySettings
     double scale = 1;         // popup size
     bool compact = true;      // the rest of the popup behind More
     bool colorblind = false;  // blue for better and orange for worse
-    int autoHideSeconds = 12; // while the mouse isn't over the popup
+    int autoHideSeconds = 60; // while the mouse isn't over the popup
     bool paused = false;      // the hotkey and the clipboard do nothing
 
     friend bool operator==(const OverlaySettings &, const OverlaySettings &) = default;
