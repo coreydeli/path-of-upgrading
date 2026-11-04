@@ -108,6 +108,14 @@ private Q_SLOTS:
         QVERIFY(guide.folderNote.contains(u"HeadlessWrapper.lua"));
     }
 
+    void noBuildsFolderToShow()
+    {
+        Computer computer;
+        const PobGuide guide = guideToPob(computer.places, {}, PobInstall{.folder = u"/pob"_s}, {});
+        QCOMPARE(guide.installedAt, QDir::toNativeSeparators(u"/pob"_s));
+        QVERIFY(guide.buildsAt.isEmpty());
+    }
+
     void inTheDataFolder()
     {
         Computer computer;

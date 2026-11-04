@@ -98,7 +98,8 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
     if (running) {
         guide.headline = whichIsUsed(places, location, *running);
         guide.installedAt = shown(running->folder);
-        guide.buildsAt = shown(pobBuildsFolder(*running));
+        if (!running->userFolder.isEmpty())
+            guide.buildsAt = shown(pobBuildsFolder(*running));
         if (running->flatpak) {
             guide.details << u"It's a Flatpak, which keeps its files in a hidden folder named .var in your "
                              u"home folder."_s;
