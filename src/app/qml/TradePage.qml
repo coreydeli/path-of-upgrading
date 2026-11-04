@@ -7,7 +7,7 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // Whether the popup searches the trade site, in which league, for what
 // you'll pay, and whether you're signed in to it.
-FormCard.FormCardPage {
+ColumnsPage {
     id: tradePage
 
     required property TradeOptions options
@@ -273,7 +273,7 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "sessionHelp"
         text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. Signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
     }

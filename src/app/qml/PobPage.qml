@@ -7,7 +7,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // Which Path of Building the app runs and what matters when it judges items.
-FormCard.FormCardPage {
+ColumnsPage {
     id: pobPage
 
     required property App app
