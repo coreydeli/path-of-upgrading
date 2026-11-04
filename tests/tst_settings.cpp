@@ -44,6 +44,7 @@ private Q_SLOTS:
         s.overlay.colorblind = true;
         s.overlay.autoHideSeconds = 30;
         s.overlay.paused = true;
+        s.overlay.startChosen = true;
 
         QTemporaryDir dir;
         const QString path = dir.filePath(u"settings.conf"_s);
@@ -135,6 +136,7 @@ private Q_SLOTS:
             [](Settings &s) { s.overlay.colorblind = true; },
             [](Settings &s) { s.overlay.autoHideSeconds = 30; },
             [](Settings &s) { s.overlay.paused = true; },
+            [](Settings &s) { s.overlay.startChosen = true; },
         };
 
         // changing one setting must change only that one when it comes back
