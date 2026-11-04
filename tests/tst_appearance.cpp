@@ -5,8 +5,7 @@
 #include <KColorScheme>
 #include <KConfigGroup>
 #include <KSharedConfig>
-#include <QDir>
-#include <QFileInfo>
+#include <QFile>
 #include <QGuiApplication>
 #include <QPalette>
 #include <QQmlComponent>
@@ -173,6 +172,20 @@ private Q_SLOTS:
         QCOMPARE(look.appearance.colorsError(), QString());
     }
 
+    void aFileWithoutColorsLeavesTheDesktopsColors()
+    {
+        QTemporaryDir dir;
+        QFile file(dir.filePath(u"Empty.colors"_s));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("[General]\nName=Empty\n");
+        file.close();
+        const QColor before = window();
+        Look look(file.fileName());
+        QVERIFY(!look.appearance.hasAppColors());
+        QVERIFY(!look.appearance.colorsError().isEmpty());
+        QCOMPARE(window(), before);
+    }
+
     void unknownIdsAreTheDefaults()
     {
         Look look;
@@ -267,13 +280,6 @@ private Q_SLOTS:
         QTRY_VERIFY(item->property("background").value<QColor>() != appWindow);
         look.appearance.setColors(u"app"_s);
         QTRY_COMPARE(item->property("background").value<QColor>(), appWindow);
-    }
-
-    void theSchemeIsInAFolderOfTheSameName()
-    {
-        // which is how the manager finds it
-        QCOMPARE(QFileInfo(colorsFile).dir().dirName(), u"color-schemes"_s);
-        QCOMPARE(QFileInfo(colorsFile).completeBaseName(), Appearance::schemeId());
     }
 };
 

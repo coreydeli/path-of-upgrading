@@ -36,13 +36,9 @@ class Appearance : public QObject
     Q_PROPERTY(QString colorsError READ colorsError NOTIFY changed)
 
 public:
-    // The scheme file is named PathOfUpgrading.colors and has to be in a
-    // folder called color-schemes, which is where the color scheme manager
-    // looks. It's looked for the first time the app's colors are wanted.
+    // The scheme file is a KDE color scheme, read when the app's colors are
+    // wanted.
     Appearance(SettingsStore *settings, const QString &schemeFile, QObject *parent = nullptr);
-
-    // The id of the scheme in the file's name
-    static QString schemeId();
 
     QString colors() const;
     void setColors(const QString &colors);
@@ -64,7 +60,7 @@ private:
 
     SettingsStore *m_settings;
     QString m_schemeFile;
-    // made when it's first needed, and left when the desktop's colors are on
+    // made when the desktop's colors come back
     KColorSchemeManager *m_manager = nullptr;
     bool m_appColors = false;
     QString m_error;

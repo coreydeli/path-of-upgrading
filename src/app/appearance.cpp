@@ -3,9 +3,11 @@
 
 #include "app/settingsstore.h"
 
+#include <KColorScheme>
 #include <KColorSchemeManager>
-#include <QDir>
+#include <KSharedConfig>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QModelIndex>
 
 using namespace Qt::Literals::StringLiterals;
@@ -19,11 +21,6 @@ Appearance::Appearance(SettingsStore *settings, const QString &schemeFile, QObje
 {
     connect(settings, &SettingsStore::changed, this, &Appearance::follow);
     follow();
-}
-
-QString Appearance::schemeId()
-{
-    return u"PathOfUpgrading"_s;
 }
 
 const AppearanceSettings &Appearance::appearance() const
@@ -69,6 +66,11 @@ void Appearance::follow()
     } else {
         m_error.clear();
         if (m_appColors) {
+            if (!m_manager) {
+                m_manager = KColorSchemeManager::instance();
+                // it would write the choice to the app's own settings file
+                m_manager->setAutosaveChanges(false);
+            }
             // an invalid index is the desktop's own scheme
             m_manager->activateScheme({});
             m_appColors = false;
@@ -83,37 +85,19 @@ bool Appearance::activateScheme()
     if (m_appColors)
         return true;
     m_error.clear();
-    const QFileInfo file(m_schemeFile);
-    if (!file.exists()) {
+    if (!QFileInfo::exists(m_schemeFile)) {
         m_error = u"The app's colors are missing, so it has your desktop's."_s;
         return false;
     }
-    if (!m_manager) {
-        // The manager looks for color-schemes in the data folders once, when
-        // it's made. The app's is in a folder of its own so System Settings
-        // doesn't list it, so that folder is one of them for now.
-        const QString parent = file.dir().absolutePath() + u"/.."_s;
-        const bool hadFolders = qEnvironmentVariableIsSet("XDG_DATA_DIRS");
-        const QByteArray folders = qgetenv("XDG_DATA_DIRS");
-        const QByteArray usual = hadFolders ? folders : QByteArrayLiteral("/usr/local/share:/usr/share");
-        QByteArray withApp = QDir::cleanPath(parent).toLocal8Bit();
-        withApp += ':';
-        withApp += usual;
-        qputenv("XDG_DATA_DIRS", withApp);
-        m_manager = KColorSchemeManager::instance();
-        if (hadFolders)
-            qputenv("XDG_DATA_DIRS", folders);
-        else
-            qunsetenv("XDG_DATA_DIRS");
-        // it would write the choice to the app's own settings file
-        m_manager->setAutosaveChanges(false);
-    }
-    const QModelIndex index = m_manager->indexForSchemeId(schemeId());
-    if (!index.isValid()) {
+    // The color scheme manager only knows the schemes in the data folders, and
+    // the app's isn't to be listed in System Settings, so the palette is made
+    // from the file.
+    const KSharedConfigPtr config = KSharedConfig::openConfig(m_schemeFile, KConfig::SimpleConfig);
+    if (!config->hasGroup(u"Colors:Window"_s)) {
         m_error = u"The app's colors couldn't be loaded, so it has your desktop's."_s;
         return false;
     }
-    m_manager->activateScheme(index);
+    QGuiApplication::setPalette(KColorScheme::createApplicationPalette(config));
     return true;
 }
 
