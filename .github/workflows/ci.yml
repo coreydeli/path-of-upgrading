@@ -80,7 +80,9 @@ jobs:
         run: git ls-files -z '*.cpp' '*.h' | xargs -0 clang-format --dry-run -Werror
 
   # The package is made by makepkg, which builds it from the tarball of the
-  # source, tests it and packs it in one go.
+  # source, tests it and packs it in one go. The libraries aren't cached here
+  # or on Debian: the runners download them in seconds, and it's unpacking
+  # them that takes the time.
   arch:
     name: Arch Linux
     needs: format
