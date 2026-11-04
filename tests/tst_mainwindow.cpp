@@ -154,6 +154,8 @@ struct Window
     explicit Window(bool hotkeys = true, bool startHidden = false)
     {
         shortcuts->available = hotkeys;
+        // with trade searches on, which only a beta starts with
+        SettingsStore(dir.filePath(u"settings.conf"_s)).set(Settings());
         app = std::make_unique<App>(
             &qml, std::make_unique<FakeGameInput>(), std::unique_ptr<GlobalShortcuts>(shortcuts),
             std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
@@ -1732,9 +1734,26 @@ private Q_SLOTS:
         QVERIFY(w.show(u"tradeAction"_s));
         QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
         QCOMPARE(w.settings().trade.enabled, false);
-        // as the switch says so
-        QCOMPARE(w.find(u"unavailableText"_s)->property("visible").toBool(), false);
+        // and the page says why, and how to turn it on again
+        QObject *unavailable = w.find(u"unavailableText"_s);
+        QCOMPARE(unavailable->property("visible").toBool(), true);
+        QCOMPARE(text(unavailable), tradeUnavailable({.enabled = false}));
+        QVERIFY(text(unavailable).contains(u"Search the trade site"_s));
         QVERIFY(!w.app->checker().popup().isTradeAvailable());
+        QCOMPARE(w.app->checker().popup().tradeNote(), text(unavailable));
+
+        QVERIFY(toggle(w.find(u"enabledSwitch"_s)));
+        QCOMPARE(w.find(u"unavailableText"_s)->property("visible").toBool(), false);
+        QVERIFY(w.app->checker().popup().tradeNote().isEmpty());
+    }
+
+    void stillTesting()
+    {
+        // a release says so under the switch, and a beta says nothing of it
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        const QString description = w.find(u"enabledSwitch"_s)->property("description").toString();
+        QCOMPARE(description.contains(u"still being tested"_s), !isBetaBuild());
     }
 
     void budget()

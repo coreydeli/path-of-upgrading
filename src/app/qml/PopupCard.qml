@@ -394,6 +394,17 @@ Rectangle {
             colorblind: card.popup.colorblind
         }
 
+        // why there are none, when there aren't
+        QQC2.Label {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: !card.popup.tradeAvailable && card.report.gear && text !== ""
+            wrapMode: Text.Wrap
+            opacity: 0.7
+            font: Kirigami.Theme.smallFont
+            text: card.popup.tradeNote
+        }
+
         // searches on the trade site for gear like it
         ColumnLayout {
             Layout.fillWidth: true
