@@ -513,4 +513,25 @@ QList<TweakableStat> tweakableStats(const BuildProfile &profile)
     return out;
 }
 
+void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId)
+{
+    const QString crit = profileId == energyShieldAttackerProfile
+                             ? u"Attack critical hit chance and damage bonus"_s
+                             : u"Spell critical hit chance and damage bonus"_s;
+    const std::pair<QString, QString> renamed[] = {
+        {u"Crit"_s, crit},
+        {u"Base crit chance"_s, u"Base critical hit chance"_s},
+        {u"Minion crit"_s, u"Minion critical hit chance and damage bonus"_s},
+    };
+    for (const auto &[from, to] : renamed) {
+        const auto old = tweaks.find(from);
+        if (old == tweaks.end())
+            continue;
+        const double value = old.value();
+        tweaks.erase(old);
+        if (!tweaks.contains(to))
+            tweaks.insert(to, value);
+    }
+}
+
 } // namespace pou
