@@ -26,15 +26,37 @@ Kirigami.ApplicationWindow {
     visible: !startHidden
     title: qsTr("Path of Upgrading")
 
+    // Whether the drawer is a sidebar, which is when there's room for one. Qt 6.8
+    // stacks the dimmer of a modal popup beside its item, and Kirigami 6.13 moves
+    // the item of a sidebar elsewhere, so the drawer must be closed before it
+    // turns modal.
+    property bool sidebar: wideScreen
+
+    function followWidth(): void {
+        if (wideScreen) {
+            sidebar = true;
+            globalDrawer.drawerOpen = true;
+        } else if (!globalDrawer.visible) {
+            sidebar = false;
+        } else if (sidebar) {
+            globalDrawer.drawerOpen = false;
+        }
+    }
+
+    onWideScreenChanged: followWidth()
+
     // the entry that starts it can be removed while it waits in the tray
     onActiveChanged: if (active)
         app.overlayOptions.lookAtStart()
 
     globalDrawer: Kirigami.GlobalDrawer {
+        objectName: "sidebar"
         isMenu: false
-        // a sidebar when there's room for one
-        modal: !root.wideScreen
+        modal: !root.sidebar
         handleVisible: modal
+
+        // closed, if it was closing to turn modal
+        onVisibleChanged: root.followWidth()
 
         actions: [
             Kirigami.Action {
