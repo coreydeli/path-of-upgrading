@@ -201,7 +201,7 @@ ColumnsPage {
 
         NumberField {
             objectName: "rateMinutes"
-            label: qsTr("Update poe.ninja's Rate Every")
+            label: qsTr("Update poe.ninja's rate every")
             description: tradePage.options.ratesStatus === "" ? qsTr("How many minutes to wait between updates.") : qsTr("How many minutes to wait between updates. %1").arg(tradePage.options.ratesStatus)
             minimum: 1
             maximum: 60
