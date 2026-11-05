@@ -496,6 +496,84 @@ private Q_SLOTS:
         QCOMPARE(r.app.settings().settings().overlay.resultsHotkey, u"Ctrl+T"_s);
     }
 
+    void firstRunShowsTheSetup()
+    {
+        Folders folders;
+        QVERIFY(QFile::remove(folders.paths.settings));
+        Running r(folders);
+        QVERIFY(r.app.onboarding()->isPending());
+        QCOMPARE(r.app.onboarding()->hotkey(), QKeySequence(u"F2"_s).toString(QKeySequence::NativeText));
+    }
+
+    void setupStaysUntilItsDone()
+    {
+        Folders folders;
+        QVERIFY(QFile::remove(folders.paths.settings));
+        {
+            Running quit(folders);
+            QVERIFY(quit.app.onboarding()->isPending());
+        }
+        // the first start wrote its own settings by now, which aren't a choice
+        QVERIFY(QFile::exists(folders.paths.settings));
+        Running again(folders);
+        QVERIFY(again.app.onboarding()->isPending());
+        QVERIFY(!again.app.settings().settings().setupDone);
+    }
+
+    void finishingTheSetupIsKept()
+    {
+        Folders folders;
+        QVERIFY(QFile::remove(folders.paths.settings));
+        {
+            Running r(folders);
+            QSignalSpy pending(r.app.onboarding(), &Onboarding::pendingChanged);
+            r.app.onboarding()->finish();
+            QCOMPARE(pending.size(), 1);
+            QVERIFY(!r.app.onboarding()->isPending());
+            QVERIFY(r.app.settings().settings().setupDone);
+        }
+        Running again(folders);
+        QVERIFY(!again.app.onboarding()->isPending());
+        QVERIFY(again.app.settings().settings().setupDone);
+    }
+
+    void setupAskedForAgain()
+    {
+        Folders folders;
+        QVERIFY(QFile::remove(folders.paths.settings));
+        {
+            Running r(folders);
+            r.app.onboarding()->finish();
+            r.app.onboarding()->ask();
+            QVERIFY(r.app.onboarding()->isPending());
+            // it was done, and asking doesn't undo that
+            QVERIFY(r.app.settings().settings().setupDone);
+        }
+        Running again(folders);
+        QVERIFY(!again.app.onboarding()->isPending());
+    }
+
+    void noSetupForSettingsYouChanged()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.league.name = u"Standard"_s;
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(!r.app.onboarding()->isPending());
+        // and it didn't record anything
+        QVERIFY(!r.app.settings().settings().setupDone);
+    }
+
+    void noSetupForCharacters()
+    {
+        Folders folders;
+        QVERIFY(QFile::remove(folders.paths.settings));
+        folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
+        Running r(folders);
+        QVERIFY(!r.app.onboarding()->isPending());
+    }
+
     void startsWithTheDesktop()
     {
 #ifdef Q_OS_WIN

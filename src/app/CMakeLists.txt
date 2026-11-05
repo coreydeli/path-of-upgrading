@@ -20,6 +20,7 @@ qt_add_library(pou_app STATIC
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
     listingjudge.cpp listingjudge.h
+    onboarding.cpp onboarding.h
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
@@ -72,6 +73,10 @@ qt_add_qml_module(pou_app
         qml/StatWeightsPage.qml
         qml/SlotRow.qml
         qml/SectionText.qml
+        qml/SetupCharacterStep.qml
+        qml/SetupGuide.qml
+        qml/SetupLeagueStep.qml
+        qml/SetupTradeStep.qml
         qml/Style.qml
         qml/SwitchRow.qml
         qml/ToneLabel.qml
