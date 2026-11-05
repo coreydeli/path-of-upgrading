@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <optional>
 
 namespace pou {
 
@@ -14,6 +15,19 @@ const QStringList &allSlots();
 // The slots an item of one kind can go in, e.g. "Ring" -> Ring 1, Ring 2.
 // A slot that isn't part of a group is its own group.
 QStringList slotGroup(const QString &group);
+
+// Where a main slot sits on the equipment screen the gear page draws, in a
+// grid three wide. Read left to right, top to bottom, it's the order the slots
+// are reached with the keyboard. Empty for a slot that isn't a main one.
+struct EquipmentCell
+{
+    int row = 0;
+    int column = 0;
+
+    friend bool operator==(const EquipmentCell &, const EquipmentCell &) = default;
+};
+
+std::optional<EquipmentCell> equipmentCell(const QString &slot);
 
 // Rings, charms and jewels are compared with the weakest one you wear rather
 // than with the first slot of their group.

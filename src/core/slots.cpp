@@ -55,6 +55,23 @@ const QStringList &allSlots()
     return list;
 }
 
+std::optional<EquipmentCell> equipmentCell(const QString &slot)
+{
+    // the helmet in the middle with the amulet beside it, the weapons either
+    // side of the body, then what's left down the middle and the right
+    static const QHash<QString, EquipmentCell> cells = {
+        {u"Helmet"_s, {.row = 0, .column = 1}},  {u"Amulet"_s, {.row = 0, .column = 2}},
+        {u"Weapon"_s, {.row = 1, .column = 0}},  {u"Body Armour"_s, {.row = 1, .column = 1}},
+        {u"Offhand"_s, {.row = 1, .column = 2}}, {u"Gloves"_s, {.row = 2, .column = 0}},
+        {u"Belt"_s, {.row = 2, .column = 1}},    {u"Ring 1"_s, {.row = 2, .column = 2}},
+        {u"Boots"_s, {.row = 3, .column = 1}},   {u"Ring 2"_s, {.row = 3, .column = 2}},
+    };
+    const auto found = cells.constFind(slot);
+    if (found == cells.cend())
+        return std::nullopt;
+    return *found;
+}
+
 QStringList slotGroup(const QString &group)
 {
     for (const Group &g : groups()) {
