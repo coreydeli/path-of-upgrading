@@ -37,7 +37,7 @@ released.
 - Finds Path of Building as the Flatpak from Flathub
   (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
   installer on Windows, or in a folder you choose. When it can't be found or
-  won't work, the Path of Building page says why and what to do, with buttons
+  won't work, the Build Analysis page says why and what to do, with buttons
   for Discover, Flathub, the install command and, on Windows, the download page.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
@@ -234,7 +234,7 @@ To use it:
   Flatpak: `flatpak install flathub community.pathofbuilding.PathOfBuilding`.
   Open it once for Path of Exile 2, so it downloads what it needs. Other
   installs work too, with LuaJIT installed, and you can point the app at a
-  folder on the Path of Building page.
+  folder on the Build Analysis page.
 
 ## Building
 
@@ -317,7 +317,7 @@ Path of Building is the one from its own installer,
 [Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases),
 which goes in `%APPDATA%\Path of Building Community (PoE2)`. The app comes with
 the LuaJIT that runs it. A copy you unzipped somewhere else can be picked on
-the Path of Building page.
+the Build Analysis page.
 
 Play in windowed fullscreen, as the popup can't be drawn over the game in
 exclusive fullscreen. The hotkeys are changed in the app, on the Settings

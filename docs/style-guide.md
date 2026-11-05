@@ -15,7 +15,7 @@ in QML.
   sentences.
 - Title Case for the window title, the sidebar entries, page titles, the
   section headers of a settings page, buttons and dialog titles:
-  - `title: qsTr("Path of Building")` on a page
+  - `title: qsTr("Build Analysis")` on a page
   - `FormCard.FormHeader { title: qsTr("What Matters Most") }`
   - `text: qsTr("Open on the Trade Site")` and `text: qsTr("Show More")` on buttons
   - `title: qsTr("Add a Stat")` on a dialog
@@ -41,8 +41,8 @@ in QML.
   - `u"Couldn't remove %1."_s.arg(m_file)`
   - `u"Path of Building's answer couldn't be read."_s`
   - `u"Searches need the trade site's list of stats, and it sent an empty one."_s`
-- When the message can't say the fix, the control beside it can. On the Path
-  of Building page, `Path of Building wasn't found.` sits above the Look Again
+- When the message can't say the fix, the control beside it can. On the Build
+  Analysis page, `Path of Building wasn't found.` sits above the Look Again
   button, whose description says `Use it after you install Path of Building, or
   open it for Path of Exile 2 for the first time.`
 - Log text is short and plain too. Pass a `QString` to `%s` through
