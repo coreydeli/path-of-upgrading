@@ -62,7 +62,7 @@ Decorations decorationsFromId(QStringView id)
     return id == u"plain" ? Decorations::Plain : Decorations::Full;
 }
 
-QString tradeUnavailable(const TradeSettings &settings)
+bool isBetaBuild()
 {
     return POU_BETA_BUILD != 0;
 }
