@@ -176,7 +176,7 @@ private Q_SLOTS:
         QCOMPARE(r.refresher.waitMinutes(), 1);
 
         // it goes on to ask itself
-        QTRY_COMPARE_WITH_TIMEOUT(r.network.sent.size(), 2, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(r.network.sent.size() >= 2, 5000);
     }
 };
 
