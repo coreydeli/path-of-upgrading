@@ -10,6 +10,7 @@
 #include <QStringList>
 #include <QtQmlIntegration/qqmlintegration.h>
 #include <optional>
+#include <utility>
 
 namespace pou {
 
@@ -39,7 +40,10 @@ public:
     enum Role {
         IdRole = Qt::UserRole + 1, // "characterId", as QML has its own id
         NameRole,
-        BuildRole, // "Level 92 Stormweaver", empty without a build
+        BuildRole,   // "Level 92 Stormweaver", empty without a build
+        ProfileRole, // what the gear score goes by, "Life and resistances"
+        ScoreRole,   // the overall gear score as text, empty when no gear is rated
+        GradeRole,   // its letter
     };
 
     // They have to outlive it. It's empty until it's loaded.
@@ -84,6 +88,8 @@ private:
     void succeed();
     // after it's been changed in the store, which can move it in the list
     void changed(const QString &id);
+    // The overall gear score and its grade, both empty when no gear is rated.
+    std::pair<QString, QString> rating(const Character &character) const;
 
     CharacterStore *m_store;
     ActiveCharacter *m_active;

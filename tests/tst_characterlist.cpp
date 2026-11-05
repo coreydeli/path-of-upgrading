@@ -2,6 +2,9 @@
 #include "app/activecharacter.h"
 #include "app/characterlist.h"
 #include "app/settingsstore.h"
+#include "core/buildprofiles.h"
+#include "core/gearscore.h"
+#include "core/parser.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
 
@@ -145,6 +148,70 @@ private Q_SLOTS:
         c.saved(u"Wren"_s, u"<PathOfBuilding2><Build/></PathOfBuilding2>"_s);
         c.list.load();
         QCOMPARE(c.list.index(0).data(CharacterList::BuildRole).toString(), QString());
+    }
+
+    // the overall gear score and its grade, for the gauge on each row
+    void ratesTheGear()
+    {
+        Characters c;
+        Character wren = named(u"Wren"_s);
+        wren.gear.insert(u"Helmet"_s, parseItem(itemtexts::helmetNew).value());
+        const QString id = c.store.add(wren).value_or(QString());
+        QVERIFY(!id.isEmpty());
+        c.saved(u"Anya"_s);
+        c.list.load();
+
+        const int row = c.names().indexOf(u"Wren"_s);
+        const QString score = c.list.index(row).data(CharacterList::ScoreRole).toString();
+        const QString grade = c.list.index(row).data(CharacterList::GradeRole).toString();
+        QVERIFY(!score.isEmpty());
+        QVERIFY(score.toInt() > 0 && score.toInt() <= 100);
+        QCOMPARE(grade, gearGrade(score.toInt()));
+        // and none for one with nothing on
+        const int bare = c.names().indexOf(u"Anya"_s);
+        QCOMPARE(c.list.index(bare).data(CharacterList::ScoreRole).toString(), QString());
+        QCOMPARE(c.list.index(bare).data(CharacterList::GradeRole).toString(), QString());
+
+        const QHash<int, QByteArray> names = c.list.roleNames();
+        QCOMPARE(names.value(CharacterList::ScoreRole), "score"_ba);
+        QCOMPARE(names.value(CharacterList::GradeRole), "grade"_ba);
+        QCOMPARE(names.value(CharacterList::ProfileRole), "profile"_ba);
+    }
+
+    void ratingFollowsWhatYouWear()
+    {
+        Characters c;
+        const QString id = c.saved(u"Wren"_s);
+        c.list.load();
+        c.play(id);
+        c.active.setId(id);
+        QSignalSpy changed(&c.list, &CharacterList::dataChanged);
+        QVERIFY(c.active.wear(u"Helmet"_s, parseItem(itemtexts::helmetNew).value()));
+        QVERIFY(!changed.isEmpty());
+        QVERIFY(!c.list.index(0).data(CharacterList::ScoreRole).toString().isEmpty());
+    }
+
+    void sayWhatTheGearScoreGoesBy()
+    {
+        Characters c;
+        const QString plain = c.saved(u"Plain"_s);
+        Character weights = named(u"Weights"_s);
+        weights.buildProfile = noBuildProfile.toString();
+        const QString byWeights = c.store.add(weights).value_or(QString());
+        Character lost = named(u"Lost"_s);
+        lost.buildProfile = u"no-such-profile"_s;
+        const QString unknown = c.store.add(lost).value_or(QString());
+        c.list.load();
+        const auto profile = [&](const QString &id) {
+            for (int row = 0; row < c.list.rowCount(); ++row) {
+                if (c.list.index(row).data(CharacterList::IdRole).toString() == id)
+                    return c.list.index(row).data(CharacterList::ProfileRole).toString();
+            }
+            return u"missing"_s;
+        };
+        QCOMPARE(profile(plain), u"Life and resistances"_s);
+        QCOMPARE(profile(byWeights), u"Your stat weights"_s);
+        QCOMPARE(profile(unknown), QString());
     }
 
     void problems()
@@ -423,7 +490,8 @@ private Q_SLOTS:
         QCOMPARE(done->items, 1);
         QCOMPARE(done->character.gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
 
-        QCOMPARE(changed.size(), 1);
+        // once for the row, and once more as the character you play reloads
+        QCOMPARE(changed.size(), 2);
         QCOMPARE(c.list.index(0).data(CharacterList::BuildRole).toString(), u"Level 92 Stormweaver"_s);
         QCOMPARE(c.inFolder(wren)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
         QCOMPARE(c.inFolder(wren)->fromPob, QSet<QString>{u"Helmet"_s});
