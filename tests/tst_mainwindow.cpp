@@ -208,16 +208,26 @@ struct Window
 
     QObject *drawer() const { return window->property("globalDrawer").value<QObject *>(); }
 
+    // Kirigami 6.13 puts an & before the key that picks a row, and has its own
+    // type for the rows besides the button for Back.
+    static QString plain(QString text) { return text.remove(u'&'); }
+
+    static bool isRow(const QObject *item)
+    {
+        return item->inherits("QQuickAbstractButton") ||
+               QByteArrayView(item->metaObject()->className()).contains("GlobalDrawerActionItem");
+    }
+
     // The row in the sidebar with that text, if it's showing. Kirigami's
     // rows are all the same type, so it goes by the label in them.
     QQuickItem *sidebarRow(const QString &text) const
     {
         const auto *label = qobject_cast<QQuickItem *>(search(drawer(), [&](QObject *o) {
             return o->metaObject()->indexOfProperty("elide") >= 0 && o->property("visible").toBool() &&
-                   o->property("text").toString() == text;
+                   plain(o->property("text").toString()) == text;
         }));
         for (QQuickItem *up = label ? label->parentItem() : nullptr; up; up = up->parentItem()) {
-            if (up->inherits("QQuickAbstractButton"))
+            if (isRow(up))
                 return up;
         }
         return nullptr;
@@ -238,10 +248,10 @@ struct Window
     QString focusedRow() const
     {
         for (QQuickItem *up = window->activeFocusItem(); up; up = up->parentItem()) {
-            if (up->inherits("QQuickAbstractButton")) {
+            if (isRow(up)) {
                 const QObject *label =
                     search(up, [](QObject *o) { return o->metaObject()->indexOfProperty("elide") >= 0; });
-                return label ? label->property("text").toString() : QString();
+                return label ? plain(label->property("text").toString()) : QString();
             }
         }
         return QString();
@@ -2627,8 +2637,8 @@ private Q_SLOTS:
         w.window->show();
         QVERIFY(QTest::qWaitForWindowExposed(w.window.get()));
         QVERIFY(w.settled());
-        QCOMPARE(w.window->property("wideScreen").toBool(), false);
-        QCOMPARE(w.drawer()->property("modal").toBool(), true);
+        QTRY_COMPARE(w.window->property("wideScreen").toBool(), false);
+        QTRY_COMPARE(w.drawer()->property("modal").toBool(), true);
 
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
