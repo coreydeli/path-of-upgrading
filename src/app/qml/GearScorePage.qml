@@ -13,7 +13,7 @@ ColumnsPage {
 
     required property GearScoring scoring
 
-    title: qsTr("Gear Score")
+    title: qsTr("Gear Grade")
     description: qsTr("What the gear score goes by, and how much each stat counts.")
 
     // A stat, with how much it counts beside it.

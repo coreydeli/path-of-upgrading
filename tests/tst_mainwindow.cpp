@@ -218,6 +218,57 @@ struct Window
         return found && QMetaObject::invokeMethod(found, "trigger");
     }
 
+    QObject *drawer() const { return window->property("globalDrawer").value<QObject *>(); }
+
+    // Kirigami 6.13 puts an & before the key that picks a row, and has its own
+    // type for the rows besides the button for Back.
+    static QString plain(QString text) { return text.remove(u'&'); }
+
+    static bool isRow(const QObject *item)
+    {
+        return item->inherits("QQuickAbstractButton") ||
+               QByteArrayView(item->metaObject()->className()).contains("GlobalDrawerActionItem");
+    }
+
+    // The row in the sidebar with that text, if it's showing. Kirigami's
+    // rows are all the same type, so it goes by the label in them.
+    QQuickItem *sidebarRow(const QString &text) const
+    {
+        const auto *label = qobject_cast<QQuickItem *>(search(drawer(), [&](QObject *o) {
+            return o->metaObject()->indexOfProperty("elide") >= 0 && o->property("visible").toBool() &&
+                   plain(o->property("text").toString()) == text;
+        }));
+        for (QQuickItem *up = label ? label->parentItem() : nullptr; up; up = up->parentItem()) {
+            if (isRow(up))
+                return up;
+        }
+        return nullptr;
+    }
+
+    // as you do with the mouse
+    bool clickRow(const QString &text) const
+    {
+        QQuickItem *row = sidebarRow(text);
+        if (!row)
+            return false;
+        QTest::mouseClick(window.get(), Qt::LeftButton, {},
+                          row->mapToScene(QPointF(row->width() / 2, row->height() / 2)).toPoint());
+        return true;
+    }
+
+    // The text of the sidebar row with the keyboard focus.
+    QString focusedRow() const
+    {
+        for (QQuickItem *up = window->activeFocusItem(); up; up = up->parentItem()) {
+            if (isRow(up)) {
+                const QObject *label =
+                    search(up, [](QObject *o) { return o->metaObject()->indexOfProperty("elide") >= 0; });
+                return label ? plain(label->property("text").toString()) : QString();
+            }
+        }
+        return QString();
+    }
+
     // the setup guide's dialog
     QObject *guide() const { return window->findChild<QObject *>(u"setupGuide"_s); }
 
@@ -908,7 +959,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"gearScoreAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
         QVERIFY(w.show(u"weightsAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
         QVERIFY(w.show(u"ignoredAction"_s));
@@ -2732,6 +2783,141 @@ private Q_SLOTS:
         QCOMPARE(style->property("plain").toBool(), true);
         w.app->appearance()->setDecorations(u"full"_s);
         QCOMPARE(style->property("plain").toBool(), false);
+    }
+
+    // Gear Grade, Stat Weights and Ignored Stats are one level down, under Gear
+    void gearPagesAreUnderGear()
+    {
+        Window w;
+        QObject *group = w.window->findChild<QObject *>(u"gearGroupAction"_s);
+        QVERIFY(group);
+        QCOMPARE(group->property("text").toString(), u"Gear"_s);
+        for (const QString &name : {u"gearScoreAction"_s, u"weightsAction"_s, u"ignoredAction"_s}) {
+            QObject *action = w.window->findChild<QObject *>(name);
+            QVERIFY2(action, qPrintable(name));
+            QCOMPARE(action->parent(), group);
+        }
+        // Your Gear stays beside it
+        QCOMPARE(w.window->findChild<QObject *>(u"gearAction"_s)->parent(), group->parent());
+
+        // the group is lit while one of its pages is shown
+        QCOMPARE(group->property("checked").toBool(), false);
+        QVERIFY(w.show(u"weightsAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"gearAction"_s));
+        QCOMPARE(group->property("checked").toBool(), false);
+        QVERIFY(w.show(u"ignoredAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"gearScoreAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"charactersAction"_s));
+        QCOMPARE(group->property("checked").toBool(), false);
+    }
+
+    void sidebarOpensGear()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QCOMPARE(w.window->property("wideScreen").toBool(), true);
+        // the pages aren't in the sidebar until Gear is opened
+        QTRY_VERIFY(w.sidebarRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Your Gear"_s));
+        QVERIFY(!w.sidebarRow(u"Gear Grade"_s));
+        QVERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QVERIFY(!w.sidebarRow(u"Ignored Stats"_s));
+        QVERIFY(!w.sidebarRow(u"Gear Score"_s));
+
+        QVERIFY(w.clickRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
+        QVERIFY(w.sidebarRow(u"Stat Weights"_s));
+        QVERIFY(w.sidebarRow(u"Ignored Stats"_s));
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        // opening it shows no page yet
+        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+
+        QVERIFY(w.clickRow(u"Stat Weights"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
+        // and the sidebar is back at the top, with Gear lit
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+        QCOMPARE(w.sidebarRow(u"Characters"_s)->property("checked").toBool(), false);
+
+        // Back goes up a level without picking a page
+        QVERIFY(w.clickRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Back"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        // once it has slid in
+        QTest::qWait(500);
+        QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), true);
+        QVERIFY(w.clickRow(u"Back"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
+
+        // the other pages stay one click away
+        QVERIFY(w.clickRow(u"Your Gear"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), false);
+    }
+
+    void sidebarGearWorksWithTheKeyboard()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        w.sidebarRow(u"Characters"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"Characters"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Your Gear"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Gear"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Return);
+        QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+
+        // Back, then the three pages
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Back"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Gear Grade"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Stat Weights"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Ignored Stats"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Space);
+        QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
+    }
+
+    // where the sidebar is a drawer you open
+    void sidebarGearWorksInANarrowWindow()
+    {
+        Window w;
+        w.window->resize(500, 700);
+        w.window->show();
+        QVERIFY(QTest::qWaitForWindowExposed(w.window.get()));
+        QVERIFY(w.settled());
+        QTRY_COMPARE(w.window->property("wideScreen").toBool(), false);
+        QTRY_COMPARE(w.drawer()->property("modal").toBool(), true);
+
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Gear"_s));
+        QVERIFY(w.clickRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
+        // once it has slid in
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Gear Grade"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
+        // the drawer lets go once a page is picked, and starts from the top again
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
+
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
+        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
     }
 
     // the title and what the page is for, at the top of each page
