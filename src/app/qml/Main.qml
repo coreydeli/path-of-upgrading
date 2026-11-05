@@ -58,6 +58,10 @@ Kirigami.ApplicationWindow {
         // closed, if it was closing to turn modal
         onVisibleChanged: root.followWidth()
 
+        header: SidebarHeader {
+            app: root.app
+        }
+
         actions: [
             Kirigami.Action {
                 objectName: "charactersAction"
@@ -69,6 +73,7 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(charactersPage)
             },
             Kirigami.Action {
+                id: gearAction
                 objectName: "gearAction"
                 text: qsTr("Your Gear")
                 icon.name: "view-list-details"
@@ -110,7 +115,7 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "pobAction"
-                text: qsTr("Path of Building")
+                text: qsTr("Build Analysis")
                 icon.name: "office-chart-line"
                 checkable: true
                 QQC2.ActionGroup.group: pages
@@ -126,8 +131,8 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "overlayAction"
-                text: qsTr("Popup and Hotkeys")
-                icon.name: "preferences-desktop-keyboard-shortcut"
+                text: qsTr("Settings")
+                icon.name: "settings-configure"
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(overlayPage)
@@ -144,6 +149,8 @@ Kirigami.ApplicationWindow {
     }
 
     pageStack.initialPage: charactersPage
+    // each page has its own title
+    pageStack.globalToolBar.style: Kirigami.ApplicationHeaderStyle.None
 
     QQC2.ActionGroup {
         id: pages
@@ -156,6 +163,18 @@ Kirigami.ApplicationWindow {
         value: root.app.appearance.appColors
     }
 
+    Binding {
+        target: Style
+        property: "plain"
+        value: root.app.appearance.plain
+    }
+
+    Binding {
+        target: Style
+        property: "headingFamily"
+        value: root.app.appearance.headingFamily
+    }
+
     // The pages wait here while they aren't shown, so they keep where you
     // were on them.
     Item {
@@ -164,6 +183,7 @@ Kirigami.ApplicationWindow {
         CharactersPage {
             id: charactersPage
             app: root.app
+            onGearAsked: gearAction.trigger()
         }
 
         GearPage {

@@ -6,7 +6,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Which Path of Building the app runs and what matters when it judges items.
+// Build Analysis: which Path of Building the app runs and what matters when
+// it judges items with your build.
 ColumnsPage {
     id: pobPage
 
@@ -15,7 +16,13 @@ ColumnsPage {
 
     property bool showPlaces: false
 
-    title: qsTr("Path of Building")
+    title: qsTr("Build Analysis")
+    description: qsTr("Which Path of Building is used to judge items, and what matters when it does.")
+
+    SectionText {
+        objectName: "analysisIntro"
+        text: qsTr("Path of Building checks each item with your build, for the damage and defences it would give.")
+    }
 
     FormCard.FormCard {
         Layout.topMargin: Kirigami.Units.largeSpacing
@@ -29,7 +36,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Where It Is")
     }
 
@@ -220,7 +227,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("What Matters Most")
     }
 

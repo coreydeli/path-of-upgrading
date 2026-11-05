@@ -61,9 +61,10 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_opener(std::move(opener))
     , m_network(std::move(network))
     , m_tradeClient(m_network.get())
-    , m_tradeSession(m_secrets.get(), &m_tradeClient)
+    , m_tradeSession(m_secrets.get(), &m_tradeClient, m_opener.get())
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
+    , m_ratesRefresher(&m_rates)
     , m_trade(&m_tradeClient)
     , m_finder(&m_trade, &m_tradeData, &m_rates)
     , m_results(&m_trade, &m_rates)
@@ -132,6 +133,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
         m_trade.setLeagues(m_tradeData.leagues());
         if (m_trade.unavailable().isEmpty())
             m_rates.refresh(m_trade.league().tradeId());
+        followRates();
     });
     // what a search finds is what the results have, and they ask the site
     // only once you want to see them
@@ -212,6 +214,16 @@ void App::followTrade()
         // and this asks the keyring once
         m_tradeSession.load();
     }
+    followRates();
+}
+
+void App::followRates()
+{
+    // which carries on as it was when nothing about it changed
+    if (m_trade.unavailable().isEmpty() && m_settings.settings().trade.autoRate)
+        m_ratesRefresher.follow(m_trade.league().tradeId(), m_settings.settings().trade.rateMinutes);
+    else
+        m_ratesRefresher.stop();
 }
 
 } // namespace pou

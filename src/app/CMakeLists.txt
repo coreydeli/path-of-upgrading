@@ -47,7 +47,8 @@ qt_add_qml_module(pou_app
         qml/ColumnsPage.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
-        qml/FormRow.qml
+        qml/FontPickerDialog.qml
+    qml/FormRow.qml
         qml/GearPage.qml
         qml/GearScorePage.qml
         qml/IgnoredStatsPage.qml
@@ -55,7 +56,10 @@ qt_add_qml_module(pou_app
         qml/Main.qml
         qml/NumberBox.qml
         qml/NumberField.qml
+        qml/Ornament.qml
+        qml/OrnateFrame.qml
         qml/OverlayPage.qml
+        qml/PageHeader.qml
         qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
@@ -64,14 +68,19 @@ qt_add_qml_module(pou_app
         qml/ResultRow.qml
         qml/ResultsCard.qml
         qml/ResultsWindow.qml
+        qml/ScoreGauge.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
         qml/SlotRow.qml
+        qml/SectionHeader.qml
+        qml/SidebarHeader.qml
         qml/SectionText.qml
         qml/Style.qml
         qml/SwitchRow.qml
         qml/ToneLabel.qml
+        qml/TonePill.qml
         qml/TradePage.qml
+        qml/WindowGlow.qml
 )
 
 # the heading font, which the program carries

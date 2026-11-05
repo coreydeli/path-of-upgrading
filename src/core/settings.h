@@ -15,6 +15,10 @@ namespace pou {
 
 // What you choose in the settings window, kept between runs.
 
+// The limits on how often the rate is asked for again.
+constexpr int minRateMinutes = 1;
+constexpr int maxRateMinutes = 60;
+
 // Whether this is a beta, as the release builds of one say with POU_BETA.
 // Trade searches start on in a beta and off otherwise, until you choose.
 bool isBetaBuild();
@@ -26,6 +30,8 @@ struct TradeSettings
     ListingStatus status = ListingStatus::Available;
     Budget budget;        // with the divine rate you typed in
     bool autoRate = true; // or poe.ninja's instead
+    // How often poe.ninja's rate is asked for again while that's in use.
+    int rateMinutes = 10;
 
     friend bool operator==(const TradeSettings &, const TradeSettings &) = default;
 };
@@ -82,10 +88,22 @@ enum class Decorations {
 QString decorationsId(Decorations decorations);
 Decorations decorationsFromId(QStringView id);
 
+// What headingFont says for "the same as the text".
+constexpr QStringView sameAsText = u"text";
+
+// The smallest and largest text size to ask for, in points.
+constexpr double smallestTextSize = 6;
+constexpr double largestTextSize = 32;
+
 struct AppearanceSettings
 {
     ColorTheme colors = ColorTheme::App;
     Decorations decorations = Decorations::Full;
+    // Empty is the app's own heading font, "text" is the text font, and else
+    // a font family.
+    QString headingFont;
+    QString textFont;    // a font family, empty is the desktop's
+    double textSize = 0; // in points, 0 is the desktop's
 
     friend bool operator==(const AppearanceSettings &, const AppearanceSettings &) = default;
 };

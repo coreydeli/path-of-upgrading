@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 #include "app/appearance.h"
+#include "app/fonts.h"
 #include "app/settingsstore.h"
 
 #include <KColorScheme>
 #include <KConfigGroup>
 #include <KSharedConfig>
 #include <QFile>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QPalette>
 #include <QQmlComponent>
@@ -52,6 +54,19 @@ QColor window()
 
 const QColor appWindow = QColor(u"#100e0c"_s);
 
+// An installed family that isn't the app's font now, or nothing.
+QString otherFamily()
+{
+    const QString now = QGuiApplication::font().family();
+    for (const QString &family : scalableFamilies()) {
+        if (family != now)
+            return family;
+    }
+    return {};
+}
+
+const QString notInstalled = u"Made Up Grotesque"_s;
+
 } // namespace
 
 class TestAppearance : public QObject
@@ -77,6 +92,8 @@ private Q_SLOTS:
     {
         // so nothing of the desktop's colors is read or written
         QStandardPaths::setTestModeEnabled(true);
+        // a container can have no fonts at all, and the font pickers need one
+        QVERIFY(addBundledFonts());
     }
 
     void init() { QTest::failOnWarning(); }
@@ -204,6 +221,192 @@ private Q_SLOTS:
         look.appearance.setDecorations(u"lots"_s);
         QCOMPARE(look.appearance.colors(), u"app"_s);
         QCOMPARE(look.appearance.decorations(), u"full"_s);
+    }
+
+    void fontsStartAsTheDesktops()
+    {
+        const QFont desktop = QGuiApplication::font();
+        Look look;
+        QCOMPARE(look.appearance.headingFont(), QString());
+        QCOMPARE(look.appearance.textFont(), QString());
+        QCOMPARE(look.appearance.textSize(), 0.0);
+        QCOMPARE(look.appearance.headingFamily(), headingFontFamily());
+        QCOMPARE(look.appearance.textFamily(), desktop.family());
+        QCOMPARE(look.appearance.desktopTextSize(), desktop.pointSizeF());
+        QCOMPARE(look.appearance.fontsError(), QString());
+        QCOMPARE(QGuiApplication::font(), desktop);
+    }
+
+    void listsOnlyFontsThatScale()
+    {
+        Look look;
+        const QStringList families = look.appearance.families();
+        QVERIFY(!families.isEmpty());
+        for (const QString &family : families) {
+            QVERIFY2(QFontDatabase::isSmoothlyScalable(family), qPrintable(family));
+            // so setting it takes
+            QVERIFY2(QFontDatabase::hasFamily(family), qPrintable(family));
+        }
+        QVERIFY(families.size() <= QFontDatabase::families().size());
+    }
+
+    void theTextFontIsTheAppsFont()
+    {
+        const QString family = otherFamily();
+        if (family.isEmpty())
+            QSKIP("Only one font is installed.");
+        const QFont desktop = QGuiApplication::font();
+        Look look;
+        QSignalSpy changed(&look.appearance, &Appearance::changed);
+        look.appearance.setTextFont(family);
+        QCOMPARE(QGuiApplication::font().family(), family);
+        QCOMPARE(look.appearance.textFamily(), family);
+        QCOMPARE(look.saved().textFont, family);
+        QVERIFY(changed.count() >= 1);
+
+        // the desktop's again
+        look.appearance.setTextFont(QString());
+        QCOMPARE(QGuiApplication::font(), desktop);
+        QCOMPARE(look.saved().textFont, QString());
+    }
+
+    void theTextSizeIsTheAppsFontSize()
+    {
+        Look look;
+        const double desktop = look.appearance.desktopTextSize();
+        look.appearance.setTextSize(desktop + 3);
+        QCOMPARE(QGuiApplication::font().pointSizeF(), desktop + 3);
+        QCOMPARE(look.saved().textSize, desktop + 3);
+
+        look.appearance.setTextSize(0);
+        QCOMPARE(QGuiApplication::font().pointSizeF(), desktop);
+        QCOMPARE(look.saved().textSize, 0.0);
+    }
+
+    void theTextSizeStaysReadable()
+    {
+        Look look;
+        look.appearance.setTextSize(200);
+        QCOMPARE(look.appearance.textSize(), largestTextSize);
+        QCOMPARE(QGuiApplication::font().pointSizeF(), largestTextSize);
+        look.appearance.setTextSize(1);
+        QCOMPARE(look.appearance.textSize(), smallestTextSize);
+        look.appearance.setTextSize(-5);
+        QCOMPARE(look.appearance.textSize(), 0.0);
+    }
+
+    void aMissingTextFontLeavesTheDesktopsFont()
+    {
+        const QFont desktop = QGuiApplication::font();
+        Look look;
+        look.appearance.setTextFont(notInstalled);
+        QCOMPARE(QGuiApplication::font(), desktop);
+        QCOMPARE(look.appearance.textFamily(), desktop.family());
+        QCOMPARE(look.appearance.fontsError(), notInstalled + u" isn't installed, so the default is used."_s);
+        // what was chosen stays chosen, for when it's installed
+        QCOMPARE(look.appearance.textFont(), notInstalled);
+
+        look.appearance.setTextFont(QString());
+        QCOMPARE(look.appearance.fontsError(), QString());
+    }
+
+    void theHeadingFontCanBeTheText()
+    {
+        const QString family = otherFamily();
+        if (family.isEmpty())
+            QSKIP("Only one font is installed.");
+        Look look;
+        look.appearance.setHeadingFont(sameAsText.toString());
+        QCOMPARE(look.appearance.headingFamily(), look.appearance.textFamily());
+
+        // and moves with it
+        look.appearance.setTextFont(family);
+        QCOMPARE(look.appearance.headingFamily(), family);
+    }
+
+    void theHeadingFontCanBeAFamily()
+    {
+        const QString family = otherFamily();
+        if (family.isEmpty())
+            QSKIP("Only one font is installed.");
+        Look look;
+        look.appearance.setHeadingFont(family);
+        QCOMPARE(look.appearance.headingFamily(), family);
+        QCOMPARE(look.appearance.fontsError(), QString());
+        // and not the text's
+        QCOMPARE(look.appearance.textFamily(), QGuiApplication::font().family());
+        QVERIFY(look.appearance.textFamily() != family);
+
+        look.appearance.setHeadingFont(QString());
+        QCOMPARE(look.appearance.headingFamily(), headingFontFamily());
+    }
+
+    void aMissingHeadingFontIsTheAppsOwn()
+    {
+        Look look;
+        look.appearance.setHeadingFont(notInstalled);
+        QCOMPARE(look.appearance.headingFamily(), headingFontFamily());
+        QCOMPARE(look.appearance.fontsError(), notInstalled + u" isn't installed, so the default is used."_s);
+    }
+
+    void saysEveryFontThatIsMissing()
+    {
+        Look look;
+        look.appearance.setHeadingFont(u"Made Up Serif"_s);
+        look.appearance.setTextFont(u"Made Up Sans"_s);
+        QCOMPARE(look.appearance.fontsError(),
+                 u"Made Up Sans, Made Up Serif aren't installed, so the defaults are used."_s);
+        // the same one twice is said once
+        look.appearance.setHeadingFont(u"Made Up Sans"_s);
+        QCOMPARE(look.appearance.fontsError(), u"Made Up Sans isn't installed, so the default is used."_s);
+    }
+
+    void readsTheSavedFonts()
+    {
+        const QString family = otherFamily();
+        if (family.isEmpty())
+            QSKIP("Only one font is installed.");
+        Settings first;
+        first.appearance.textFont = family;
+        first.appearance.textSize = 13;
+        first.appearance.headingFont = sameAsText.toString();
+        Look look(first);
+        QCOMPARE(QGuiApplication::font().family(), family);
+        QCOMPARE(QGuiApplication::font().pointSizeF(), 13.0);
+        QCOMPARE(look.appearance.headingFamily(), family);
+    }
+
+    void followsTheFontsInTheSettingsFile()
+    {
+        Look look;
+        Settings settings = look.settings.settings();
+        settings.appearance.textSize = 15;
+        QVERIFY(look.settings.set(settings));
+        QCOMPARE(QGuiApplication::font().pointSizeF(), 15.0);
+    }
+
+    void putsTheDesktopsFontBack()
+    {
+        const QFont desktop = QGuiApplication::font();
+        {
+            Look look;
+            look.appearance.setTextSize(look.appearance.desktopTextSize() + 4);
+            QVERIFY(QGuiApplication::font() != desktop);
+        }
+        QCOMPARE(QGuiApplication::font(), desktop);
+    }
+
+    void tellsWhenOnlyTheDecorationsChange()
+    {
+        Look look;
+        QSignalSpy changed(&look.appearance, &Appearance::changed);
+        look.appearance.setDecorations(u"plain"_s);
+        QCOMPARE(changed.count(), 1);
+        look.appearance.setDecorations(u"full"_s);
+        QCOMPARE(changed.count(), 2);
+        // and not for what hasn't changed
+        look.appearance.setDecorations(u"full"_s);
+        QCOMPARE(changed.count(), 2);
     }
 
     // The scheme in the source is what the design says it is.

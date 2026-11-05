@@ -14,6 +14,8 @@ import org.kde.kirigamiaddons.formcard as FormCard
 FormCard.FormCardPage {
     id: page
 
+    // what the page is for, in a line under its title
+    property string description
     // the least a column gets, which decides how many fit
     property real minColumnWidth: Kirigami.Units.gridUnit * 26
     property int maxColumns: 3
@@ -47,7 +49,7 @@ FormCard.FormCardPage {
         for (let i = 0; i < cards.length; ++i) {
             const o = cards[i];
             // not an item: a dialog or such
-            if (o === columns || o.childrenRect === undefined)
+            if (o === columns || o === pageHeader || o.childrenRect === undefined)
                 continue;
             const isHeader = o.title !== undefined;
             const isText = !isHeader && o.wrapMode !== undefined;
@@ -122,6 +124,8 @@ FormCard.FormCardPage {
         place();
     }
 
+    background: WindowGlow {}
+
     component PageColumn: ColumnLayout {
         required property int index
 
@@ -131,6 +135,17 @@ FormCard.FormCardPage {
         Layout.alignment: Qt.AlignTop
         visible: index < page.used
         spacing: 0
+    }
+
+    PageHeader {
+        id: pageHeader
+        objectName: "pageHeader"
+
+        Layout.fillWidth: true
+        Layout.maximumWidth: page.used * page.maxColumnWidth
+        Layout.alignment: Qt.AlignHCenter
+        title: page.title
+        description: page.description
     }
 
     RowLayout {

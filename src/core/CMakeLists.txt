@@ -29,6 +29,7 @@ add_library(pou_core STATIC
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
+    sessionguide.cpp sessionguide.h
     seenstats.cpp seenstats.h
     settings.cpp settings.h
     slots.cpp slots.h

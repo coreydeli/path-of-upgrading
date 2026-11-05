@@ -26,10 +26,10 @@ released.
   lose damage" and "Never lose defences" make either one mean an item is never
   an upgrade.
 - The gear score uses a build profile: life and resistances, Energy Shield
-  spellcaster, Energy Shield attacker, or minion summoner. You can say how much
-  each stat counts, from not at all to three times as much. Stat weights can
-  be edited or suggested from the gear you wear, and stats you don't care
-  about can be ignored or left out of searches.
+  spellcaster, Energy Shield attacker, or minion summoner. You can change how
+  much each stat adds under Affix Impact, from Not at all (0x) to Three times
+  (3x). Stat weights can be edited or suggested from the gear you wear, and
+  stats you don't care about can be ignored or left out of searches.
 - Imports builds from Path of Building: from a code, a link, a file, or one
   you saved in Path of Building's own folder. It runs Path of Building without
   its window, so your build's own numbers judge the item. The import picks the
@@ -37,19 +37,28 @@ released.
 - Finds Path of Building as the Flatpak from Flathub
   (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
   installer on Windows, or in a folder you choose. When it can't be found or
-  won't work, the Path of Building page says why and what to do, with buttons
+  won't work, the Build Analysis page says why and what to do, with buttons
   for Discover, Flathub, the install command and, on Windows, the download page.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
-  one that finds nothing is tried again a little looser.
+  one that finds nothing is tried again a little looser. While trade searches
+  are on, poe.ninja's prices are updated every 10 minutes, or as often as you
+  set on the Trade page.
 - Shows the listings a search found in a window over the game, opened from the
   popup or with the Results hotkey. Each says whether it is an upgrade for the
   character you play, by how much and what it changes, the way the popup does,
   with its price, what that comes to in exalts or divines, the seller and how
   long ago it was listed.
+- Draws the popup and the results window with a title band in the item's
+  rarity color, a verdict banner and framed cards, and a bar behind each
+  change in the popup's table, sized against the biggest change. The popup
+  fades in and rises a little when it opens, unless Decorations is Plain or
+  the desktop has animations off.
 - Trade searches can be turned off, and set to the right league, including
-  hardcore. Solo self-found turns them off, as there is no trading in it.
+  hardcore. Solo self-found turns them off, as there is no trading in it. Betas
+  start with them on and releases with them off. Once you change that on the
+  Trade page, your choice is kept.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and what each slot needs to score
@@ -62,20 +71,28 @@ released.
   three columns, and stack again on a narrow one. On the gear page, your
   resistances and the other worn items sit beside the main gear.
 - Can sign in to the trade site with your session ID, which is kept in your
-  system keyring. Signed out, the site only takes simple searches, so upgrade
-  searches look for a few of your build's key stats, and the results window
-  rates each listing. Signed in, Path of Building weighs them for your build,
-  the way its own trade searches do, or they go by your whole gear score.
+  system keyring. The Trade page has the steps for finding it in your browser.
+  Signed out, the site only takes simple searches, so upgrade searches look for
+  a few of your build's key stats, and the results window rates each listing.
+  Signed in, Path of Building weighs them for your build, the way its own trade
+  searches do, or they go by your whole gear score.
 - The popup can be dragged by its title to move it. When you copy an item
   yourself with Ctrl+C, it appears by the mouse.
 - Stays in the system tray when you close the window. The tray icon shows the
   window, pauses the hotkeys and quits. Starting the program again shows the
   window that is already running, rather than opening a second one.
-- Can start with your desktop, from a switch on the Popup and Hotkeys page. It
-  then starts with only the tray icon, as `path-of-upgrading --background`
-  does. It tells you with a notification if the hotkeys couldn't be set up.
+- Starts with your desktop from the first time it runs, with only the tray
+  icon, as `path-of-upgrading --background` does. Turn that off with the switch
+  on the Settings page, and it stays off. It tells you with a notification if
+  the hotkeys couldn't be set up.
 - Has dark colors of its own, as a KDE color scheme, or follows your desktop's
-  colors, from the Appearance page.
+  colors, from the Appearance page. The same page picks the heading font
+  (Cinzel by default), the text font and the text size. The text size follows
+  your desktop's unless you set one, from 6 to 32 points. The font list only
+  shows fonts that scale smoothly, each in its own face. Decorations there can
+  be set to Full, the default, or Plain. Plain leaves out the glow behind the
+  pages, the corner pieces, and the popup's fade and rise, and shows the gear
+  scores as text rather than in rings.
 
 
 ## Installing
@@ -222,12 +239,14 @@ To use it:
   session ID
 - a system tray that shows StatusNotifierItem icons, which Plasma does, for
   the tray icon
+- the Qt Quick Shapes QML module, which the app loads when it runs. On Debian
+  13 it's `qml6-module-qtquick-shapes`, which the Debian package depends on.
 - [Path of Building Community](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2)
   for Path of Exile 2, if you want to import builds. The easiest way is the
   Flatpak: `flatpak install flathub community.pathofbuilding.PathOfBuilding`.
   Open it once for Path of Exile 2, so it downloads what it needs. Other
   installs work too, with LuaJIT installed, and you can point the app at a
-  folder on the Path of Building page.
+  folder on the Build Analysis page.
 
 ## Building
 
@@ -243,6 +262,9 @@ file, the icon and the AppStream metainfo.
 Each release on GitHub has an Arch Linux package and a Debian 13 package. To
 make them yourself, run `makepkg` in `packaging/arch`, or `cpack` in the build
 folder on Debian.
+
+Add `-DPOU_BETA=ON` to the configure step to build a beta, as the beta releases
+are. Trade searches start on in a beta and off without it.
 
 ## Releases
 
@@ -307,11 +329,11 @@ Path of Building is the one from its own installer,
 [Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases),
 which goes in `%APPDATA%\Path of Building Community (PoE2)`. The app comes with
 the LuaJIT that runs it. A copy you unzipped somewhere else can be picked on
-the Path of Building page.
+the Build Analysis page.
 
 Play in windowed fullscreen, as the popup can't be drawn over the game in
-exclusive fullscreen. The hotkeys are changed in the app, on the Popup and
-Hotkeys page, which also has the switch to start it when you sign in. Session
+exclusive fullscreen. The hotkeys are changed in the app, on the Settings
+page, which also has the switch to start it when you sign in. Session
 IDs are kept in the Windows Credential Manager.
 
 ## Credits
@@ -322,14 +344,16 @@ IDs are kept in the Windows Credential Manager.
 - [rusty-path-of-building](https://github.com/meehl/rusty-path-of-building)
   (MIT) is what makes Path of Building run on Linux, and it is the Flatpak on
   Flathub. Path of Upgrading finds Path of Building where it puts it.
-- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by The Cinzel Project Authors
-  (SIL Open Font License 1.1, in `data/fonts`), which the app carries.
-- Currency rates come from [poe.ninja](https://poe.ninja), and the listings
+- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by
+  default, by The Cinzel Project Authors (SIL Open Font License 1.1, in
+  `data/fonts`), which the app carries. The Appearance page can set another
+  heading font.
+- Currency prices come from [poe.ninja](https://poe.ninja), and the listings
   from the official [Path of Exile trade site](https://www.pathofexile.com/trade2).
 - Path of Exile is a trademark of Grinding Gear Games. This project isn't
   affiliated with or endorsed by them.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The Cinzel font is under the SIL Open Font License 1.1,
-see [OFL.txt](data/fonts/OFL.txt).
+MIT, see [LICENSE](LICENSE). The Cinzel font is under the SIL Open Font
+License 1.1, see [OFL.txt](data/fonts/OFL.txt).

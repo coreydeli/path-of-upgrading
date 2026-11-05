@@ -301,6 +301,8 @@ private Q_SLOTS:
         QCOMPARE(names.value(Role::ItemLevelRole), "itemLevel"_ba);
         QCOMPARE(names.value(Role::PropertiesRole), "properties"_ba);
         QCOMPARE(names.value(Role::ModsRole), "mods"_ba);
+        QCOMPARE(names.value(Role::RarityRole), "rarity"_ba);
+        QCOMPARE(site.text(0, Role::RarityRole), u"Rare"_s);
     }
 
     // what the item has of its own, and the level it was made at
@@ -694,6 +696,7 @@ private Q_SLOTS:
         QCOMPARE(better.versus, u"vs Grim Crown"_s);
         QCOMPARE(better.gearScore, u"Gear score 13 D, yours 5"_s);
         QCOMPARE(better.gearGrade, u"D"_s);
+        QCOMPARE(better.gearPoints, u"13"_s);
         QVERIFY(better.losses.isEmpty());
         QVERIFY(better.risks.isEmpty());
         QVERIFY(!better.checking);
@@ -833,6 +836,7 @@ private Q_SLOTS:
         // and no gear score, as Path of Building judges it
         QVERIFY(v.gearScore.isEmpty());
         QVERIFY(v.gearGrade.isEmpty());
+        QVERIFY(v.gearPoints.isEmpty());
         QCOMPARE(v.versus, u"vs Grim Crown"_s);
         // which it says instead of the changes on your character
         QCOMPARE(v.figures.size(), 2);

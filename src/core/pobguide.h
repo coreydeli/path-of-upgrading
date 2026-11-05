@@ -17,7 +17,7 @@ QString pobInstallCommand();
 // and on Windows, the releases page with its installer
 QString pobInstallerUrl();
 
-// What the Path of Building page says about where Path of Building is: what
+// What the Build Analysis page says about where Path of Building is: what
 // was found and where, or what's missing and what to do about it.
 struct PobGuide
 {

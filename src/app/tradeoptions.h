@@ -6,7 +6,10 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QTimer>
 #include <QtQmlIntegration/qqmlintegration.h>
+#include <chrono>
+#include <functional>
 
 namespace pou {
 
@@ -34,6 +37,7 @@ class TradeOptions : public QObject
     Q_PROPERTY(QString currency READ currency WRITE setCurrency NOTIFY changed)
     Q_PROPERTY(double divineRate READ divineRate WRITE setDivineRate NOTIFY changed)
     Q_PROPERTY(bool autoRate READ isAutoRate WRITE setAutoRate NOTIFY changed)
+    Q_PROPERTY(int rateMinutes READ rateMinutes WRITE setRateMinutes NOTIFY changed)
 
     Q_PROPERTY(QStringList leagues READ leagues NOTIFY changed)
     Q_PROPERTY(QString searchedLeague READ searchedLeague NOTIFY changed)
@@ -41,6 +45,7 @@ class TradeOptions : public QObject
     // Whether this release is still testing them, as one that isn't a beta is.
     Q_PROPERTY(bool stillTesting READ stillTesting CONSTANT)
     Q_PROPERTY(double ninjaRate READ ninjaRate NOTIFY changed)
+    Q_PROPERTY(QString ratesStatus READ ratesStatus NOTIFY ratesStatusChanged)
 
 public:
     // They have to outlive it.
@@ -69,6 +74,10 @@ public:
     // Whether poe.ninja's rate goes before yours.
     bool isAutoRate() const { return trade().autoRate; }
     void setAutoRate(bool autoRate);
+    // How often poe.ninja is asked again while its rate is used, in minutes
+    // from 1 to 60.
+    int rateMinutes() const { return trade().rateMinutes; }
+    void setRateMinutes(int minutes);
 
     // The site's leagues, without their hardcore versions, and yours when
     // it isn't one of them, as before the site has said. Standard is always
@@ -82,11 +91,21 @@ public:
     // Exalted Orbs to a Divine Orb in the searched league, from poe.ninja, or
     // 0 while it hasn't said.
     double ninjaRate() const;
+    // "Rates updated 3 minutes ago.", or why they couldn't be. Empty while
+    // the rates aren't being kept fresh.
+    QString ratesStatus() const;
+
+    // For tests: when it is, and how long a minute is, which is how often
+    // the status says how long ago it was.
+    void setClock(std::function<QDateTime()> now) { m_now = std::move(now); }
+    void setMinute(std::chrono::milliseconds minute) { m_tick.setInterval(minute); }
 
 Q_SIGNALS:
     // For any of them, as when the site's leagues or poe.ninja's rates come
     // in.
     void changed();
+    // For the status, which also changes as the minutes go by.
+    void ratesStatusChanged();
 
 private:
     const TradeSettings &trade() const;
@@ -97,6 +116,10 @@ private:
     SettingsStore *m_settings;
     TradeDataStore *m_data;
     RatesStore *m_rates;
+    QTimer m_tick;
+    std::function<QDateTime()> m_now = [] {
+        return QDateTime::currentDateTimeUtc();
+    };
 };
 
 } // namespace pou

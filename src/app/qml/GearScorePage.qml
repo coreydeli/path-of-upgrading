@@ -14,6 +14,7 @@ ColumnsPage {
     required property GearScoring scoring
 
     title: qsTr("Gear Score")
+    description: qsTr("What the gear score goes by, and how much each stat counts.")
 
     // A stat, with how much it counts beside it.
     component StatRow: FormRow {
@@ -38,7 +39,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: scorePage.scoring.character !== "" ? qsTr("For %1").arg(scorePage.scoring.character) : qsTr("Build Profile")
     }
 
@@ -76,12 +77,18 @@ ColumnsPage {
     SectionText {
         objectName: "scoreHelp"
         visible: stats.visible
-        text: qsTr("The gear score rates an item from 0 to 100 by how much it has of what the profile wants in its slot. You can make a stat count for more or less below, for this character only.")
+        text: qsTr("The gear score rates an item from 0 to 100 by how much it has of what the profile wants in its slot. You can change how much a stat adds under Affix Impact below, for this character only.")
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         visible: stats.visible
-        title: qsTr("How Much Each Stat Counts")
+        title: qsTr("Affix Impact")
+    }
+
+    SectionText {
+        objectName: "impactHelp"
+        visible: stats.visible
+        text: qsTr("Changes how much each stat adds to the gear score. The number is what the stat's points are multiplied by, so Normal (1x) is how the profile has it, Not at all (0x) leaves the stat out and Three times (3x) triples it.")
     }
 
     FormCard.FormCard {

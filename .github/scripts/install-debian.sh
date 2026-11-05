@@ -18,7 +18,7 @@ apt-get install -y --no-install-recommends \
     libxcb1-dev libxcb-keysyms1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-xtest0-dev \
     qml6-module-qtqml qml6-module-qtqml-models qml6-module-qtqml-workerscript \
     qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-dialogs \
-    qml6-module-qtquick-layouts qml6-module-qtquick-templates qml6-module-qtquick-window \
+    qml6-module-qtquick-layouts qml6-module-qtquick-shapes qml6-module-qtquick-templates qml6-module-qtquick-window \
     qml6-module-org-kde-kirigami qml6-module-org-kde-kirigamiaddons-components \
     qml6-module-org-kde-kirigamiaddons-delegates qml6-module-org-kde-kirigamiaddons-formcard \
     qml6-module-org-kde-kquickcontrols qml6-module-org-kde-desktop \
