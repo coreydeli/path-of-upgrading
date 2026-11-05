@@ -2549,8 +2549,8 @@ private Q_SLOTS:
         QVERIFY(w.shown());
         QCOMPARE(w.window->property("wideScreen").toBool(), true);
         // the pages aren't in the sidebar until Gear is opened
-        QVERIFY(w.sidebarRow(u"Gear"_s));
-        QVERIFY(w.sidebarRow(u"Your Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Your Gear"_s));
         QVERIFY(!w.sidebarRow(u"Gear Grade"_s));
         QVERIFY(!w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(!w.sidebarRow(u"Ignored Stats"_s));
@@ -2595,6 +2595,7 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
         w.sidebarRow(u"Characters"_s)->forceActiveFocus(Qt::TabFocusReason);
         QCOMPARE(w.focusedRow(), u"Characters"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
