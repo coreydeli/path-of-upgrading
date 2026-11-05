@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/tradesession.h"
 
+#include "core/sessionguide.h"
+#include "platform/opener.h"
 #include "platform/secretstore.h"
 #include "services/tradeclient.h"
 
@@ -14,11 +16,28 @@ const QString secretName = u"POESESSID"_s;
 
 } // namespace
 
-TradeSession::TradeSession(SecretStore *store, TradeClient *client, QObject *parent)
+TradeSession::TradeSession(SecretStore *store, TradeClient *client, Opener *opener, QObject *parent)
     : QObject(parent)
     , m_store(store)
     , m_client(client)
+    , m_opener(opener)
 {}
+
+QStringList TradeSession::findSteps() const
+{
+    return guideToSessionId().steps;
+}
+
+QStringList TradeSession::findNotes() const
+{
+    return guideToSessionId().notes;
+}
+
+void TradeSession::openSignIn()
+{
+    if (m_opener)
+        m_opener->open(signInUrl());
+}
 
 QString TradeSession::status() const
 {
