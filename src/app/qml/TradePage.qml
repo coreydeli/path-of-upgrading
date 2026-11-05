@@ -191,8 +191,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "autoRateSwitch"
-            text: qsTr("Go by poe.ninja's rate")
-            description: tradePage.options.ninjaRate > 0 ? qsTr("A Divine Orb is %1 Exalted Orbs in %2.").arg(Math.round(tradePage.options.ninjaRate)).arg(tradePage.options.searchedLeague) : qsTr("It hasn't said yet, so it goes by yours.")
+            text: qsTr("Use poe.ninja's currency prices")
+            description: tradePage.options.ninjaRate > 0 ? qsTr("poe.ninja is a site that tracks what currency trades for in each league. Its price for a Divine Orb turns your budget into one currency. Right now a Divine Orb is %1 Exalted Orbs in %2.").arg(Math.round(tradePage.options.ninjaRate)).arg(tradePage.options.searchedLeague) : qsTr("poe.ninja is a site that tracks what currency trades for in each league. Its price for a Divine Orb turns your budget into one currency. It has no price yet.")
             checked: tradePage.options.autoRate
             onToggled: tradePage.options.autoRate = checked
         }
@@ -201,7 +201,7 @@ ColumnsPage {
 
         NumberField {
             objectName: "rateMinutes"
-            label: qsTr("Update poe.ninja's rate every")
+            label: qsTr("Update poe.ninja's prices every")
             description: tradePage.options.ratesStatus === "" ? qsTr("How many minutes to wait between updates.") : qsTr("How many minutes to wait between updates. %1").arg(tradePage.options.ratesStatus)
             minimum: 1
             maximum: 60
@@ -215,9 +215,10 @@ ColumnsPage {
         NumberField {
             objectName: "divineRate"
             label: qsTr("Exalted Orbs to a Divine Orb")
+            description: qsTr("Used when poe.ninja's prices are off, or it has no price yet.")
             noneText: qsTr("Not set")
             decimals: 1
-            // poe.ninja's goes before it while there is one
+            // poe.ninja's price goes before it while there is one
             enabled: !tradePage.options.autoRate || tradePage.options.ninjaRate === 0
             value: tradePage.options.divineRate
             onEdited: value => tradePage.options.divineRate = value

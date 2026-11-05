@@ -118,8 +118,8 @@ QString ratesStatus(const QDateTime &fetched, const QString &error, const QDateT
 {
     const bool have = fetched.isValid();
     if (error.isEmpty())
-        return have ? u"Rates updated "_s + timeAgo(fetched, now) + u'.'
-                    : u"The rates haven't come in yet."_s;
+        return have ? u"Prices updated "_s + timeAgo(fetched, now) + u'.'
+                    : u"The prices haven't come in yet."_s;
     const QString why = error.endsWith(u'.') ? error : error + u'.';
     return have ? why + u" Last updated "_s + timeAgo(fetched, now) + u'.' : why;
 }
