@@ -31,7 +31,7 @@ ColumnsPage {
         }
     ]
 
-    title: qsTr("Popup and Hotkeys")
+    title: qsTr("Settings")
 
     FormCard.FormHeader {
         title: qsTr("Hotkeys")
