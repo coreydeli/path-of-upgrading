@@ -195,6 +195,19 @@ ColumnsPage {
         FormCard.FormDelegateSeparator {}
 
         NumberField {
+            objectName: "rateMinutes"
+            label: qsTr("Update poe.ninja's Rate Every")
+            description: tradePage.options.ratesStatus === "" ? qsTr("How many minutes to wait between updates.") : qsTr("How many minutes to wait between updates. %1").arg(tradePage.options.ratesStatus)
+            minimum: 1
+            maximum: 60
+            enabled: tradePage.options.autoRate
+            value: tradePage.options.rateMinutes
+            onEdited: value => tradePage.options.rateMinutes = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        NumberField {
             objectName: "divineRate"
             label: qsTr("Exalted Orbs to a Divine Orb")
             noneText: qsTr("Not set")
