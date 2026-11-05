@@ -81,10 +81,12 @@ released.
   on the Settings page, and it stays off. It tells you with a notification if
   the hotkeys couldn't be set up.
 - Has dark colors of its own, as a KDE color scheme, or follows your desktop's
-  colors, from the Appearance page. The same page picks the heading font, the
-  text font and the text size. Decorations there can be set to Plain, which
-  leaves out the popup's corner pieces and fade, and the rings round gear
-  scores.
+  colors, from the Appearance page. The same page picks the heading font
+  (Cinzel by default), the text font and the text size. The text size follows
+  your desktop's unless you set one, from 6 to 32 points. The font list only
+  shows fonts that scale smoothly, each in its own face. Decorations there can
+  be set to Plain, which leaves out the glow behind the pages, the corner
+  pieces and fade of the popup, and the rings round gear scores.
 
 
 ## Installing
@@ -334,8 +336,9 @@ IDs are kept in the Windows Credential Manager.
 - [rusty-path-of-building](https://github.com/meehl/rusty-path-of-building)
   (MIT) is what makes Path of Building run on Linux, and it is the Flatpak on
   Flathub. Path of Upgrading finds Path of Building where it puts it.
-- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by The Cinzel Project Authors
-  (SIL Open Font License 1.1, in `data/fonts`), which the app carries.
+- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by default, by The Cinzel Project Authors
+  (SIL Open Font License 1.1, in `data/fonts`), which the app carries. The
+  Appearance page can set another heading font.
 - Currency prices come from [poe.ninja](https://poe.ninja), and the listings
   from the official [Path of Exile trade site](https://www.pathofexile.com/trade2).
 - Path of Exile is a trademark of Grinding Gear Games. This project isn't

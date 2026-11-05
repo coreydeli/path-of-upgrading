@@ -16,6 +16,7 @@ ColumnsPage {
     required property StatPicker picker
 
     title: qsTr("Stat Weights")
+    description: qsTr("What each stat is worth to you, for items judged by your weights.")
 
     // A stat and its weight.
     component WeightRow: FormRow {
@@ -67,7 +68,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: weightsPage.weights.character !== "" ? qsTr("For %1").arg(weightsPage.weights.character) : qsTr("Stat Weights")
     }
 
@@ -99,6 +100,9 @@ ColumnsPage {
 
         FormCard.FormButtonDelegate {
             objectName: "addStatButton"
+            // the main thing on the page
+            icon.color: Style.gold(weightsPage.Kirigami.Theme)
+            font.weight: Font.DemiBold
             text: qsTr("Add a Stat")
             icon.name: "list-add"
             onClicked: statPicker.open()
