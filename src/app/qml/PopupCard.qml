@@ -26,113 +26,219 @@ Rectangle {
     Kirigami.Theme.colorSet: Kirigami.Theme.Complementary
     Kirigami.Theme.inherit: false
 
+    // what the title band and the strip of the verdict are lit in
+    readonly property color accent: popup.message ? Kirigami.Theme.textColor
+                                                  : Style.rarity(report.rarity, Kirigami.Theme)
+
     implicitWidth: Kirigami.Units.gridUnit * 22
-    implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
+    implicitHeight: band.height + content.implicitHeight + 2 * Kirigami.Units.largeSpacing
     color: Kirigami.Theme.backgroundColor
-    radius: Kirigami.Units.cornerRadius
-    border.color: Style.frame(Kirigami.Theme)
 
     HoverHandler {
         onHoveredChanged: card.popup.hovered = hovered
+    }
+
+    // the item's name, which moves the popup, as the compositor leaves that to us
+    Rectangle {
+        id: band
+
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+        }
+        height: names.implicitHeight + 2 * Kirigami.Units.largeSpacing
+        gradient: Gradient {
+            GradientStop {
+                position: 0
+                color: Style.tint(Kirigami.Theme.backgroundColor, card.accent, 0.18)
+            }
+            GradientStop {
+                position: 1
+                color: Kirigami.Theme.backgroundColor
+            }
+        }
+
+        HoverHandler {
+            cursorShape: Qt.SizeAllCursor
+        }
+
+        DragHandler {
+            target: null
+            acceptedButtons: Qt.LeftButton
+            // as it moves under the mouse, what's left of the drag is how
+            // far it still has to go
+            onCentroidChanged: {
+                if (active) {
+                    card.popup.moveBy(Math.round(centroid.scenePosition.x - centroid.scenePressPosition.x),
+                                      Math.round(centroid.scenePosition.y - centroid.scenePressPosition.y));
+                }
+            }
+        }
+
+        Rectangle {
+            anchors {
+                top: parent.top
+                left: parent.left
+                right: parent.right
+            }
+            height: 1
+            color: card.accent
+        }
+
+        ColumnLayout {
+            id: names
+
+            anchors {
+                fill: parent
+                // level with the close button, so the name is in the middle
+                leftMargin: Kirigami.Units.largeSpacing + closeButton.width
+                rightMargin: Kirigami.Units.largeSpacing + closeButton.width
+                topMargin: Kirigami.Units.largeSpacing
+                bottomMargin: Kirigami.Units.largeSpacing
+            }
+            spacing: 0
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                font: Style.titleFont(Kirigami.Theme.defaultFont, 1.35)
+                color: card.accent
+                text: card.popup.message || card.report.name
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                visible: text !== ""
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                color: Kirigami.Theme.disabledTextColor
+                text: card.report.details.join(", ")
+            }
+
+            // what's left to craft on it
+            QQC2.Label {
+                Layout.fillWidth: true
+                visible: text !== ""
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                color: Kirigami.Theme.disabledTextColor
+                text: card.report.openAffixes
+            }
+        }
+
+        QQC2.ToolButton {
+            id: closeButton
+
+            anchors {
+                top: parent.top
+                right: parent.right
+                margins: Kirigami.Units.smallSpacing
+            }
+            icon.name: "window-close"
+            text: qsTr("Close")
+            display: QQC2.AbstractButton.IconOnly
+            QQC2.ToolTip.text: text
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+            onClicked: card.popup.close()
+        }
     }
 
     ColumnLayout {
         id: content
 
         anchors {
-            fill: parent
+            top: band.bottom
+            left: parent.left
+            right: parent.right
             margins: Kirigami.Units.largeSpacing
         }
         spacing: Kirigami.Units.smallSpacing
 
-        // the title moves the popup, which the compositor leaves to us
-        RowLayout {
-            Layout.fillWidth: true
+        // the verdict across the card, with how good the item is at its right
+        Rectangle {
+            id: banner
 
-            HoverHandler {
-                cursorShape: Qt.SizeAllCursor
-            }
+            readonly property color tint: Style.tone(card.report.verdictTone, card.popup.colorblind, Kirigami.Theme)
+            readonly property bool gauged: card.report.gearScore !== ""
 
-            DragHandler {
-                target: null
-                acceptedButtons: Qt.LeftButton
-                // as it moves under the mouse, what's left of the drag is how
-                // far it still has to go
-                onCentroidChanged: {
-                    if (active) {
-                        card.popup.moveBy(Math.round(centroid.scenePosition.x - centroid.scenePressPosition.x),
-                                          Math.round(centroid.scenePosition.y - centroid.scenePressPosition.y));
-                    }
-                }
-            }
-
-            Kirigami.Heading {
-                Layout.fillWidth: true
-                level: 3
-                wrapMode: Text.Wrap
-                text: card.popup.message || card.report.name
-                color: card.popup.message ? Kirigami.Theme.textColor : Style.rarity(card.report.rarity, Kirigami.Theme)
-            }
-
-            QQC2.ToolButton {
-                Layout.alignment: Qt.AlignTop
-                icon.name: "window-close"
-                text: qsTr("Close")
-                display: QQC2.AbstractButton.IconOnly
-                QQC2.ToolTip.text: text
-                QQC2.ToolTip.visible: hovered
-                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-                onClicked: card.popup.close()
-            }
-        }
-
-        QQC2.Label {
-            Layout.fillWidth: true
-            visible: text !== ""
-            wrapMode: Text.Wrap
-            opacity: 0.7
-            text: card.report.details.join(", ")
-        }
-
-        // what's left to craft on it
-        QQC2.Label {
-            Layout.fillWidth: true
-            visible: text !== ""
-            wrapMode: Text.Wrap
-            opacity: 0.7
-            text: card.report.openAffixes
-        }
-
-        RowLayout {
             Layout.fillWidth: true
             visible: card.report.verdict !== ""
-            spacing: Kirigami.Units.largeSpacing
+            implicitHeight: verdict.implicitHeight + 2 * Kirigami.Units.smallSpacing
+            color: Style.tint(Kirigami.Theme.backgroundColor, tint, 0.12)
 
-            ToneLabel {
-                font.bold: true
-                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
-                text: card.report.verdict
-                tone: card.report.verdictTone
-                colorblind: card.popup.colorblind
+            Rectangle {
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    left: parent.left
+                }
+                width: 3
+                color: banner.tint
             }
 
-            ToneLabel {
-                Layout.fillWidth: true
-                font.bold: true
-                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
-                text: card.report.score
-                tone: card.report.verdictTone
-                colorblind: card.popup.colorblind
+            RowLayout {
+                id: verdict
+
+                anchors {
+                    fill: parent
+                    leftMargin: 3 + Kirigami.Units.largeSpacing
+                    rightMargin: Kirigami.Units.largeSpacing
+                    topMargin: Kirigami.Units.smallSpacing
+                    bottomMargin: Kirigami.Units.smallSpacing
+                }
+                spacing: Kirigami.Units.largeSpacing
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.largeSpacing
+
+                        ToneLabel {
+                            font: Style.titleFont(Kirigami.Theme.defaultFont, 1.5)
+                            text: card.report.verdict
+                            tone: card.report.verdictTone
+                            colorblind: card.popup.colorblind
+                        }
+
+                        ToneLabel {
+                            Layout.fillWidth: true
+                            font.bold: true
+                            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                            font.features: ({"tnum": 1})
+                            text: card.report.score
+                            tone: card.report.verdictTone
+                            colorblind: card.popup.colorblind
+                        }
+                    }
+
+                    // what the score is and what it's against: "for your build, vs Grim Crown"
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        visible: text !== ""
+                        wrapMode: Text.Wrap
+                        color: Kirigami.Theme.disabledTextColor
+                        text: [card.report.scoreLabel, card.report.versus].filter(part => part !== "").join(", ")
+                    }
+                }
+
+                ScoreGauge {
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: banner.gauged
+                    score: card.report.gearScore
+                    grade: card.report.gearGrade
+                }
             }
         }
 
-        // what the score is and what it's against: "for your build, vs Grim Crown"
-        QQC2.Label {
+        Ornament {
             Layout.fillWidth: true
-            visible: text !== ""
-            wrapMode: Text.Wrap
-            opacity: 0.7
-            text: [card.report.scoreLabel, card.report.versus].filter(part => part !== "").join(", ")
+            visible: banner.visible
         }
 
         // what it costs you, which matters more than what it gives
@@ -166,7 +272,9 @@ Rectangle {
             visible: card.report.gearScore !== ""
             spacing: Kirigami.Units.largeSpacing
 
+            // the gauge says it, when there is a verdict to put it by
             QQC2.Label {
+                visible: !banner.visible
                 font.bold: true
                 color: Style.grade(card.report.gearGrade, Kirigami.Theme)
                 text: card.report.gearScore + " " + card.report.gearGrade
@@ -398,7 +506,7 @@ Rectangle {
             visible: card.popup.tradeAvailable && card.report.gear
             spacing: Kirigami.Units.smallSpacing
 
-            Kirigami.Separator {
+            Ornament {
                 Layout.fillWidth: true
             }
 
@@ -505,5 +613,9 @@ Rectangle {
                 }
             }
         }
+    }
+
+    OrnateFrame {
+        anchors.fill: parent
     }
 }
