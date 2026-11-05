@@ -47,6 +47,7 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(charactersPage)
             },
             Kirigami.Action {
+                id: gearAction
                 objectName: "gearAction"
                 text: qsTr("Your Gear")
                 icon.name: "view-list-details"
@@ -154,6 +155,7 @@ Kirigami.ApplicationWindow {
         CharactersPage {
             id: charactersPage
             app: root.app
+            onGearAsked: gearAction.trigger()
         }
 
         GearPage {

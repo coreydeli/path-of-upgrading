@@ -17,6 +17,9 @@ ColumnsPage {
     readonly property CharacterList characters: app.characterList
     readonly property BuildImporter importer: app.buildImporter
 
+    // for the window to show the gear page
+    signal gearAsked
+
     title: qsTr("Characters")
 
     // for builds you've saved in Path of Building since
@@ -92,6 +95,18 @@ ColumnsPage {
                     checked: characterRow.checked
                     Accessible.ignored: true
                     onClicked: characterRow.clicked()
+                }
+
+                // the gear page is of the one you play
+                QQC2.Button {
+                    objectName: "gearButton"
+                    text: qsTr("View Gear")
+                    icon.name: "view-list-details"
+                    Accessible.name: qsTr("View Gear of %1").arg(characterRow.name)
+                    onClicked: {
+                        charactersPage.characters.current = characterRow.characterId;
+                        charactersPage.gearAsked();
+                    }
                 }
 
                 QQC2.ToolButton {
