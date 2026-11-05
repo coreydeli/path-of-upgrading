@@ -8,6 +8,7 @@ qt_add_library(pou_app STATIC
     checkeditems.cpp checkeditems.h
     commandline.cpp commandline.h
     desktop.cpp desktop.h
+    equipmentlist.cpp equipmentlist.h
     fonts.cpp fonts.h
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
