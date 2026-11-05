@@ -59,29 +59,43 @@ Kirigami.ApplicationWindow {
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(gearPage)
             },
+            // the pages about how gear is judged, one level down
             Kirigami.Action {
-                objectName: "gearScoreAction"
-                text: qsTr("Gear Score")
+                objectName: "gearGroupAction"
+                text: qsTr("Gear")
                 icon.name: "rating"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(gearScorePage)
-            },
-            Kirigami.Action {
-                objectName: "weightsAction"
-                text: qsTr("Stat Weights")
-                icon.name: "view-statistics"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(weightsPage)
-            },
-            Kirigami.Action {
-                objectName: "ignoredAction"
-                text: qsTr("Ignored Stats")
-                icon.name: "view-hidden"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(ignoredPage)
+                // lit while one of its pages is shown
+                checked: gearScoreAction.checked || weightsAction.checked || ignoredAction.checked
+
+                Kirigami.Action {
+                    id: gearScoreAction
+                    objectName: "gearScoreAction"
+                    text: qsTr("Gear Grade")
+                    icon.name: "rating"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(gearScorePage)
+                }
+
+                Kirigami.Action {
+                    id: weightsAction
+                    objectName: "weightsAction"
+                    text: qsTr("Stat Weights")
+                    icon.name: "view-statistics"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(weightsPage)
+                }
+
+                Kirigami.Action {
+                    id: ignoredAction
+                    objectName: "ignoredAction"
+                    text: qsTr("Ignored Stats")
+                    icon.name: "view-hidden"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(ignoredPage)
+                }
             },
             Kirigami.Action {
                 objectName: "checkedAction"
