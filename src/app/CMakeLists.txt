@@ -47,6 +47,7 @@ qt_add_qml_module(pou_app
         qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml
+        qml/CharacterPanel.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
         qml/EquipmentBoard.qml
