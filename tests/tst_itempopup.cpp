@@ -490,6 +490,63 @@ private Q_SLOTS:
         QVERIFY(!button(popup, u"Ring 2"_s));
     }
 
+    void eachPlace()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport ring = aReport();
+        ring.wearIn = {u"Ring 1"_s, u"Ring 2"_s};
+        const ReportFigure worse{.label = u"gear score"_s, .change = u"-3.4"_s, .tone = Tone::Bad};
+        const ReportFigure better{.label = u"gear score"_s, .change = u"+12"_s, .tone = Tone::Good};
+        ring.placements = {
+            {.slot = u"Ring 1"_s, .wearing = u"Doom Loop, Gold Ring"_s, .changes = {worse}},
+            {.slot = u"Ring 2"_s, .wearing = u"Empty"_s, .best = true, .changes = {better}},
+        };
+        popup.showReport(ring, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+
+        QVERIFY(shown(popup, u"If you wear it in"_s));
+        QVERIFY(shown(popup, u"Doom Loop, Gold Ring"_s));
+        QVERIFY(shown(popup, u"Empty"_s));
+        const QQuickItem *loss = shown(popup, u"-3.4 gear score"_s);
+        const QQuickItem *gain = shown(popup, u"+12 gear score"_s);
+        QVERIFY(loss && gain);
+        QCOMPARE(loss->property("tone").toInt(), int(Tone::Bad));
+        QCOMPARE(gain->property("tone").toInt(), int(Tone::Good));
+        // one place marked, the one in the second row
+        const QList<QQuickItem *> items = visibleItems(popup);
+        QCOMPARE(std::ranges::count_if(items,
+                                       [](const QQuickItem *i) {
+                                           return i->inherits("QQuickLabel") &&
+                                                  i->property("text") == u"Best"_s;
+                                       }),
+                 1);
+        const QQuickItem *best = shown(popup, u"Best"_s);
+        QVERIFY(best);
+        const auto middle = [](const QQuickItem *item) {
+            return item->mapToScene(item->boundingRect().center()).y();
+        };
+        QVERIFY(middle(best) > middle(loss));
+        QVERIFY(qAbs(middle(best) - middle(gain)) < gain->height());
+
+        // each still wears it where it says
+        QSignalSpy asked(&popup, &ItemPopup::wearAsked);
+        QVERIFY(click(popup, u"Ring 1"_s));
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(asked.first().first().toString(), u"Ring 1"_s);
+        QVERIFY(click(popup, u"Ring 2"_s));
+        QCOMPARE(asked.last().first().toString(), u"Ring 2"_s);
+
+        // and nothing when there's nothing to choose between
+        ring.placements.clear();
+        popup.showReport(ring, mouseAt(200, 300));
+        QVERIFY(!shown(popup, u"If you wear it in"_s));
+        QVERIFY(!shown(popup, u"Doom Loop, Gold Ring"_s));
+        QVERIFY(button(popup, u"Ring 1"_s));
+    }
+
     void wearInRows()
     {
         // jewels, with too many slots for one row

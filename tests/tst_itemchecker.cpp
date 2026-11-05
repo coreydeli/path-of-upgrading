@@ -290,6 +290,41 @@ private Q_SLOTS:
         QCOMPARE(asked.first().at(1).toString(), u"Helmet"_s);
     }
 
+    void eachRingSlot()
+    {
+        // with something on in both, each is compared and the better one marked
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Character c;
+        c.gear = {{u"Ring 1"_s, parseItem(u"Item Class: Rings\nRarity: Rare\nGrim Band\nGold Ring\n--------\n"
+                                          "+80 to maximum Life"_s)
+                                    .value()},
+                  {u"Ring 2"_s, parseItem(u"Item Class: Rings\nRarity: Rare\nDoom Band\nGold Ring\n--------\n"
+                                          "+10 to maximum Life"_s)
+                                    .value()}};
+        checker.setCharacter(c, std::nullopt);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::advancedRing, mouseAt(200, 300));
+
+        const QList<ReportPlacement> places = checker.popup().report().placements;
+        QCOMPARE(places.size(), 2);
+        QCOMPARE(places.at(0).slot, u"Ring 1"_s);
+        QCOMPARE(places.at(0).wearing, u"Grim Band, Gold Ring"_s);
+        QVERIFY(!places.at(0).best);
+        QCOMPARE(places.at(1).wearing, u"Doom Band, Gold Ring"_s);
+        QVERIFY(places.at(1).best);
+
+        // wearing it where it says
+        QSignalSpy asked(&checker, &ItemChecker::wearAsked);
+        checker.popup().wear(u"Ring 1"_s);
+        QCOMPARE(asked.first().at(1).toString(), u"Ring 1"_s);
+
+        // nothing to choose between for a helmet
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QVERIFY(checker.popup().report().placements.isEmpty());
+    }
+
     void resultsAsked()
     {
         // as the popup's button does, from the screen the item was read on

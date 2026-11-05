@@ -422,6 +422,36 @@ QString openAffixesOf(const Affixes &affixes)
     return u"Open affixes: "_s + open.join(u", "_s);
 }
 
+// What the item does in one place, by the same measure as its verdict.
+ReportPlacement placementOf(const PlaceChange &place)
+{
+    ReportPlacement p{.slot = place.slot,
+                      .wearing = place.wearing.isEmpty() ? u"Empty"_s : place.wearing,
+                      .best = place.best};
+    const auto add = [&p](const QString &label, double change, const QString &unit = {}) {
+        p.changes << ReportFigure{
+            .label = label, .change = signedNumber(change) + unit, .tone = toneOf(change)};
+    };
+    switch (place.mode) {
+    case ScoreMode::PathOfBuilding:
+        if (place.damage)
+            add(place.minionDamage ? u"Minion DPS"_s : u"DPS"_s, *place.damage, u"%"_s);
+        if (place.ehp)
+            add(u"Effective HP"_s, *place.ehp, u"%"_s);
+        // nothing to measure the others against
+        if (p.changes.isEmpty())
+            add(u"for your build"_s, place.score, u"%"_s);
+        break;
+    case ScoreMode::GearScores:
+        add(u"gear score"_s, place.score);
+        break;
+    case ScoreMode::StatWeights:
+        add(u"by your weights"_s, place.score);
+        break;
+    }
+    return p;
+}
+
 bool isUnique(const Item &item)
 {
     return item.rarity.compare(u"Unique", Qt::CaseInsensitive) == 0;
@@ -441,6 +471,8 @@ ItemReport reportOf(const ItemCheck &check)
     report.gear = !item.slot.isEmpty();
     if (!r.isEquipped)
         report.wearIn = slotsFor(item);
+    for (const PlaceChange &place : check.places)
+        report.placements << placementOf(place);
     if (!item.baseType.isEmpty() && item.baseType != item.name)
         report.details << item.baseType;
     if (!item.itemClass.isEmpty())
