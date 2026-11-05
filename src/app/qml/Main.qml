@@ -36,6 +36,10 @@ Kirigami.ApplicationWindow {
         modal: !root.wideScreen
         handleVisible: modal
 
+        header: SidebarHeader {
+            app: root.app
+        }
+
         actions: [
             Kirigami.Action {
                 objectName: "charactersAction"
@@ -122,6 +126,8 @@ Kirigami.ApplicationWindow {
     }
 
     pageStack.initialPage: charactersPage
+    // each page has its own title
+    pageStack.globalToolBar.style: Kirigami.ApplicationHeaderStyle.None
 
     QQC2.ActionGroup {
         id: pages
