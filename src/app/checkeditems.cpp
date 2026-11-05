@@ -21,6 +21,11 @@ int CheckedItems::rowCount(const QModelIndex &parent) const
     return parent.isValid() ? 0 : int(m_history->recent().size());
 }
 
+int CheckedItems::limit() const
+{
+    return int(ItemHistory::recentLimit);
+}
+
 QVariant CheckedItems::data(const QModelIndex &index, int role) const
 {
     if (!checkIndex(index, CheckIndexOption::IndexIsValid | CheckIndexOption::ParentIsInvalid))

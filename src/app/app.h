@@ -2,6 +2,7 @@
 #pragma once
 
 #include "app/activecharacter.h"
+#include "app/appearance.h"
 #include "app/buildimporter.h"
 #include "app/characterlist.h"
 #include "app/checkeditems.h"
@@ -72,6 +73,7 @@ class App : public QObject
     Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
+    Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
 
 public:
     // Where it keeps what it has between runs.
@@ -81,6 +83,7 @@ public:
         QString data;      // the folder for your characters and the items you've checked
         QString cache;     // and for what the trade site and poe.ninja said
         QString autostart; // the file that starts it with the desktop, or none
+        QString colors;    // the app's color scheme, see Appearance
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
@@ -131,6 +134,7 @@ public:
     TradeSession *tradeSession() { return &m_tradeSession; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
+    Appearance *appearance() { return &m_appearance; }
 
 private:
     void followSettings();
@@ -175,6 +179,7 @@ private:
     Autostart m_autostart;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
+    Appearance m_appearance;
 };
 
 } // namespace pou

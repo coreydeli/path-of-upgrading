@@ -19,6 +19,10 @@ namespace pou {
 constexpr int minRateMinutes = 1;
 constexpr int maxRateMinutes = 60;
 
+// Whether this is a beta, as the release builds of one say with POU_BETA.
+// Trade searches start on in a beta and off otherwise, until you choose.
+bool isBetaBuild();
+
 struct TradeSettings
 {
     bool enabled = true; // search the trade site at all
@@ -33,8 +37,9 @@ struct TradeSettings
 };
 
 // Why there are no trade searches with these settings, or empty when there
-// are.
-QString tradeUnavailable(const TradeSettings &settings);
+// are. When they're off it says how to turn them on, and in a release that
+// they're still being tested.
+QString tradeUnavailable(const TradeSettings &settings, bool beta = isBetaBuild());
 
 struct PobSettings
 {
@@ -67,19 +72,48 @@ struct OverlaySettings
     friend bool operator==(const OverlaySettings &, const OverlaySettings &) = default;
 };
 
+// Whose colors the app uses.
+enum class ColorTheme {
+    App,    // its own, from the color scheme that comes with it
+    Desktop // the desktop's
+};
+QString colorThemeId(ColorTheme theme);
+ColorTheme colorThemeFromId(QStringView id);
+
+// How much is drawn besides the colors.
+enum class Decorations {
+    Full, // corner pieces, the glow, gauges and the popup's animation
+    Plain
+};
+QString decorationsId(Decorations decorations);
+Decorations decorationsFromId(QStringView id);
+
+struct AppearanceSettings
+{
+    ColorTheme colors = ColorTheme::App;
+    Decorations decorations = Decorations::Full;
+
+    friend bool operator==(const AppearanceSettings &, const AppearanceSettings &) = default;
+};
+
 struct Settings
 {
     QString character; // id of the one you play, see CharacterStore
     TradeSettings trade;
     PobSettings pob;
     OverlaySettings overlay;
+    AppearanceSettings appearance;
 
     friend bool operator==(const Settings &, const Settings &) = default;
 };
 
 // Anything missing or unreadable reads as its default, and numbers are held
-// to their limits.
-Settings loadSettings(const QSettings &store);
-void saveSettings(QSettings &store, const Settings &settings);
+// to their limits. Trade searches are on or off as a beta or a release starts
+// them, until the file says what you chose.
+Settings loadSettings(const QSettings &store, bool beta = isBetaBuild());
+// Leaves out whether trade searches are on while it's what a beta or a release
+// starts with and you haven't chosen, so a later version still starts them its
+// own way.
+void saveSettings(QSettings &store, const Settings &settings, bool beta = isBetaBuild());
 
 } // namespace pou

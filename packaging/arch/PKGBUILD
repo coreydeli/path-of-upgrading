@@ -7,11 +7,11 @@ pkgrel=1
 pkgdesc='Path of Exile 2 item overlay that checks items against your build'
 arch=(x86_64)
 url='https://github.com/coreydeli/path-of-upgrading'
-license=(MIT)
+license=(MIT OFL-1.1)
 depends=(
   gcc-libs glibc
   qt6-base qt6-declarative qt6-wayland
-  kirigami kirigami-addons kdeclarative ki18n kdbusaddons kglobalaccel
+  kirigami kirigami-addons kdeclarative ki18n kdbusaddons kcolorscheme kglobalaccel
   knotifications kstatusnotifieritem kwindowsystem
   layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib
   hicolor-icon-theme
@@ -34,9 +34,15 @@ sha256sums=('SKIP')
 _srcdir=$pkgname-${pkgver%%beta*}
 
 build() {
+  # trade searches start on in a beta, and off in a release
+  local beta=OFF
+  if [[ $pkgver == *beta* ]]; then
+    beta=ON
+  fi
   cmake -B build -S "$_srcdir" -G Ninja \
     -DCMAKE_BUILD_TYPE=None \
-    -DCMAKE_INSTALL_PREFIX=/usr
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DPOU_BETA=$beta
   cmake --build build
 }
 

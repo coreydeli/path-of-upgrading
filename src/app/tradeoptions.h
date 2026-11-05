@@ -42,6 +42,8 @@ class TradeOptions : public QObject
     Q_PROPERTY(QStringList leagues READ leagues NOTIFY changed)
     Q_PROPERTY(QString searchedLeague READ searchedLeague NOTIFY changed)
     Q_PROPERTY(QString unavailable READ unavailable NOTIFY changed)
+    // Whether this release is still testing them, as one that isn't a beta is.
+    Q_PROPERTY(bool stillTesting READ stillTesting CONSTANT)
     Q_PROPERTY(double ninjaRate READ ninjaRate NOTIFY changed)
     Q_PROPERTY(QString ratesStatus READ ratesStatus NOTIFY ratesStatusChanged)
 
@@ -85,6 +87,7 @@ public:
     QString searchedLeague() const;
     // Why there are no trade searches, or empty when there are.
     QString unavailable() const;
+    bool stillTesting() const { return !isBetaBuild(); }
     // Exalted Orbs to a Divine Orb in the searched league, from poe.ninja, or
     // 0 while it hasn't said.
     double ninjaRate() const;

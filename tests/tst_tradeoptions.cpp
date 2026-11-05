@@ -32,6 +32,14 @@ struct Options
     RatesStore rates{&network, dir.filePath(u"rates"_s)};
     TradeOptions options{&settings, &data, &rates};
 
+    // With trade searches on, which only a beta starts with, unless it says not.
+    explicit Options(bool searches = true)
+    {
+        Settings first = settings.settings();
+        first.trade.enabled = searches;
+        settings.set(first);
+    }
+
     // which the store reads, so neither site is asked
     bool hasLeagues(const QStringList &ids)
     {
@@ -260,6 +268,23 @@ private Q_SLOTS:
         QCOMPARE(o.options.searchedLeague(), searched);
     }
 
+    void startsByTheBuild()
+    {
+        // on in a beta and off in a release, which says it's still testing
+        Options o(isBetaBuild());
+        QCOMPARE(o.options.isEnabled(), isBetaBuild());
+        QCOMPARE(o.options.stillTesting(), !isBetaBuild());
+        QCOMPARE(o.options.unavailable().isEmpty(), isBetaBuild());
+        if (!isBetaBuild())
+            QVERIFY(o.options.unavailable().contains(u"still being tested"_s));
+
+        // and turning it on is yours to keep
+        o.options.setEnabled(true);
+        QVERIFY(o.options.unavailable().isEmpty());
+        o.options.setEnabled(false);
+        QVERIFY(o.options.unavailable().contains(u"Search the trade site"_s));
+    }
+
     void unavailable()
     {
         Options o;
@@ -268,7 +293,7 @@ private Q_SLOTS:
         QCOMPARE(o.options.unavailable(),
                  u"There's no trading in solo self-found, so trade searches are off."_s);
         o.options.setEnabled(false);
-        QCOMPARE(o.options.unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(o.options.unavailable(), tradeUnavailable({.enabled = false}));
     }
 
     void ninjaRate()

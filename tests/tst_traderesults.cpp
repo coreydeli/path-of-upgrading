@@ -567,7 +567,7 @@ private Q_SLOTS:
         QTest::addColumn<bool>("soloSelfFound");
         QTest::addColumn<QString>("why");
 
-        QTest::newRow("off") << false << false << u"Trade searches are turned off in the settings."_s;
+        QTest::newRow("off") << false << false << tradeUnavailable({.enabled = false});
         QTest::newRow("solo self-found")
             << true << true << u"There's no trading in solo self-found, so trade searches are off."_s;
     }
@@ -615,7 +615,7 @@ private Q_SLOTS:
         site.searcher.setSettings(TradeSettings{.enabled = false});
         site.results.loadMore();
         QVERIFY(!site.results.isBusy());
-        QCOMPARE(site.results.error(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(site.results.error(), tradeUnavailable({.enabled = false}));
         QCOMPARE(site.results.rowCount(), 10);
         QCOMPARE(site.network.sent.size(), 1);
     }
@@ -693,6 +693,7 @@ private Q_SLOTS:
         QCOMPARE(better.figures.at(1).label, u"Average gear score"_s);
         QCOMPARE(better.versus, u"vs Grim Crown"_s);
         QCOMPARE(better.gearScore, u"Gear score 13 D, yours 5"_s);
+        QCOMPARE(better.gearGrade, u"D"_s);
         QVERIFY(better.losses.isEmpty());
         QVERIFY(better.risks.isEmpty());
         QVERIFY(!better.checking);
@@ -718,6 +719,7 @@ private Q_SLOTS:
         const ResultVerdict v = verdictIn(site, 0);
         QVERIFY(v.versus.isEmpty());
         QCOMPARE(v.gearScore, u"Gear score 13 D"_s);
+        QCOMPARE(v.gearGrade, u"D"_s);
     }
 
     void judgesTheNextPagesToo()
@@ -830,6 +832,7 @@ private Q_SLOTS:
         QVERIFY(v.score.endsWith(u"% for your build"));
         // and no gear score, as Path of Building judges it
         QVERIFY(v.gearScore.isEmpty());
+        QVERIFY(v.gearGrade.isEmpty());
         QCOMPARE(v.versus, u"vs Grim Crown"_s);
         // which it says instead of the changes on your character
         QCOMPARE(v.figures.size(), 2);

@@ -2,11 +2,13 @@
 qt_add_library(pou_app STATIC
     activecharacter.cpp activecharacter.h
     app.cpp app.h
+    appearance.cpp appearance.h
     buildimporter.cpp buildimporter.h
     characterlist.cpp characterlist.h
     checkeditems.cpp checkeditems.h
     commandline.cpp commandline.h
     desktop.cpp desktop.h
+    fonts.cpp fonts.h
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
     hotkeys.cpp hotkeys.h
@@ -34,9 +36,13 @@ qt_add_library(pou_app STATIC
     tradesession.cpp tradesession.h
 )
 
+# a singleton, so the windows share its colors
+set_source_files_properties(qml/Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
 qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
+        qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml
         qml/CharactersPage.qml
@@ -62,9 +68,17 @@ qt_add_qml_module(pou_app
         qml/StatWeightsPage.qml
         qml/SlotRow.qml
         qml/SectionText.qml
+        qml/Style.qml
         qml/SwitchRow.qml
         qml/ToneLabel.qml
         qml/TradePage.qml
+)
+
+# the heading font, which the program carries
+qt_add_resources(pou_app fonts
+    PREFIX /fonts
+    BASE ${PROJECT_SOURCE_DIR}/data/fonts
+    FILES ${PROJECT_SOURCE_DIR}/data/fonts/Cinzel.ttf
 )
 
 target_link_libraries(pou_app PUBLIC
@@ -73,4 +87,5 @@ target_link_libraries(pou_app PUBLIC
     pou_services
     Qt6::Qml
     Qt6::Quick
+    KF6::ColorScheme
 )

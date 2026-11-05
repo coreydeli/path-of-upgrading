@@ -245,10 +245,10 @@ private Q_SLOTS:
     {
         Options o;
         QVERIFY(!o.overlay().startChosen);
+        Settings chosen = o.settings.settings();
         o.options.setStartWithDesktop(false);
         QVERIFY(o.overlay().startChosen);
         // and nothing else about the settings
-        Settings chosen;
         chosen.overlay.startChosen = true;
         QCOMPARE(o.settings.settings(), chosen);
     }

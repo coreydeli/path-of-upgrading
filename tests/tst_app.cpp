@@ -52,8 +52,11 @@ struct Folders
     CharacterStore characters{dir.filePath(u"data/characters"_s)};
     FakePob pob;
 
+    // Trade searches are on, which only a beta starts with, unless the test
+    // sets the settings.
     Folders()
     {
+        set(Settings());
         QFile wrapper(pob.folder.filePath(u"HeadlessWrapper.lua"_s));
         if (wrapper.open(QIODevice::WriteOnly))
             wrapper.close();
@@ -414,7 +417,7 @@ private Q_SLOTS:
         QVERIFY(r.app.settings().set(settings));
         QCOMPARE(panel.scale(), 1.5);
         QVERIFY(!panel.isColorblind());
-        QCOMPARE(panel.unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(panel.unavailable(), tradeUnavailable({.enabled = false}));
 
         settings.trade.enabled = true;
         QVERIFY(r.app.settings().set(settings));
@@ -790,11 +793,13 @@ private Q_SLOTS:
         settings.trade.enabled = false;
         folders.set(settings);
         Running r(folders);
-        QCOMPARE(r.app.trade().unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(r.app.trade().unavailable(), tradeUnavailable({.enabled = false}));
         // and neither site is asked anything
         QVERIFY(r.asked().isEmpty());
-        // nor has the popup buttons for it
+        // nor has the popup buttons for it, which says why
         QVERIFY(!r.app.checker().popup().isTradeAvailable());
+        QCOMPARE(r.app.checker().popup().tradeNote(), r.app.trade().unavailable());
+        QVERIFY(!r.app.checker().popup().tradeNote().isEmpty());
 
         // until it's on
         settings.trade.enabled = true;
@@ -803,6 +808,25 @@ private Q_SLOTS:
         QCOMPARE(r.asked().size(), 4);
         QVERIFY(r.app.trade().unavailable().isEmpty());
         QVERIFY(r.app.checker().popup().isTradeAvailable());
+        QVERIFY(r.app.checker().popup().tradeNote().isEmpty());
+    }
+
+    void tradeStartsByTheBuild()
+    {
+        // with nothing chosen, a beta searches and a release waits to be asked
+        Folders folders;
+        QFile::remove(folders.paths.settings);
+        QVERIFY(!QFile::exists(folders.paths.settings));
+        Running r(folders);
+        QCOMPARE(r.app.trade().unavailable().isEmpty(), isBetaBuild());
+        QCOMPARE(r.app.checker().popup().isTradeAvailable(), isBetaBuild());
+        QCOMPARE(r.app.checker().popup().tradeNote(), r.app.trade().unavailable());
+        QCOMPARE(r.asked().isEmpty(), !isBetaBuild());
+
+        // and what you choose is what it keeps
+        r.app.tradeOptions()->setEnabled(!isBetaBuild());
+        QCOMPARE(r.app.checker().popup().isTradeAvailable(), !isBetaBuild());
+        QCOMPARE(SettingsStore(folders.paths.settings).settings().trade.enabled, !isBetaBuild());
     }
 
     void ratesAreKeptFresh()

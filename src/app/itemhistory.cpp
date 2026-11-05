@@ -15,7 +15,6 @@ namespace pou {
 namespace {
 
 constexpr int formatVersion = 1;
-constexpr qsizetype recentCount = 30;
 
 } // namespace
 
@@ -44,7 +43,7 @@ void ItemHistory::add(const Item &item)
 {
     m_recent.removeIf([&](const Item &old) { return old.raw == item.raw; });
     m_recent.prepend(item);
-    if (m_recent.size() > recentCount)
+    if (m_recent.size() > recentLimit)
         m_recent.removeLast();
     m_seen.note(item);
     m_saveTimer.start();

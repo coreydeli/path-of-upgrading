@@ -71,10 +71,11 @@ released.
 - Stays in the system tray when you close the window. The tray icon shows the
   window, pauses the hotkeys and quits. Starting the program again shows the
   window that is already running, rather than opening a second one.
-- Starts with your desktop from the first time it runs, with only the tray
-  icon, as `path-of-upgrading --background` does. Turn that off with the switch
-  on the Popup and Hotkeys page, and it stays off. It tells you with a
-  notification if the hotkeys couldn't be set up.
+- Can start with your desktop, from a switch on the Popup and Hotkeys page. It
+  then starts with only the tray icon, as `path-of-upgrading --background`
+  does. It tells you with a notification if the hotkeys couldn't be set up.
+- Has dark colors of its own, as a KDE color scheme, or follows your desktop's
+  colors, from the Appearance page.
 
 
 ## Installing
@@ -321,6 +322,8 @@ IDs are kept in the Windows Credential Manager.
 - [rusty-path-of-building](https://github.com/meehl/rusty-path-of-building)
   (MIT) is what makes Path of Building run on Linux, and it is the Flatpak on
   Flathub. Path of Upgrading finds Path of Building where it puts it.
+- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by The Cinzel Project Authors
+  (SIL Open Font License 1.1, in `data/fonts`), which the app carries.
 - Currency rates come from [poe.ninja](https://poe.ninja), and the listings
   from the official [Path of Exile trade site](https://www.pathofexile.com/trade2).
 - Path of Exile is a trademark of Grinding Gear Games. This project isn't
@@ -328,4 +331,5 @@ IDs are kept in the Windows Credential Manager.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). The Cinzel font is under the SIL Open Font License 1.1,
+see [OFL.txt](data/fonts/OFL.txt).

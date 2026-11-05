@@ -9,7 +9,7 @@ set -eu
 pacman -Syu --noconfirm --needed \
     base-devel cmake ninja git ccache \
     qt6-base qt6-declarative \
-    kirigami kirigami-addons kdeclarative ki18n kdbusaddons kconfig \
+    kirigami kirigami-addons kdeclarative ki18n kdbusaddons kconfig kcolorscheme \
     kglobalaccel knotifications kstatusnotifieritem kwindowsystem \
     layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib \
     qqc2-desktop-style qt6-wayland hicolor-icon-theme \

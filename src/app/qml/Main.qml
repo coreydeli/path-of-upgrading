@@ -80,7 +80,7 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "checkedAction"
-                text: qsTr("Checked Items")
+                text: qsTr("Item History")
                 icon.name: "view-history"
                 checkable: true
                 QQC2.ActionGroup.group: pages
@@ -109,6 +109,14 @@ Kirigami.ApplicationWindow {
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(overlayPage)
+            },
+            Kirigami.Action {
+                objectName: "appearanceAction"
+                text: qsTr("Appearance")
+                icon.name: "preferences-desktop-theme"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(appearancePage)
             }
         ]
     }
@@ -117,6 +125,13 @@ Kirigami.ApplicationWindow {
 
     QQC2.ActionGroup {
         id: pages
+    }
+
+    // the popup and the results window are in this engine too
+    Binding {
+        target: Style
+        property: "appColors"
+        value: root.app.appearance.appColors
     }
 
     // The pages wait here while they aren't shown, so they keep where you
@@ -171,6 +186,11 @@ Kirigami.ApplicationWindow {
         OverlayPage {
             id: overlayPage
             options: root.app.overlayOptions
+        }
+
+        AppearancePage {
+            id: appearancePage
+            appearance: root.app.appearance
         }
     }
 }
