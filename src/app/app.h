@@ -28,6 +28,7 @@
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
 #include "services/pobengine.h"
+#include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
@@ -110,6 +111,8 @@ public:
     // Neither site is asked anything while there are no trade searches.
     TradeDataStore &tradeData() { return m_tradeData; }
     RatesStore &rates() { return m_rates; }
+    // Asks poe.ninja again every few minutes while trade searches go by its rate.
+    RatesRefresher &ratesRefresher() { return m_ratesRefresher; }
     TradeSearcher &trade() { return m_trade; }
     // For the character you play.
     TradeFinder &finder() { return m_finder; }
@@ -137,6 +140,7 @@ private:
     void followSettings();
     void followKeys();
     void followTrade();
+    void followRates();
 
     PobPlaces m_places;
     SettingsStore m_settings;
@@ -156,6 +160,7 @@ private:
     TradeSession m_tradeSession;
     TradeDataStore m_tradeData;
     RatesStore m_rates;
+    RatesRefresher m_ratesRefresher;
     TradeSearcher m_trade;
     TradeFinder m_finder;
     TradeResults m_results;

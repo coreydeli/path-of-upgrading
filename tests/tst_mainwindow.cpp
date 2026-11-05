@@ -3,6 +3,7 @@
 #include "app/fonts.h"
 #include "core/datafiles.h"
 #include "core/parser.h"
+#include "core/sessionguide.h"
 #include "core/weights.h"
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
@@ -839,9 +840,9 @@ private Q_SLOTS:
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Trade"_s);
         QVERIFY(w.show(u"overlayAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Popup and Hotkeys"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Path of Building"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"gearScoreAction"_s));
@@ -1696,7 +1697,31 @@ private Q_SLOTS:
         QVERIFY(w.show(u"checkedAction"_s));
         QCOMPARE(w.find(u"noItemsText"_s)->property("description").toString(),
                  u"Hover over an item in the game and press the hotkey for checking one. You can set it on "
-                 "the Popup and Hotkeys page."_s);
+                 "the Settings page."_s);
+    }
+
+    void settingsName()
+    {
+        Window w;
+        // the sidebar entry and the page both say Settings, and the others stay their own pages
+        QCOMPARE(text(w.window->findChild<QObject *>(u"overlayAction"_s)), u"Settings"_s);
+        QCOMPARE(text(w.window->findChild<QObject *>(u"tradeAction"_s)), u"Trade"_s);
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+    }
+
+    void buildAnalysisName()
+    {
+        Window w;
+        // the sidebar entry and the page say Build Analysis, and the program keeps its own name inside
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
+        QVERIFY(w.show(u"pobAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
+        QCOMPARE(
+            text(w.find(u"analysisIntro"_s)),
+            u"Path of Building checks each item with your build, for the damage and defences it would give."_s);
+        QCOMPARE(text(w.find(u"enabledSwitch"_s)), u"Judge items with Path of Building"_s);
     }
 
     void itemHistoryName()
@@ -1709,8 +1734,11 @@ private Q_SLOTS:
         // it says what it is, also before there is anything in it
         QObject *intro = w.find(u"historyIntro"_s);
         QVERIFY(isVisible(intro));
-        QCOMPARE(text(intro), u"Every item you check in the game with the hotkey is kept here, the newest "
-                              "first, up to the last 30. When the list is full, the oldest drops off."_s);
+        QCOMPARE(text(intro),
+                 u"The items you check in the game are kept here, the newest first, up to the last "
+                 "30: those you check with the hotkey, and gear you copy yourself while "
+                 "\"Also check gear you copy yourself\" is on. When the list is full, the "
+                 "oldest drops off."_s);
         QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 
@@ -1938,6 +1966,19 @@ private Q_SLOTS:
         QVERIFY(pos(u"budgetMin"_s).y() < pos(u"sessionField"_s).y());
     }
 
+    void budgetLabels()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QCOMPARE(w.find(u"budgetMin"_s)->property("label").toString(), u"Lowest price"_s);
+        QCOMPARE(w.find(u"budgetMax"_s)->property("label").toString(), u"Highest price"_s);
+        QCOMPARE(w.find(u"budgetMin"_s)->property("description").toString(),
+                 u"Listings cheaper than this are left out."_s);
+        QCOMPARE(w.find(u"budgetMax"_s)->property("description").toString(),
+                 u"Listings that cost more are left out."_s);
+        QCOMPARE(w.find(u"currencyBox"_s)->property("text").toString(), u"Currency"_s);
+    }
+
     void budget()
     {
         Window w;
@@ -1975,8 +2016,22 @@ private Q_SLOTS:
                  u"A Divine Orb is 400 Exalted Orbs in Runes of Aldur."_s);
         // which goes before yours
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), false);
+
+        // and is asked for again every ten minutes, as it says
+        QObject *minutes = w.find(u"rateMinutes"_s);
+        QCOMPARE(minutes->property("description").toString(),
+                 u"How many minutes to wait between updates. Rates updated just now."_s);
+        QCOMPARE(w.spinBox(u"rateMinutes"_s)->property("value").toInt(), 10);
+        QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 20, "valueModified"));
+        QCOMPARE(w.settings().trade.rateMinutes, 20);
+        QCOMPARE(w.app->ratesRefresher().waitMinutes(), 20);
+        QVERIFY(minutes->property("enabled").toBool());
+
         QVERIFY(toggle(autoRate));
         QCOMPARE(w.settings().trade.autoRate, false);
+        // when it isn't, there's nothing to wait for
+        QVERIFY(!minutes->property("enabled").toBool());
+        QCOMPARE(minutes->property("description").toString(), u"How many minutes to wait between updates."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
         QVERIFY(setValue(w.spinBox(u"divineRate"_s), 3505, "valueModified"));
         QCOMPARE(w.settings().trade.budget.divineRate, 350.5);
@@ -1992,6 +2047,8 @@ private Q_SLOTS:
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(w.find(u"autoRateSwitch"_s)->property("description").toString(),
                  u"It hasn't said yet, so it goes by yours."_s);
+        QCOMPARE(w.find(u"rateMinutes"_s)->property("description").toString(),
+                 u"How many minutes to wait between updates. The rates haven't come in yet."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
     }
 
@@ -2007,6 +2064,33 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"sessionField"_s)->property("echoMode").toInt(), 2);
         QVERIFY(!w.find(u"saveButton"_s)->property("enabled").toBool());
         QVERIFY(!w.find(u"forgetButton"_s)->property("enabled").toBool());
+    }
+
+    void findingTheSessionId()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        QObject *steps = w.find(u"findSessionSteps"_s);
+        QObject *button = w.find(u"findSessionButton"_s);
+        QVERIFY(!isVisible(steps));
+        QVERIFY(!isVisible(w.find(u"signInButton"_s)));
+        QCOMPARE(text(button), u"Where Do I Find It?"_s);
+
+        QVERIFY(click(button));
+        QVERIFY(isVisible(steps));
+        QCOMPARE(text(button), u"Hide Where to Find It"_s);
+        QVERIFY(text(steps).startsWith(u"1. Sign in"_s));
+        QVERIFY(text(steps).contains(u"POESESSID"_s));
+        QVERIFY(steps->property("description").toString().contains(u"system keyring"_s));
+        // nothing opens until you click for it
+        QVERIFY(w.opener->opened.isEmpty());
+        QVERIFY(click(w.find(u"signInButton"_s)));
+        QCOMPARE(w.opener->opened, QList<QUrl>{signInUrl()});
+
+        QVERIFY(click(button));
+        QVERIFY(!isVisible(steps));
+        QVERIFY(!isVisible(w.find(u"signInButton"_s)));
     }
 
     void saveSession()

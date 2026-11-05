@@ -63,7 +63,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "historyIntro"
-        text: qsTr("Every item you check in the game with the hotkey is kept here, the newest first, up to the last %1. When the list is full, the oldest drops off.").arg(checkedPage.checkedItems.limit)
+        text: qsTr("The items you check in the game are kept here, the newest first, up to the last %1: those you check with the hotkey, and gear you copy yourself while \"Also check gear you copy yourself\" is on. When the list is full, the oldest drops off.").arg(checkedPage.checkedItems.limit)
     }
 
     FormCard.FormCard {
@@ -78,7 +78,7 @@ ColumnsPage {
             objectName: "noItemsText"
             visible: itemRows.count === 0
             text: qsTr("You haven't checked any items yet.")
-            description: checkedPage.key !== "" ? qsTr("Hover over an item in the game and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in the game and press the hotkey for checking one. You can set it on the Popup and Hotkeys page.")
+            description: checkedPage.key !== "" ? qsTr("Hover over an item in the game and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in the game and press the hotkey for checking one. You can set it on the Settings page.")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
         }

@@ -829,6 +829,51 @@ private Q_SLOTS:
         QCOMPARE(SettingsStore(folders.paths.settings).settings().trade.enabled, !isBetaBuild());
     }
 
+    void ratesAreKeptFresh()
+    {
+        Folders folders;
+        Running r(folders);
+        QVERIFY(r.rated());
+        RatesRefresher &refresher = r.app.ratesRefresher();
+        QVERIFY(refresher.isRunning());
+        // for the league the site said to search
+        QCOMPARE(refresher.league(), u"Runes of Aldur"_s);
+        QCOMPARE(refresher.waitMinutes(), 10);
+
+        Settings settings = r.app.settings().settings();
+        settings.trade.rateMinutes = 25;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(refresher.isRunning());
+        QCOMPARE(refresher.waitMinutes(), 25);
+
+        // but not when it doesn't go by poe.ninja's rate
+        settings.trade.autoRate = false;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!refresher.isRunning());
+        settings.trade.autoRate = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(refresher.isRunning());
+
+        // nor with no trade searches
+        settings.trade.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!refresher.isRunning());
+        settings.trade.enabled = true;
+        settings.trade.league.soloSelfFound = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!refresher.isRunning());
+    }
+
+    void ratesAreNotKeptFreshWhileTradeIsOff()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.enabled = false;
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(!r.app.ratesRefresher().isRunning());
+    }
+
     void statPicker()
     {
         // which only asks the trade site for its stats while there are

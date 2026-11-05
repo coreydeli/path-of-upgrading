@@ -35,6 +35,9 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
+The beta releases add `-DPOU_BETA=ON` to the configure step, which starts trade
+searches on. Add it when you're testing that.
+
 Run the tests on the private bus the README describes:
 
 ```bash
