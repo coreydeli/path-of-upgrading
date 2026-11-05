@@ -15,6 +15,7 @@ ColumnsPage {
     readonly property string key: options.checkKey.toString()
 
     title: qsTr("Item History")
+    description: qsTr("The items you checked, to look at again.")
 
     // An item you checked, and what it is.
     component ItemRow: FormRow {
@@ -56,7 +57,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         objectName: "checkedHeader"
         title: qsTr("Newest First")
     }

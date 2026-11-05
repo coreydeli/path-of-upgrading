@@ -32,8 +32,9 @@ ColumnsPage {
     ]
 
     title: qsTr("Popup and Hotkeys")
+    description: qsTr("The hotkeys, and how the popup over the game looks.")
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Hotkeys")
     }
 
@@ -110,7 +111,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Popup")
     }
 
@@ -194,7 +195,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("General")
     }
 

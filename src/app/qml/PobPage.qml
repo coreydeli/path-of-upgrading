@@ -16,6 +16,7 @@ ColumnsPage {
     property bool showPlaces: false
 
     title: qsTr("Path of Building")
+    description: qsTr("Which Path of Building is used to judge items, and what matters when it does.")
 
     FormCard.FormCard {
         Layout.topMargin: Kirigami.Units.largeSpacing
@@ -29,7 +30,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Where It Is")
     }
 
@@ -220,7 +221,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("What Matters Most")
     }
 
