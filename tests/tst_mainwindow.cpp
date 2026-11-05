@@ -2236,6 +2236,41 @@ private Q_SLOTS:
         QVERIFY(pos(u"budgetMin"_s).y() < pos(u"sessionField"_s).y());
     }
 
+    // Qt 6.8 warns if a drawer turns modal while it's open, so the sidebar closes first
+    void sidebarClosesBeforeTurningModal()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        const auto *drawer = w.window->property("globalDrawer").value<QObject *>();
+        QVERIFY(drawer);
+        const auto modal = [&] {
+            return drawer->property("modal").toBool();
+        };
+        const auto open = [&] {
+            return drawer->property("visible").toBool();
+        };
+        const auto settledOpen = [&] {
+            return !modal() && open() && drawer->property("position").toDouble() == 1.0;
+        };
+
+        w.window->resize(1900, 900);
+        QTRY_VERIFY(settledOpen());
+
+        // it's shut by the time it's modal
+        w.window->resize(450, 1400);
+        QTRY_VERIFY(modal());
+        QVERIFY(!open());
+
+        w.window->resize(1900, 900);
+        QTRY_VERIFY(settledOpen());
+
+        // and a window that's wide again while the sidebar closes keeps it
+        w.window->resize(450, 1400);
+        QTRY_VERIFY(drawer->property("animating").toBool());
+        w.window->resize(1900, 900);
+        QTRY_VERIFY(settledOpen());
+    }
+
     void budgetLabels()
     {
         Window w;
