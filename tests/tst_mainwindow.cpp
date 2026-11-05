@@ -371,6 +371,8 @@ private Q_SLOTS:
     {
         // so the desktop's color settings are neither read nor written
         QStandardPaths::setTestModeEnabled(true);
+        // a container can have no fonts at all, and the font pickers need one
+        QVERIFY(addBundledFonts());
     }
 
     void init() { QTest::failOnWarning(); }
