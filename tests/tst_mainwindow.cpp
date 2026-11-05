@@ -2473,6 +2473,104 @@ private Q_SLOTS:
         QCOMPARE(style->property("plain").toBool(), false);
     }
 
+    // the title and what the page is for, at the top of each page
+    void pagesHaveHeaders()
+    {
+        Window w;
+        const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,    u"gearScoreAction"_s,
+                                     u"weightsAction"_s,    u"ignoredAction"_s, u"checkedAction"_s,
+                                     u"pobAction"_s,        u"tradeAction"_s,   u"overlayAction"_s,
+                                     u"appearanceAction"_s};
+        for (const QString &action : actions) {
+            QVERIFY2(w.show(action), qPrintable(action));
+            const QString title = w.page()->property("title").toString();
+            QObject *header = w.find(u"pageHeader"_s);
+            QVERIFY2(header, qPrintable(action));
+            QCOMPARE(header->property("title").toString(), title);
+            QVERIFY2(!header->property("description").toString().isEmpty(), qPrintable(title));
+            QVERIFY(isVisible(header));
+            QObject *line = header->findChild<QObject *>(u"pageDescription"_s);
+            QVERIFY2(line, qPrintable(title));
+            QVERIFY2(isVisible(line), qPrintable(title));
+            QCOMPARE(text(line), header->property("description").toString());
+        }
+    }
+
+    void sidebarSaysWhoYouPlay()
+    {
+        Window w;
+        const auto sidebar = [&](const QString &name) {
+            return search(w.window.get(), [&](QObject *o) { return o->objectName() == name; });
+        };
+        QObject *who = sidebar(u"sidebarCharacter"_s);
+        QVERIFY(who);
+        QCOMPARE(text(who), u"No character yet"_s);
+
+        w.play({{u"Helmet"_s, item(itemtexts::helmetNew)}});
+        QCOMPARE(text(sidebar(u"sidebarCharacter"_s)), u"Wren"_s);
+        QVERIFY(!w.app->gearList()->overall().isEmpty());
+        // the gauge says the same score as the gear page does
+        QObject *gauge = search(w.window.get(), [&](QObject *o) {
+            return o->inherits("QQuickItem") && o->property("size").toString() == u"medium"_s &&
+                   o->property("score").toString() == w.app->gearList()->overall();
+        });
+        QVERIFY(gauge);
+        QCOMPARE(gauge->property("grade").toString(), w.app->gearList()->overallGrade());
+
+        // and what it's built as, once it is
+        QVERIFY(w.app->characterList()->currentBuild().isEmpty());
+        QVERIFY(!isVisible(sidebar(u"sidebarBuild"_s)));
+        const QString id = w.app->characterList()->current();
+        const PobBuild build = parsePobBuild(ranger).value();
+        QVERIFY(w.app->characterList()->importBuild(id, ranger, build));
+        QCOMPARE(text(sidebar(u"sidebarBuild"_s)), u"Level 40 Ranger"_s);
+        QVERIFY(isVisible(sidebar(u"sidebarBuild"_s)));
+    }
+
+    void charactersShowTheirGearScore()
+    {
+        Window w;
+        w.play({{u"Helmet"_s, item(itemtexts::helmetNew)}});
+        QVERIFY(!w.app->characterList()->add(u"Ash"_s).isEmpty());
+        // you play the one just added, which wears nothing
+        QObject *ash = w.find(u"character:Ash"_s);
+        QObject *wren = w.find(u"character:Wren"_s);
+        QVERIFY(ash && wren);
+        QObject *wrenScore = wren->findChild<QObject *>(u"rowScore"_s);
+        QVERIFY(isVisible(wrenScore));
+        QVERIFY(!isVisible(ash->findChild<QObject *>(u"rowScore"_s)));
+        QCOMPARE(wren->property("detail").toString(), u"Gear score goes by Life and resistances"_s);
+        QCOMPARE(ash->property("detail").toString(), QString());
+        QVERIFY(!wrenScore->property("score").toString().isEmpty());
+        QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));
+
+        // the one you play has the gold frame
+        const auto frame = [](QObject *row) {
+            return search(row, [](QObject *o) { return o->objectName() == u"playedFrame"; });
+        };
+        QVERIFY(isVisible(frame(ash)));
+        QVERIFY(!isVisible(frame(wren)));
+        w.app->characterList()->setCurrent(wren->property("characterId").toString());
+        QVERIFY(isVisible(frame(wren)));
+        QVERIFY(!isVisible(frame(ash)));
+    }
+
+    // a soft light behind the pages, with the app's colors and not Plain
+    void pagesHaveALight()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        w.app->appearance()->setColors(u"app"_s);
+        w.app->appearance()->setDecorations(u"full"_s);
+        QObject *glow = w.page()->property("background").value<QObject *>();
+        QVERIFY(glow);
+        QCOMPARE(glow->property("lit").toBool(), true);
+        w.app->appearance()->setDecorations(u"plain"_s);
+        QCOMPARE(glow->property("lit").toBool(), false);
+        w.app->appearance()->setDecorations(u"full"_s);
+        w.app->appearance()->setColors(u"desktop"_s);
+        QCOMPARE(glow->property("lit").toBool(), false);
+    }
+
     void showsAppearanceSettings()
     {
         Window w;

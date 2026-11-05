@@ -181,6 +181,7 @@ FormCard.AbstractFormDelegate {
 
             QQC2.Button {
                 objectName: "findButton"
+                highlighted: true
                 Layout.alignment: Qt.AlignRight
                 visible: row.tradeAvailable && row.name !== ""
                 enabled: !row.trade.busy

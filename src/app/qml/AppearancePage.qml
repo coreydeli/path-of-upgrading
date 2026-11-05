@@ -40,8 +40,9 @@ ColumnsPage {
     readonly property string textName: appearance.textFont === "" ? qsTr("Your desktop's") : appearance.textFont
 
     title: qsTr("Appearance")
+    description: qsTr("The colors, the extras that are drawn and the fonts.")
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Theme")
     }
 
@@ -83,7 +84,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Fonts")
     }
 

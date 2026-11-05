@@ -50,6 +50,11 @@ released.
   character you play, by how much and what it changes, the way the popup does,
   with its price, what that comes to in exalts or divines, the seller and how
   long ago it was listed.
+- Draws the popup and the results window with a title band in the item's
+  rarity color, a verdict banner and framed cards, and a bar behind each
+  change in the popup's table, sized against the biggest change. The popup
+  fades in and rises a little when it opens, unless Decorations is Plain or
+  the desktop has animations off.
 - Trade searches can be turned off, and set to the right league, including
   hardcore. Solo self-found turns them off, as there is no trading in it. Betas
   start with them on and releases with them off. Once you change that on the
@@ -81,10 +86,13 @@ released.
   on the Settings page, and it stays off. It tells you with a notification if
   the hotkeys couldn't be set up.
 - Has dark colors of its own, as a KDE color scheme, or follows your desktop's
-  colors, from the Appearance page. The same page picks the heading font, the
-  text font and the text size. Decorations there can be set to Plain, which
-  leaves out the popup's corner pieces and fade, and the rings round gear
-  scores.
+  colors, from the Appearance page. The same page picks the heading font
+  (Cinzel by default), the text font and the text size. The text size follows
+  your desktop's unless you set one, from 6 to 32 points. The font list only
+  shows fonts that scale smoothly, each in its own face. Decorations there can
+  be set to Full, the default, or Plain. Plain leaves out the glow behind the
+  pages, the corner pieces, and the popup's fade and rise, and shows the gear
+  scores as text rather than in rings.
 
 
 ## Installing
@@ -231,6 +239,8 @@ To use it:
   session ID
 - a system tray that shows StatusNotifierItem icons, which Plasma does, for
   the tray icon
+- the Qt Quick Shapes QML module, which the app loads when it runs. On Debian
+  13 it's `qml6-module-qtquick-shapes`, which the Debian package depends on.
 - [Path of Building Community](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2)
   for Path of Exile 2, if you want to import builds. The easiest way is the
   Flatpak: `flatpak install flathub community.pathofbuilding.PathOfBuilding`.
@@ -334,8 +344,10 @@ IDs are kept in the Windows Credential Manager.
 - [rusty-path-of-building](https://github.com/meehl/rusty-path-of-building)
   (MIT) is what makes Path of Building run on Linux, and it is the Flatpak on
   Flathub. Path of Upgrading finds Path of Building where it puts it.
-- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by The Cinzel Project Authors
-  (SIL Open Font License 1.1, in `data/fonts`), which the app carries.
+- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by
+  default, by The Cinzel Project Authors (SIL Open Font License 1.1, in
+  `data/fonts`), which the app carries. The Appearance page can set another
+  heading font.
 - Currency prices come from [poe.ninja](https://poe.ninja), and the listings
   from the official [Path of Exile trade site](https://www.pathofexile.com/trade2).
 - Path of Exile is a trademark of Grinding Gear Games. This project isn't
@@ -343,5 +355,5 @@ IDs are kept in the Windows Credential Manager.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The Cinzel font is under the SIL Open Font License 1.1,
-see [OFL.txt](data/fonts/OFL.txt).
+MIT, see [LICENSE](LICENSE). The Cinzel font is under the SIL Open Font
+License 1.1, see [OFL.txt](data/fonts/OFL.txt).

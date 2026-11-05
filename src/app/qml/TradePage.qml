@@ -49,6 +49,7 @@ ColumnsPage {
     ]
 
     title: qsTr("Trade")
+    description: qsTr("Searching the trade site from the popup, the league and what you will pay.")
 
     FormCard.FormCard {
         Layout.topMargin: Kirigami.Units.largeSpacing
@@ -74,7 +75,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("League")
     }
 
@@ -129,7 +130,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Listings")
     }
 
@@ -145,7 +146,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Budget")
     }
 
@@ -225,7 +226,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Signed In")
     }
 
@@ -265,6 +266,7 @@ ColumnsPage {
             QQC2.Button {
                 id: saveButton
                 objectName: "saveButton"
+                highlighted: true
                 text: qsTr("Save")
                 enabled: sessionField.text.trim() !== ""
                 onClicked: tradePage.session.save(sessionField.text)

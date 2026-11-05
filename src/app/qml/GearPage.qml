@@ -14,6 +14,7 @@ ColumnsPage {
     readonly property Resistances resists: app.resistances
 
     title: qsTr("Your Gear")
+    description: qsTr("What your character wears, and where an upgrade would help most.")
     // the slots need room to put their notes beside them
     minColumnWidth: Kirigami.Units.gridUnit * 44
     maxColumnWidth: Kirigami.Units.gridUnit * 60
@@ -30,7 +31,7 @@ ColumnsPage {
         onTakeOffAsked: gearPage.gear.takeOff(slot)
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         visible: recommended.visible
         title: qsTr("Recommended Upgrades")
     }
@@ -45,7 +46,7 @@ ColumnsPage {
         text: qsTr("The slots where a better item helps most, and the stats to look for in it. Empty slots come first, then the lowest gear scores.")
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
     }
 
@@ -55,6 +56,9 @@ ColumnsPage {
             objectName: "overallScore"
             visible: gearPage.gear.overall !== ""
             text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
+            // the headline of the page
+            textItem.font: Style.titleFont(Kirigami.Theme.defaultFont, 1.3)
+            textItem.color: Style.grade(gearPage.gear.overallGrade, Kirigami.Theme)
         }
 
         FormCard.FormTextDelegate {
@@ -98,7 +102,7 @@ ColumnsPage {
         text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Your Resistances")
     }
 
@@ -195,7 +199,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         visible: extras.visible
         title: qsTr("Weapon Swap, Flasks, Charms and Jewels")
     }

@@ -119,4 +119,16 @@ QtObject {
             letterSpacing: 0.5
         });
     }
+
+    // For the title over a card: the heading font a little smaller, and in
+    // small capitals unless the font is Cinzel, whose lower case are those.
+    function sectionFont(base: font): font {
+        return Qt.font({
+            family: headingFamily,
+            pointSize: base.pointSize * 0.95,
+            weight: Font.Bold,
+            letterSpacing: 0.5,
+            capitalization: headingFamily === "Cinzel" ? Font.MixedCase : Font.SmallCaps
+        });
+    }
 }
