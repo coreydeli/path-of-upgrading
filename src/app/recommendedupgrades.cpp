@@ -4,6 +4,8 @@
 #include "app/activecharacter.h"
 #include "app/settingsstore.h"
 #include "app/traderesults.h"
+#include "core/evaluation.h"
+#include "core/slots.h"
 #include "services/tradesearcher.h"
 
 #include <utility>
@@ -89,11 +91,58 @@ void RecommendedUpgrades::setTradeAvailable(bool available)
     Q_EMIT tradeAvailableChanged();
 }
 
+void RecommendedUpgrades::choose(const QString &slot)
+{
+    if (slot == m_chosen || (!slot.isEmpty() && !allSlots().contains(slot)))
+        return;
+    m_chosen = slot;
+    Q_EMIT chosenChanged();
+}
+
+QString RecommendedUpgrades::chosenLookFor() const
+{
+    if (m_chosen.isEmpty())
+        return {};
+    const Character &character = m_active->character();
+    const GearScoreOptions options = gearScoreOptions(character, m_chosen, m_priorities);
+    const auto worn = character.gear.constFind(m_chosen);
+    if (worn == character.gear.cend()) {
+        // a two-handed weapon leaves the offhand empty
+        const auto weapon = character.gear.constFind(u"Weapon"_s);
+        if (m_chosen == u"Offhand" && weapon != character.gear.cend() && weapon->twoHanded)
+            return {};
+        return wantedText(wantedStats(m_chosen, nullptr, options));
+    }
+    // an item with no gear score, like a unique, has nothing to look for
+    const std::optional<GearScore> score = gearScore(*worn, options);
+    if (!score || !score->isRated())
+        return {};
+    return wantedText(wantedStats(m_chosen, &*worn, options));
+}
+
+bool RecommendedUpgrades::chosenWorn() const
+{
+    return m_active->character().gear.contains(m_chosen);
+}
+
+void RecommendedUpgrades::findChosen()
+{
+    search(m_chosen);
+}
+
+void RecommendedUpgrades::showChosenResults()
+{
+    showResultsOf(m_chosen);
+}
+
 void RecommendedUpgrades::find(int row)
 {
-    if (row < 0 || row >= m_rows.size())
-        return;
-    const QString &slot = m_rows.at(row).slot;
+    if (row >= 0 && row < m_rows.size())
+        search(m_rows.at(row).slot);
+}
+
+void RecommendedUpgrades::search(const QString &slot)
+{
     const auto worn = m_active->character().gear.constFind(slot);
     if (worn == m_active->character().gear.cend())
         return;
@@ -102,15 +151,20 @@ void RecommendedUpgrades::find(int row)
         setReport(m_searching, {});
     m_searching = slot;
     m_states[slot].found.reset();
+    m_states[slot].worn = worn->name;
     setReport(slot, searchingReport());
     m_finder.find(*worn, TradeFinder::Kind::Upgrades);
 }
 
 void RecommendedUpgrades::showResults(int row)
 {
-    if (row < 0 || row >= m_rows.size())
-        return;
-    const std::optional<TradeFinder::Found> &found = m_states.value(m_rows.at(row).slot).found;
+    if (row >= 0 && row < m_rows.size())
+        showResultsOf(m_rows.at(row).slot);
+}
+
+void RecommendedUpgrades::showResultsOf(const QString &slot)
+{
+    const std::optional<TradeFinder::Found> &found = m_states.value(slot).found;
     if (!found || found->total == 0)
         return;
     // another search may have been shown since
@@ -123,6 +177,7 @@ void RecommendedUpgrades::refresh()
 {
     m_priorities = m_settings->settings().pob.priorities;
     m_finder.setCharacter(m_active->character());
+    dropStale();
 
     // Path of Building loading the build changes the character without
     // changing what to say, and that shouldn't call off a search
@@ -139,15 +194,34 @@ void RecommendedUpgrades::refresh()
         }
         return true;
     };
-    if (same())
-        return;
+    if (!same()) {
+        beginResetModel();
+        m_finder.cancel();
+        m_searching.clear();
+        m_states.clear();
+        take(rows);
+        endResetModel();
+    }
+    // what to look for in the chosen slot may have changed with the gear
+    if (!m_chosen.isEmpty())
+        Q_EMIT chosenChanged();
+}
 
-    beginResetModel();
-    m_finder.cancel();
-    m_searching.clear();
-    m_states.clear();
-    take(rows);
-    endResetModel();
+void RecommendedUpgrades::dropStale()
+{
+    // a search is for the item that was worn then
+    const QStringList slots = m_states.keys();
+    for (const QString &slot : slots) {
+        if (m_active->character().gear.value(slot).name == m_states.value(slot).worn)
+            continue;
+        if (slot == m_searching) {
+            m_finder.cancel();
+            m_searching.clear();
+        }
+        m_states.remove(slot);
+        if (const int row = rowOf(slot); row >= 0)
+            Q_EMIT dataChanged(index(row), index(row), {TradeRole});
+    }
 }
 
 void RecommendedUpgrades::take(const QList<Recommendation> &rows)
@@ -177,6 +251,8 @@ void RecommendedUpgrades::setReport(const QString &slot, const TradeReport &repo
     state.report = report;
     if (const int row = rowOf(slot); row >= 0)
         Q_EMIT dataChanged(index(row), index(row), {TradeRole});
+    if (slot == m_chosen)
+        Q_EMIT chosenChanged();
 }
 
 int RecommendedUpgrades::rowOf(const QString &slot) const
