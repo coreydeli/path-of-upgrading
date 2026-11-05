@@ -152,7 +152,8 @@ ColumnsPage {
     FormCard.FormCard {
         NumberField {
             objectName: "budgetMin"
-            label: qsTr("From")
+            label: qsTr("Lowest price")
+            description: qsTr("Listings cheaper than this are left out.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -164,7 +165,8 @@ ColumnsPage {
 
         NumberField {
             objectName: "budgetMax"
-            label: qsTr("Up to")
+            label: qsTr("Highest price")
+            description: qsTr("Listings that cost more are left out.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -176,7 +178,8 @@ ColumnsPage {
 
         FormCard.FormComboBoxDelegate {
             objectName: "currencyBox"
-            text: qsTr("In")
+            text: qsTr("Currency")
+            description: qsTr("What the lowest and highest price are counted in.")
             textRole: "text"
             valueRole: "value"
             model: tradePage.currencies
