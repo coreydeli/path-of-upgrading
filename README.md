@@ -18,7 +18,8 @@ released.
 
 - Compares the item you check with the one you wear in the same slot. The
   verdict goes by Path of Building once you have imported a build, by a gear
-  score for your build, or by your own stat weights.
+  score for your build, or by your own stat weights. A ring, charm or jewel
+  also shows what it would do in each place it fits.
 - Works without a build too. Wear gear or set stat weights before you add a
   character, and the app makes one called My character and plays it.
 - Judges what an item costs you as well as what it gives. A big drop in
