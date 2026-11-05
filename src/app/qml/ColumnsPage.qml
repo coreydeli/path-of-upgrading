@@ -61,8 +61,9 @@ FormCard.FormCardPage {
                 current = {
                     items: [],
                     cards: 0,
-                    // a header can ask for a column
-                    column: isHeader ? o.column ?? -1 : -1
+                    // the header that starts it, if any; its column may still
+                    // change, so place() reads it from there
+                    header: isHeader ? o : null
                 };
                 found.push(current);
             }
@@ -100,8 +101,10 @@ FormCard.FormCardPage {
         const plan = [];
         for (const section of sections) {
             let shortest = 0;
-            if (section.column >= 0 && section.column < columnCount) {
-                shortest = section.column;
+            // read from the header now, as it may have asked since then
+            const want = section.header ? section.header.column ?? -1 : -1;
+            if (want >= 0 && want < columnCount) {
+                shortest = want;
             } else {
                 for (let c = 1; c < columnCount; ++c) {
                     if (heights[c] < heights[shortest])
