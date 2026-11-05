@@ -63,7 +63,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "historyIntro"
-        text: qsTr("Every item you check in the game with the hotkey is kept here, the newest first, up to the last %1. When the list is full, the oldest drops off.").arg(checkedPage.checkedItems.limit)
+        text: qsTr("The items you check in the game are kept here, the newest first, up to the last %1: those you check with the hotkey, and gear you copy yourself while \"Also check gear you copy yourself\" is on. When the list is full, the oldest drops off.").arg(checkedPage.checkedItems.limit)
     }
 
     FormCard.FormCard {
