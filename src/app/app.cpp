@@ -61,7 +61,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_opener(std::move(opener))
     , m_network(std::move(network))
     , m_tradeClient(m_network.get())
-    , m_tradeSession(m_secrets.get(), &m_tradeClient)
+    , m_tradeSession(m_secrets.get(), &m_tradeClient, m_opener.get())
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_ratesRefresher(&m_rates)

@@ -2,6 +2,7 @@
 #include "app/app.h"
 #include "core/datafiles.h"
 #include "core/parser.h"
+#include "core/sessionguide.h"
 #include "core/weights.h"
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
@@ -2030,6 +2031,33 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"sessionField"_s)->property("echoMode").toInt(), 2);
         QVERIFY(!w.find(u"saveButton"_s)->property("enabled").toBool());
         QVERIFY(!w.find(u"forgetButton"_s)->property("enabled").toBool());
+    }
+
+    void findingTheSessionId()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.keyringAnswered());
+        QObject *steps = w.find(u"findSessionSteps"_s);
+        QObject *button = w.find(u"findSessionButton"_s);
+        QVERIFY(!isVisible(steps));
+        QVERIFY(!isVisible(w.find(u"signInButton"_s)));
+        QCOMPARE(text(button), u"Where Do I Find It?"_s);
+
+        QVERIFY(click(button));
+        QVERIFY(isVisible(steps));
+        QCOMPARE(text(button), u"Hide Where to Find It"_s);
+        QVERIFY(text(steps).startsWith(u"1. Sign in"_s));
+        QVERIFY(text(steps).contains(u"POESESSID"_s));
+        QVERIFY(steps->property("description").toString().contains(u"system keyring"_s));
+        // nothing opens until you click for it
+        QVERIFY(w.opener->opened.isEmpty());
+        QVERIFY(click(w.find(u"signInButton"_s)));
+        QCOMPARE(w.opener->opened, QList<QUrl>{signInUrl()});
+
+        QVERIFY(click(button));
+        QVERIFY(!isVisible(steps));
+        QVERIFY(!isVisible(w.find(u"signInButton"_s)));
     }
 
     void saveSession()
