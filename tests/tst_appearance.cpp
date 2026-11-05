@@ -240,8 +240,11 @@ private Q_SLOTS:
         Look look;
         const QStringList families = look.appearance.families();
         QVERIFY(!families.isEmpty());
-        for (const QString &family : families)
+        for (const QString &family : families) {
             QVERIFY2(QFontDatabase::isSmoothlyScalable(family), qPrintable(family));
+            // so setting it takes
+            QVERIFY2(QFontDatabase::hasFamily(family), qPrintable(family));
+        }
         QVERIFY(families.size() <= QFontDatabase::families().size());
     }
 
