@@ -1191,13 +1191,19 @@ private Q_SLOTS:
         QCOMPARE(profile->property("description").toString(), w.app->gearScoring()->summary());
         QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
         QVERIFY(isVisible(w.find(u"stats"_s)));
+        QObject *impact = search(w.page(), [](QObject *o) {
+            return o->inherits("QQuickItem") && o->property("title").toString() == u"Affix Impact";
+        });
+        QVERIFY(isVisible(impact));
+        QVERIFY(isVisible(w.find(u"impactHelp"_s)));
 
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s);
         QCOMPARE(text(life), u"Life"_s);
         QCOMPARE(life->property("description").toString(), u"Counts in every slot but Weapon and Jewel"_s);
         QObject *level = life->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(isVisible(level));
-        QCOMPARE(level->property("currentText").toString(), u"As usual"_s);
+        QCOMPARE(level->property("currentText").toString(), u"Normal (1x)"_s);
+        QCOMPARE(level->property("model").toStringList().at(0), u"Not at all (0x)"_s);
         QCOMPARE(w.find(u"resetButton"_s)->property("enabled").toBool(), false);
 
         // and one picked elsewhere
@@ -1214,13 +1220,13 @@ private Q_SLOTS:
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(activate(life, 4));
         QCOMPARE(w.app->character().character().tweaks, ProfileTweaks({{u"Life"_s, 2.0}}));
-        QCOMPARE(life->property("currentText").toString(), u"Twice as much"_s);
+        QCOMPARE(life->property("currentText").toString(), u"Double (2x)"_s);
 
         QObject *reset = w.find(u"resetButton"_s);
         QCOMPARE(reset->property("enabled").toBool(), true);
         QVERIFY(click(reset));
         QCOMPARE(w.app->character().character().tweaks, ProfileTweaks());
-        QCOMPARE(life->property("currentText").toString(), u"As usual"_s);
+        QCOMPARE(life->property("currentText").toString(), u"Normal (1x)"_s);
         QCOMPARE(reset->property("enabled").toBool(), false);
     }
 

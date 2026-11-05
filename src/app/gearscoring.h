@@ -34,7 +34,8 @@ class GearScoring : public QAbstractListModel
     Q_PROPERTY(int profile READ profile WRITE setProfile NOTIFY changed)
     // What the profile is for.
     Q_PROPERTY(QString summary READ summary NOTIFY changed)
-    // How much a stat can count, from not at all to three times as much.
+    // How much a stat can count, from not at all to three times as much,
+    // each with its factor: "Normal (1x)".
     Q_PROPERTY(QStringList levels READ levels CONSTANT)
     // Some stat counts for more or less than the profile has it.
     Q_PROPERTY(bool tweaked READ isTweaked NOTIFY changed)
