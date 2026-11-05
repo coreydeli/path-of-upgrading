@@ -835,7 +835,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Trade"_s);
         QVERIFY(w.show(u"overlayAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Popup and Hotkeys"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
         QVERIFY(w.show(u"pobAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Path of Building"_s);
         QVERIFY(w.show(u"gearAction"_s));
@@ -1692,7 +1692,18 @@ private Q_SLOTS:
         QVERIFY(w.show(u"checkedAction"_s));
         QCOMPARE(w.find(u"noItemsText"_s)->property("description").toString(),
                  u"Hover over an item in the game and press the hotkey for checking one. You can set it on "
-                 "the Popup and Hotkeys page."_s);
+                 "the Settings page."_s);
+    }
+
+    void settingsName()
+    {
+        Window w;
+        // the sidebar entry and the page both say Settings, and the others stay their own pages
+        QCOMPARE(text(w.window->findChild<QObject *>(u"overlayAction"_s)), u"Settings"_s);
+        QCOMPARE(text(w.window->findChild<QObject *>(u"tradeAction"_s)), u"Trade"_s);
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Path of Building"_s);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
     }
 
     void itemHistoryName()
