@@ -1740,8 +1740,11 @@ private Q_SLOTS:
         // it says what it is, also before there is anything in it
         QObject *intro = w.find(u"historyIntro"_s);
         QVERIFY(isVisible(intro));
-        QCOMPARE(text(intro), u"Every item you check in the game with the hotkey is kept here, the newest "
-                              "first, up to the last 30. When the list is full, the oldest drops off."_s);
+        QCOMPARE(text(intro),
+                 u"The items you check in the game are kept here, the newest first, up to the last "
+                 "30: those you check with the hotkey, and gear you copy yourself while "
+                 "\"Also check gear you copy yourself\" is on. When the list is full, the "
+                 "oldest drops off."_s);
         QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 
@@ -1967,6 +1970,19 @@ private Q_SLOTS:
         QVERIFY(pos(u"leagueBox"_s).y() < pos(u"sellersBox"_s).y());
         QVERIFY(pos(u"sellersBox"_s).y() < pos(u"budgetMin"_s).y());
         QVERIFY(pos(u"budgetMin"_s).y() < pos(u"sessionField"_s).y());
+    }
+
+    void budgetLabels()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QCOMPARE(w.find(u"budgetMin"_s)->property("label").toString(), u"Lowest price"_s);
+        QCOMPARE(w.find(u"budgetMax"_s)->property("label").toString(), u"Highest price"_s);
+        QCOMPARE(w.find(u"budgetMin"_s)->property("description").toString(),
+                 u"Listings cheaper than this are left out."_s);
+        QCOMPARE(w.find(u"budgetMax"_s)->property("description").toString(),
+                 u"Listings that cost more are left out."_s);
+        QCOMPARE(w.find(u"currencyBox"_s)->property("text").toString(), u"Currency"_s);
     }
 
     void budget()
