@@ -12,6 +12,9 @@ ColumnsPage {
 
     required property TradeOptions options
     required property TradeSession session
+
+    // the steps for finding the session ID
+    property bool showFindSession: false
     readonly property var sellers: [
         {
             value: "available",
@@ -269,6 +272,43 @@ ColumnsPage {
             text: tradePage.session.error
             textItem.wrapMode: Text.Wrap
             textItem.color: Kirigami.Theme.negativeTextColor
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormButtonDelegate {
+            objectName: "findSessionButton"
+            text: tradePage.showFindSession ? qsTr("Hide Where to Find It") : qsTr("Where Do I Find It?")
+            description: qsTr("It's a cookie in your browser, from signing in to the Path of Exile website.")
+            icon.name: tradePage.showFindSession ? "arrow-up" : "arrow-down"
+            onClicked: tradePage.showFindSession = !tradePage.showFindSession
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: findSessionSteps.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: findSessionSteps
+            objectName: "findSessionSteps"
+            visible: tradePage.showFindSession
+            text: tradePage.session.findSteps.join("\n")
+            description: tradePage.session.findNotes.join(" ")
+            textItem.wrapMode: Text.Wrap
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: signInButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: signInButton
+            objectName: "signInButton"
+            visible: tradePage.showFindSession
+            text: qsTr("Open the Sign In Page")
+            description: qsTr("The Path of Exile website, in your browser.")
+            icon.name: "internet-web-browser"
+            onClicked: tradePage.session.openSignIn()
         }
     }
 
