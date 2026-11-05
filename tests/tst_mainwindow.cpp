@@ -493,6 +493,44 @@ private Q_SLOTS:
                      .toBool());
     }
 
+    void viewGear()
+    {
+        Window w;
+        CharacterList *list = w.app->characterList();
+        const QString wren = list->add(u"Wren"_s);
+        const QString ash = list->add(u"Ash"_s);
+        QVERIFY(w.show(u"charactersAction"_s));
+        QCOMPARE(list->current(), ash);
+
+        // plays the one it is on, and shows what it wears
+        QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"gearButton"_s)));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QCOMPARE(list->current(), wren);
+        QCOMPARE(w.settings().character, wren);
+        QVERIFY(w.window->findChild<QObject *>(u"gearAction"_s)->property("checked").toBool());
+        QVERIFY(!w.window->findChild<QObject *>(u"charactersAction"_s)->property("checked").toBool());
+
+        // the others are as they were
+        QCOMPARE(list->rowCount(), 2);
+        QVERIFY(w.show(u"charactersAction"_s));
+        QVERIFY(w.find(u"character:Wren"_s)->property("checked").toBool());
+        QVERIFY(!w.find(u"character:Ash"_s)->property("checked").toBool());
+
+        // the one that's played already just opens it
+        QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"gearButton"_s)));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QCOMPARE(list->current(), wren);
+    }
+
+    void gearButtonName()
+    {
+        Window w;
+        w.app->characterList()->add(u"Wren"_s);
+        QObject *button = w.find(u"character:Wren"_s)->findChild<QObject *>(u"gearButton"_s);
+        QCOMPARE(text(button), u"View Gear"_s);
+        QCOMPARE(spoken(button), u"View Gear of Wren"_s);
+    }
+
     void characterButtonNames()
     {
         // which are icons that all look alike, so each says whose it is
@@ -1191,13 +1229,19 @@ private Q_SLOTS:
         QCOMPARE(profile->property("description").toString(), w.app->gearScoring()->summary());
         QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
         QVERIFY(isVisible(w.find(u"stats"_s)));
+        QObject *impact = search(w.page(), [](QObject *o) {
+            return o->inherits("QQuickItem") && o->property("title").toString() == u"Affix Impact";
+        });
+        QVERIFY(isVisible(impact));
+        QVERIFY(isVisible(w.find(u"impactHelp"_s)));
 
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s);
         QCOMPARE(text(life), u"Life"_s);
         QCOMPARE(life->property("description").toString(), u"Counts in every slot but Weapon and Jewel"_s);
         QObject *level = life->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(isVisible(level));
-        QCOMPARE(level->property("currentText").toString(), u"As usual"_s);
+        QCOMPARE(level->property("currentText").toString(), u"Normal (1x)"_s);
+        QCOMPARE(level->property("model").toStringList().at(0), u"Not at all (0x)"_s);
         QCOMPARE(w.find(u"resetButton"_s)->property("enabled").toBool(), false);
 
         // and one picked elsewhere
@@ -1214,13 +1258,13 @@ private Q_SLOTS:
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(activate(life, 4));
         QCOMPARE(w.app->character().character().tweaks, ProfileTweaks({{u"Life"_s, 2.0}}));
-        QCOMPARE(life->property("currentText").toString(), u"Twice as much"_s);
+        QCOMPARE(life->property("currentText").toString(), u"Double (2x)"_s);
 
         QObject *reset = w.find(u"resetButton"_s);
         QCOMPARE(reset->property("enabled").toBool(), true);
         QVERIFY(click(reset));
         QCOMPARE(w.app->character().character().tweaks, ProfileTweaks());
-        QCOMPARE(life->property("currentText").toString(), u"As usual"_s);
+        QCOMPARE(life->property("currentText").toString(), u"Normal (1x)"_s);
         QCOMPARE(reset->property("enabled").toBool(), false);
     }
 

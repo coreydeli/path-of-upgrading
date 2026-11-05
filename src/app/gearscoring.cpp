@@ -16,6 +16,11 @@ namespace {
 // What each of the levels multiplies a stat's importance by.
 constexpr std::array levelValues = {0.0, 0.5, 1.0, 1.5, 2.0, 3.0};
 
+// What each level is called, beside its factor in levelValues.
+constexpr std::array<QStringView, 6> levelNames = {u"Not at all",     u"Half",   u"Normal",
+                                                   u"One and a half", u"Double", u"Three times"};
+static_assert(levelNames.size() == levelValues.size());
+
 QString listed(const QStringList &items)
 {
     return QLocale(QLocale::English).createSeparatedList(items);
@@ -126,8 +131,11 @@ QString GearScoring::summary() const
 
 QStringList GearScoring::levels() const
 {
-    return {u"Not at all"_s,    u"Half as much"_s,       u"As usual"_s, u"One and a half times as much"_s,
-            u"Twice as much"_s, u"Three times as much"_s};
+    // "Half (0.5x)", the saved tweaks are the factors, not these
+    QStringList labels;
+    for (size_t i = 0; i < levelNames.size(); ++i)
+        labels << levelNames[i] % u" ("_s % QString::number(levelValues[i]) % u"x)"_s;
+    return labels;
 }
 
 bool GearScoring::isTweaked() const

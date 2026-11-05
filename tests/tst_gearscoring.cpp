@@ -120,7 +120,9 @@ private Q_SLOTS:
                               u"Energy Shield attacker"_s, u"Minion summoner on Energy Shield"_s,
                               u"None, by my stat weights alone"_s}));
         QCOMPARE(s.scoring.levels().size(), 6);
-        QCOMPARE(s.scoring.levels().at(asUsual), u"As usual"_s);
+        QCOMPARE(s.scoring.levels(),
+                 QStringList({u"Not at all (0x)"_s, u"Half (0.5x)"_s, u"Normal (1x)"_s,
+                              u"One and a half (1.5x)"_s, u"Double (2x)"_s, u"Three times (3x)"_s}));
     }
 
     void defaultProfile()
@@ -339,6 +341,23 @@ private Q_SLOTS:
         QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), asUsual);
         QCOMPARE(s.of(u"Speed"_s, GearScoring::LevelRole).toInt(), 5);
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::LevelRole).toInt(), 5);
+    }
+
+    void savedTweaksKeepTheirLevel()
+    {
+        // tweaks are saved as factors, whatever the levels are called
+        Scoring s;
+        Character c = tester(u"es-caster"_s);
+        c.tweaks = {{u"Life"_s, 0}, {u"Movement speed"_s, 0.5}, {u"Rarity"_s, 1.5}, {u"Mana"_s, 2}};
+        const QString id = s.play(c);
+        QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), 0);
+        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::LevelRole).toInt(), 1);
+        QCOMPARE(s.of(u"Rarity"_s, GearScoring::LevelRole).toInt(), 3);
+        QCOMPARE(s.of(u"Mana"_s, GearScoring::LevelRole).toInt(), 4);
+
+        // and picking a level saves the factor
+        s.scoring.setLevel(u"Movement speed"_s, 5);
+        QCOMPARE(s.store.find(id)->tweaks.value(u"Movement speed"_s), 3.0);
     }
 
     void chaosInoculation()
