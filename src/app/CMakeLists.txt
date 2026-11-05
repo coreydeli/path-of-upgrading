@@ -48,6 +48,8 @@ qt_add_qml_module(pou_app
         qml/ColumnsPage.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
+        qml/EquipmentBoard.qml
+        qml/EquipmentTile.qml
         qml/FontPickerDialog.qml
     qml/FormRow.qml
         qml/GearPage.qml
@@ -73,6 +75,7 @@ qt_add_qml_module(pou_app
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
         qml/SlotNotes.qml
+        qml/SlotPanel.qml
         qml/SlotRow.qml
         qml/SectionHeader.qml
         qml/SidebarHeader.qml

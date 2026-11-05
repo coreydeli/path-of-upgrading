@@ -1069,6 +1069,208 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.in(u"extras"_s, u"slot:Helmet"_s)));
     }
 
+    // The gear page on a window wide enough for the equipment screen.
+    static bool wide(Window &w)
+    {
+        if (!w.show(u"gearAction"_s) || !w.shown())
+            return false;
+        w.window->resize(1500, 900);
+        return QTest::qWaitFor([&] { return w.settled() && isVisible(w.find(u"equipment"_s)); }, 2000);
+    }
+
+    static QPointF where(Window &w, const QString &name)
+    {
+        const auto *item = qobject_cast<QQuickItem *>(w.find(name));
+        return item ? item->mapToScene(QPointF(0, 0)) : QPointF(-1, -1);
+    }
+
+    void gearListWhenNarrow()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        QVERIFY(w.shown());
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        QVERIFY(!isVisible(w.find(u"equipment"_s)));
+        QVERIFY(isVisible(w.find(u"slot:Helmet"_s)));
+        QVERIFY(isVisible(w.find(u"slot:Gloves"_s)));
+
+        // and the list goes when it's wide
+        w.window->resize(1500, 900);
+        QTRY_VERIFY(w.settled() && isVisible(w.find(u"equipment"_s)));
+        QVERIFY(!isVisible(w.find(u"slot:Helmet"_s)));
+        QVERIFY(!isVisible(w.find(u"slot:Gloves"_s)));
+        w.window->resize(1000, 700);
+        QTRY_VERIFY(w.settled() && !isVisible(w.find(u"equipment"_s)));
+        QVERIFY(isVisible(w.find(u"slot:Helmet"_s)));
+    }
+
+    void equipmentScreen()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)},
+                {u"Ring 1"_s, item(itemtexts::advancedRing)},
+                {u"Jewel 2"_s, item(jewel)}},
+               {u"Ring 1"_s});
+        QVERIFY(w.settled());
+
+        // the rest of the page stays
+        QVERIFY(isVisible(w.find(u"recommendedUpgrades"_s)));
+        QVERIFY(isVisible(w.find(u"resistances"_s)));
+        QVERIFY(isVisible(w.find(u"overallScore"_s)));
+        QVERIFY(isVisible(w.find(u"gearHelp"_s)));
+
+        // the helmet at the top with the amulet beside it, the weapons either side of
+        // the body armour, the gloves and a ring below, the belt, the boots
+        const auto at = [&](const char *slot) {
+            return where(w, u"tile:"_s + QString::fromLatin1(slot));
+        };
+        QCOMPARE(at("Helmet").x(), at("Body Armour").x());
+        QVERIFY(at("Helmet").y() < at("Body Armour").y());
+        QVERIFY(at("Amulet").x() > at("Helmet").x());
+        QCOMPARE(at("Amulet").y(), at("Helmet").y());
+        QVERIFY(at("Weapon").x() < at("Body Armour").x());
+        QCOMPARE(at("Weapon").y(), at("Body Armour").y());
+        QVERIFY(at("Offhand").x() > at("Body Armour").x());
+        QCOMPARE(at("Offhand").y(), at("Body Armour").y());
+        QCOMPARE(at("Gloves").x(), at("Weapon").x());
+        QVERIFY(at("Gloves").y() > at("Weapon").y());
+        QCOMPARE(at("Belt").x(), at("Body Armour").x());
+        QCOMPARE(at("Belt").y(), at("Gloves").y());
+        QCOMPARE(at("Ring 1").x(), at("Offhand").x());
+        QCOMPARE(at("Ring 1").y(), at("Gloves").y());
+        QCOMPARE(at("Boots").x(), at("Belt").x());
+        QVERIFY(at("Boots").y() > at("Belt").y());
+        QCOMPARE(at("Ring 2").x(), at("Ring 1").x());
+        QCOMPARE(at("Ring 2").y(), at("Boots").y());
+        // the slots that aren't on the screen are in a row underneath
+        QVERIFY(at("Jewel 2").y() > at("Boots").y());
+        QVERIFY(isVisible(w.find(u"equipmentOthers"_s)));
+
+        // what a worn slot says
+        QObject *helmet = w.find(u"tile:Helmet"_s);
+        QCOMPARE(text(helmet->findChild<QObject *>(u"slotName"_s)), u"Helmet"_s);
+        QCOMPARE(text(helmet->findChild<QObject *>(u"itemName"_s)), u"Grim Crown"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QCOMPARE(spoken(helmet), u"Helmet"_s);
+        QVERIFY(isVisible(helmet->findChild<QObject *>(u"tileGauge"_s)));
+        QCOMPARE(w.find(u"tile:Ring 1"_s)->property("description").toString(),
+                 u"Storm Loop, Sapphire Ring, from Path of Building"_s);
+
+        // and an empty one is a dashed frame that says so, with no score
+        QObject *gloves = w.find(u"tile:Gloves"_s);
+        QVERIFY(gloves->property("empty").toBool());
+        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Empty"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
+        QVERIFY(!isVisible(gloves->findChild<QObject *>(u"tileGauge"_s)));
+        QVERIFY(!helmet->property("empty").toBool());
+
+        // each slot once
+        for (const char *slot : {"Weapon", "Offhand", "Helmet", "Body Armour", "Gloves", "Boots", "Belt",
+                                 "Amulet", "Ring 1", "Ring 2", "Jewel 2"})
+            QCOMPARE(findAll(w.page(), u"tile:"_s + QString::fromLatin1(slot)).size(), 1);
+    }
+
+    void equipmentTabOrder()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        // across the screen and then down it
+        const QStringList reading{u"Helmet"_s, u"Amulet"_s, u"Weapon"_s, u"Body Armour"_s, u"Offhand"_s,
+                                  u"Gloves"_s, u"Belt"_s,   u"Ring 1"_s, u"Boots"_s,       u"Ring 2"_s};
+        auto *tile = qobject_cast<QQuickItem *>(w.find(u"tile:"_s + reading.first()));
+        QVERIFY(tile);
+        QVERIFY(tile->activeFocusOnTab());
+        for (qsizetype i = 1; i < reading.size(); ++i) {
+            tile = tile->nextItemInFocusChain(true);
+            QVERIFY(tile);
+            QCOMPARE(tile->objectName(), u"tile:"_s + reading.at(i));
+        }
+    }
+
+    void equipmentPanel()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        const RecommendedUpgrades *upgrades = w.app->recommendedUpgrades();
+
+        // nothing picked, so it says to
+        QVERIFY(isVisible(w.find(u"panelHint"_s)));
+        QCOMPARE(text(w.find(u"panelHint"_s)), u"Pick a slot to see what would improve it."_s);
+        QVERIFY(findAll(w.page(), u"panelContent"_s).isEmpty());
+
+        // a worn slot shows its notes, what to look for and a search
+        QVERIFY(click(w.find(u"tile:Helmet"_s)));
+        QCOMPARE(upgrades->chosen(), u"Helmet"_s);
+        QVERIFY(w.settled());
+        QVERIFY(!isVisible(w.find(u"panelHint"_s)));
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Grim Crown"_s);
+        QCOMPARE(text(w.find(u"panelBase"_s)), u"Visored Helm"_s);
+        QVERIFY(isVisible(w.find(u"panelGauge"_s)));
+        const auto notes = w.app->gearList()->index(2).data(GearList::NotesRole).value<QList<GearNote>>();
+        QVERIFY(!notes.isEmpty());
+        const QList<QObject *> labels = findAll(w.find(u"panelNotes"_s), u"noteLabel"_s);
+        QCOMPARE(labels.size(), notes.size());
+        QCOMPARE(text(labels.first()), notes.first().label);
+        const QString lookFor = text(w.find(u"panelLookFor"_s));
+        QVERIFY(lookFor.contains(u" or more"_s));
+        QCOMPARE(lookFor, upgrades->chosenLookFor());
+        QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());
+        QVERIFY(!w.find(u"tile:Gloves"_s)->property("chosen").toBool());
+
+        QObject *find = w.find(u"panelFind"_s);
+        QVERIFY(isVisible(find));
+        QVERIFY(!isVisible(w.find(u"panelTradeStatus"_s)));
+        w.network->answers = {{.never = true}};
+        QVERIFY(click(find));
+        QVERIFY(isVisible(w.find(u"panelTradeStatus"_s)));
+        QCOMPARE(text(w.in(u"panelTradeStatus"_s, u"tradeStatusText"_s)), u"Searching the trade site"_s);
+        QVERIFY(!find->property("enabled").toBool());
+
+        // another slot takes its place
+        QVERIFY(click(w.find(u"tile:Boots"_s)));
+        QTRY_COMPARE(text(w.find(u"panelSlot"_s)), u"Boots"_s);
+        QCOMPARE(findAll(w.page(), u"panelContent"_s).size(), 1);
+        QVERIFY(!isVisible(w.find(u"panelTradeStatus"_s)));
+        QVERIFY(w.find(u"tile:Boots"_s)->property("chosen").toBool());
+        QVERIFY(!w.find(u"tile:Helmet"_s)->property("chosen").toBool());
+    }
+
+    void equipmentPanelEmptySlot()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        QVERIFY(click(w.find(u"tile:Gloves"_s)));
+        QVERIFY(w.settled());
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Gloves"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved"_s);
+        QVERIFY(!isVisible(w.find(u"panelBase"_s)));
+        QVERIFY(!isVisible(w.find(u"panelGauge"_s)));
+        QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Wants most"_s);
+        QVERIFY(text(w.find(u"panelLookFor"_s)).contains(u" or more"_s));
+        // there's nothing worn to search for a better one of
+        QVERIFY(!isVisible(w.find(u"panelFind"_s)));
+        QVERIFY(!isVisible(w.find(u"panelTakeOff"_s)));
+
+        // taking off what's worn leaves the slot picked, and empty
+        QVERIFY(click(w.find(u"tile:Helmet"_s)));
+        QVERIFY(w.settled());
+        QVERIFY(click(w.find(u"panelTakeOff"_s)));
+        QVERIFY(w.settled());
+        QVERIFY(w.app->character().character().gear.isEmpty());
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved"_s);
+        QVERIFY(w.find(u"tile:Helmet"_s)->property("empty").toBool());
+    }
+
     void takeOffGear()
     {
         Window w;

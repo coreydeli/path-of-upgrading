@@ -2,6 +2,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
@@ -13,11 +14,16 @@ ColumnsPage {
     readonly property GearList gear: app.gearList
     readonly property Resistances resists: app.resistances
 
+    // On a wide window the slots are laid out like the character's equipment
+    // screen, which wants the page to itself. Narrower, they're a list.
+    readonly property bool equipment: width >= Kirigami.Units.gridUnit * 60
+
     title: qsTr("Your Gear")
     description: qsTr("What your character wears, and where an upgrade would help most.")
     // the slots need room to put their notes beside them
     minColumnWidth: Kirigami.Units.gridUnit * 44
-    maxColumnWidth: Kirigami.Units.gridUnit * 60
+    maxColumnWidth: Kirigami.Units.gridUnit * (equipment ? 66 : 60)
+    maxColumns: equipment ? 1 : 3
 
     // One of them, typed in off the character sheet.
     component ResistField: NumberField {
@@ -73,13 +79,21 @@ ColumnsPage {
             visible: overall.visible || nobody.visible
         }
 
+        EquipmentBoard {
+            Layout.fillWidth: true
+            Layout.margins: Kirigami.Units.gridUnit
+            visible: gearPage.equipment
+            gear: gearPage.gear
+            upgrades: gearPage.app.recommendedUpgrades
+        }
+
         Repeater {
             model: gearPage.gear
 
             delegate: GearSlot {
                 required property bool extra
 
-                visible: !extra
+                visible: !extra && !gearPage.equipment
             }
         }
 
@@ -204,10 +218,11 @@ ColumnsPage {
         title: qsTr("Weapon Swap, Flasks, Charms and Jewels")
     }
 
+    // on the equipment screen they're under the rest
     FormCard.FormCard {
         id: extras
         objectName: "extras"
-        visible: gearPage.gear.hasExtras
+        visible: gearPage.gear.hasExtras && !gearPage.equipment
 
         Repeater {
             model: gearPage.gear
