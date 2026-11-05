@@ -92,7 +92,7 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "pobAction"
-                text: qsTr("Path of Building")
+                text: qsTr("Build Analysis")
                 icon.name: "office-chart-line"
                 checkable: true
                 QQC2.ActionGroup.group: pages
@@ -108,8 +108,8 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "overlayAction"
-                text: qsTr("Popup and Hotkeys")
-                icon.name: "preferences-desktop-keyboard-shortcut"
+                text: qsTr("Settings")
+                icon.name: "settings-configure"
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(overlayPage)

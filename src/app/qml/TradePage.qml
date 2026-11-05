@@ -12,6 +12,9 @@ ColumnsPage {
 
     required property TradeOptions options
     required property TradeSession session
+
+    // the steps for finding the session ID
+    property bool showFindSession: false
     readonly property var sellers: [
         {
             value: "available",
@@ -150,7 +153,8 @@ ColumnsPage {
     FormCard.FormCard {
         NumberField {
             objectName: "budgetMin"
-            label: qsTr("From")
+            label: qsTr("Lowest price")
+            description: qsTr("Listings cheaper than this are left out.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -162,7 +166,8 @@ ColumnsPage {
 
         NumberField {
             objectName: "budgetMax"
-            label: qsTr("Up to")
+            label: qsTr("Highest price")
+            description: qsTr("Listings that cost more are left out.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -174,7 +179,8 @@ ColumnsPage {
 
         FormCard.FormComboBoxDelegate {
             objectName: "currencyBox"
-            text: qsTr("In")
+            text: qsTr("Currency")
+            description: qsTr("What the lowest and highest price are counted in.")
             textRole: "text"
             valueRole: "value"
             model: tradePage.currencies
@@ -190,6 +196,19 @@ ColumnsPage {
             description: tradePage.options.ninjaRate > 0 ? qsTr("A Divine Orb is %1 Exalted Orbs in %2.").arg(Math.round(tradePage.options.ninjaRate)).arg(tradePage.options.searchedLeague) : qsTr("It hasn't said yet, so it goes by yours.")
             checked: tradePage.options.autoRate
             onToggled: tradePage.options.autoRate = checked
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        NumberField {
+            objectName: "rateMinutes"
+            label: qsTr("Update poe.ninja's rate every")
+            description: tradePage.options.ratesStatus === "" ? qsTr("How many minutes to wait between updates.") : qsTr("How many minutes to wait between updates. %1").arg(tradePage.options.ratesStatus)
+            minimum: 1
+            maximum: 60
+            enabled: tradePage.options.autoRate
+            value: tradePage.options.rateMinutes
+            onEdited: value => tradePage.options.rateMinutes = value
         }
 
         FormCard.FormDelegateSeparator {}
@@ -271,6 +290,43 @@ ColumnsPage {
             text: tradePage.session.error
             textItem.wrapMode: Text.Wrap
             textItem.color: Kirigami.Theme.negativeTextColor
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormButtonDelegate {
+            objectName: "findSessionButton"
+            text: tradePage.showFindSession ? qsTr("Hide Where to Find It") : qsTr("Where Do I Find It?")
+            description: qsTr("It's a cookie in your browser, from signing in to the Path of Exile website.")
+            icon.name: tradePage.showFindSession ? "arrow-up" : "arrow-down"
+            onClicked: tradePage.showFindSession = !tradePage.showFindSession
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: findSessionSteps.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: findSessionSteps
+            objectName: "findSessionSteps"
+            visible: tradePage.showFindSession
+            text: tradePage.session.findSteps.join("\n")
+            description: tradePage.session.findNotes.join(" ")
+            textItem.wrapMode: Text.Wrap
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: signInButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: signInButton
+            objectName: "signInButton"
+            visible: tradePage.showFindSession
+            text: qsTr("Open the Sign In Page")
+            description: qsTr("The Path of Exile website, in your browser.")
+            icon.name: "internet-web-browser"
+            onClicked: tradePage.session.openSignIn()
         }
     }
 

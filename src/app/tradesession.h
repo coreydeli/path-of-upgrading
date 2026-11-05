@@ -3,10 +3,12 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QtQmlIntegration/qqmlintegration.h>
 
 namespace pou {
 
+class Opener;
 class SecretStore;
 class TradeClient;
 
@@ -26,10 +28,16 @@ class TradeSession : public QObject
     Q_PROPERTY(QString status READ status NOTIFY changed)
     // Why the last thing asked for didn't happen, or empty.
     Q_PROPERTY(QString error READ error NOTIFY changed)
+    // What the page says to someone who doesn't know where to find the id,
+    // see SessionGuide.
+    Q_PROPERTY(QStringList findSteps READ findSteps CONSTANT)
+    Q_PROPERTY(QStringList findNotes READ findNotes CONSTANT)
 
 public:
-    // They have to outlive it.
-    TradeSession(SecretStore *store, TradeClient *client, QObject *parent = nullptr);
+    // They have to outlive it. The opener may be null, and then it opens
+    // nothing.
+    TradeSession(SecretStore *store, TradeClient *client, Opener *opener = nullptr,
+                 QObject *parent = nullptr);
 
     // Signs in with the one in the keyring. It asks the keyring once, so it
     // can be called whenever trade searches are on.
@@ -39,12 +47,16 @@ public:
     Q_INVOKABLE void save(const QString &text);
     // Takes it out of the keyring and signs out.
     Q_INVOKABLE void forget();
+    // For the button that opens the page you sign in to the website on.
+    Q_INVOKABLE void openSignIn();
 
     bool isSaved() const { return m_state == State::SignedIn; }
     bool isBusy() const { return m_busy; }
     // "A session ID is saved."
     QString status() const;
     QString error() const { return m_error; }
+    QStringList findSteps() const;
+    QStringList findNotes() const;
 
 Q_SIGNALS:
     void changed();
@@ -68,6 +80,7 @@ private:
 
     SecretStore *m_store;
     TradeClient *m_client;
+    Opener *m_opener;
     State m_state = State::NotAsked;
     bool m_busy = false;
     QString m_error;

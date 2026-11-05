@@ -37,19 +37,23 @@ released.
 - Finds Path of Building as the Flatpak from Flathub
   (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
   installer on Windows, or in a folder you choose. When it can't be found or
-  won't work, the Path of Building page says why and what to do, with buttons
+  won't work, the Build Analysis page says why and what to do, with buttons
   for Discover, Flathub, the install command and, on Windows, the download page.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
-  one that finds nothing is tried again a little looser.
+  one that finds nothing is tried again a little looser. While trade searches
+  are on, poe.ninja's rates are updated every 10 minutes, or as often as you
+  set on the Trade page.
 - Shows the listings a search found in a window over the game, opened from the
   popup or with the Results hotkey. Each says whether it is an upgrade for the
   character you play, by how much and what it changes, the way the popup does,
   with its price, what that comes to in exalts or divines, the seller and how
   long ago it was listed.
 - Trade searches can be turned off, and set to the right league, including
-  hardcore. Solo self-found turns them off, as there is no trading in it.
+  hardcore. Solo self-found turns them off, as there is no trading in it. Betas
+  start with them on and releases with them off. Once you change that on the
+  Trade page, your choice is kept.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and what each slot needs to score
@@ -62,18 +66,20 @@ released.
   three columns, and stack again on a narrow one. On the gear page, your
   resistances and the other worn items sit beside the main gear.
 - Can sign in to the trade site with your session ID, which is kept in your
-  system keyring. Signed out, the site only takes simple searches, so upgrade
-  searches look for a few of your build's key stats, and the results window
-  rates each listing. Signed in, Path of Building weighs them for your build,
-  the way its own trade searches do, or they go by your whole gear score.
+  system keyring. The Trade page has the steps for finding it in your browser.
+  Signed out, the site only takes simple searches, so upgrade searches look for
+  a few of your build's key stats, and the results window rates each listing.
+  Signed in, Path of Building weighs them for your build, the way its own trade
+  searches do, or they go by your whole gear score.
 - The popup can be dragged by its title to move it. When you copy an item
   yourself with Ctrl+C, it appears by the mouse.
 - Stays in the system tray when you close the window. The tray icon shows the
   window, pauses the hotkeys and quits. Starting the program again shows the
   window that is already running, rather than opening a second one.
-- Can start with your desktop, from a switch on the Popup and Hotkeys page. It
-  then starts with only the tray icon, as `path-of-upgrading --background`
-  does. It tells you with a notification if the hotkeys couldn't be set up.
+- Starts with your desktop from the first time it runs, with only the tray
+  icon, as `path-of-upgrading --background` does. Turn that off with the switch
+  on the Settings page, and it stays off. It tells you with a notification if
+  the hotkeys couldn't be set up.
 - Has dark colors of its own, as a KDE color scheme, or follows your desktop's
   colors, from the Appearance page. The same page picks the heading font, the
   text font and the text size. Decorations there can be set to Plain, which
@@ -230,7 +236,7 @@ To use it:
   Flatpak: `flatpak install flathub community.pathofbuilding.PathOfBuilding`.
   Open it once for Path of Exile 2, so it downloads what it needs. Other
   installs work too, with LuaJIT installed, and you can point the app at a
-  folder on the Path of Building page.
+  folder on the Build Analysis page.
 
 ## Building
 
@@ -246,6 +252,9 @@ file, the icon and the AppStream metainfo.
 Each release on GitHub has an Arch Linux package and a Debian 13 package. To
 make them yourself, run `makepkg` in `packaging/arch`, or `cpack` in the build
 folder on Debian.
+
+Add `-DPOU_BETA=ON` to the configure step to build a beta, as the beta releases
+are. Trade searches start on in a beta and off without it.
 
 ## Releases
 
@@ -310,11 +319,11 @@ Path of Building is the one from its own installer,
 [Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases),
 which goes in `%APPDATA%\Path of Building Community (PoE2)`. The app comes with
 the LuaJIT that runs it. A copy you unzipped somewhere else can be picked on
-the Path of Building page.
+the Build Analysis page.
 
 Play in windowed fullscreen, as the popup can't be drawn over the game in
-exclusive fullscreen. The hotkeys are changed in the app, on the Popup and
-Hotkeys page, which also has the switch to start it when you sign in. Session
+exclusive fullscreen. The hotkeys are changed in the app, on the Settings
+page, which also has the switch to start it when you sign in. Session
 IDs are kept in the Windows Credential Manager.
 
 ## Credits

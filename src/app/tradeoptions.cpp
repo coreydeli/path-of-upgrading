@@ -2,6 +2,7 @@
 #include "app/tradeoptions.h"
 
 #include "app/settingsstore.h"
+#include "core/rates.h"
 #include "services/ratesstore.h"
 #include "services/tradedatastore.h"
 
@@ -33,6 +34,13 @@ TradeOptions::TradeOptions(SettingsStore *settings, TradeDataStore *data, RatesS
     connect(settings, &SettingsStore::changed, this, &TradeOptions::changed);
     connect(data, &TradeDataStore::refreshed, this, &TradeOptions::changed);
     connect(rates, &RatesStore::refreshed, this, &TradeOptions::changed);
+    // the status also goes by the settings and the minutes
+    connect(settings, &SettingsStore::changed, this, &TradeOptions::ratesStatusChanged);
+    connect(rates, &RatesStore::refreshed, this, &TradeOptions::ratesStatusChanged);
+    connect(data, &TradeDataStore::refreshed, this, &TradeOptions::ratesStatusChanged);
+    connect(&m_tick, &QTimer::timeout, this, &TradeOptions::ratesStatusChanged);
+    m_tick.setInterval(std::chrono::minutes(1));
+    m_tick.start();
 }
 
 const TradeSettings &TradeOptions::trade() const
@@ -117,6 +125,13 @@ void TradeOptions::setAutoRate(bool autoRate)
     change([&](TradeSettings &trade) { trade.autoRate = autoRate; });
 }
 
+void TradeOptions::setRateMinutes(int minutes)
+{
+    change([&](TradeSettings &trade) {
+        trade.rateMinutes = std::clamp(minutes, minRateMinutes, maxRateMinutes);
+    });
+}
+
 QStringList TradeOptions::leagues() const
 {
     const QString standard = u"Standard"_s;
@@ -144,6 +159,16 @@ double TradeOptions::ninjaRate() const
     // the rates are for the league last asked about, which is the searched
     // one once the app has caught up
     return m_rates->league() == searched().tradeId() ? m_rates->divineRate() : 0;
+}
+
+QString TradeOptions::ratesStatus() const
+{
+    if (!trade().autoRate || !unavailable().isEmpty())
+        return {};
+    // the rates are the searched league's, once the app has caught up
+    if (m_rates->league() != searched().tradeId())
+        return pou::ratesStatus({}, {}, m_now());
+    return pou::ratesStatus(m_rates->fetched(), m_rates->errorString(), m_now());
 }
 
 } // namespace pou
