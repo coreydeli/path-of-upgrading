@@ -15,6 +15,10 @@ namespace pou {
 
 // What you choose in the settings window, kept between runs.
 
+// The limits on how often the rate is asked for again.
+constexpr int minRateMinutes = 1;
+constexpr int maxRateMinutes = 60;
+
 struct TradeSettings
 {
     bool enabled = true; // search the trade site at all
@@ -22,6 +26,8 @@ struct TradeSettings
     ListingStatus status = ListingStatus::Available;
     Budget budget;        // with the divine rate you typed in
     bool autoRate = true; // or poe.ninja's instead
+    // How often poe.ninja's rate is asked for again while that's in use.
+    int rateMinutes = 10;
 
     friend bool operator==(const TradeSettings &, const TradeSettings &) = default;
 };

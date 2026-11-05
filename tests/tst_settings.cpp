@@ -40,6 +40,7 @@ private Q_SLOTS:
         s.trade.status = ListingStatus::Online;
         s.trade.budget = {2, 15, Currency::Exalted, 410};
         s.trade.autoRate = false;
+        s.trade.rateMinutes = 25;
         s.pob.enabled = false;
         s.pob.location = u"/opt/path-of-building"_s;
         s.pob.damageWeight = 0.3;
@@ -127,6 +128,7 @@ private Q_SLOTS:
             [](Settings &s) { s.trade.budget.currency = Currency::Chaos; },
             [](Settings &s) { s.trade.budget.divineRate = 250; },
             [](Settings &s) { s.trade.autoRate = false; },
+            [](Settings &s) { s.trade.rateMinutes = 30; },
             [](Settings &s) { s.pob.enabled = false; },
             [](Settings &s) { s.pob.location = u"/opt/pob"_s; },
             [](Settings &s) { s.pob.damageWeight = 0.25; },
@@ -178,6 +180,7 @@ private Q_SLOTS:
         store.setValue(u"trade/budgetMin"_s, -5);
         store.setValue(u"trade/budgetMax"_s, -5);
         store.setValue(u"trade/divineRate"_s, -5);
+        store.setValue(u"trade/rateMinutes"_s, 0);
         Settings s = loadSettings(store);
         QCOMPARE(s.overlay.autoHideSeconds, 2);
         QCOMPARE(s.overlay.scale, 0.5);
@@ -185,10 +188,16 @@ private Q_SLOTS:
         QCOMPARE(s.trade.budget.min, 0.0);
         QCOMPARE(s.trade.budget.max, 0.0);
         QCOMPARE(s.trade.budget.divineRate, 0.0);
+        QCOMPARE(s.trade.rateMinutes, 1);
 
         store.setValue(u"overlay/scale"_s, 10);
         store.setValue(u"overlay/autoHideSeconds"_s, u"soon"_s);
+        store.setValue(u"trade/rateMinutes"_s, 600);
         s = loadSettings(store);
+        QCOMPARE(s.trade.rateMinutes, 60);
+        store.setValue(u"trade/rateMinutes"_s, u"often"_s);
+        s = loadSettings(store);
+        QCOMPARE(s.trade.rateMinutes, TradeSettings().rateMinutes);
         QCOMPARE(s.overlay.scale, 2.0);
         QCOMPARE(s.overlay.autoHideSeconds, OverlaySettings().autoHideSeconds);
     }
