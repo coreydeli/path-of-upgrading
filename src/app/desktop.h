@@ -38,6 +38,10 @@ public:
     // anything is.
     void reportProblems();
 
+Q_SIGNALS:
+    // It was started again with --setup.
+    void setupAsked();
+
 private:
     Tray *m_tray;
     Notifier *m_notifier;

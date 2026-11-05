@@ -101,6 +101,9 @@ int main(int argc, char *argv[])
     pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());
     QObject::connect(instance.get(), &pou::SingleInstance::startedAgain, &desktop,
                      &pou::Desktop::startedAgain);
+    QObject::connect(&desktop, &pou::Desktop::setupAsked, root.onboarding(), &pou::Onboarding::ask);
+    if (commandLine.setup())
+        root.onboarding()->ask();
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);

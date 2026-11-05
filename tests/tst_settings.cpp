@@ -122,6 +122,7 @@ private Q_SLOTS:
         s.appearance.textFont = u"Sans Mono"_s;
         s.appearance.textSize = 11.5;
         s.overlay.startChosen = true;
+        s.setupDone = true;
 
         QTemporaryDir dir;
         const QString path = dir.filePath(u"settings.conf"_s);
@@ -133,6 +134,7 @@ private Q_SLOTS:
         QCOMPARE(loadSettings(again), s);
         // readable by people too
         QCOMPARE(again.value(u"trade/league"_s).toString(), u"Runes of Aldur"_s);
+        QCOMPARE(again.value(u"app/setupDone"_s).toBool(), true);
         QCOMPARE(again.value(u"overlay/position"_s).toString(), u"top"_s);
         QCOMPARE(again.value(u"appearance/theme"_s).toString(), u"desktop"_s);
         QCOMPARE(again.value(u"appearance/decorations"_s).toString(), u"plain"_s);
@@ -261,6 +263,7 @@ private Q_SLOTS:
             [](Settings &s) { s.appearance.textFont = u"Sans Mono"_s; },
             [](Settings &s) { s.appearance.textSize = 12; },
             [](Settings &s) { s.overlay.startChosen = true; },
+            [](Settings &s) { s.setupDone = true; },
         };
 
         // changing one setting must change only that one when it comes back

@@ -10,6 +10,7 @@ namespace pou {
 namespace {
 
 const QString backgroundOption = u"background"_s;
+const QString setupOption = u"setup"_s;
 
 } // namespace
 
@@ -19,6 +20,7 @@ CommandLine::CommandLine()
     m_parser.addHelpOption();
     m_parser.addVersionOption();
     m_parser.addOption({backgroundOption, u"Start with only the tray icon, without the window."_s});
+    m_parser.addOption({setupOption, u"Show the setup guide again."_s});
 }
 
 bool CommandLine::parse(const QStringList &arguments)
@@ -34,6 +36,11 @@ void CommandLine::process(const QStringList &arguments)
 bool CommandLine::background() const
 {
     return m_parser.isSet(backgroundOption);
+}
+
+bool CommandLine::setup() const
+{
+    return m_parser.isSet(setupOption);
 }
 
 QString CommandLine::errorText() const

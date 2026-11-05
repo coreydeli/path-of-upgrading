@@ -12,6 +12,7 @@
 #include "app/ignoredstats.h"
 #include "app/itemchecker.h"
 #include "app/itemhistory.h"
+#include "app/onboarding.h"
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
 #include "app/recommendedupgrades.h"
@@ -74,6 +75,7 @@ class App : public QObject
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
+    Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
 
 public:
     // Where it keeps what it has between runs.
@@ -135,6 +137,7 @@ public:
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
     Appearance *appearance() { return &m_appearance; }
+    Onboarding *onboarding() { return &m_onboarding; }
 
 private:
     void followSettings();
@@ -180,6 +183,7 @@ private:
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
     Appearance m_appearance;
+    Onboarding m_onboarding;
 };
 
 } // namespace pou

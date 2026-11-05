@@ -44,7 +44,11 @@ void Desktop::startedAgain(const QStringList &arguments)
 {
     // No arguments is how the desktop asks for the window, over D-Bus
     CommandLine commandLine;
-    if (!arguments.isEmpty() && commandLine.parse(arguments) && commandLine.background())
+    const bool understood = !arguments.isEmpty() && commandLine.parse(arguments);
+    // before the window, which shows it once it's up
+    if (understood && commandLine.setup())
+        Q_EMIT setupAsked();
+    if (understood && commandLine.background())
         return;
     showWindow();
 }
