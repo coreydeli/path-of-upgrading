@@ -474,6 +474,27 @@ private Q_SLOTS:
         QCOMPARE(c.list.error(), QString());
     }
 
+    // what the sidebar says the character you play is built as
+    void currentBuildNamesTheOneYouPlay()
+    {
+        Characters c;
+        const QString wren = c.saved(u"Wren"_s);
+        const QString ash = c.saved(u"Ash"_s);
+        c.list.load();
+        QCOMPARE(c.list.currentBuild(), QString());
+
+        QSignalSpy changed(&c.list, &CharacterList::currentBuildChanged);
+        c.play(wren);
+        QCOMPARE(c.list.currentBuild(), QString());
+        QVERIFY(c.list.importBuild(wren, stormweaver, parsePobBuild(stormweaver).value()));
+        QCOMPARE(c.list.currentBuild(), u"Level 92 Stormweaver"_s);
+        QVERIFY(!changed.isEmpty());
+
+        // another has no build
+        c.play(ash);
+        QCOMPARE(c.list.currentBuild(), QString());
+    }
+
     void importBuild()
     {
         Characters c;

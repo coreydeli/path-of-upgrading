@@ -40,6 +40,14 @@ CharacterList::CharacterList(CharacterStore *store, ActiveCharacter *active, Set
     , m_current(settings->settings().character)
 {
     connect(settings, &SettingsStore::changed, this, &CharacterList::followSettings);
+    // the build of the one you play is read off the rows
+    const auto follow = [this] {
+        Q_EMIT currentBuildChanged();
+    };
+    connect(this, &CharacterList::currentChanged, this, follow);
+    connect(this, &QAbstractItemModel::dataChanged, this, follow);
+    connect(this, &QAbstractItemModel::modelReset, this, follow);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, follow);
     // wearing something or tuning the gear score changes the one you play
     connect(active, &ActiveCharacter::changed, this, [this] {
         const int row = int(m_ids.indexOf(m_active->id()));
