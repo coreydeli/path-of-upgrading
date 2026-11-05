@@ -73,9 +73,10 @@ released.
 - Stays in the system tray when you close the window. The tray icon shows the
   window, pauses the hotkeys and quits. Starting the program again shows the
   window that is already running, rather than opening a second one.
-- Can start with your desktop, from a switch on the Popup and Hotkeys page. It
-  then starts with only the tray icon, as `path-of-upgrading --background`
-  does. It tells you with a notification if the hotkeys couldn't be set up.
+- Starts with your desktop from the first time it runs, with only the tray
+  icon, as `path-of-upgrading --background` does. Turn that off with the switch
+  on the Settings page, and it stays off. It tells you with a notification if
+  the hotkeys couldn't be set up.
 - Has dark colors of its own, as a KDE color scheme, or follows your desktop's
   colors, from the Appearance page.
 
@@ -315,8 +316,8 @@ the LuaJIT that runs it. A copy you unzipped somewhere else can be picked on
 the Path of Building page.
 
 Play in windowed fullscreen, as the popup can't be drawn over the game in
-exclusive fullscreen. The hotkeys are changed in the app, on the Popup and
-Hotkeys page, which also has the switch to start it when you sign in. Session
+exclusive fullscreen. The hotkeys are changed in the app, on the Settings
+page, which also has the switch to start it when you sign in. Session
 IDs are kept in the Windows Credential Manager.
 
 ## Credits
