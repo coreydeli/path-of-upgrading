@@ -26,10 +26,10 @@ released.
   lose damage" and "Never lose defences" make either one mean an item is never
   an upgrade.
 - The gear score uses a build profile: life and resistances, Energy Shield
-  spellcaster, Energy Shield attacker, or minion summoner. You can say how much
-  each stat counts, from not at all to three times as much. Stat weights can
-  be edited or suggested from the gear you wear, and stats you don't care
-  about can be ignored or left out of searches.
+  spellcaster, Energy Shield attacker, or minion summoner. You can change how
+  much each stat adds under Affix Impact, from Not at all (0x) to Three times
+  (3x). Stat weights can be edited or suggested from the gear you wear, and
+  stats you don't care about can be ignored or left out of searches.
 - Imports builds from Path of Building: from a code, a link, a file, or one
   you saved in Path of Building's own folder. It runs Path of Building without
   its window, so your build's own numbers judge the item. The import picks the
@@ -43,7 +43,7 @@ released.
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
   one that finds nothing is tried again a little looser. While trade searches
-  are on, poe.ninja's rates are updated every 10 minutes, or as often as you
+  are on, poe.ninja's prices are updated every 10 minutes, or as often as you
   set on the Trade page.
 - Shows the listings a search found in a window over the game, opened from the
   popup or with the Results hotkey. Each says whether it is an upgrade for the
@@ -336,7 +336,7 @@ IDs are kept in the Windows Credential Manager.
   Flathub. Path of Upgrading finds Path of Building where it puts it.
 - The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by The Cinzel Project Authors
   (SIL Open Font License 1.1, in `data/fonts`), which the app carries.
-- Currency rates come from [poe.ninja](https://poe.ninja), and the listings
+- Currency prices come from [poe.ninja](https://poe.ninja), and the listings
   from the official [Path of Exile trade site](https://www.pathofexile.com/trade2).
 - Path of Exile is a trademark of Grinding Gear Games. This project isn't
   affiliated with or endorsed by them.
