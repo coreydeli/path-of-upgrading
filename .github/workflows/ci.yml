@@ -4,9 +4,10 @@
 # stage once the one before it has passed. It builds on Arch Linux for the
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
 # supports, and on Windows in MSYS2. Each is built once, as it's released, and
-# the packages come from that build when release.yml asks for them. Main and
-# beta are checked by the release builds, which run it. A change to nothing
-# but the docs isn't built, except on those.
+# the packages come from that build when release.yml asks for them. A branch
+# is built as a beta on Debian and as a release on the others, as the tests
+# have to pass in both. Main and beta are checked by the release builds, which
+# run it. A change to nothing but the docs isn't built, except on those.
 name: CI
 
 on:
@@ -165,12 +166,16 @@ jobs:
           path: /ccache
           key: ccache-debian-${{ github.sha }}
           restore-keys: ccache-debian-
+      # Arch and Windows build a release here, so a branch gets a beta on
+      # this one, as the tests pass in both or not at all. In the release
+      # builds github.workflow is Release, and they say which they are.
       - name: Configure
         env:
           DEBIAN_VERSION: ${{ inputs.debian-version }}
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DPOU_BETA=${{ inputs.beta && 'ON' || 'OFF' }}
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DPOU_BETA=${{ (inputs.beta || github.workflow == 'CI') && 'ON' || 'OFF' }}
           ${DEBIAN_VERSION:+"-DPOU_PACKAGE_VERSION=$DEBIAN_VERSION"}
       - name: Build
         run: |
