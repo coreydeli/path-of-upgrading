@@ -49,7 +49,9 @@ released.
   with its price, what that comes to in exalts or divines, the seller and how
   long ago it was listed.
 - Trade searches can be turned off, and set to the right league, including
-  hardcore. Solo self-found turns them off, as there is no trading in it.
+  hardcore. Solo self-found turns them off, as there is no trading in it. Betas
+  start with them on and releases with them off. Once you change that on the
+  Trade page, your choice is kept.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and what each slot needs to score
@@ -243,6 +245,9 @@ file, the icon and the AppStream metainfo.
 Each release on GitHub has an Arch Linux package and a Debian 13 package. To
 make them yourself, run `makepkg` in `packaging/arch`, or `cpack` in the build
 folder on Debian.
+
+Add `-DPOU_BETA=ON` to the configure step to build a beta, as the beta releases
+are. Trade searches start on in a beta and off without it.
 
 ## Releases
 
