@@ -15,8 +15,15 @@ ColumnsPage {
     required property StatWeights weights
     required property StatPicker picker
 
+    // On a wide window the weights are a table: the stat, the note and the weight
+    // in columns that line up, in a column of their own.
+    readonly property real noteWidth: Kirigami.Units.gridUnit * 20
+    readonly property real boxWidth: Kirigami.Units.gridUnit * 12
+
     title: qsTr("Stat Weights")
     description: qsTr("What each stat is worth to you, for items judged by your weights.")
+    maxColumns: wide ? 1 : 3
+    maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
     // A stat and its weight.
     component WeightRow: FormRow {
@@ -30,6 +37,8 @@ ColumnsPage {
         objectName: "weight:" + key
         text: name
         description: note
+        descriptionWidth: weightsPage.wide ? weightsPage.noteWidth : 0
+        controlsWidth: weightsPage.wide ? weightsPage.boxWidth : 0
 
         NumberBox {
             objectName: "weightBox"
@@ -78,6 +87,20 @@ ColumnsPage {
             visible: weightsPage.weights.character === ""
             text: qsTr("You play nobody yet.")
             description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+        }
+
+        TableHeader {
+            objectName: "weightsHeader"
+            visible: weightsPage.wide && weightRows.count > 0
+            first: qsTr("Stat")
+            second: qsTr("Note")
+            third: qsTr("Weight")
+            descriptionWidth: weightsPage.noteWidth
+            controlsWidth: weightsPage.boxWidth
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: weightsPage.wide && weightRows.count > 0
         }
 
         Repeater {

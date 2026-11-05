@@ -88,6 +88,7 @@ qt_add_qml_module(pou_app
         qml/SetupTradeStep.qml
         qml/Style.qml
         qml/SwitchRow.qml
+        qml/TableHeader.qml
         qml/ToneLabel.qml
         qml/TonePill.qml
         qml/TradePage.qml
