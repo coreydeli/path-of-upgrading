@@ -18,12 +18,21 @@ ItemCheck firstCheck(const Item &item, const Judging &judging)
     return check;
 }
 
-ItemCheck withPobAnswer(ItemCheck check, const PobStats &before, const PobItemEval &tried,
-                        const Judging &judging)
+namespace {
+
+PobVerdictOptions pobOptions(const Judging &judging)
 {
     PobVerdictOptions options = judging.options;
     options.ignoreChaos = judging.character.chaosInoculation;
-    const std::optional<PobJudgement> best = bestPlacement(before, tried, check.item, options);
+    return options;
+}
+
+} // namespace
+
+ItemCheck withPobAnswer(ItemCheck check, const PobStats &before, const PobItemEval &tried,
+                        const Judging &judging)
+{
+    const std::optional<PobJudgement> best = bestPlacement(before, tried, check.item, pobOptions(judging));
     if (!best) {
         check.pob = ItemCheck::Pob::Failed;
         check.pobError =
@@ -78,6 +87,9 @@ void ItemJudge::check(const Item &item)
     // the answer for the item before isn't wanted any more
     delete m_reply;
     m_check = firstCheck(item, m_judging);
+    const Comparison &r = m_check.evaluation.comparison;
+    if (r.ok && !r.isEquipped)
+        m_check.places = gearPlaces(item, m_judging.character, m_judging.options.priorities, r.targetSlot);
     if (m_check.pob == ItemCheck::Pob::Checking) {
         // tried in each place it can go in
         m_reply = m_judging.engine->evaluate({{.text = item.raw}});
@@ -96,7 +108,11 @@ void ItemJudge::answered()
     }
 
     const PobEval eval = readPobEval(reply->answer());
-    m_check = withPobAnswer(m_check, eval.before, eval.items.value(0), m_judging);
+    const PobItemEval &tried = eval.items.value(0);
+    m_check = withPobAnswer(m_check, eval.before, tried, m_judging);
+    // it tried the item in every place already, so these cost it nothing
+    if (m_check.pob == ItemCheck::Pob::Checked)
+        m_check.places = pobPlaces(judgePlacements(eval.before, tried, m_check.item, pobOptions(m_judging)));
     Q_EMIT checked(m_check);
 }
 

@@ -209,6 +209,71 @@ private Q_SLOTS:
         QCOMPARE(p.judge.current().evaluation.comparison.replacing, QStringList{u"Grim Band"_s});
     }
 
+    void eachPlaceItGoes()
+    {
+        const Item strong = ring(u"Grim Band"_s, u"+80 to maximum Life"_s);
+        const Item weak = ring(u"Doom Band"_s, u"+10 to maximum Life"_s);
+        const Item storm = item(itemtexts::advancedRing);
+
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(asItIs, {{u"Ring 1"_s, u"Grim Band, Gold Ring"_s, tougher},
+                                             {u"Ring 2"_s, u"Doom Band, Gold Ring"_s, asItIs}})));
+        p.judge.setCharacter(wearing({{u"Ring 1"_s, strong}, {u"Ring 2"_s, weak}}));
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(storm);
+
+        // by the gear score at first, over the weaker ring
+        QCOMPARE(p.judge.current().pob, Pob::Checking);
+        QCOMPARE(p.judge.current().places.size(), 2);
+        QCOMPARE(p.judge.current().places.at(0).mode, ScoreMode::GearScores);
+        QVERIFY(p.judge.current().places.at(1).best);
+
+        // then where Path of Building says, from the one answer
+        QVERIFY(checked.wait());
+        QCOMPARE(p.pob.asked().size(), 1);
+        const QList<PlaceChange> &places = p.judge.current().places;
+        QCOMPARE(places.size(), 2);
+        QCOMPARE(places.at(0).mode, ScoreMode::PathOfBuilding);
+        QCOMPARE(places.at(0).slot, u"Ring 1"_s);
+        QCOMPARE(places.at(0).wearing, u"Grim Band, Gold Ring"_s);
+        QVERIFY(places.at(0).best);
+        QVERIFY(!places.at(1).best);
+        QCOMPARE(places.at(0).ehp, std::optional<double>(10));
+        QCOMPARE(places.at(1).ehp, std::optional<double>(0));
+        QCOMPARE(places.at(0).slot, p.judge.current().evaluation.pob->placement.label);
+    }
+
+    void onePlaceToTry()
+    {
+        // nothing to compare, and nothing more asked of it
+        WithPob p;
+        QVERIFY(p.pob.answers(tried(asItIs, {{u"Helmet"_s, u"Grim Crown, Visored Helm"_s, tougher}})));
+        p.judge.setCharacter(wearing({{u"Helmet"_s, helmetOld}}));
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(helmetNew);
+        QVERIFY(p.judge.current().places.isEmpty());
+        QVERIFY(checked.wait());
+        QCOMPARE(p.pob.asked().size(), 1);
+        QVERIFY(p.judge.current().places.isEmpty());
+    }
+
+    void keepsTheGearScoresIfItFails()
+    {
+        const Item strong = ring(u"Grim Band"_s, u"+80 to maximum Life"_s);
+        const Item weak = ring(u"Doom Band"_s, u"+10 to maximum Life"_s);
+        WithPob p;
+        QVERIFY(p.pob.answers(
+            QJsonObject{{u"before"_s, asItIs},
+                        {u"results"_s, QJsonArray{QJsonObject{{u"ok"_s, false}, {u"error"_s, u"No."_s}}}}}));
+        p.judge.setCharacter(wearing({{u"Ring 1"_s, strong}, {u"Ring 2"_s, weak}}));
+        QSignalSpy checked(&p.judge, &ItemJudge::checked);
+        p.judge.check(item(itemtexts::advancedRing));
+        QVERIFY(checked.wait());
+        QCOMPARE(p.judge.current().pob, Pob::Failed);
+        QCOMPARE(p.judge.current().places.size(), 2);
+        QCOMPARE(p.judge.current().places.at(0).mode, ScoreMode::GearScores);
+    }
+
     void weaponSwap()
     {
         WithPob p;

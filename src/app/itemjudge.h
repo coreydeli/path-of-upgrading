@@ -4,6 +4,7 @@
 #include "core/characterstore.h"
 #include "core/evaluation.h"
 #include "core/item.h"
+#include "core/places.h"
 #include "core/pobbuild.h"
 #include "core/pobverdict.h"
 
@@ -34,6 +35,9 @@ struct ItemCheck
     Evaluation evaluation;
     Pob pob = Pob::Unused;
     QString pobError;
+    // How it does in each place it could go, when there are several with
+    // something worn in them. By Path of Building once it has judged it.
+    QList<PlaceChange> places;
 };
 
 // What items are judged by.
