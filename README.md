@@ -116,7 +116,7 @@ these files:
 | Any other Linux, to build yourself | `path-of-upgrading-<version>.tar.gz` |
 
 The newest release is at the top of the list. A beta's version is like
-`0.1.0beta2` in the Arch package and `0.1.0.beta.2` in the Debian one.
+`0.5.0beta2` in the Arch package and `0.5.0.beta.2` in the Debian one.
 
 ### Arch Linux
 
@@ -276,7 +276,7 @@ are. Trade searches start on in a beta and off without it.
 ## Releases
 
 Work is done on short branches off `beta` and merged back into it. Each merge
-into `beta` makes a pre-release, like `v0.1.0-beta.2`, with the packages and
+into `beta` makes a pre-release, like `v0.5.0-beta.2`, with the packages and
 the changes since the last one. Merging `beta` into `main` releases the version
 in `CMakeLists.txt` as the latest release, and the next beta needs a new
 version. The version is also in the metainfo's newest release and the PKGBUILD,
