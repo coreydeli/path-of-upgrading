@@ -88,7 +88,7 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "pobAction"
-                text: qsTr("Path of Building")
+                text: qsTr("Build Analysis")
                 icon.name: "office-chart-line"
                 checkable: true
                 QQC2.ActionGroup.group: pages
