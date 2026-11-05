@@ -22,6 +22,9 @@ released.
   also shows what it would do in each place it fits.
 - Works without a build too. Wear gear or set stat weights before you add a
   character, and the app makes one called My character and plays it.
+- Opens a setup guide the first time the window opens, for your league, trade
+  searches, a first character and the key that checks an item. Start the
+  program with `path-of-upgrading --setup` to see it again.
 - Judges what an item costs you as well as what it gives. A big drop in
   damage, Effective HP, Life or Energy Shield counts against it, and "Never
   lose damage" and "Never lose defences" make either one mean an item is never
