@@ -1356,7 +1356,8 @@ private Q_SLOTS:
         // beside the list, which has no buttons now
         const auto *list = qobject_cast<QQuickItem *>(row);
         const auto *beside = qobject_cast<QQuickItem *>(panel);
-        QVERIFY(beside->mapToScene(QPointF(0, 0)).x() > list->mapToScene(QPointF(list->width(), 0)).x() - 1);
+        // once the page has moved the sections into their columns
+        QTRY_VERIFY(beside->mapToScene(QPointF(0, 0)).x() >= list->mapToScene(QPointF(list->width(), 0)).x());
         QVERIFY(!isVisible(row->findChild<QObject *>(u"gearButton"_s)));
         QVERIFY(!isVisible(row->findChild<QObject *>(u"renameButton"_s)));
         QVERIFY(!isVisible(row->findChild<QObject *>(u"removeButton"_s)));
@@ -1448,7 +1449,7 @@ private Q_SLOTS:
         // beside the list
         const auto *panel = qobject_cast<QQuickItem *>(w.find(u"itemPanel"_s));
         const auto *list = qobject_cast<QQuickItem *>(w.find(u"checked:0"_s));
-        QVERIFY(panel->mapToScene(QPointF(0, 0)).x() >= list->mapToScene(QPointF(list->width(), 0)).x() - 1);
+        QTRY_VERIFY(panel->mapToScene(QPointF(0, 0)).x() >= list->mapToScene(QPointF(list->width(), 0)).x());
 
         // a row picks its item to show
         QVERIFY(click(w.find(u"checked:1"_s)));
