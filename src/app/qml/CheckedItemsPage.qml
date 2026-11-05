@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls as QQC2
+import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
@@ -14,8 +15,30 @@ ColumnsPage {
     required property OverlayOptions options
     readonly property string key: options.checkKey.toString()
 
+    // The item shown beside the list on a wide window: a row of the list, and
+    // what CheckedItems has to say about it.
+    property int picked: 0
+    property var details: ({})
+
+    function pick(row: int): void {
+        picked = row;
+        details = checkedItems.details(row);
+    }
+
     title: qsTr("Item History")
     description: qsTr("The items you checked, to look at again.")
+    maxColumns: wide ? 2 : 3
+
+    // checking an item again moves it to the top
+    Connections {
+        target: checkedPage.checkedItems
+
+        function onModelReset() {
+            checkedPage.pick(0);
+        }
+    }
+
+    Component.onCompleted: pick(0)
 
     // An item you checked, and what it is.
     component ItemRow: FormRow {
@@ -31,6 +54,18 @@ ColumnsPage {
 
         objectName: "checked:" + index
         text: name
+        // picked to show beside the list, as a row of a list is
+        focusPolicy: checkedPage.wide ? Qt.StrongFocus : Qt.NoFocus
+        onClicked: checkedPage.pick(index)
+        Accessible.role: checkedPage.wide ? Accessible.ListItem : Accessible.Button
+        Accessible.selectable: checkedPage.wide
+        Accessible.selected: checkedPage.wide && index === checkedPage.picked
+        background: Rectangle {
+            visible: checkedPage.wide
+            color: itemRow.index === checkedPage.picked ? Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.18)
+                                                         : itemRow.hovered || itemRow.visualFocus ? Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.08)
+                                                                                                  : "transparent"
+        }
         description: {
             const parts = [];
             for (const part of [rarity, base, itemClass]) {
@@ -59,6 +94,7 @@ ColumnsPage {
 
     SectionHeader {
         objectName: "checkedHeader"
+        column: checkedPage.wide ? 0 : -1
         title: qsTr("Newest First")
     }
 
@@ -68,6 +104,8 @@ ColumnsPage {
     }
 
     FormCard.FormCard {
+        id: itemList
+
         Repeater {
             id: itemRows
             model: checkedPage.checkedItems
@@ -102,6 +140,24 @@ ColumnsPage {
         objectName: "checkedHelp"
         visible: itemRows.count > 0
         text: qsTr("Check Again shows an item in the popup again, judged for the character you play now. Forgetting the items doesn't forget their stats, which the stat picker still offers.")
+    }
+
+    SectionHeader {
+        objectName: "detailHeader"
+        visible: checkedPage.wide && itemRows.count > 0
+        column: checkedPage.wide ? 1 : -1
+        title: qsTr("The Item")
+    }
+
+    ItemPanel {
+        objectName: "itemPanel"
+        Layout.fillWidth: true
+        Layout.margins: checkedPage.gutter
+        visible: checkedPage.wide && itemRows.count > 0
+        details: checkedPage.details
+        scrolling: checkedPage.flickable
+        room: itemList.height
+        onCheckAgainAsked: checkedPage.checkedItems.checkAgain(checkedPage.picked)
     }
 
     FormCard.FormCardDialog {

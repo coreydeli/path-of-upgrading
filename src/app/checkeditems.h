@@ -4,6 +4,7 @@
 #include "core/item.h"
 
 #include <QAbstractListModel>
+#include <QVariantMap>
 #include <QtQmlIntegration/qqmlintegration.h>
 
 namespace pou {
@@ -39,6 +40,13 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     int limit() const;
+
+    // What the row has to show for itself, for the page to put beside the
+    // list: the roles above by their names, then "corrupted", "properties"
+    // (the lines of its base properties, like "Armour: 340") and "mods", each
+    // a map of "text" and "tag" (see ItemLine). Empty for a row that isn't
+    // there.
+    Q_INVOKABLE QVariantMap details(int row) const;
 
     // Has the popup show the item again, judged for the character you play
     // now. Nothing for a row that isn't there.

@@ -11,6 +11,9 @@ Item {
     id: header
 
     property string title
+    // The column of a page with columns to have what follows start in, or -1
+    // to let ColumnsPage put it in the shortest.
+    property int column: -1
     // as FormHeader's: the width the card above it is held to
     property real maximumWidth: Kirigami.Units.gridUnit * 30
 

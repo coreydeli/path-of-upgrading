@@ -23,6 +23,10 @@ FormCard.FormCardPage {
     property real maxColumnWidth: Kirigami.Units.gridUnit * 40
     // the space around a card when there are columns
     readonly property real gutter: Kirigami.Units.largeSpacing
+    // Pages with a layout of their own for a wide window switch to it at
+    // this width. Your Gear's equipment screen was the first.
+    property real wideWidth: Kirigami.Units.gridUnit * 60
+    readonly property bool wide: width >= wideWidth
     readonly property int columnCount: Math.max(1, Math.min(maxColumns, Math.floor(width / minColumnWidth)))
 
     // the headers with their cards, each as { items, cards }
@@ -56,7 +60,9 @@ FormCard.FormCardPage {
             if (!current || isHeader || (!isText && current.cards > 0)) {
                 current = {
                     items: [],
-                    cards: 0
+                    cards: 0,
+                    // a header can ask for a column
+                    column: isHeader ? o.column ?? -1 : -1
                 };
                 found.push(current);
             }
@@ -66,6 +72,8 @@ FormCard.FormCardPage {
             if (o.maximumWidth !== undefined)
                 o.maximumWidth = Qt.binding(() => page.limitWidth(o));
             o.visibleChanged.connect(page.arrange);
+            if (isHeader && o.columnChanged)
+                o.columnChanged.connect(page.arrange);
             o.implicitHeightChanged.connect(page.arrange);
         }
         sections = found;
@@ -81,7 +89,8 @@ FormCard.FormCardPage {
     }
 
     // Puts each section in the shortest column, in the order they come, so
-    // the page reads down the first column and then the next.
+    // the page reads down the first column and then the next. A section whose
+    // header asks for a column is put in that one, if the page has it.
     function arrange(): void {
         Qt.callLater(place);
     }
@@ -91,9 +100,13 @@ FormCard.FormCardPage {
         const plan = [];
         for (const section of sections) {
             let shortest = 0;
-            for (let c = 1; c < columnCount; ++c) {
-                if (heights[c] < heights[shortest])
-                    shortest = c;
+            if (section.column >= 0 && section.column < columnCount) {
+                shortest = section.column;
+            } else {
+                for (let c = 1; c < columnCount; ++c) {
+                    if (heights[c] < heights[shortest])
+                        shortest = c;
+                }
             }
             plan.push(shortest);
             heights[shortest] += heightOf(section);

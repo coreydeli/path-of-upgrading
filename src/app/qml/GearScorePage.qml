@@ -13,8 +13,14 @@ ColumnsPage {
 
     required property GearScoring scoring
 
+    // On a wide window the stats are a table, as on the weights page.
+    readonly property real whereWidth: Kirigami.Units.gridUnit * 20
+    readonly property real levelWidth: Kirigami.Units.gridUnit * 12
+
     title: qsTr("Gear Grade")
     description: qsTr("What the gear score goes by, and how much each stat counts.")
+    maxColumns: wide ? 1 : 3
+    maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
     // A stat, with how much it counts beside it.
     component StatRow: FormRow {
@@ -27,6 +33,8 @@ ColumnsPage {
         objectName: "stat:" + label
         text: label
         description: where
+        descriptionWidth: scorePage.wide ? scorePage.whereWidth : 0
+        controlsWidth: scorePage.wide ? scorePage.levelWidth : 0
 
         QQC2.ComboBox {
             objectName: "levelBox"
@@ -95,6 +103,20 @@ ColumnsPage {
         id: stats
         objectName: "stats"
         visible: statRows.count > 0
+
+        TableHeader {
+            objectName: "statsHeader"
+            visible: scorePage.wide
+            first: qsTr("Stat")
+            second: qsTr("Where it counts")
+            third: qsTr("Impact")
+            descriptionWidth: scorePage.whereWidth
+            controlsWidth: scorePage.levelWidth
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: scorePage.wide
+        }
 
         Repeater {
             id: statRows

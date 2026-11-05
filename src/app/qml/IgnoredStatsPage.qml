@@ -14,8 +14,15 @@ ColumnsPage {
     required property IgnoredStats ignored
     required property StatPicker picker
 
+    // On a wide window the groups and the stats are tables, as on the weights
+    // page.
+    readonly property real noteWidth: Kirigami.Units.gridUnit * 20
+    readonly property real modeWidth: Kirigami.Units.gridUnit * 12
+
     title: qsTr("Ignored Stats")
     description: qsTr("Stats your character does not want counted.")
+    maxColumns: wide ? 1 : 3
+    maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
     // A group of stats, with how they count beside it.
     component GroupRow: FormRow {
@@ -26,6 +33,8 @@ ColumnsPage {
         objectName: "group:" + modelData.id
         text: modelData.name
         description: modelData.stats
+        descriptionWidth: ignoredPage.wide ? ignoredPage.noteWidth : 0
+        controlsWidth: ignoredPage.wide ? ignoredPage.modeWidth : 0
 
         QQC2.ComboBox {
             objectName: "modeBox"
@@ -51,6 +60,8 @@ ColumnsPage {
         objectName: "ignored:" + key
         text: name
         description: note
+        descriptionWidth: ignoredPage.wide ? ignoredPage.noteWidth : 0
+        controlsWidth: ignoredPage.wide ? ignoredPage.modeWidth : 0
 
         QQC2.ComboBox {
             objectName: "modeBox"
@@ -86,6 +97,20 @@ ColumnsPage {
             description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
         }
 
+        TableHeader {
+            objectName: "groupsHeader"
+            visible: ignoredPage.wide
+            first: qsTr("Group")
+            second: qsTr("Stats in it")
+            third: qsTr("Counts as")
+            descriptionWidth: ignoredPage.noteWidth
+            controlsWidth: ignoredPage.modeWidth
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: ignoredPage.wide
+        }
+
         Repeater {
             model: ignoredPage.ignored.groups
 
@@ -119,6 +144,20 @@ ColumnsPage {
     FormCard.FormCard {
         id: singleStats
         objectName: "singleStats"
+
+        TableHeader {
+            objectName: "singleHeader"
+            visible: ignoredPage.wide && statRows.count > 0
+            first: qsTr("Stat")
+            second: qsTr("Note")
+            third: qsTr("Counts as")
+            descriptionWidth: ignoredPage.noteWidth
+            controlsWidth: ignoredPage.modeWidth
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: ignoredPage.wide && statRows.count > 0
+        }
 
         Repeater {
             id: statRows

@@ -47,6 +47,7 @@ qt_add_qml_module(pou_app
         qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml
+        qml/CharacterPanel.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
         qml/EquipmentBoard.qml
@@ -56,6 +57,7 @@ qt_add_qml_module(pou_app
         qml/GearPage.qml
         qml/GearScorePage.qml
         qml/IgnoredStatsPage.qml
+        qml/ItemPanel.qml
         qml/KeyField.qml
         qml/Main.qml
         qml/NumberBox.qml
@@ -88,6 +90,7 @@ qt_add_qml_module(pou_app
         qml/SetupTradeStep.qml
         qml/Style.qml
         qml/SwitchRow.qml
+        qml/TableHeader.qml
         qml/ToneLabel.qml
         qml/TonePill.qml
         qml/TradePage.qml

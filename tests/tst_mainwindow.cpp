@@ -1180,6 +1180,360 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"slot:Helmet"_s)));
     }
 
+    // A page of the window at a width, once it has been laid out for it.
+    static bool pageAt(Window &w, const QString &action, int width)
+    {
+        if (!w.show(action) || !w.shown())
+            return false;
+        w.window->resize(width, 900);
+        return QTest::qWaitFor(
+            [&] { return w.settled() && w.page()->property("wide").toBool() == (width >= 1500); }, 2000);
+    }
+
+    // every row of a table with this start of its name
+    static QList<QObject *> rowsStartingWith(Window &w, const QString &prefix)
+    {
+        QList<QObject *> rows;
+        search(w.page(), [&](QObject *o) {
+            if (o->objectName().startsWith(prefix))
+                rows << o;
+            return false;
+        });
+        return rows;
+    }
+
+    // That the rows of a table line up with its header on a wide window, and
+    // go back to a note under the name on a narrow one.
+    static void checkTable(Window &w, const QString &rowPrefix, const QString &header, bool wide)
+    {
+        const QList<QObject *> rows = rowsStartingWith(w, rowPrefix);
+        QVERIFY(!rows.isEmpty());
+        QObject *head = w.find(header);
+        QCOMPARE(isVisible(head), wide);
+        for (QObject *row : rows) {
+            const bool noted = !row->property("description").toString().isEmpty();
+            QObject *beside = row->findChild<QObject *>(u"descriptionCell"_s);
+            QObject *under = row->findChild<QObject *>(u"descriptionText"_s);
+            QCOMPARE(row->property("descriptionWidth").toReal() > 0, wide);
+            QCOMPARE(isVisible(beside), wide);
+            QCOMPARE(isVisible(under), !wide && noted);
+            if (wide) {
+                QCOMPARE(row->property("descriptionWidth"), head->property("descriptionWidth"));
+                QCOMPARE(row->property("controlsWidth"), head->property("controlsWidth"));
+                QCOMPARE(row->property("controlsWidth"), rows.first()->property("controlsWidth"));
+            }
+        }
+    }
+
+    void weightsTable()
+    {
+        Window w;
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(pageAt(w, u"weightsAction"_s, 1000));
+        // the cards stay as they were, in as many columns as fit
+        checkTable(w, u"weight:"_s, u"weightsHeader"_s, false);
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 3);
+
+        w.window->resize(1500, 900);
+        QTRY_VERIFY(w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        checkTable(w, u"weight:"_s, u"weightsHeader"_s, true);
+        // the table has the page's width to itself
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 1);
+        QCOMPARE(text(w.find(u"weightsHeader"_s)->findChild<QObject *>(u"firstLabel"_s)), u"Stat"_s);
+        QCOMPARE(text(w.find(u"weightsHeader"_s)->findChild<QObject *>(u"secondLabel"_s)), u"Note"_s);
+        QCOMPARE(text(w.find(u"weightsHeader"_s)->findChild<QObject *>(u"thirdLabel"_s)), u"Weight"_s);
+        // and is edited as it was
+        QVERIFY(setValue(w.find(u"weight:# to maximum Life"_s)->findChild<QObject *>(u"weightBox"_s), 2500,
+                         "valueModified"));
+        QCOMPARE(w.app->character().character().weights.value(u"# to maximum Life"_s), 2.5);
+
+        w.window->resize(1000, 700);
+        QTRY_VERIFY(!w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        checkTable(w, u"weight:"_s, u"weightsHeader"_s, false);
+    }
+
+    void weightsTableHasNoHeaderWithoutRows()
+    {
+        Window w;
+        QVERIFY(pageAt(w, u"weightsAction"_s, 1500));
+        QVERIFY(isVisible(w.find(u"weightsHeader"_s)));
+        // none to have a header over
+        w.play({});
+        for (const QString &key : w.app->statWeights()->keys())
+            w.app->statWeights()->remove(key);
+        QTRY_VERIFY(!isVisible(w.find(u"weightsHeader"_s)));
+        QVERIFY(isVisible(w.find(u"noWeightsText"_s)));
+    }
+
+    void gearGradeTable()
+    {
+        Window w;
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(pageAt(w, u"gearScoreAction"_s, 1000));
+        checkTable(w, u"stat:"_s, u"statsHeader"_s, false);
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 3);
+
+        w.window->resize(1500, 900);
+        QTRY_VERIFY(w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        checkTable(w, u"stat:"_s, u"statsHeader"_s, true);
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 1);
+        QCOMPARE(text(w.find(u"statsHeader"_s)->findChild<QObject *>(u"thirdLabel"_s)), u"Impact"_s);
+        // the choices are still there to make
+        QObject *box = w.find(u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
+        QVERIFY(isVisible(box));
+        QVERIFY(isVisible(w.find(u"profileBox"_s)));
+
+        w.window->resize(1000, 700);
+        QTRY_VERIFY(!w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        checkTable(w, u"stat:"_s, u"statsHeader"_s, false);
+    }
+
+    void ignoredStatsTables()
+    {
+        Window w;
+        w.play({});
+        w.app->ignoredStats()->add(u"#% increased Rarity of Items found"_s);
+        QVERIFY(pageAt(w, u"ignoredAction"_s, 1000));
+        checkTable(w, u"group:"_s, u"groupsHeader"_s, false);
+        checkTable(w, u"ignored:"_s, u"singleHeader"_s, false);
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 3);
+
+        w.window->resize(1500, 900);
+        QTRY_VERIFY(w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        checkTable(w, u"group:"_s, u"groupsHeader"_s, true);
+        checkTable(w, u"ignored:"_s, u"singleHeader"_s, true);
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 1);
+        QVERIFY(isVisible(w.find(u"ignoreStatButton"_s)));
+
+        w.window->resize(1000, 700);
+        QTRY_VERIFY(!w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        checkTable(w, u"group:"_s, u"groupsHeader"_s, false);
+        checkTable(w, u"ignored:"_s, u"singleHeader"_s, false);
+    }
+
+    void ignoredStatsHeaderNeedsRows()
+    {
+        // the second table has nothing to be a header over
+        Window w;
+        QVERIFY(pageAt(w, u"ignoredAction"_s, 1500));
+        QVERIFY(isVisible(w.find(u"groupsHeader"_s)));
+        QVERIFY(!isVisible(w.find(u"singleHeader"_s)));
+        QVERIFY(isVisible(w.find(u"noSingleText"_s)));
+    }
+
+    void charactersBesidePlayed()
+    {
+        Window w;
+        w.app->characterList()->add(u"Ash"_s);
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(pageAt(w, u"charactersAction"_s, 1000));
+        // a column, with the buttons in each row
+        QVERIFY(!isVisible(w.find(u"characterPanel"_s)));
+        QVERIFY(!isVisible(w.find(u"playedHeader"_s)));
+        QObject *row = w.find(u"character:Wren"_s);
+        QVERIFY(isVisible(row->findChild<QObject *>(u"gearButton"_s)));
+        QVERIFY(isVisible(row->findChild<QObject *>(u"renameButton"_s)));
+        QVERIFY(isVisible(row->findChild<QObject *>(u"removeButton"_s)));
+
+        w.window->resize(1500, 900);
+        QTRY_VERIFY(w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        QObject *panel = w.find(u"characterPanel"_s);
+        QVERIFY(isVisible(panel));
+        QVERIFY(isVisible(w.find(u"playedHeader"_s)));
+        // the one you play, with what it goes by
+        QCOMPARE(text(w.find(u"panelCharacter"_s)), u"Wren"_s);
+        QCOMPARE(text(w.find(u"panelBuild"_s)), u"No build imported"_s);
+        QVERIFY(isVisible(w.find(u"panelScore"_s)));
+        QVERIFY(text(w.find(u"panelProfile"_s)).startsWith(u"Build profile: "_s));
+        QVERIFY(!text(w.find(u"panelScoring"_s)).isEmpty());
+        // beside the list, which has no buttons now
+        const auto *list = qobject_cast<QQuickItem *>(row);
+        const auto *beside = qobject_cast<QQuickItem *>(panel);
+        // once the page has moved the sections into their columns
+        QTRY_VERIFY(beside->mapToScene(QPointF(0, 0)).x() >= list->mapToScene(QPointF(list->width(), 0)).x());
+        QVERIFY(!isVisible(row->findChild<QObject *>(u"gearButton"_s)));
+        QVERIFY(!isVisible(row->findChild<QObject *>(u"renameButton"_s)));
+        QVERIFY(!isVisible(row->findChild<QObject *>(u"removeButton"_s)));
+
+        // and back
+        w.window->resize(1000, 700);
+        QTRY_VERIFY(!w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        QVERIFY(!isVisible(w.find(u"characterPanel"_s)));
+        QVERIFY(isVisible(row->findChild<QObject *>(u"gearButton"_s)));
+    }
+
+    void characterPanelFollowsTheCharacter()
+    {
+        Window w;
+        QVERIFY(pageAt(w, u"charactersAction"_s, 1500));
+        // nobody to show
+        QVERIFY(!isVisible(w.find(u"characterPanel"_s)));
+        QVERIFY(!isVisible(w.find(u"playedHeader"_s)));
+
+        w.app->characterList()->add(u"Wren"_s);
+        QTRY_VERIFY(isVisible(w.find(u"characterPanel"_s)));
+        QCOMPARE(text(w.find(u"panelCharacter"_s)), u"Wren"_s);
+        w.app->characterList()->add(u"Ash"_s);
+        QTRY_COMPARE(text(w.find(u"panelCharacter"_s)), u"Ash"_s);
+        w.app->buildImporter()->importText(ranger);
+        QTRY_VERIFY(text(w.find(u"panelBuild"_s)).startsWith(u"Level 40 Ranger"_s));
+    }
+
+    void characterPanelButtons()
+    {
+        Window w;
+        const QString wren = w.app->characterList()->add(u"Wren"_s);
+        QVERIFY(pageAt(w, u"charactersAction"_s, 1500));
+
+        // each says whose it is, as the row's do
+        QCOMPARE(spoken(w.find(u"panelGearButton"_s)), u"View Gear of Wren"_s);
+        QCOMPARE(spoken(w.find(u"panelRenameButton"_s)), u"Rename Wren"_s);
+        QCOMPARE(spoken(w.find(u"panelRemoveButton"_s)), u"Remove Wren"_s);
+
+        QVERIFY(click(w.find(u"panelRenameButton"_s)));
+        QObject *rename = w.find(u"renameDialog"_s);
+        QVERIFY(isVisible(rename));
+        QCOMPARE(text(w.find(u"renameField"_s)), u"Wren"_s);
+        QVERIFY(click(button(rename, u"Cancel"_s)));
+        QTRY_VERIFY(!isVisible(rename));
+
+        QVERIFY(click(w.find(u"panelRemoveButton"_s)));
+        QObject *remove = w.find(u"removeDialog"_s);
+        QVERIFY(isVisible(remove));
+        QCOMPARE(remove->property("title").toString(), u"Remove Wren?"_s);
+        QVERIFY(click(button(remove, u"Cancel"_s)));
+        QTRY_VERIFY(!isVisible(remove));
+        QCOMPARE(w.app->characterList()->rowCount(), 1);
+
+        QVERIFY(click(w.find(u"panelGearButton"_s)));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QCOMPARE(w.app->characterList()->current(), wren);
+    }
+
+    void itemHistoryWithTheItem()
+    {
+        Window w;
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        w.app->history().add(item(itemtexts::helmetOld));
+        w.app->history().add(item(itemtexts::advancedRing));
+        w.app->history().add(item(itemtexts::helmetNew));
+        QVERIFY(pageAt(w, u"checkedAction"_s, 1000));
+        // narrow it is the list, as it was
+        QVERIFY(!isVisible(w.find(u"itemPanel"_s)));
+        QVERIFY(!isVisible(w.find(u"detailHeader"_s)));
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 3);
+        QVERIFY(isVisible(w.find(u"checked:0"_s)->findChild<QObject *>(u"checkAgainButton"_s)));
+
+        w.window->resize(1500, 900);
+        QTRY_VERIFY(w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        QVERIFY(isVisible(w.find(u"itemPanel"_s)));
+        QVERIFY(isVisible(w.find(u"detailHeader"_s)));
+        QCOMPARE(w.page()->property("maxColumns").toInt(), 2);
+        // the newest is shown to start with
+        QCOMPARE(text(w.find(u"detailName"_s)), u"Doom Visage"_s);
+        QCOMPARE(text(w.find(u"detailKind"_s)), u"Rare, Expert Visored Helm, Helmets"_s);
+        QVERIFY(text(w.find(u"detailLevels"_s)).startsWith(u"Item level 79"_s));
+        QVERIFY(!isVisible(w.find(u"detailCorrupted"_s)));
+        QVERIFY(isVisible(w.find(u"detailProperties"_s)));
+        QVERIFY(isVisible(w.find(u"detailMods"_s)));
+        QCOMPARE(w.page()->property("picked").toInt(), 0);
+        // beside the list
+        const auto *panel = qobject_cast<QQuickItem *>(w.find(u"itemPanel"_s));
+        const auto *list = qobject_cast<QQuickItem *>(w.find(u"checked:0"_s));
+        QTRY_VERIFY(panel->mapToScene(QPointF(0, 0)).x() >= list->mapToScene(QPointF(list->width(), 0)).x());
+
+        // a row picks its item to show
+        QVERIFY(click(w.find(u"checked:1"_s)));
+        QCOMPARE(w.page()->property("picked").toInt(), 1);
+        QCOMPARE(text(w.find(u"detailName"_s)), u"Storm Loop"_s);
+        QVERIFY(click(w.find(u"checked:2"_s)));
+        QCOMPARE(text(w.find(u"detailName"_s)), u"Grim Crown"_s);
+        // and a row takes the keyboard focus, as a row of a list does
+        QCOMPARE(w.find(u"checked:2"_s)->property("focusPolicy").toInt(), int(Qt::StrongFocus));
+
+        w.window->resize(1000, 700);
+        QTRY_VERIFY(!w.page()->property("wide").toBool());
+        QVERIFY(w.settled());
+        QVERIFY(!isVisible(w.find(u"itemPanel"_s)));
+        QCOMPARE(w.find(u"checked:2"_s)->property("focusPolicy").toInt(), int(Qt::NoFocus));
+    }
+
+    void itemHistoryPanelChecksAgain()
+    {
+        Window w;
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        w.app->history().add(item(itemtexts::helmetNew));
+        w.app->history().add(item(itemtexts::advancedRing));
+        QVERIFY(pageAt(w, u"checkedAction"_s, 1500));
+        QVERIFY(click(w.find(u"checked:1"_s)));
+        QCOMPARE(text(w.find(u"detailName"_s)), u"Doom Visage"_s);
+        ItemPopup &popup = w.app->checker().popup();
+        QVERIFY(!popup.isVisible());
+
+        // the one it shows, which goes to the top
+        QVERIFY(click(w.find(u"detailCheckAgain"_s)));
+        QVERIFY(popup.isVisible());
+        QCOMPARE(popup.report().name, u"Doom Visage"_s);
+        QCOMPARE(text(w.find(u"checked:0"_s)), u"Doom Visage"_s);
+        QCOMPARE(text(w.find(u"detailName"_s)), u"Doom Visage"_s);
+        QCOMPARE(w.page()->property("picked").toInt(), 0);
+    }
+
+    void itemHistoryPanelFollowsTheList()
+    {
+        Window w;
+        QVERIFY(pageAt(w, u"checkedAction"_s, 1500));
+        // nothing to show yet
+        QVERIFY(!isVisible(w.find(u"itemPanel"_s)));
+        QVERIFY(!isVisible(w.find(u"detailHeader"_s)));
+        QVERIFY(isVisible(w.find(u"noItemsText"_s)));
+
+        w.app->history().add(item(itemtexts::helmetOld));
+        QTRY_VERIFY(isVisible(w.find(u"itemPanel"_s)));
+        QCOMPARE(text(w.find(u"detailName"_s)), u"Grim Crown"_s);
+        w.app->history().add(item(itemtexts::advancedRing));
+        QTRY_COMPARE(text(w.find(u"detailName"_s)), u"Storm Loop"_s);
+
+        w.app->history().clearRecent();
+        QTRY_VERIFY(!isVisible(w.find(u"itemPanel"_s)));
+        QVERIFY(!isVisible(w.find(u"detailHeader"_s)));
+    }
+
+    void itemHistoryPanelStaysInView()
+    {
+        Window w;
+        for (int n = 1; n <= 25; ++n) {
+            w.app->history().add(item(u"Item Class: Rings\nRarity: Rare\nRing %1\nGold Ring\n--------\n"
+                                      "Item Level: 70\n--------\n+%1 to maximum Life"_s.arg(n)));
+        }
+        QVERIFY(pageAt(w, u"checkedAction"_s, 1500));
+        auto *flick = w.page()->property("flickable").value<QQuickItem *>();
+        QVERIFY(flick);
+        auto *card = qobject_cast<QQuickItem *>(w.find(u"detailName"_s));
+        QVERIFY(flick->property("contentHeight").toReal() > flick->height() + 400);
+        const auto top = [&] {
+            return card->mapToScene(QPointF(0, 0)).y();
+        };
+        const qreal start = top();
+        QVERIFY(start >= 0);
+
+        // scrolled down the list, it comes along
+        flick->setProperty("contentY", 400);
+        QTRY_VERIFY(top() >= 0 && top() < flick->height());
+        // and goes back with it
+        flick->setProperty("contentY", 0);
+        QTRY_COMPARE(top(), start);
+    }
+
     void equipmentScreen()
     {
         Window w;

@@ -22,6 +22,9 @@ ColumnsPage {
 
     title: qsTr("Characters")
     description: qsTr("The characters you play, and the builds that give them gear.")
+    // On a wide window the list is on the left, with the one you play beside
+    // it and the builds you can import for it. Narrower, it's one column.
+    maxColumns: wide ? 2 : 3
 
     // for builds you've saved in Path of Building since
     onIsCurrentPageChanged: {
@@ -30,6 +33,7 @@ ColumnsPage {
     }
 
     SectionHeader {
+        column: charactersPage.wide ? 0 : -1
         title: qsTr("Your Characters")
     }
 
@@ -125,6 +129,7 @@ ColumnsPage {
                 // the gear page is of the one you play
                 QQC2.Button {
                     objectName: "gearButton"
+                    visible: !charactersPage.wide
                     text: qsTr("View Gear")
                     icon.name: "view-list-details"
                     Accessible.name: qsTr("View Gear of %1").arg(characterRow.name)
@@ -136,6 +141,7 @@ ColumnsPage {
 
                 QQC2.ToolButton {
                     objectName: "renameButton"
+                    visible: !charactersPage.wide
                     text: qsTr("Rename")
                     icon.name: "edit-rename"
                     display: QQC2.AbstractButton.IconOnly
@@ -148,6 +154,7 @@ ColumnsPage {
 
                 QQC2.ToolButton {
                     objectName: "removeButton"
+                    visible: !charactersPage.wide
                     text: qsTr("Remove")
                     icon.name: "edit-delete"
                     display: QQC2.AbstractButton.IconOnly
@@ -189,6 +196,7 @@ ColumnsPage {
     }
 
     SectionHeader {
+        column: charactersPage.wide ? 0 : -1
         title: qsTr("Add a Character")
     }
 
@@ -218,6 +226,25 @@ ColumnsPage {
     }
 
     SectionHeader {
+        objectName: "playedHeader"
+        visible: charactersPage.wide && charactersPage.characters.current !== ""
+        column: charactersPage.wide ? 1 : -1
+        title: qsTr("The Character You Play")
+    }
+
+    CharacterPanel {
+        objectName: "characterPanel"
+        Layout.fillWidth: true
+        Layout.margins: charactersPage.gutter
+        visible: charactersPage.wide && charactersPage.characters.current !== ""
+        app: charactersPage.app
+        onGearAsked: charactersPage.gearAsked()
+        onRenameAsked: renameDialog.ask(charactersPage.characters.current, charactersPage.app.gearList.character)
+        onRemoveAsked: removeDialog.ask(charactersPage.characters.current, charactersPage.app.gearList.character)
+    }
+
+    SectionHeader {
+        column: charactersPage.wide ? 1 : -1
         title: qsTr("Import a Build")
     }
 
@@ -271,6 +298,7 @@ ColumnsPage {
 
     SectionHeader {
         visible: savedBuilds.visible
+        column: charactersPage.wide ? 1 : -1
         title: qsTr("Saved in Path of Building")
     }
 
