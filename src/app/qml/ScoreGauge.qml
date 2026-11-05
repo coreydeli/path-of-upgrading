@@ -14,6 +14,8 @@ Item {
     // small (in a list), medium (the popup) or large (a page's headline)
     property string size: "medium"
 
+    // what it says in a line, "42 C", which is all there is to plain
+    readonly property string text: score + " " + grade
     // out of a hundred, the most the ring shows
     readonly property real fraction: Math.max(0, Math.min(1, Number(score) / 100))
     readonly property color tint: Style.grade(grade, Kirigami.Theme)
@@ -100,6 +102,6 @@ Item {
         visible: !gauge.ring
         color: gauge.tint
         font.bold: true
-        text: gauge.score + " " + gauge.grade
+        text: gauge.text
     }
 }

@@ -245,6 +245,7 @@ private Q_SLOTS:
         QCOMPARE(gauge->property("fraction").toDouble(), 0.72);
         QCOMPARE(gauge->property("tint").value<QColor>(), grade(u"A"_s));
         QCOMPARE(gauge->property("ring").toBool(), true);
+        QCOMPARE(gauge->property("text").toString(), u"72 A"_s);
         QVERIFY(gauge->implicitWidth() > 0);
         QCOMPARE(gauge->implicitWidth(), gauge->implicitHeight());
     }
