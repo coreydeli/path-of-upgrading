@@ -16,7 +16,7 @@ ColumnsPage {
 
     // On a wide window the slots are laid out like the character's equipment
     // screen, which wants the page to itself. Narrower, they're a list.
-    readonly property bool equipment: width >= Kirigami.Units.gridUnit * 60
+    readonly property bool equipment: wide
 
     title: qsTr("Your Gear")
     description: qsTr("What your character wears, and where an upgrade would help most.")
