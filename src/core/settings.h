@@ -111,6 +111,8 @@ struct AppearanceSettings
 struct Settings
 {
     QString character; // id of the one you play, see CharacterStore
+    // The setup guide has been finished or skipped, see setupWanted().
+    bool setupDone = false;
     TradeSettings trade;
     PobSettings pob;
     OverlaySettings overlay;
