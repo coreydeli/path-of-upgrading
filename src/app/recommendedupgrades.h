@@ -35,6 +35,14 @@ class RecommendedUpgrades : public QAbstractListModel
 
     // Whether trade searches are on, which the Find buttons need.
     Q_PROPERTY(bool tradeAvailable READ isTradeAvailable NOTIFY tradeAvailableChanged)
+    // The slot the gear page's equipment screen has picked, which can be any
+    // of the main ones or what else is worn, with what to look for in it and
+    // what its search is up to. Empty until one is picked.
+    Q_PROPERTY(QString chosen READ chosen WRITE choose NOTIFY chosenChanged)
+    Q_PROPERTY(QString chosenLookFor READ chosenLookFor NOTIFY chosenChanged)
+    Q_PROPERTY(pou::TradeReport chosenTrade READ chosenTrade NOTIFY chosenChanged)
+    // Whether there's an item in it to search upgrades for.
+    Q_PROPERTY(bool chosenWorn READ chosenWorn NOTIFY chosenChanged)
 
 public:
     enum Role {
@@ -62,6 +70,15 @@ public:
     void setTradeAvailable(bool available);
     bool isTradeAvailable() const { return m_tradeAvailable; }
 
+    QString chosen() const { return m_chosen; }
+    void choose(const QString &slot);
+    QString chosenLookFor() const;
+    TradeReport chosenTrade() const { return m_states.value(m_chosen).report; }
+    bool chosenWorn() const;
+    // The same as find() and showResults() for the chosen slot.
+    Q_INVOKABLE void findChosen();
+    Q_INVOKABLE void showChosenResults();
+
     // Searches the trade site for upgrades to what's worn in the row's slot. It
     // does nothing for an empty slot.
     Q_INVOKABLE void find(int row);
@@ -71,6 +88,7 @@ public:
 
 Q_SIGNALS:
     void tradeAvailableChanged();
+    void chosenChanged();
     void resultsAsked();
 
 private:
@@ -78,11 +96,15 @@ private:
     {
         TradeReport report;
         std::optional<TradeFinder::Found> found;
+        QString worn; // the name of what it searched for
     };
 
     void refresh();
     void take(const QList<Recommendation> &rows);
     void searched();
+    void search(const QString &slot);
+    void showResultsOf(const QString &slot);
+    void dropStale();
     void setReport(const QString &slot, const TradeReport &report);
     int rowOf(const QString &slot) const;
 
@@ -95,6 +117,7 @@ private:
     PobPriorities m_priorities;     // what the scores were worked out with
     QHash<QString, State> m_states;
     QString m_searching; // the slot the finder is busy with
+    QString m_chosen;
     bool m_tradeAvailable = false;
 };
 

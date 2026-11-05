@@ -126,6 +126,7 @@ target_compile_definitions(tst_appearance PRIVATE
 pou_add_app_test(tst_commandline)
 pou_add_app_test(tst_desktop fakeglobalshortcuts.h fakenotifier.h faketray.h)
 pou_add_app_test(tst_gearlist)
+pou_add_app_test(tst_equipmentlist)
 pou_add_app_test(tst_recommendedupgrades fakenetwork.h itemtexts.h resultsite.h tradefixtures.h)
 pou_add_app_test(tst_resistances)
 pou_add_app_test(tst_gearscoring)

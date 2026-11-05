@@ -8,6 +8,7 @@ qt_add_library(pou_app STATIC
     checkeditems.cpp checkeditems.h
     commandline.cpp commandline.h
     desktop.cpp desktop.h
+    equipmentlist.cpp equipmentlist.h
     fonts.cpp fonts.h
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
@@ -47,6 +48,8 @@ qt_add_qml_module(pou_app
         qml/ColumnsPage.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
+        qml/EquipmentBoard.qml
+        qml/EquipmentTile.qml
         qml/FontPickerDialog.qml
     qml/FormRow.qml
         qml/GearPage.qml
@@ -72,6 +75,8 @@ qt_add_qml_module(pou_app
         qml/ScoreGauge.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
+        qml/SlotNotes.qml
+        qml/SlotPanel.qml
         qml/SlotRow.qml
         qml/SectionHeader.qml
         qml/SidebarHeader.qml
@@ -81,6 +86,7 @@ qt_add_qml_module(pou_app
         qml/ToneLabel.qml
         qml/TonePill.qml
         qml/TradePage.qml
+        qml/TradeStatus.qml
         qml/WindowGlow.qml
 )
 

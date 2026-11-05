@@ -125,42 +125,9 @@ FormCard.AbstractFormDelegate {
                 }
             }
 
-            RowLayout {
-                objectName: "tradeStatus"
+            TradeStatus {
                 Layout.fillWidth: true
-                visible: row.trade.asked
-                spacing: Kirigami.Units.smallSpacing
-
-                QQC2.BusyIndicator {
-                    Layout.preferredWidth: Kirigami.Units.iconSizes.small
-                    Layout.preferredHeight: Kirigami.Units.iconSizes.small
-                    Layout.alignment: Qt.AlignTop
-                    visible: row.trade.busy
-                    running: visible
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 0
-
-                    ToneLabel {
-                        objectName: "tradeStatusText"
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        text: row.trade.status
-                        tone: row.trade.failed ? Tone.Bad : Tone.Plain
-                    }
-
-                    QQC2.Label {
-                        objectName: "tradeNote"
-                        Layout.fillWidth: true
-                        visible: text !== ""
-                        wrapMode: Text.Wrap
-                        opacity: 0.7
-                        font: Kirigami.Theme.smallFont
-                        text: row.trade.note
-                    }
-                }
+                trade: row.trade
             }
         }
 

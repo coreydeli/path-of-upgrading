@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/slots.h"
 
+#include <QSet>
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
@@ -65,6 +66,40 @@ private Q_SLOTS:
         QVERIFY(!comparesWithWeakest(u"Weapon"_s));
         QCOMPARE(allSlots().size(), mainSlots().size() + extraSlots().size());
         QCOMPARE(mainSlots().first(), u"Weapon"_s);
+    }
+
+    void equipmentScreen()
+    {
+        // every main slot has a cell of its own, and no other slot does
+        QSet<std::pair<int, int>> taken;
+        for (const QString &slot : mainSlots()) {
+            const auto cell = equipmentCell(slot);
+            QVERIFY2(cell, qPrintable(slot));
+            QVERIFY(cell->column >= 0 && cell->column < 3);
+            QVERIFY(!taken.contains({cell->row, cell->column}));
+            taken.insert({cell->row, cell->column});
+        }
+        QCOMPARE(taken.size(), mainSlots().size());
+        for (const QString &slot : extraSlots())
+            QVERIFY(!equipmentCell(slot));
+        QVERIFY(!equipmentCell(QString()));
+
+        // the helmet over the body with the amulet beside it, the weapons either side
+        QCOMPARE(equipmentCell(u"Helmet"_s)->column, equipmentCell(u"Body Armour"_s)->column);
+        QCOMPARE(equipmentCell(u"Helmet"_s)->row, 0);
+        QCOMPARE(equipmentCell(u"Amulet"_s)->row, 0);
+        QCOMPARE(equipmentCell(u"Weapon"_s)->row, equipmentCell(u"Body Armour"_s)->row);
+        QCOMPARE(equipmentCell(u"Offhand"_s)->row, equipmentCell(u"Body Armour"_s)->row);
+        QVERIFY(equipmentCell(u"Weapon"_s)->column < equipmentCell(u"Body Armour"_s)->column);
+        QVERIFY(equipmentCell(u"Offhand"_s)->column > equipmentCell(u"Body Armour"_s)->column);
+        // the belt under the body, the boots at the bottom
+        QCOMPARE(equipmentCell(u"Belt"_s)->column, equipmentCell(u"Body Armour"_s)->column);
+        QVERIFY(equipmentCell(u"Belt"_s)->row > equipmentCell(u"Body Armour"_s)->row);
+        for (const QString &slot : mainSlots())
+            QVERIFY(equipmentCell(u"Boots"_s)->row >= equipmentCell(slot)->row);
+        // the gloves and rings below the weapons
+        for (const QString &slot : {u"Gloves"_s, u"Ring 1"_s, u"Ring 2"_s})
+            QVERIFY(equipmentCell(slot)->row > equipmentCell(u"Weapon"_s)->row);
     }
 
     void hands()

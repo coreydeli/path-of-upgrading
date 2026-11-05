@@ -137,6 +137,17 @@ private Q_SLOTS:
         QCOMPARE(g.in(u"Jewel 3"_s, GearList::NameRole).toString(), u"Pale Eye"_s);
     }
 
+    void rarity()
+    {
+        Gear g;
+        g.play(wearing({{u"Helmet"_s, helmet}, {u"Belt"_s, belt}}));
+        // the color of what's worn, and nothing for an empty slot
+        QCOMPARE(g.in(u"Helmet"_s, GearList::RarityRole).toString(), u"Rare"_s);
+        QCOMPARE(g.in(u"Belt"_s, GearList::RarityRole).toString(), u"Unique"_s);
+        QCOMPARE(g.in(u"Gloves"_s, GearList::RarityRole).toString(), QString());
+        QCOMPARE(g.list.roleNames().value(GearList::RarityRole), QByteArray("rarity"));
+    }
+
     void unique()
     {
         Gear g;
