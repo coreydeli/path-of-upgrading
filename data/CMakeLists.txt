@@ -1,8 +1,18 @@
-install(FILES ${APP_ID}.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
-install(FILES ${APP_ID}.metainfo.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
-install(FILES icons/${APP_ID}.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
-# the notifications, which Plasma finds by the application's name
-install(FILES path-of-upgrading.notifyrc DESTINATION ${CMAKE_INSTALL_DATADIR}/knotifications6)
+# Windows has none of these, and gets its icon from the program
+if(NOT WIN32)
+    install(FILES ${APP_ID}.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES ${APP_ID}.metainfo.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
+    install(FILES icons/${APP_ID}.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+    # the notifications, which Plasma finds by the application's name
+    install(FILES path-of-upgrading.notifyrc DESTINATION ${CMAKE_INSTALL_DATADIR}/knotifications6)
+    # the app's own color scheme, not in the color-schemes folder System
+    # Settings lists
+    install(FILES color-schemes/PathOfUpgrading.colors
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/path-of-upgrading/color-schemes)
+    # the font in the program has its license with it
+    install(FILES fonts/OFL.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${CMAKE_PROJECT_NAME}
+        RENAME OFL-Cinzel.txt)
+endif()
 
 # The desktop file and the metainfo are checked when their checkers are
 # installed.

@@ -529,6 +529,73 @@ private Q_SLOTS:
         QCOMPARE(e.comparison.verdict == Verdict::ResistLoss, risk);
     }
 
+    void healthLossWithoutPathOfBuilding()
+    {
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(200)}});
+        const Evaluation e = evaluate(lifeAmulet(100), c);
+        QCOMPARE(e.comparison.verdict, Verdict::DefenceLoss);
+        QCOMPARE(e.losses, QStringList{u"Life drops 100 (50%)"_s});
+        QCOMPARE(e.risks, e.losses);
+        QCOMPARE(e.resistRank, -1);
+
+        // 10 less Life is noise next to everything else you have
+        QVERIFY(evaluate(lifeAmulet(190), c).losses.isEmpty());
+        QVERIFY(evaluate(lifeAmulet(250), c).losses.isEmpty());
+    }
+
+    void energyShieldLossWithoutPathOfBuilding()
+    {
+        const Character c = wearing({{u"Amulet"_s, amulet(u"+300 to maximum Energy Shield"_s)}});
+        const Evaluation e = evaluate(amulet(u"+150 to maximum Energy Shield"_s), c);
+        QCOMPARE(e.comparison.verdict, Verdict::DefenceLoss);
+        QCOMPARE(e.losses, QStringList{u"Energy Shield drops 150 (50%)"_s});
+    }
+
+    void keepingDefencesWithoutPathOfBuilding()
+    {
+        const Character c = wearing({{u"Amulet"_s, lifeAmulet(200)}});
+        const Evaluation e = evaluate(lifeAmulet(100), c, {.keepDefence = false});
+        QVERIFY(e.losses.isEmpty());
+        QVERIFY(e.comparison.verdict != Verdict::DefenceLoss);
+    }
+
+    void theBiggerLossIsTheVerdict()
+    {
+        const Equipped gear = {{u"Amulet"_s, amulet(u"+100 to maximum Life\n+30% to Fire Resistance"_s)}};
+        Character c = wearing(gear);
+        c.resists = resists(gear, 75, {}, {}, {});
+
+        // 30 points of fire res against a twentieth of your health
+        const Evaluation resist = evaluate(lifeAmulet(40), c);
+        QCOMPARE(resist.comparison.verdict, Verdict::ResistLoss);
+        QCOMPARE(resist.losses.size(), 2);
+        QVERIFY(resist.losses.first().startsWith(u"Fire res"_s));
+        QVERIFY(resist.losses.last().startsWith(u"Life drops"_s));
+        QCOMPARE(resist.risks, resist.losses);
+
+        // 4 points of it against a tenth
+        const Equipped other = {{u"Amulet"_s, amulet(u"+200 to maximum Life\n+4% to Fire Resistance"_s)}};
+        Character d = wearing(other);
+        d.resists = resists(other, 75, {}, {}, {});
+        const Evaluation health = evaluate(lifeAmulet(80), d);
+        QCOMPARE(health.comparison.verdict, Verdict::DefenceLoss);
+        QCOMPARE(health.losses.size(), 2);
+        QVERIFY(health.losses.first().startsWith(u"Life drops"_s));
+        QVERIFY(health.losses.last().startsWith(u"Fire res"_s));
+    }
+
+    void aTieGoesToResistanceWithoutPathOfBuilding()
+    {
+        // 30 points of fire res is worth 7.5, as is 90 of the 1200 Life
+        const Equipped gear = {{u"Amulet"_s, amulet(u"+200 to maximum Life\n+30% to Fire Resistance"_s)}};
+        Character c = wearing(gear);
+        c.resists = resists(gear, 75, {}, {}, {});
+        const Evaluation e = evaluate(lifeAmulet(110), c);
+        QCOMPARE(e.losses.size(), 2);
+        QCOMPARE(e.comparison.verdict, Verdict::ResistLoss);
+        QVERIFY(e.losses.first().startsWith(u"Fire res"_s));
+    }
+
     void pathOfBuildingsJudgement()
     {
         const Character c = wearing({{u"Amulet"_s, lifeAmulet(40)}});

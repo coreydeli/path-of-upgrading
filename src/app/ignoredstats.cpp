@@ -123,7 +123,7 @@ void IgnoredStats::setGroupMode(const QString &id, int mode)
 
 void IgnoredStats::add(const QString &key)
 {
-    if (key.isEmpty() || m_keys.contains(key) || !m_active->exists())
+    if (key.isEmpty() || m_keys.contains(key))
         return;
     change([&key](QList<IgnoreRule> &rules) {
         rules << IgnoreRule{.preset = {}, .key = key, .mode = IgnoreRule::Mode::Ignore};
@@ -156,14 +156,12 @@ void IgnoredStats::refresh()
 {
     const QList<IgnoreRule> &rules = m_active->character().ignored;
     QStringList keys;
-    if (m_active->exists()) {
-        for (const IgnoreRule &rule : rules) {
-            if (rule.preset.isEmpty())
-                keys << rule.key;
-        }
-        keys.removeDuplicates();
-        sortStats(keys);
+    for (const IgnoreRule &rule : rules) {
+        if (rule.preset.isEmpty())
+            keys << rule.key;
     }
+    keys.removeDuplicates();
+    sortStats(keys);
     if (keys == m_keys) {
         if (!m_keys.isEmpty())
             Q_EMIT dataChanged(index(0), index(int(m_keys.size()) - 1), {ModeRole});
@@ -174,14 +172,12 @@ void IgnoredStats::refresh()
     }
 
     m_groups.clear();
-    if (m_active->exists()) {
-        for (const IgnorePreset &preset : ignorePresets()) {
-            const IgnoreRule *rule = groupRule(rules, preset.id);
-            m_groups << IgnoredGroup{.id = preset.id,
-                                     .name = preset.label,
-                                     .stats = preset.keys.join(u", "),
-                                     .mode = rule ? modeOf(*rule) : Counts};
-        }
+    for (const IgnorePreset &preset : ignorePresets()) {
+        const IgnoreRule *rule = groupRule(rules, preset.id);
+        m_groups << IgnoredGroup{.id = preset.id,
+                                 .name = preset.label,
+                                 .stats = preset.keys.join(u", "),
+                                 .mode = rule ? modeOf(*rule) : Counts};
     }
     Q_EMIT changed();
 }

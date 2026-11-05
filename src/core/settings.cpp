@@ -42,19 +42,50 @@ void read(const QSettings &store, const QString &key, int &value, int low, int h
 
 } // namespace
 
-QString tradeUnavailable(const TradeSettings &settings)
+QString colorThemeId(ColorTheme theme)
 {
-    if (!settings.enabled)
-        return u"Trade searches are turned off in the settings."_s;
+    return theme == ColorTheme::Desktop ? u"desktop"_s : u"app"_s;
+}
+
+ColorTheme colorThemeFromId(QStringView id)
+{
+    return id == u"desktop" ? ColorTheme::Desktop : ColorTheme::App;
+}
+
+QString decorationsId(Decorations decorations)
+{
+    return decorations == Decorations::Plain ? u"plain"_s : u"full"_s;
+}
+
+Decorations decorationsFromId(QStringView id)
+{
+    return id == u"plain" ? Decorations::Plain : Decorations::Full;
+}
+
+bool isBetaBuild()
+{
+    return POU_BETA_BUILD != 0;
+}
+
+QString tradeUnavailable(const TradeSettings &settings, bool beta)
+{
+    if (!settings.enabled) {
+        const QString how = u"Turn them on with Search the trade site, on the Trade page."_s;
+        if (beta)
+            return u"Trade searches are turned off. "_s + how;
+        return u"Trade searches are off in this release while they're still being tested. "_s + how;
+    }
     if (!settings.league.canTrade())
         return u"There's no trading in solo self-found, so trade searches are off."_s;
     return {};
 }
 
-Settings loadSettings(const QSettings &store)
+Settings loadSettings(const QSettings &store, bool beta)
 {
     Settings s;
+    s.trade.enabled = beta;
     read(store, u"character"_s, s.character);
+    read(store, u"app/setupDone"_s, s.setupDone);
 
     TradeSettings &trade = s.trade;
     read(store, u"trade/enabled"_s, trade.enabled);
@@ -67,6 +98,7 @@ Settings loadSettings(const QSettings &store)
     trade.budget.currency = currencyFromId(store.value(u"trade/currency"_s).toString());
     read(store, u"trade/divineRate"_s, trade.budget.divineRate, 0, noLimit);
     read(store, u"trade/autoRate"_s, trade.autoRate);
+    read(store, u"trade/rateMinutes"_s, trade.rateMinutes, minRateMinutes, maxRateMinutes);
 
     PobSettings &pob = s.pob;
     read(store, u"pob/enabled"_s, pob.enabled);
@@ -75,6 +107,7 @@ Settings loadSettings(const QSettings &store)
     read(store, u"pob/resistsFirst"_s, pob.priorities.resistsFirst);
     read(store, u"pob/chaos"_s, pob.priorities.chaos);
     read(store, u"pob/keepDamage"_s, pob.priorities.keepDamage);
+    read(store, u"pob/keepDefence"_s, pob.priorities.keepDefence);
     read(store, u"pob/spirit"_s, pob.priorities.spirit);
     read(store, u"pob/attributes"_s, pob.priorities.attributes);
 
@@ -89,15 +122,29 @@ Settings loadSettings(const QSettings &store)
     read(store, u"overlay/colorblind"_s, overlay.colorblind);
     read(store, u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds, 2, 120);
     read(store, u"overlay/paused"_s, overlay.paused);
+    read(store, u"overlay/startChosen"_s, overlay.startChosen);
+
+    AppearanceSettings &appearance = s.appearance;
+    appearance.colors = colorThemeFromId(store.value(u"appearance/theme"_s).toString());
+    appearance.decorations = decorationsFromId(store.value(u"appearance/decorations"_s).toString());
+    read(store, u"appearance/headingFont"_s, appearance.headingFont);
+    read(store, u"appearance/textFont"_s, appearance.textFont);
+    read(store, u"appearance/textSize"_s, appearance.textSize, 0, largestTextSize);
+    // anything between is as small as it goes
+    if (appearance.textSize > 0)
+        appearance.textSize = std::max(appearance.textSize, smallestTextSize);
     return s;
 }
 
-void saveSettings(QSettings &store, const Settings &s)
+void saveSettings(QSettings &store, const Settings &s, bool beta)
 {
     store.setValue(u"character"_s, s.character);
+    store.setValue(u"app/setupDone"_s, s.setupDone);
 
     const TradeSettings &trade = s.trade;
-    store.setValue(u"trade/enabled"_s, trade.enabled);
+    // once it's been chosen, it's kept
+    if (trade.enabled != beta || store.contains(u"trade/enabled"_s))
+        store.setValue(u"trade/enabled"_s, trade.enabled);
     store.setValue(u"trade/league"_s, trade.league.name);
     store.setValue(u"trade/hardcore"_s, trade.league.hardcore);
     store.setValue(u"trade/ssf"_s, trade.league.soloSelfFound);
@@ -107,6 +154,7 @@ void saveSettings(QSettings &store, const Settings &s)
     store.setValue(u"trade/currency"_s, currencyId(trade.budget.currency));
     store.setValue(u"trade/divineRate"_s, trade.budget.divineRate);
     store.setValue(u"trade/autoRate"_s, trade.autoRate);
+    store.setValue(u"trade/rateMinutes"_s, trade.rateMinutes);
 
     const PobSettings &pob = s.pob;
     store.setValue(u"pob/enabled"_s, pob.enabled);
@@ -115,6 +163,7 @@ void saveSettings(QSettings &store, const Settings &s)
     store.setValue(u"pob/resistsFirst"_s, pob.priorities.resistsFirst);
     store.setValue(u"pob/chaos"_s, pob.priorities.chaos);
     store.setValue(u"pob/keepDamage"_s, pob.priorities.keepDamage);
+    store.setValue(u"pob/keepDefence"_s, pob.priorities.keepDefence);
     store.setValue(u"pob/spirit"_s, pob.priorities.spirit);
     store.setValue(u"pob/attributes"_s, pob.priorities.attributes);
 
@@ -129,6 +178,14 @@ void saveSettings(QSettings &store, const Settings &s)
     store.setValue(u"overlay/colorblind"_s, overlay.colorblind);
     store.setValue(u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds);
     store.setValue(u"overlay/paused"_s, overlay.paused);
+    store.setValue(u"overlay/startChosen"_s, overlay.startChosen);
+
+    const AppearanceSettings &appearance = s.appearance;
+    store.setValue(u"appearance/theme"_s, colorThemeId(appearance.colors));
+    store.setValue(u"appearance/decorations"_s, decorationsId(appearance.decorations));
+    store.setValue(u"appearance/headingFont"_s, appearance.headingFont);
+    store.setValue(u"appearance/textFont"_s, appearance.textFont);
+    store.setValue(u"appearance/textSize"_s, appearance.textSize);
 }
 
 } // namespace pou

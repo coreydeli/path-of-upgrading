@@ -150,6 +150,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Fusion, as on Linux, as Windows' own style can't draw offscreen
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
         // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
         // platform plugin of its own
         qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
@@ -288,6 +290,41 @@ private Q_SLOTS:
         QCOMPARE(asked.first().at(1).toString(), u"Helmet"_s);
     }
 
+    void eachRingSlot()
+    {
+        // with something on in both, each is compared and the better one marked
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Character c;
+        c.gear = {{u"Ring 1"_s, parseItem(u"Item Class: Rings\nRarity: Rare\nGrim Band\nGold Ring\n--------\n"
+                                          "+80 to maximum Life"_s)
+                                    .value()},
+                  {u"Ring 2"_s, parseItem(u"Item Class: Rings\nRarity: Rare\nDoom Band\nGold Ring\n--------\n"
+                                          "+10 to maximum Life"_s)
+                                    .value()}};
+        checker.setCharacter(c, std::nullopt);
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::advancedRing, mouseAt(200, 300));
+
+        const QList<ReportPlacement> places = checker.popup().report().placements;
+        QCOMPARE(places.size(), 2);
+        QCOMPARE(places.at(0).slot, u"Ring 1"_s);
+        QCOMPARE(places.at(0).wearing, u"Grim Band, Gold Ring"_s);
+        QVERIFY(!places.at(0).best);
+        QCOMPARE(places.at(1).wearing, u"Doom Band, Gold Ring"_s);
+        QVERIFY(places.at(1).best);
+
+        // wearing it where it says
+        QSignalSpy asked(&checker, &ItemChecker::wearAsked);
+        checker.popup().wear(u"Ring 1"_s);
+        QCOMPARE(asked.first().at(1).toString(), u"Ring 1"_s);
+
+        // nothing to choose between for a helmet
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QVERIFY(checker.popup().report().placements.isEmpty());
+    }
+
     void resultsAsked()
     {
         // as the popup's button does, from the screen the item was read on
@@ -384,7 +421,7 @@ private Q_SLOTS:
         QSignalSpy finished(&trading.finder, &TradeFinder::finished);
         checker.popup().findOnTrade(TradeFinder::Kind::Upgrades);
         QVERIFY(finished.wait());
-        QCOMPARE(checker.popup().trade(), failedReport(u"Trade searches are turned off in the settings."_s));
+        QCOMPARE(checker.popup().trade(), failedReport(tradeUnavailable({.enabled = false})));
     }
 
     // the site couldn't be searched, so the popup offers it for you to try
@@ -410,6 +447,39 @@ private Q_SLOTS:
         QCOMPARE(trade, failedReport(trading.finder.errorString(), trading.finder.errorUrl()));
         QVERIFY(trade.url.path().startsWith(u"/trade2/search/poe2/Standard"_s));
         QVERIFY(trade.url.hasQuery());
+    }
+
+    // the site turns down a search for having too many filters, which the
+    // popup says, and which doesn't stop the next
+    void tradeSearchTooComplex()
+    {
+        QQmlEngine qml;
+        FakeGameInput input;
+        ItemChecker checker(&qml, &input);
+        Trading trading(checker);
+        QVERIFY(trading.hasData());
+        trading.network.answers << FakeAnswer{.status = 400,
+                                              .body = R"({"error":{"message":"Query is too complex."}})",
+                                              .headers = {{"X-Rate-Limit-Ip", "30:10:0"}}};
+        checker.check();
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QSignalSpy finished(&trading.finder, &TradeFinder::finished);
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(finished.wait());
+
+        const TradeReport trade = checker.popup().trade();
+        QVERIFY(trade.failed);
+        QVERIFY(!trade.busy);
+        QCOMPARE(trade.status, u"The trade site says the search has too many filters."_s);
+        QCOMPARE(trade, failedReport(trading.finder.errorString()));
+        QVERIFY(!trading.finder.isBusy());
+
+        // so asking again works
+        trading.network.answers << FakeAnswer{.body = R"({"id":"Ab3dE9","total":2,"result":["a","b"]})"};
+        checker.popup().findOnTrade(TradeFinder::Kind::Similar);
+        QVERIFY(finished.wait());
+        QCOMPARE(checker.popup().trade().status, u"2 listed in Standard"_s);
+        QVERIFY(!checker.popup().trade().failed);
     }
 
     void tradeWaitsItsTurn()
@@ -552,13 +622,26 @@ private Q_SLOTS:
 
     void copiedYourself()
     {
+        // with the mouse over the item
+        QQmlEngine qml;
+        FakeGameInput input;
+        input.mouseAt = mouseAt(200, 300);
+        ItemChecker checker(&qml, &input);
+        Q_EMIT input.textCopied(itemtexts::helmetNew);
+        QVERIFY(checker.popup().isVisible());
+        QCOMPARE(checker.popup().report().name, u"Doom Visage"_s);
+        QCOMPARE(checker.popup().window()->position(),
+                 placed(checker.popup(), PopupPosition::Cursor, QPoint(200, 300)));
+    }
+
+    void copiedYourselfWithoutTheMouse()
+    {
         // where the mouse isn't known
         QQmlEngine qml;
         FakeGameInput input;
         ItemChecker checker(&qml, &input);
         Q_EMIT input.textCopied(itemtexts::helmetNew);
         QVERIFY(checker.popup().isVisible());
-        QCOMPARE(checker.popup().report().name, u"Doom Visage"_s);
         QCOMPARE(checker.popup().window()->position(),
                  placed(checker.popup(), PopupPosition::Top, std::nullopt));
     }

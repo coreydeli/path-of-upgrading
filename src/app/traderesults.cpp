@@ -36,6 +36,8 @@ ResultVerdict resultVerdict(const ItemCheck &check)
         out.score = report.score + u' ' + report.scoreLabel;
     if (!report.gearScore.isEmpty()) {
         out.gearScore = u"Gear score %1 %2"_s.arg(report.gearScore, report.gearGrade);
+        out.gearGrade = report.gearGrade;
+        out.gearPoints = report.gearScore;
         if (!report.yourGearScore.isEmpty())
             out.gearScore += u", yours "_s + report.yourGearScore;
     }
@@ -122,6 +124,8 @@ QVariant TradeResults::data(const QModelIndex &index, int role) const
     }
     case VerdictRole:
         return QVariant::fromValue(resultVerdict(m_judge.checks().at(index.row())));
+    case RarityRole:
+        return item.rarity;
     }
     return {};
 }
@@ -141,6 +145,7 @@ QHash<int, QByteArray> TradeResults::roleNames() const
         {PropertiesRole, "properties"},
         {ModsRole, "mods"},
         {VerdictRole, "verdict"},
+        {RarityRole, "rarity"},
     };
 }
 

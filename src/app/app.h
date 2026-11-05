@@ -2,6 +2,7 @@
 #pragma once
 
 #include "app/activecharacter.h"
+#include "app/appearance.h"
 #include "app/buildimporter.h"
 #include "app/characterlist.h"
 #include "app/checkeditems.h"
@@ -11,8 +12,10 @@
 #include "app/ignoredstats.h"
 #include "app/itemchecker.h"
 #include "app/itemhistory.h"
+#include "app/onboarding.h"
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
+#include "app/recommendedupgrades.h"
 #include "app/resistances.h"
 #include "app/resultspanel.h"
 #include "app/settingsstore.h"
@@ -26,6 +29,7 @@
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
 #include "services/pobengine.h"
+#include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
@@ -43,6 +47,7 @@ namespace pou {
 
 class GameInput;
 class GlobalShortcuts;
+class Opener;
 class SecretStore;
 
 // What the app runs while it's open: the hotkeys, the item checker with its
@@ -58,6 +63,7 @@ class App : public QObject
     Q_PROPERTY(pou::CharacterList *characterList READ characterList CONSTANT)
     Q_PROPERTY(pou::BuildImporter *buildImporter READ buildImporter CONSTANT)
     Q_PROPERTY(pou::GearList *gearList READ gearList CONSTANT)
+    Q_PROPERTY(pou::RecommendedUpgrades *recommendedUpgrades READ recommendedUpgrades CONSTANT)
     Q_PROPERTY(pou::Resistances *resistances READ resistances CONSTANT)
     Q_PROPERTY(pou::GearScoring *gearScoring READ gearScoring CONSTANT)
     Q_PROPERTY(pou::StatWeights *statWeights READ statWeights CONSTANT)
@@ -68,6 +74,8 @@ class App : public QObject
     Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
+    Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
+    Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
 
 public:
     // Where it keeps what it has between runs.
@@ -77,6 +85,7 @@ public:
         QString data;      // the folder for your characters and the items you've checked
         QString cache;     // and for what the trade site and poe.ninja said
         QString autostart; // the file that starts it with the desktop, or none
+        QString colors;    // the app's color scheme, see Appearance
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
@@ -84,8 +93,9 @@ public:
     // The engine has to outlive it. Path of Building is looked for in the
     // places, see findPob().
     App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-        std::unique_ptr<SecretStore> secrets, std::unique_ptr<QNetworkAccessManager> network,
-        const PobPlaces &places, const Paths &paths, QObject *parent = nullptr);
+        std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
+        std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
+        QObject *parent = nullptr);
     ~App() override;
 
     // Looks for Path of Building again, as once you've installed it.
@@ -103,6 +113,8 @@ public:
     // Neither site is asked anything while there are no trade searches.
     TradeDataStore &tradeData() { return m_tradeData; }
     RatesStore &rates() { return m_rates; }
+    // Asks poe.ninja again every few minutes while trade searches go by its rate.
+    RatesRefresher &ratesRefresher() { return m_ratesRefresher; }
     TradeSearcher &trade() { return m_trade; }
     // For the character you play.
     TradeFinder &finder() { return m_finder; }
@@ -113,6 +125,7 @@ public:
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
     GearList *gearList() { return &m_gearList; }
+    RecommendedUpgrades *recommendedUpgrades() { return &m_upgrades; }
     Resistances *resistances() { return &m_resistances; }
     GearScoring *gearScoring() { return &m_gearScoring; }
     StatWeights *statWeights() { return &m_statWeights; }
@@ -123,11 +136,14 @@ public:
     TradeSession *tradeSession() { return &m_tradeSession; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
+    Appearance *appearance() { return &m_appearance; }
+    Onboarding *onboarding() { return &m_onboarding; }
 
 private:
     void followSettings();
     void followKeys();
     void followTrade();
+    void followRates();
 
     PobPlaces m_places;
     SettingsStore m_settings;
@@ -141,11 +157,13 @@ private:
     ItemHistory m_history;
     QString m_pobLocation; // where it was last looked for
     std::unique_ptr<SecretStore> m_secrets;
+    std::unique_ptr<Opener> m_opener;
     std::unique_ptr<QNetworkAccessManager> m_network;
     TradeClient m_tradeClient;
     TradeSession m_tradeSession;
     TradeDataStore m_tradeData;
     RatesStore m_rates;
+    RatesRefresher m_ratesRefresher;
     TradeSearcher m_trade;
     TradeFinder m_finder;
     TradeResults m_results;
@@ -153,6 +171,7 @@ private:
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;
+    RecommendedUpgrades m_upgrades;
     Resistances m_resistances;
     GearScoring m_gearScoring;
     StatWeights m_statWeights;
@@ -163,6 +182,8 @@ private:
     Autostart m_autostart;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
+    Appearance m_appearance;
+    Onboarding m_onboarding;
 };
 
 } // namespace pou

@@ -89,8 +89,10 @@ private Q_SLOTS:
     void nobody()
     {
         Gear g;
+        // with the main slots to fill, all empty
         QCOMPARE(g.list.character(), QString());
-        QCOMPARE(g.list.rowCount(), 0);
+        QCOMPARE(g.slotNames(), pou::mainSlots());
+        QCOMPARE(g.in(u"Helmet"_s, GearList::NameRole).toString(), QString());
         QVERIFY(!g.list.hasExtras());
     }
 
@@ -135,6 +137,17 @@ private Q_SLOTS:
         QCOMPARE(g.in(u"Jewel 3"_s, GearList::NameRole).toString(), u"Pale Eye"_s);
     }
 
+    void rarity()
+    {
+        Gear g;
+        g.play(wearing({{u"Helmet"_s, helmet}, {u"Belt"_s, belt}}));
+        // the color of what's worn, and nothing for an empty slot
+        QCOMPARE(g.in(u"Helmet"_s, GearList::RarityRole).toString(), u"Rare"_s);
+        QCOMPARE(g.in(u"Belt"_s, GearList::RarityRole).toString(), u"Unique"_s);
+        QCOMPARE(g.in(u"Gloves"_s, GearList::RarityRole).toString(), QString());
+        QCOMPARE(g.list.roleNames().value(GearList::RarityRole), QByteArray("rarity"));
+    }
+
     void unique()
     {
         Gear g;
@@ -146,7 +159,7 @@ private Q_SLOTS:
 
     void overall()
     {
-        // over the main slots, the weakest first
+        // over the main slots
         Gear g;
         const Item gloves =
             item(u"Gloves"_s, u"Rare"_s, u"Grim Grip"_s, u"Suede Bracers"_s, u"+10 to maximum Life"_s);
@@ -159,24 +172,82 @@ private Q_SLOTS:
                                      {u"Belt"_s, belt},
                                      {u"Jewel 1"_s, jewel}});
         g.play(c);
-        QMap<int, QString> bySlot;
         QList<int> main;
-        for (const QString &slot : {u"Helmet"_s, u"Ring 1"_s, u"Gloves"_s, u"Boots"_s}) {
-            const int score = gearScore(c.gear.value(slot), gearScoreOptions(c, slot))->score;
-            bySlot.insert(score, slot);
-            main << score;
-        }
-        // they're all different, so the order is clear
-        QCOMPARE(bySlot.size(), 4);
-        QCOMPARE(bySlot.first(), u"Gloves"_s);
+        for (const QString &slot : {u"Helmet"_s, u"Ring 1"_s, u"Gloves"_s, u"Boots"_s})
+            main << gearScore(c.gear.value(slot), gearScoreOptions(c, slot))->score;
 
         const double average = std::round((main[0] + main[1] + main[2] + main[3]) / 4.0);
         QCOMPARE(g.list.overall(), QString::number(average));
         QCOMPARE(g.list.overallGrade(), gearGrade(int(average)));
-        QStringList weakest;
-        for (auto it = bySlot.cbegin(); weakest.size() < 3; ++it)
-            weakest << it.value() + u' ' + QString::number(it.key());
-        QCOMPARE(g.list.weakest(), weakest.join(u", "_s));
+    }
+
+    // the notes of a slot, as the pairs the window shows
+    static QList<QStringList> notesOf(const QVariant &notes)
+    {
+        QList<QStringList> out;
+        for (const GearNote &note : notes.value<QList<GearNote>>())
+            out << QStringList{note.label, note.text};
+        return out;
+    }
+
+    void whatToImprove()
+    {
+        Gear g;
+        const Character c = wearing({{u"Helmet"_s, helmet}, {u"Belt"_s, belt}, {u"Jewel 3"_s, jewel}});
+        g.play(c);
+
+        // what the popup would say of the helmet, a note to each
+        const GearScore score = *gearScore(helmet, gearScoreOptions(c, u"Helmet"_s));
+        QVERIFY(!score.missing.isEmpty());
+        const QList<QStringList> notes = notesOf(g.in(u"Helmet"_s, GearList::NotesRole));
+        QCOMPARE(notes.first(), (QStringList{u"Missing"_s, score.missing.join(u", "_s)}));
+        QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.notScored.isEmpty()) +
+                                   int(!weakRolls(score).isEmpty()));
+
+        // a unique has no gear score, so nothing to improve
+        QCOMPARE(notesOf(g.in(u"Belt"_s, GearList::NotesRole)), QList<QStringList>());
+        QVERIFY(!notesOf(g.in(u"Jewel 3"_s, GearList::NotesRole)).isEmpty());
+    }
+
+    void wastedAndWeak()
+    {
+        // a rarity mod is no use to the build, and a tenth of a roll is weak
+        Gear g;
+        const Item armour = item(u"Body Armours"_s, u"Rare"_s, u"Dusk Mantle"_s, u"Plated Vest"_s,
+                                 u"+10 to maximum Life\n10% increased Rarity of Items found"_s);
+        const Character c = wearing({{u"Body Armour"_s, armour}});
+        g.play(c);
+        const GearScore score = *gearScore(armour, gearScoreOptions(c, u"Body Armour"_s));
+        QVERIFY(!score.notScored.isEmpty());
+        QVERIFY(!weakRolls(score).isEmpty());
+        QCOMPARE(notesOf(g.in(u"Body Armour"_s, GearList::NotesRole)),
+                 (QList<QStringList>{
+                     {u"Missing"_s, score.missing.join(u", "_s)},
+                     {u"Not scored"_s, notScoredStats(score).join(u", "_s)},
+                     {u"Weak rolls"_s, weakRolls(score).join(u", "_s) + u" of an excellent roll"_s}}));
+    }
+
+    void whatTheBuildWantsInAnEmptySlot()
+    {
+        Gear g;
+        const Character c = wearing({{u"Helmet"_s, helmet}});
+        g.play(c);
+        const QList<KeyStat> top = topStats(u"Gloves"_s, 3, gearScoreOptions(c, u"Gloves"_s));
+        QVERIFY(!top.isEmpty());
+        QStringList labels;
+        for (const KeyStat &stat : top)
+            labels << stat.label;
+        QCOMPARE(notesOf(g.in(u"Gloves"_s, GearList::NotesRole)),
+                 (QList<QStringList>{{u"Wants most"_s, labels.join(u", "_s)}}));
+
+        // before there's a character too, and not by your weights alone
+        Gear nobody;
+        QCOMPARE(notesOf(nobody.in(u"Gloves"_s, GearList::NotesRole)).first().first(), u"Wants most"_s);
+        Character weights = wearing({});
+        weights.buildProfile = noBuildProfile.toString();
+        nobody.play(weights);
+        QCOMPARE(notesOf(nobody.in(u"Gloves"_s, GearList::NotesRole)), QList<QStringList>());
+        QCOMPARE(notesOf(nobody.in(u"Helmet"_s, GearList::NotesRole)), QList<QStringList>());
     }
 
     void noOverall()
@@ -185,14 +256,12 @@ private Q_SLOTS:
         g.play(wearing({{u"Belt"_s, belt}, {u"Jewel 1"_s, jewel}}));
         QCOMPARE(g.list.overall(), QString());
         QCOMPARE(g.list.overallGrade(), QString());
-        QCOMPARE(g.list.weakest(), QString());
 
         // nor by your weights alone
         Character c = wearing({{u"Helmet"_s, helmet}});
         c.buildProfile = noBuildProfile.toString();
         g.play(c);
         QCOMPARE(g.list.overall(), QString());
-        QCOMPARE(g.list.weakest(), QString());
     }
 
     void sameName()

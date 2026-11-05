@@ -8,13 +8,21 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // The stats the character you play doesn't want counted, a group at a time
 // or one by one.
-FormCard.FormCardPage {
+ColumnsPage {
     id: ignoredPage
 
     required property IgnoredStats ignored
     required property StatPicker picker
 
+    // On a wide window the groups and the stats are tables, as on the weights
+    // page.
+    readonly property real noteWidth: Kirigami.Units.gridUnit * 20
+    readonly property real modeWidth: Kirigami.Units.gridUnit * 12
+
     title: qsTr("Ignored Stats")
+    description: qsTr("Stats your character does not want counted.")
+    maxColumns: wide ? 1 : 3
+    maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
     // A group of stats, with how they count beside it.
     component GroupRow: FormRow {
@@ -25,6 +33,8 @@ FormCard.FormCardPage {
         objectName: "group:" + modelData.id
         text: modelData.name
         description: modelData.stats
+        descriptionWidth: ignoredPage.wide ? ignoredPage.noteWidth : 0
+        controlsWidth: ignoredPage.wide ? ignoredPage.modeWidth : 0
 
         QQC2.ComboBox {
             objectName: "modeBox"
@@ -50,6 +60,8 @@ FormCard.FormCardPage {
         objectName: "ignored:" + key
         text: name
         description: note
+        descriptionWidth: ignoredPage.wide ? ignoredPage.noteWidth : 0
+        controlsWidth: ignoredPage.wide ? ignoredPage.modeWidth : 0
 
         QQC2.ComboBox {
             objectName: "modeBox"
@@ -73,7 +85,7 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: ignoredPage.ignored.character !== "" ? qsTr("For %1").arg(ignoredPage.ignored.character) : qsTr("Ignored Stats")
     }
 
@@ -82,7 +94,21 @@ FormCard.FormCardPage {
             objectName: "nobodyText"
             visible: ignoredPage.ignored.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("Add a character or import a build on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+        }
+
+        TableHeader {
+            objectName: "groupsHeader"
+            visible: ignoredPage.wide
+            first: qsTr("Group")
+            second: qsTr("Stats in it")
+            third: qsTr("Counts as")
+            descriptionWidth: ignoredPage.noteWidth
+            controlsWidth: ignoredPage.modeWidth
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: ignoredPage.wide
         }
 
         Repeater {
@@ -105,13 +131,12 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "ignoredHelp"
-        visible: ignoredPage.ignored.character !== ""
         text: qsTr("An ignored stat counts for nothing in the gear score and your weights, and the trade searches leave it out. An excluded one is ignored too, and the trade searches skip every listing that has it.")
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         visible: singleStats.visible
         title: qsTr("One by One")
     }
@@ -119,7 +144,20 @@ FormCard.FormCardPage {
     FormCard.FormCard {
         id: singleStats
         objectName: "singleStats"
-        visible: ignoredPage.ignored.character !== ""
+
+        TableHeader {
+            objectName: "singleHeader"
+            visible: ignoredPage.wide && statRows.count > 0
+            first: qsTr("Stat")
+            second: qsTr("Note")
+            third: qsTr("Counts as")
+            descriptionWidth: ignoredPage.noteWidth
+            controlsWidth: ignoredPage.modeWidth
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: ignoredPage.wide && statRows.count > 0
+        }
 
         Repeater {
             id: statRows

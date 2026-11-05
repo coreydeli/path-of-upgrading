@@ -10,6 +10,7 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QLoggingCategory>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -30,6 +31,14 @@ struct Options
     TradeDataStore data{&client, dir.filePath(u"trade"_s)};
     RatesStore rates{&network, dir.filePath(u"rates"_s)};
     TradeOptions options{&settings, &data, &rates};
+
+    // With trade searches on, which only a beta starts with, unless it says not.
+    explicit Options(bool searches = true)
+    {
+        Settings first = settings.settings();
+        first.trade.enabled = searches;
+        settings.set(first);
+    }
 
     // which the store reads, so neither site is asked
     bool hasLeagues(const QStringList &ids)
@@ -84,6 +93,7 @@ private Q_SLOTS:
         trade.status = ListingStatus::Online;
         trade.budget = {.min = 2, .max = 30, .currency = Currency::Exalted, .divineRate = 250};
         trade.autoRate = false;
+        trade.rateMinutes = 25;
         QVERIFY(o.settings.set(settings));
 
         QCOMPARE(o.options.isEnabled(), false);
@@ -96,6 +106,7 @@ private Q_SLOTS:
         QCOMPARE(o.options.currency(), u"exalted"_s);
         QCOMPARE(o.options.divineRate(), 250.0);
         QCOMPARE(o.options.isAutoRate(), false);
+        QCOMPARE(o.options.rateMinutes(), 25);
     }
 
     void savesWhatYouChange()
@@ -141,6 +152,31 @@ private Q_SLOTS:
         o.options.setSoloSelfFound(false);
         o.options.setAutoRate(true);
         QCOMPARE(o.trade(), TradeSettings());
+    }
+
+    void rateMinutes_data()
+    {
+        QTest::addColumn<int>("typed");
+        QTest::addColumn<int>("kept");
+        QTest::newRow("some") << 15 << 15;
+        QTest::newRow("the fewest") << 1 << 1;
+        QTest::newRow("the most") << 60 << 60;
+        QTest::newRow("none") << 0 << 1;
+        QTest::newRow("below none") << -4 << 1;
+        QTest::newRow("too many") << 61 << 60;
+    }
+
+    void rateMinutes()
+    {
+        QFETCH(int, typed);
+        QFETCH(int, kept);
+        Options o;
+        QCOMPARE(o.options.rateMinutes(), 10);
+        o.options.setRateMinutes(typed);
+        QCOMPARE(o.options.rateMinutes(), kept);
+        QCOMPARE(o.trade().rateMinutes, kept);
+        // and it's in the file
+        QCOMPARE(SettingsStore(o.dir.filePath(u"settings.conf"_s)).settings().trade.rateMinutes, kept);
     }
 
     void unknownIds()
@@ -232,6 +268,23 @@ private Q_SLOTS:
         QCOMPARE(o.options.searchedLeague(), searched);
     }
 
+    void startsByTheBuild()
+    {
+        // on in a beta and off in a release, which says it's still testing
+        Options o(isBetaBuild());
+        QCOMPARE(o.options.isEnabled(), isBetaBuild());
+        QCOMPARE(o.options.stillTesting(), !isBetaBuild());
+        QCOMPARE(o.options.unavailable().isEmpty(), isBetaBuild());
+        if (!isBetaBuild())
+            QVERIFY(o.options.unavailable().contains(u"still being tested"_s));
+
+        // and turning it on is yours to keep
+        o.options.setEnabled(true);
+        QVERIFY(o.options.unavailable().isEmpty());
+        o.options.setEnabled(false);
+        QVERIFY(o.options.unavailable().contains(u"Search the trade site"_s));
+    }
+
     void unavailable()
     {
         Options o;
@@ -240,7 +293,7 @@ private Q_SLOTS:
         QCOMPARE(o.options.unavailable(),
                  u"There's no trading in solo self-found, so trade searches are off."_s);
         o.options.setEnabled(false);
-        QCOMPARE(o.options.unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(o.options.unavailable(), tradeUnavailable({.enabled = false}));
     }
 
     void ninjaRate()
@@ -257,6 +310,60 @@ private Q_SLOTS:
         QCOMPARE(o.options.ninjaRate(), 0.0);
         QVERIFY(o.hasRates(u"HC Runes of Aldur"_s, 450));
         QCOMPARE(o.options.ninjaRate(), 450.0);
+    }
+
+    void ratesStatus()
+    {
+        Options o;
+        QVERIFY(o.hasLeagues(siteLeagues));
+        // five minutes after they came in
+        o.options.setClock([&o] { return o.rates.fetched().addSecs(5 * 60); });
+        QSignalSpy changed(&o.options, &TradeOptions::ratesStatusChanged);
+        QCOMPARE(o.options.ratesStatus(), u"The prices haven't come in yet."_s);
+        QVERIFY(o.hasRates(u"Runes of Aldur"_s, 300));
+        QCOMPARE(changed.size(), 1);
+        QCOMPARE(o.options.ratesStatus(), u"Prices updated 5 minutes ago."_s);
+
+        // for the league searched, not another
+        o.options.setHardcore(true);
+        QCOMPARE(changed.size(), 2);
+        QCOMPARE(o.options.ratesStatus(), u"The prices haven't come in yet."_s);
+        o.options.setHardcore(false);
+
+        // and nothing of them while they're not kept fresh
+        o.options.setAutoRate(false);
+        QVERIFY(o.options.ratesStatus().isEmpty());
+        o.options.setAutoRate(true);
+        QCOMPARE(o.options.ratesStatus(), u"Prices updated 5 minutes ago."_s);
+        o.options.setEnabled(false);
+        QVERIFY(o.options.ratesStatus().isEmpty());
+        o.options.setEnabled(true);
+        o.options.setSoloSelfFound(true);
+        QVERIFY(o.options.ratesStatus().isEmpty());
+    }
+
+    void ratesStatusWhenPoeNinjaIsDown()
+    {
+        QLoggingCategory::setFilterRules(u"pathofupgrading.ninja.warning=false"_s);
+        Options o;
+        QVERIFY(o.hasLeagues(siteLeagues));
+        QVERIFY(o.hasRates(u"Runes of Aldur"_s, 300));
+        o.options.setClock([&o] { return o.rates.fetched().addSecs(5 * 60); });
+
+        o.network.answers = {{.error = QNetworkReply::HostNotFoundError}};
+        QSignalSpy refreshed(&o.rates, &RatesStore::refreshed);
+        o.rates.refresh(u"Runes of Aldur"_s, true);
+        QVERIFY(refreshed.wait());
+        QCOMPARE(o.options.ratesStatus(), u"Couldn't reach poe.ninja: Host poe.ninja not found. "
+                                          "Last updated 5 minutes ago."_s);
+    }
+
+    void ratesStatusAsMinutesGoBy()
+    {
+        Options o;
+        o.options.setMinute(std::chrono::milliseconds(10));
+        QSignalSpy changed(&o.options, &TradeOptions::ratesStatusChanged);
+        QTRY_VERIFY_WITH_TIMEOUT(changed.size() >= 3, 5000);
     }
 
     void siteLeaguesComeIn()

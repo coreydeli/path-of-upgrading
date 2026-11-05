@@ -109,15 +109,20 @@ class TestGearScoring : public QObject
 private Q_SLOTS:
     void nobody()
     {
+        // which has the default profile's stats to change
         Scoring s;
-        QCOMPARE(s.scoring.rowCount(), 0);
+        QCOMPARE(s.scoring.rowCount(), int(tweakableStats(*buildProfile(defaultBuildProfile)).size()));
+        QCOMPARE(s.scoring.profile(), 0);
         QCOMPARE(s.scoring.character(), QString());
         QVERIFY(!s.scoring.isTweaked());
         QCOMPARE(s.scoring.profiles(),
                  QStringList({u"Life and resistances"_s, u"Energy Shield spellcaster"_s,
-                              u"Minion summoner on Energy Shield"_s, u"None, by my stat weights alone"_s}));
+                              u"Energy Shield attacker"_s, u"Minion summoner on Energy Shield"_s,
+                              u"None, by my stat weights alone"_s}));
         QCOMPARE(s.scoring.levels().size(), 6);
-        QCOMPARE(s.scoring.levels().at(asUsual), u"As usual"_s);
+        QCOMPARE(s.scoring.levels(),
+                 QStringList({u"Not at all (0x)"_s, u"Half (0.5x)"_s, u"Normal (1x)"_s,
+                              u"One and a half (1.5x)"_s, u"Double (2x)"_s, u"Three times (3x)"_s}));
     }
 
     void defaultProfile()
@@ -283,8 +288,21 @@ private Q_SLOTS:
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::WhereRole).toString(),
                  u"Counts on Helmet, Gloves, Boots, Amulet, and Ring"_s);
 
-        s.scoring.setProfile(2);
+        s.scoring.setProfile(3);
         QCOMPARE(s.of(u"Intelligence"_s, GearScoring::WhereRole).toString(), u"Counts in every slot"_s);
+    }
+
+    void theAttackersStats()
+    {
+        Scoring s;
+        s.play(tester(u"es-attacker"_s));
+        QCOMPARE(s.scoring.profile(), 2);
+        QCOMPARE(s.scoring.profiles().at(2), u"Energy Shield attacker"_s);
+        QCOMPARE(s.of(u"Weapon DPS"_s, GearScoring::WhereRole).toString(), u"Counts on Weapon"_s);
+        QCOMPARE(s.of(u"Attack speed"_s, GearScoring::WhereRole).toString(),
+                 u"Counts in every slot but Helmet, Body Armour, Boots, and Belt"_s);
+        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QVERIFY(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString().isEmpty());
     }
 
     void setLevel()
@@ -323,6 +341,23 @@ private Q_SLOTS:
         QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), asUsual);
         QCOMPARE(s.of(u"Speed"_s, GearScoring::LevelRole).toInt(), 5);
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::LevelRole).toInt(), 5);
+    }
+
+    void savedTweaksKeepTheirLevel()
+    {
+        // tweaks are saved as factors, whatever the levels are called
+        Scoring s;
+        Character c = tester(u"es-caster"_s);
+        c.tweaks = {{u"Life"_s, 0}, {u"Movement speed"_s, 0.5}, {u"Rarity"_s, 1.5}, {u"Mana"_s, 2}};
+        const QString id = s.play(c);
+        QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), 0);
+        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::LevelRole).toInt(), 1);
+        QCOMPARE(s.of(u"Rarity"_s, GearScoring::LevelRole).toInt(), 3);
+        QCOMPARE(s.of(u"Mana"_s, GearScoring::LevelRole).toInt(), 4);
+
+        // and picking a level saves the factor
+        s.scoring.setLevel(u"Movement speed"_s, 5);
+        QCOMPARE(s.store.find(id)->tweaks.value(u"Movement speed"_s), 3.0);
     }
 
     void chaosInoculation()
@@ -400,7 +435,7 @@ private Q_SLOTS:
 
         // and nobody
         s.active.setId(u"gone"_s);
-        QCOMPARE(s.scoring.rowCount(), 0);
+        QCOMPARE(s.scoring.rowCount(), int(tweakableStats(*buildProfile(defaultBuildProfile)).size()));
         QCOMPARE(reset.size(), 2);
     }
 };

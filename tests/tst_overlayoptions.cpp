@@ -42,6 +42,12 @@ class TestOverlayOptions : public QObject
 private Q_SLOTS:
     void init() { QTest::failOnWarning(); }
 
+    void popupTimeoutStartsAtAMinute()
+    {
+        Options o;
+        QCOMPARE(o.options.autoHideSeconds(), 60);
+    }
+
     void readsTheSettings()
     {
         Options o;
@@ -215,6 +221,9 @@ private Q_SLOTS:
 
     void startWithDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Options o;
         QVERIFY(!o.options.startsWithDesktop());
         QVERIFY(o.options.startError().isEmpty());
@@ -232,15 +241,115 @@ private Q_SLOTS:
         QVERIFY(!QFile::exists(o.dir.filePath(u"autostart/made-up.desktop"_s)));
     }
 
-    void startingIsNotASetting()
+    void choosingIsRemembered()
     {
         Options o;
-        o.options.setStartWithDesktop(true);
-        QCOMPARE(o.settings.settings(), Settings());
+        QVERIFY(!o.overlay().startChosen);
+        Settings chosen = o.settings.settings();
+        o.options.setStartWithDesktop(false);
+        QVERIFY(o.overlay().startChosen);
+        // and nothing else about the settings
+        chosen.overlay.startChosen = true;
+        QCOMPARE(o.settings.settings(), chosen);
+    }
+
+    void startsByDefault()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Options o;
+        o.options.startByDefault();
+        QVERIFY(o.options.startsWithDesktop());
+        QVERIFY(QFile::exists(o.dir.filePath(u"autostart/made-up.desktop"_s)));
+        QVERIFY(o.overlay().startChosen);
+        // saved, for the next start
+        QVERIFY(SettingsStore(o.dir.filePath(u"settings.conf"_s)).settings().overlay.startChosen);
+    }
+
+    void turnedOffStaysOff()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Options o;
+        o.options.startByDefault();
+        o.options.setStartWithDesktop(false);
+        o.options.startByDefault();
+        QVERIFY(!o.options.startsWithDesktop());
+        QVERIFY(!QFile::exists(o.dir.filePath(u"autostart/made-up.desktop"_s)));
+    }
+
+    void removedByHandStaysOff()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Options o;
+        o.options.startByDefault();
+        QVERIFY(QFile::remove(o.dir.filePath(u"autostart/made-up.desktop"_s)));
+        o.options.startByDefault();
+        QVERIFY(!o.options.startsWithDesktop());
+    }
+
+    void savedChoiceIsKept()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Options o;
+        Settings settings;
+        settings.overlay.startChosen = true;
+        QVERIFY(o.settings.set(settings));
+        o.options.startByDefault();
+        QVERIFY(!o.options.startsWithDesktop());
+        QVERIFY(!QFile::exists(o.dir.filePath(u"autostart/made-up.desktop"_s)));
+    }
+
+    void anEntryThatIsThereIsLeftAlone()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Options o;
+        const QString file = o.dir.filePath(u"autostart/made-up.desktop"_s);
+        QVERIFY(QDir().mkpath(o.dir.filePath(u"autostart"_s)));
+        QFile entry(file);
+        QVERIFY(entry.open(QIODevice::WriteOnly));
+        entry.write("[Desktop Entry]\nExec=by-hand\n");
+        entry.close();
+
+        o.options.startByDefault();
+        QVERIFY(o.options.startsWithDesktop());
+        QVERIFY(o.overlay().startChosen);
+        QVERIFY(entry.open(QIODevice::ReadOnly));
+        QCOMPARE(entry.readAll(), QByteArray("[Desktop Entry]\nExec=by-hand\n"));
+    }
+
+    void failedDefaultIsTriedAgain()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Options o;
+        QFile blocker(o.dir.filePath(u"autostart"_s));
+        QVERIFY(blocker.open(QIODevice::WriteOnly));
+        blocker.close();
+        o.options.startByDefault();
+        QVERIFY(!o.options.startsWithDesktop());
+        QVERIFY(!o.overlay().startChosen);
+
+        QVERIFY(QFile::remove(o.dir.filePath(u"autostart"_s)));
+        o.options.startByDefault();
+        QVERIFY(o.options.startsWithDesktop());
+        QVERIFY(o.overlay().startChosen);
     }
 
     void startFailed()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Options o;
         // a file where the folder should be
         QFile blocker(o.dir.filePath(u"autostart"_s));
@@ -262,6 +371,9 @@ private Q_SLOTS:
 
     void startRemovedByHand()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         Options o;
         o.options.setStartWithDesktop(true);
         QVERIFY(QFile::remove(o.dir.filePath(u"autostart/made-up.desktop"_s)));

@@ -3,6 +3,7 @@
 
 #include <QJsonArray>
 #include <QTest>
+#include <QTimeZone>
 
 using namespace Qt::Literals::StringLiterals;
 using namespace pou;
@@ -141,6 +142,44 @@ private Q_SLOTS:
         QCOMPARE(ninjaCurrencyUrl(u"HC Runes of Aldur"_s).toString(QUrl::FullyEncoded),
                  u"https://poe.ninja/poe2/api/economy/exchange/current/overview"
                  "?league=HC%20Runes%20of%20Aldur&type=Currency"_s);
+    }
+
+    void timeAgo_data()
+    {
+        QTest::addColumn<qint64>("seconds");
+        QTest::addColumn<QString>("said");
+        QTest::newRow("ahead of the clock") << qint64(-90) << u"just now"_s;
+        QTest::newRow("now") << qint64(0) << u"just now"_s;
+        QTest::newRow("almost a minute") << qint64(59) << u"just now"_s;
+        QTest::newRow("a minute") << qint64(60) << u"1 minute ago"_s;
+        QTest::newRow("minutes") << qint64(7 * 60 + 30) << u"7 minutes ago"_s;
+        QTest::newRow("almost an hour") << qint64(59 * 60 + 59) << u"59 minutes ago"_s;
+        QTest::newRow("an hour") << qint64(3600) << u"1 hour ago"_s;
+        QTest::newRow("hours") << qint64(5 * 3600) << u"5 hours ago"_s;
+        QTest::newRow("almost two days") << qint64(47 * 3600) << u"47 hours ago"_s;
+        QTest::newRow("days") << qint64(3 * 24 * 3600) << u"3 days ago"_s;
+    }
+
+    void timeAgo()
+    {
+        QFETCH(qint64, seconds);
+        QFETCH(QString, said);
+        const QDateTime now(QDate(2026, 11, 4), QTime(12, 0), QTimeZone::UTC);
+        QCOMPARE(pou::timeAgo(now.addSecs(-seconds), now), said);
+    }
+
+    void statusOfTheRates()
+    {
+        const QDateTime now(QDate(2026, 11, 4), QTime(12, 0), QTimeZone::UTC);
+        const QDateTime fiveAgo = now.addSecs(-5 * 60);
+        QCOMPARE(ratesStatus(fiveAgo, {}, now), u"Prices updated 5 minutes ago."_s);
+        QCOMPARE(ratesStatus(now, {}, now), u"Prices updated just now."_s);
+        QCOMPARE(ratesStatus({}, {}, now), u"The prices haven't come in yet."_s);
+        // when it let them down, with the reason and what there is
+        QCOMPARE(ratesStatus(fiveAgo, u"poe.ninja didn't answer in time."_s, now),
+                 u"poe.ninja didn't answer in time. Last updated 5 minutes ago."_s);
+        QCOMPARE(ratesStatus({}, u"Couldn't reach poe.ninja: Host poe.ninja not found"_s, now),
+                 u"Couldn't reach poe.ninja: Host poe.ninja not found."_s);
     }
 };
 

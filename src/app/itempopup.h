@@ -44,6 +44,9 @@ class ItemPopup : public QObject
     // Whether there are trade searches, for its buttons that search the
     // trade site for gear like the item.
     Q_PROPERTY(bool tradeAvailable READ isTradeAvailable NOTIFY tradeChanged)
+    // Why there aren't any, and how to turn them on, shown in place of the
+    // buttons. Empty when there are, or when nothing says.
+    Q_PROPERTY(QString tradeNote READ tradeNote NOTIFY tradeChanged)
     // How the last one for the item went, see findOnTrade().
     Q_PROPERTY(pou::TradeReport trade READ trade NOTIFY tradeChanged)
     // Why the item couldn't be saved as what you wear, see wear().
@@ -65,9 +68,15 @@ public:
     void updateReport(const ItemReport &report);
     void showMessage(const QString &message, const std::optional<ScreenPoint> &mouse);
     Q_INVOKABLE void close();
+    // For dragging it by its title: moves it that many pixels, and it stays
+    // there for the item it shows now, as when it grows. The next item goes
+    // back to the mouse or where your settings put it.
+    Q_INVOKABLE void moveBy(int dx, int dy);
 
     bool isTradeAvailable() const { return m_tradeAvailable; }
     void setTradeAvailable(bool available);
+    QString tradeNote() const { return m_tradeNote; }
+    void setTradeNote(const QString &note);
     TradeReport trade() const { return m_trade; }
     // What there is to say of a search for the item it has. Each item starts
     // with none.
@@ -129,9 +138,11 @@ private:
     QString m_message;
     std::optional<ScreenPoint> m_mouse; // where it was shown for
     QPoint m_at;                        // and where it went, on the screen
+    bool m_dragged = false;             // and you've moved it since
     bool m_hovered = false;
     bool m_expanded = false;
     bool m_tradeAvailable = false;
+    QString m_tradeNote;
     TradeReport m_trade;
     QString m_wearError;
 };

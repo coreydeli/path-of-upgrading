@@ -217,7 +217,8 @@ private Q_SLOTS:
         QCOMPARE(p.pob.asked().size(), 2);
         QCOMPARE(p.judge.checks().at(0).evaluation.comparison.verdict, Verdict::Upgrade);
         QCOMPARE(p.judge.checks().at(1).pob, Pob::Unused);
-        QCOMPARE(p.judge.checks().at(2).evaluation.comparison.verdict, Verdict::Downgrade);
+        // 10% less effective HP is a loss of its own
+        QCOMPARE(p.judge.checks().at(2).evaluation.comparison.verdict, Verdict::DefenceLoss);
     }
 
     void whatItCouldntTry()
@@ -262,7 +263,7 @@ private Q_SLOTS:
         QVERIFY(checked.wait());
         QCOMPARE(checked.size(), 1);
         QCOMPARE(p.judge.checks().size(), 2);
-        QCOMPARE(p.judge.checks().at(0).evaluation.comparison.verdict, Verdict::Downgrade);
+        QCOMPARE(p.judge.checks().at(0).evaluation.comparison.verdict, Verdict::DefenceLoss);
         QCOMPARE(p.judge.checks().at(1).evaluation.comparison.verdict, Verdict::Upgrade);
     }
 

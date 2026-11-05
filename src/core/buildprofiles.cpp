@@ -44,16 +44,23 @@ ProfileStat baseEnergyShield()
 
 // Flat Energy Shield on armour is local and already part of [Base] Energy
 // Shield; on jewellery it's global.
-ProfileStat flatEnergyShield()
+ProfileStat flatEnergyShield(double factor = 1)
 {
     return exact(u"Energy Shield"_s, u"# to maximum Energy Shield"_s,
-                 PerSlot({{u"Amulet"_s, 6}, {u"Ring"_s, 5}, {u"Belt"_s, 4}}), 60);
+                 PerSlot({{u"Amulet"_s, 6 * factor}, {u"Ring"_s, 5 * factor}, {u"Belt"_s, 4 * factor}}), 60);
 }
 
-ProfileStat percentEnergyShield()
+ProfileStat percentEnergyShield(double factor = 1)
 {
     return exact(u"% Energy Shield"_s, u"#% increased maximum Energy Shield"_s,
-                 PerSlot({{u"Amulet"_s, 7}, {u"Jewel"_s, 7}}), PerSlot({{u"Jewel"_s, 12}}, 25));
+                 PerSlot({{u"Amulet"_s, 7 * factor}, {u"Jewel"_s, 7 * factor}}),
+                 PerSlot({{u"Jewel"_s, 12}}, 25));
+}
+
+ProfileStat extraEnergyShield()
+{
+    return stat(u"Extra ES"_s, uR"(^Gain #% of maximum (Life|Mana) as Extra maximum Energy Shield$)"_s,
+                PerSlot({{u"Body Armour"_s, 5}}), 15);
 }
 
 ProfileStat rarity()
@@ -78,9 +85,106 @@ ProfileStat life(double importance)
                  100);
 }
 
-ProfileStat mana()
+ProfileStat mana(double importance = 3)
 {
-    return exact(u"Mana"_s, u"# to maximum Mana"_s, PerSlot({{u"Jewel"_s, 0}}, 3), 150);
+    return exact(u"Mana"_s, u"# to maximum Mana"_s, PerSlot({{u"Jewel"_s, 0}}, importance), 150);
+}
+
+ProfileStat weaponDps()
+{
+    return stat(u"Weapon DPS"_s, uR"(^\[Weapon\] Total DPS$)"_s, PerSlot({{u"Weapon"_s, 10}}), 400);
+}
+
+ProfileStat spirit(double importance)
+{
+    return exact(u"Spirit"_s, u"# to Spirit"_s,
+                 PerSlot({{u"Body Armour"_s, importance}, {u"Amulet"_s, importance}}), 60);
+}
+
+// The utility stats below are worth a little to every build. Their slots and
+// top rolls are the ones the game can roll (poe2db.tw, the mods of each item
+// class), so a stat is only counted where it can come from.
+
+// Flat on boots, body armour, belts and shields. Jewels roll a percentage.
+ProfileStat stunThreshold()
+{
+    return exact(u"Stun threshold"_s, u"# to Stun Threshold"_s,
+                 PerSlot({{u"Boots"_s, 1.5}, {u"Body Armour"_s, 1.5}, {u"Belt"_s, 1.5}, {u"Offhand"_s, 1.5}}),
+                 PerSlot({{u"Boots"_s, 352}}, 304));
+}
+
+ProfileStat percentStunThreshold()
+{
+    return exact(u"Stun threshold"_s, u"#% increased Stun Threshold"_s, PerSlot({{u"Jewel"_s, 1}}), 16);
+}
+
+// On armour with Energy Shield, shields and foci. Jewels roll how soon it
+// starts instead.
+ProfileStat energyShieldRecharge(double importance)
+{
+    return exact(u"ES recharge"_s, u"#% increased Energy Shield Recharge Rate"_s,
+                 PerSlot({{u"Helmet"_s, importance},
+                          {u"Body Armour"_s, importance},
+                          {u"Gloves"_s, importance},
+                          {u"Boots"_s, importance},
+                          {u"Offhand"_s, importance}}),
+                 PerSlot({{u"Body Armour"_s, 27}, {u"Offhand"_s, 27}}, 19));
+}
+
+ProfileStat energyShieldRechargeStart(double importance)
+{
+    return exact(u"ES recharge"_s, u"#% faster start of Energy Shield Recharge"_s,
+                 PerSlot({{u"Jewel"_s, importance}}), 15);
+}
+
+ProfileStat manaRegeneration(double importance)
+{
+    return exact(u"Mana regen"_s, u"#% increased Mana Regeneration Rate"_s,
+                 PerSlot({{u"Ring"_s, importance},
+                          {u"Amulet"_s, importance},
+                          {u"Belt"_s, importance},
+                          {u"Offhand"_s, importance},
+                          {u"Jewel"_s, importance}}),
+                 PerSlot({{u"Jewel"_s, 15}}, 69));
+}
+
+ProfileStat lifeRegeneration(double importance)
+{
+    return exact(u"Life regen"_s, u"# Life Regeneration per second"_s,
+                 PerSlot({{u"Body Armour"_s, importance},
+                          {u"Helmet"_s, importance},
+                          {u"Boots"_s, importance},
+                          {u"Belt"_s, importance},
+                          {u"Amulet"_s, importance},
+                          {u"Ring"_s, importance}}),
+                 PerSlot({{u"Body Armour"_s, 36},
+                          {u"Amulet"_s, 33},
+                          {u"Belt"_s, 29},
+                          {u"Helmet"_s, 23},
+                          {u"Boots"_s, 23},
+                          {u"Ring"_s, 18}}));
+}
+
+ProfileStat percentLifeRegeneration(double importance)
+{
+    return exact(u"Life regen"_s, u"#% increased Life Regeneration rate"_s,
+                 PerSlot({{u"Jewel"_s, importance}}), 10);
+}
+
+// Life flasks are a belt prefix, and jewels roll the same thing.
+ProfileStat flaskLifeRecovery(double importance)
+{
+    return stat(u"Flask life recovery"_s,
+                uR"(^#% increased Flask Life Recovery rate$|^#% increased Life Recovery from Flasks$)"_s,
+                PerSlot({{u"Belt"_s, importance}, {u"Jewel"_s, importance}}),
+                PerSlot({{u"Jewel"_s, 15}}, 40));
+}
+
+// "#% increased <kind> Damage" for the kinds, and the plain "Damage" some
+// jewels roll, plus the attack versions with their own wording.
+QString damagePattern(const QString &kinds)
+{
+    return u"^#% increased (("_s + kinds + u") )?Damage$|^#% increased Elemental Damage with Attacks$"_s;
 }
 
 // What every character wants: life, resistances, attributes, and movement
@@ -97,6 +201,8 @@ QList<ProfileStat> common(double lifeImportance)
         stat(u"Attributes"_s, uR"(^# to (Strength|Dexterity|Intelligence)$)"_s, PerSlot({{u"Jewel"_s, 0}}, 2),
              35),
         rarity(),
+        stunThreshold(),
+        percentStunThreshold(),
     };
 }
 
@@ -108,7 +214,7 @@ BuildProfile lifeAndResistances()
         u"A safe all-rounder for any build: life, resistances, Armour or Evasion and movement speed. "
         "Weapons are rated by damage per second."_s,
         {
-            stat(u"Weapon DPS"_s, uR"(^\[Weapon\] Total DPS$)"_s, PerSlot({{u"Weapon"_s, 10}}), 400),
+            weaponDps(),
             stat(u"Armour / Evasion"_s, uR"(^\[Base\] (Armour|Evasion Rating)$)"_s,
                  PerSlot({{u"Body Armour"_s, 10},
                           {u"Helmet"_s, 8},
@@ -125,8 +231,22 @@ BuildProfile lifeAndResistances()
         },
     };
     p.stats += common(7);
-    p.stats << stat(u"Speed"_s, uR"(^#% increased (Attack|Cast) Speed$)"_s,
-                    PerSlot({{u"Weapon"_s, 4}, {u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Gloves"_s, 3}}), 20);
+    p.stats << stat(
+        u"Speed"_s, uR"(^#% increased (Attack|Cast|Skill) Speed$)"_s,
+        PerSlot({{u"Weapon"_s, 4}, {u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Gloves"_s, 3}, {u"Jewel"_s, 3}}),
+        PerSlot({{u"Jewel"_s, 6}}, 20));
+    // Jewels and jewellery have little else a life build counts, so damage and
+    // life percent count a little there. Hybrid builds get half of the Energy
+    // Shield a spellcaster would.
+    p.stats << stat(
+        u"Damage"_s,
+        damagePattern(u"Physical|Elemental|Fire|Cold|Lightning|Chaos|Attack|Melee|Projectile|Spell"_s),
+        PerSlot({{u"Jewel"_s, 4}, {u"Ring"_s, 2}, {u"Amulet"_s, 2}}),
+        PerSlot({{u"Jewel"_s, 15}, {u"Ring"_s, 30}}, 100));
+    p.stats << exact(u"% Life"_s, u"#% increased maximum Life"_s,
+                     PerSlot({{u"Jewel"_s, 6}, {u"Amulet"_s, 3}}), PerSlot({{u"Jewel"_s, 8}}, 15));
+    p.stats << flatEnergyShield(0.5) << percentEnergyShield(0.5);
+    p.stats << lifeRegeneration(2) << percentLifeRegeneration(2) << flaskLifeRecovery(1.5);
     return p;
 }
 
@@ -143,14 +263,16 @@ BuildProfile energyShieldCaster()
                  PerSlot({{u"Weapon"_s, 10}, {u"Offhand"_s, 9}, {u"Amulet"_s, 9}}),
                  PerSlot({{u"Weapon"_s, 5}}, 3), u"# to Level of all Spell Skills"_s),
             stat(
-                u"Spell damage"_s, uR"(^#% increased (Spell|Fire|Cold|Lightning|Chaos|Elemental) Damage$)"_s,
+                u"Spell damage"_s,
+                uR"(^#% increased ((Spell|Fire|Cold|Lightning|Chaos|Elemental) )?Damage$)"_s,
                 PerSlot(
                     {{u"Weapon"_s, 9}, {u"Offhand"_s, 8}, {u"Amulet"_s, 5}, {u"Ring"_s, 4}, {u"Jewel"_s, 7}}),
                 PerSlot({{u"Jewel"_s, 15}, {u"Ring"_s, 30}}, 100), u"#% increased Spell Damage"_s),
-            exact(u"Cast speed"_s, u"#% increased Cast Speed"_s,
-                  PerSlot({{u"Weapon"_s, 7}, {u"Ring"_s, 5}, {u"Amulet"_s, 5}, {u"Jewel"_s, 4}}),
-                  PerSlot({{u"Jewel"_s, 6}}, 25)),
-            stat(u"Crit"_s, uR"(^#% increased Critical (Hit Chance|Damage Bonus)( for Spells)?$)"_s,
+            stat(u"Cast speed"_s, uR"(^#% increased (Cast|Skill) Speed$)"_s,
+                 PerSlot({{u"Weapon"_s, 7}, {u"Ring"_s, 5}, {u"Amulet"_s, 5}, {u"Jewel"_s, 4}}),
+                 PerSlot({{u"Jewel"_s, 6}}, 25), u"#% increased Cast Speed"_s),
+            stat(u"Spell critical hit chance and damage bonus"_s,
+                 uR"(^#% increased Critical (Hit Chance( for Spells)?|(Spell )?Damage Bonus)$)"_s,
                  PerSlot({{u"Weapon"_s, 6},
                           {u"Offhand"_s, 5},
                           {u"Amulet"_s, 4},
@@ -160,8 +282,97 @@ BuildProfile energyShieldCaster()
             baseEnergyShield(),
             percentEnergyShield(),
             flatEnergyShield(),
+            extraEnergyShield(),
             mana(),
-            exact(u"Spirit"_s, u"# to Spirit"_s, PerSlot({{u"Body Armour"_s, 5}, {u"Amulet"_s, 5}}), 60),
+            spirit(5),
+            energyShieldRecharge(2),
+            energyShieldRechargeStart(2),
+            manaRegeneration(1.5),
+        },
+    };
+    p.stats += common(3);
+    return p;
+}
+
+BuildProfile energyShieldAttacker()
+{
+    BuildProfile p{
+        energyShieldAttackerProfile.toString(),
+        u"Energy Shield attacker"_s,
+        u"Weapon damage, attack speed, critical hits and added damage to attacks, with Energy Shield, "
+        "resistances and movement speed to stay alive."_s,
+        {
+            weaponDps(),
+            stat(u"Attack skill levels"_s, uR"(^# to Level of all (Attack|Melee|Projectile) Skills$)"_s,
+                 PerSlot({{u"Amulet"_s, 8}, {u"Weapon"_s, 6}, {u"Offhand"_s, 4}}),
+                 PerSlot({{u"Weapon"_s, 5}}, 3)),
+            stat(u"Attack speed"_s, uR"(^#% increased (Attack|Skill) Speed$)"_s,
+                 PerSlot({{u"Weapon"_s, 7},
+                          {u"Gloves"_s, 6},
+                          {u"Ring"_s, 5},
+                          {u"Amulet"_s, 5},
+                          {u"Jewel"_s, 4},
+                          {u"Offhand"_s, 3}}),
+                 PerSlot({{u"Jewel"_s, 6}}, 25), u"#% increased Attack Speed"_s),
+            stat(u"Attack critical hit chance and damage bonus"_s,
+                 uR"(^#% increased Critical (Hit Chance( for Attacks)?|Damage Bonus( for Attack Damage)?)$|)"
+                 "^#% to Critical Damage Bonus$"_s,
+                 PerSlot({{u"Weapon"_s, 6},
+                          {u"Amulet"_s, 5},
+                          {u"Offhand"_s, 4},
+                          {u"Jewel"_s, 4},
+                          {u"Helmet"_s, 3}}),
+                 PerSlot({{u"Jewel"_s, 15}}, 60)),
+            stat(u"Base critical hit chance"_s, uR"(^#% to Critical Hit Chance$)"_s,
+                 PerSlot({{u"Weapon"_s, 5}}), 3.5),
+            stat(u"Attack damage"_s,
+                 damagePattern(u"Physical|Elemental|Fire|Cold|Lightning|Chaos|Attack|Melee|Projectile"_s) +
+                     u"|^#% increased Damage with (Bows|Bow Skills|Crossbows|Maces|Spears|Quarterstaves)$"_s,
+                 PerSlot({{u"Jewel"_s, 7},
+                          {u"Amulet"_s, 6},
+                          {u"Ring"_s, 5},
+                          {u"Gloves"_s, 4},
+                          {u"Offhand"_s, 3},
+                          {u"Weapon"_s, 2}}),
+                 PerSlot({{u"Jewel"_s, 15}, {u"Ring"_s, 30}, {u"Weapon"_s, 150}}, 100)),
+            // on a weapon these are local, so its damage per second has them already
+            stat(u"Added damage"_s,
+                 uR"((?i)^Adds # to # (Physical|Fire|Cold|Lightning|Chaos) Damage( to Attacks)?$)"_s,
+                 PerSlot({{u"Gloves"_s, 8},
+                          {u"Ring"_s, 7},
+                          {u"Amulet"_s, 5},
+                          {u"Offhand"_s, 3},
+                          {u"Weapon"_s, 3}}),
+                 PerSlot({{u"Weapon"_s, 50}}, 20)),
+            exact(
+                u"Accuracy"_s, u"# to Accuracy Rating"_s,
+                PerSlot(
+                    {{u"Helmet"_s, 3}, {u"Gloves"_s, 3}, {u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Weapon"_s, 2}}),
+                400),
+            exact(u"% Accuracy"_s, u"#% increased Accuracy Rating"_s,
+                  PerSlot({{u"Jewel"_s, 4}, {u"Amulet"_s, 3}, {u"Gloves"_s, 2}}),
+                  PerSlot({{u"Jewel"_s, 15}}, 30)),
+            baseEnergyShield(),
+            percentEnergyShield(),
+            flatEnergyShield(),
+            extraEnergyShield(),
+            // a lesser defence, for bases that have both
+            stat(u"Evasion"_s, uR"(^\[Base\] Evasion Rating$)"_s,
+                 PerSlot({{u"Body Armour"_s, 4},
+                          {u"Helmet"_s, 3},
+                          {u"Gloves"_s, 3},
+                          {u"Boots"_s, 3},
+                          {u"Offhand"_s, 3}}),
+                 PerSlot({{u"Body Armour"_s, 1200},
+                          {u"Helmet"_s, 600},
+                          {u"Gloves"_s, 400},
+                          {u"Boots"_s, 450},
+                          {u"Offhand"_s, 450}},
+                         1)),
+            mana(),
+            spirit(4),
+            energyShieldRecharge(2),
+            energyShieldRechargeStart(2),
         },
     };
     p.stats += common(3);
@@ -191,7 +402,7 @@ BuildProfile minionSummoner()
             stat(u"Minion damage"_s, uR"(^Minions deal #% increased Damage)"_s,
                  PerSlot({{u"Ring"_s, 7}, {u"Weapon"_s, 6}, {u"Offhand"_s, 6}, {u"Jewel"_s, 7}}),
                  PerSlot({{u"Ring"_s, 25}, {u"Jewel"_s, 15}}, 45), u"Minions deal #% increased Damage"_s),
-            stat(u"Minion crit"_s,
+            stat(u"Minion critical hit chance and damage bonus"_s,
                  u'^' + allies + uR"( have #% increased Critical (Hit Chance|Damage Bonus)$)"_s,
                  PerSlot({{u"Weapon"_s, 5}, {u"Ring"_s, 5}, {u"Jewel"_s, 5}}),
                  PerSlot({{u"Jewel"_s, 20}}, 40)),
@@ -213,8 +424,7 @@ BuildProfile minionSummoner()
             stat(u"Armour"_s, uR"(^\[Base\] Armour$)"_s, PerSlot({{u"Body Armour"_s, 2}}), 800),
             flatEnergyShield(),
             percentEnergyShield(),
-            stat(u"Extra ES"_s, uR"(^Gain #% of maximum (Life|Mana) as Extra maximum Energy Shield$)"_s,
-                 PerSlot({{u"Body Armour"_s, 5}}), 15),
+            extraEnergyShield(),
             life(4),
             mana(),
             resistance(Element::Fire, 4, 45),
@@ -228,20 +438,13 @@ BuildProfile minionSummoner()
             exact(u"Cast speed"_s, u"#% increased Cast Speed"_s,
                   PerSlot({{u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Offhand"_s, 3}, {u"Jewel"_s, 2}}),
                   PerSlot({{u"Jewel"_s, 6}}, 25)),
-            stat(
-                u"ES recharge"_s,
-                uR"(^#% increased Energy Shield Recharge Rate$|^#% faster start of Energy Shield Recharge$)"_s,
-                PerSlot({{u"Offhand"_s, 2},
-                         {u"Body Armour"_s, 2},
-                         {u"Helmet"_s, 2},
-                         {u"Belt"_s, 2},
-                         {u"Amulet"_s, 2},
-                         {u"Jewel"_s, 3}}),
-                PerSlot({{u"Jewel"_s, 25}}, 40)),
-            stat(u"Mana regen"_s, uR"(^#% increased Mana Regeneration Rate$)"_s,
-                 PerSlot({{u"Ring"_s, 1.5}, {u"Amulet"_s, 1.5}, {u"Offhand"_s, 1.5}}), 40),
-            stat(u"Life regen"_s, uR"(^# Life Regeneration per second$)"_s, PerSlot({{u"Jewel"_s, 0}}, 1),
-                 15),
+            energyShieldRecharge(2),
+            energyShieldRechargeStart(2),
+            manaRegeneration(1.5),
+            lifeRegeneration(1),
+            percentLifeRegeneration(1),
+            stunThreshold(),
+            percentStunThreshold(),
             rarity(),
         },
     };
@@ -266,7 +469,7 @@ double PerSlot::at(const QString &slotGroup) const
 const QList<BuildProfile> &buildProfiles()
 {
     static const QList<BuildProfile> profiles = {lifeAndResistances(), energyShieldCaster(),
-                                                 minionSummoner()};
+                                                 energyShieldAttacker(), minionSummoner()};
     return profiles;
 }
 
@@ -308,6 +511,27 @@ QList<TweakableStat> tweakableStats(const BuildProfile &profile)
         out << tweakable;
     }
     return out;
+}
+
+void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId)
+{
+    const QString crit = profileId == energyShieldAttackerProfile
+                             ? u"Attack critical hit chance and damage bonus"_s
+                             : u"Spell critical hit chance and damage bonus"_s;
+    const std::pair<QString, QString> renamed[] = {
+        {u"Crit"_s, crit},
+        {u"Base crit chance"_s, u"Base critical hit chance"_s},
+        {u"Minion crit"_s, u"Minion critical hit chance and damage bonus"_s},
+    };
+    for (const auto &[from, to] : renamed) {
+        const auto old = tweaks.find(from);
+        if (old == tweaks.end())
+            continue;
+        const double value = old.value();
+        tweaks.erase(old);
+        if (!tweaks.contains(to))
+            tweaks.insert(to, value);
+    }
 }
 
 } // namespace pou

@@ -26,15 +26,41 @@ Kirigami.ApplicationWindow {
     visible: !startHidden
     title: qsTr("Path of Upgrading")
 
+    // Whether the drawer is a sidebar, which is when there's room for one. Qt 6.8
+    // stacks the dimmer of a modal popup beside its item, and Kirigami 6.13 moves
+    // the item of a sidebar elsewhere, so the drawer must be closed before it
+    // turns modal.
+    property bool sidebar: wideScreen
+
+    function followWidth(): void {
+        if (wideScreen) {
+            sidebar = true;
+            globalDrawer.drawerOpen = true;
+        } else if (!globalDrawer.visible) {
+            sidebar = false;
+        } else if (sidebar) {
+            globalDrawer.drawerOpen = false;
+        }
+    }
+
+    onWideScreenChanged: followWidth()
+
     // the entry that starts it can be removed while it waits in the tray
     onActiveChanged: if (active)
         app.overlayOptions.lookAtStart()
 
     globalDrawer: Kirigami.GlobalDrawer {
+        objectName: "sidebar"
         isMenu: false
-        // a sidebar when there's room for one
-        modal: !root.wideScreen
+        modal: !root.sidebar
         handleVisible: modal
+
+        // closed, if it was closing to turn modal
+        onVisibleChanged: root.followWidth()
+
+        header: SidebarHeader {
+            app: root.app
+        }
 
         actions: [
             Kirigami.Action {
@@ -47,6 +73,7 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(charactersPage)
             },
             Kirigami.Action {
+                id: gearAction
                 objectName: "gearAction"
                 text: qsTr("Your Gear")
                 icon.name: "view-list-details"
@@ -54,33 +81,47 @@ Kirigami.ApplicationWindow {
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(gearPage)
             },
+            // the pages about how gear is judged, one level down
             Kirigami.Action {
-                objectName: "gearScoreAction"
-                text: qsTr("Gear Score")
+                objectName: "gearGroupAction"
+                text: qsTr("Gear")
                 icon.name: "rating"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(gearScorePage)
-            },
-            Kirigami.Action {
-                objectName: "weightsAction"
-                text: qsTr("Stat Weights")
-                icon.name: "view-statistics"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(weightsPage)
-            },
-            Kirigami.Action {
-                objectName: "ignoredAction"
-                text: qsTr("Ignored Stats")
-                icon.name: "view-hidden"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(ignoredPage)
+                // lit while one of its pages is shown
+                checked: gearScoreAction.checked || weightsAction.checked || ignoredAction.checked
+
+                Kirigami.Action {
+                    id: gearScoreAction
+                    objectName: "gearScoreAction"
+                    text: qsTr("Gear Grade")
+                    icon.name: "rating"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(gearScorePage)
+                }
+
+                Kirigami.Action {
+                    id: weightsAction
+                    objectName: "weightsAction"
+                    text: qsTr("Stat Weights")
+                    icon.name: "view-statistics"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(weightsPage)
+                }
+
+                Kirigami.Action {
+                    id: ignoredAction
+                    objectName: "ignoredAction"
+                    text: qsTr("Ignored Stats")
+                    icon.name: "view-hidden"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(ignoredPage)
+                }
             },
             Kirigami.Action {
                 objectName: "checkedAction"
-                text: qsTr("Checked Items")
+                text: qsTr("Item History")
                 icon.name: "view-history"
                 checkable: true
                 QQC2.ActionGroup.group: pages
@@ -88,7 +129,7 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "pobAction"
-                text: qsTr("Path of Building")
+                text: qsTr("Build Analysis")
                 icon.name: "office-chart-line"
                 checkable: true
                 QQC2.ActionGroup.group: pages
@@ -104,19 +145,54 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "overlayAction"
-                text: qsTr("Popup and Hotkeys")
-                icon.name: "preferences-desktop-keyboard-shortcut"
+                text: qsTr("Settings")
+                icon.name: "settings-configure"
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(overlayPage)
+            },
+            Kirigami.Action {
+                objectName: "appearanceAction"
+                text: qsTr("Appearance")
+                icon.name: "preferences-desktop-theme"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(appearancePage)
             }
         ]
     }
 
     pageStack.initialPage: charactersPage
+    // each page has its own title
+    pageStack.globalToolBar.style: Kirigami.ApplicationHeaderStyle.None
 
     QQC2.ActionGroup {
         id: pages
+    }
+
+    // the popup and the results window are in this engine too
+    Binding {
+        target: Style
+        property: "appColors"
+        value: root.app.appearance.appColors
+    }
+
+    Binding {
+        target: Style
+        property: "plain"
+        value: root.app.appearance.plain
+    }
+
+    Binding {
+        target: Style
+        property: "headingFamily"
+        value: root.app.appearance.headingFamily
+    }
+
+    SetupGuide {
+        objectName: "setupGuide"
+        app: root.app
+        windowShown: root.visible
     }
 
     // The pages wait here while they aren't shown, so they keep where you
@@ -127,6 +203,7 @@ Kirigami.ApplicationWindow {
         CharactersPage {
             id: charactersPage
             app: root.app
+            onGearAsked: gearAction.trigger()
         }
 
         GearPage {
@@ -171,6 +248,11 @@ Kirigami.ApplicationWindow {
         OverlayPage {
             id: overlayPage
             options: root.app.overlayOptions
+        }
+
+        AppearancePage {
+            id: appearancePage
+            appearance: root.app.appearance
         }
     }
 }

@@ -6,10 +6,12 @@
 #include <QColor>
 #include <QDesktopServices>
 #include <QGuiApplication>
+#include <QLoggingCategory>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QRegularExpression>
 #include <QScreen>
 #include <QSignalSpy>
 #include <QTest>
@@ -135,6 +137,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Fusion, as on Linux, as Windows' own style can't draw offscreen
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
         // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
         // platform plugin of its own
         qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
@@ -174,6 +178,19 @@ private Q_SLOTS:
         popup.showReport(aReport(), std::nullopt);
         QVERIFY(popup.isVisible());
         QCOMPARE(popup.window()->position(), placed(popup.window(), PopupPosition::Top, std::nullopt));
+    }
+
+    void saysWhereItWent()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=true"_s);
+        // the popup grows once it's shown, so there can be more than one
+        QTest::ignoreMessage(QtDebugMsg,
+                             QRegularExpression(u"The mouse is 200,300 on .*goes to 224,\\d+ on"_s));
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=false"_s);
     }
 
     void whereTheSettingsSay()
@@ -242,6 +259,28 @@ private Q_SLOTS:
         QVERIFY(popup.isTradeAvailable());
     }
 
+    void tradeNote()
+    {
+        // why there are no trade buttons, for the popup to say
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QSignalSpy changed(&popup, &ItemPopup::tradeChanged);
+        QVERIFY(popup.tradeNote().isEmpty());
+        popup.setTradeNote(u"Trade searches are turned off."_s);
+        QCOMPARE(popup.tradeNote(), u"Trade searches are turned off."_s);
+        QCOMPARE(changed.size(), 1);
+        popup.setTradeNote(u"Trade searches are turned off."_s);
+        QCOMPARE(changed.size(), 1);
+
+        // and it stays for the next item
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QCOMPARE(popup.tradeNote(), u"Trade searches are turned off."_s);
+        popup.setTradeNote({});
+        QVERIFY(popup.tradeNote().isEmpty());
+        QCOMPARE(changed.size(), 2);
+    }
+
     void tradeButtons_data()
     {
         QTest::addColumn<QString>("text");
@@ -285,6 +324,28 @@ private Q_SLOTS:
         currency.gear = false;
         popup.showReport(currency, mouseAt(200, 300));
         QVERIFY(!button(popup, u"Same or Better"_s));
+    }
+
+    void saysWhyThereAreNoTradeButtons()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        const QString why = u"Trade searches are turned off. Turn them on on the Trade page."_s;
+        popup.setTradeNote(why);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(shown(popup, why));
+
+        // not once there are, or for what isn't gear
+        popup.setTradeAvailable(true);
+        QVERIFY(!shown(popup, why));
+        popup.setTradeAvailable(false);
+        QVERIFY(shown(popup, why));
+        ItemReport currency = aReport();
+        currency.gear = false;
+        popup.showReport(currency, mouseAt(200, 300));
+        QVERIFY(!shown(popup, why));
     }
 
     void tradeSearched()
@@ -427,6 +488,63 @@ private Q_SLOTS:
         popup.showReport(aReport(), mouseAt(200, 300));
         QVERIFY(!shown(popup, u"Wear as"_s));
         QVERIFY(!button(popup, u"Ring 2"_s));
+    }
+
+    void eachPlace()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        ItemReport ring = aReport();
+        ring.wearIn = {u"Ring 1"_s, u"Ring 2"_s};
+        const ReportFigure worse{.label = u"gear score"_s, .change = u"-3.4"_s, .tone = Tone::Bad};
+        const ReportFigure better{.label = u"gear score"_s, .change = u"+12"_s, .tone = Tone::Good};
+        ring.placements = {
+            {.slot = u"Ring 1"_s, .wearing = u"Doom Loop, Gold Ring"_s, .changes = {worse}},
+            {.slot = u"Ring 2"_s, .wearing = u"Empty"_s, .best = true, .changes = {better}},
+        };
+        popup.showReport(ring, mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+
+        QVERIFY(shown(popup, u"If you wear it in"_s));
+        QVERIFY(shown(popup, u"Doom Loop, Gold Ring"_s));
+        QVERIFY(shown(popup, u"Empty"_s));
+        const QQuickItem *loss = shown(popup, u"-3.4 gear score"_s);
+        const QQuickItem *gain = shown(popup, u"+12 gear score"_s);
+        QVERIFY(loss && gain);
+        QCOMPARE(loss->property("tone").toInt(), int(Tone::Bad));
+        QCOMPARE(gain->property("tone").toInt(), int(Tone::Good));
+        // one place marked, the one in the second row
+        const QList<QQuickItem *> items = visibleItems(popup);
+        QCOMPARE(std::ranges::count_if(items,
+                                       [](const QQuickItem *i) {
+                                           return i->inherits("QQuickLabel") &&
+                                                  i->property("text") == u"Best"_s;
+                                       }),
+                 1);
+        const QQuickItem *best = shown(popup, u"Best"_s);
+        QVERIFY(best);
+        const auto middle = [](const QQuickItem *item) {
+            return item->mapToScene(item->boundingRect().center()).y();
+        };
+        QVERIFY(middle(best) > middle(loss));
+        QVERIFY(qAbs(middle(best) - middle(gain)) < gain->height());
+
+        // each still wears it where it says
+        QSignalSpy asked(&popup, &ItemPopup::wearAsked);
+        QVERIFY(click(popup, u"Ring 1"_s));
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(asked.first().first().toString(), u"Ring 1"_s);
+        QVERIFY(click(popup, u"Ring 2"_s));
+        QCOMPARE(asked.last().first().toString(), u"Ring 2"_s);
+
+        // and nothing when there's nothing to choose between
+        ring.placements.clear();
+        popup.showReport(ring, mouseAt(200, 300));
+        QVERIFY(!shown(popup, u"If you wear it in"_s));
+        QVERIFY(!shown(popup, u"Doom Loop, Gold Ring"_s));
+        QVERIFY(button(popup, u"Ring 1"_s));
     }
 
     void wearInRows()
@@ -980,6 +1098,81 @@ private Q_SLOTS:
                                     .position = popup.window()->position() - screen->geometry().topLeft() +
                                                 QPoint(20, 1)};
         QVERIFY(popup.isInTheWay());
+    }
+
+    void movesWhenDragged()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.moveBy(30, 30);
+        QVERIFY(!popup.isVisible());
+
+        popup.showReport(aReport(), mouseAt(200, 300));
+        const QPoint at = popup.window()->position();
+        popup.moveBy(30, -20);
+        QCOMPARE(popup.window()->position(), at + QPoint(30, -20));
+
+        // to where the mouse is now, which is on it, or a little off it
+        QScreen *screen = QGuiApplication::primaryScreen();
+        input.mouseAt = ScreenPoint{.screen = screen->name(),
+                                    .position = popup.window()->position() - screen->geometry().topLeft() +
+                                                QPoint(20, 1)};
+        QVERIFY(popup.isInTheWay());
+
+        // never off the screen
+        popup.moveBy(100000, 100000);
+        const QPoint corner = popup.window()->position() - screen->geometry().topLeft();
+        QCOMPARE(corner, QPoint(screen->size().width() - popup.window()->width() - 4,
+                                screen->size().height() - popup.window()->height() - 4));
+    }
+
+    void staysWhereItWasMoved()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        popup.moveBy(60, 40);
+        const QPoint moved = popup.window()->position();
+        const int height = popup.window()->height();
+
+        // it grows as Path of Building answers, which doesn't put it back
+        ItemReport longer = aReport();
+        longer.name = u"Storm Veil of the Long Winter Kept Behind the Gate of the Drowned City"_s;
+        popup.updateReport(longer);
+        QTRY_VERIFY(popup.window()->height() > height);
+        QCOMPARE(popup.window()->position(), moved);
+
+        // but the next item goes by the mouse again
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QCOMPARE(popup.window()->position(), placed(popup.window(), PopupPosition::Cursor, QPoint(200, 300)));
+    }
+
+    void draggedByTheTitle()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QQuickWindow *window = popup.window();
+        QVERIFY(QQuickTest::qWaitForPolish(window));
+        const QQuickItem *title = shown(popup, u"Storm Veil"_s);
+        QVERIFY(title);
+        const QPoint at = window->position();
+
+        // with the mouse going 40 across and 25 down from the title, and the
+        // window going under it as it does, so the mouse says where it is in
+        // the window
+        const QPoint start = title->mapToScene(title->boundingRect().center()).toPoint();
+        const QPoint mouse = at + start;
+        QTest::mousePress(window, Qt::LeftButton, {}, start);
+        for (int step = 1; step <= 8; ++step) {
+            const QPoint to = mouse + QPoint(5 * step, 3 * step + step / 8);
+            QTest::mouseMove(window, to - window->position());
+        }
+        QTest::mouseRelease(window, Qt::LeftButton, {}, mouse + QPoint(40, 25) - window->position());
+        QCOMPARE(window->position(), at + QPoint(40, 25));
     }
 
     void colours()

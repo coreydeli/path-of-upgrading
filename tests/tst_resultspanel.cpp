@@ -153,6 +153,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Fusion, as on Linux, as Windows' own style can't draw offscreen
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
         // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
         // platform plugin of its own
         qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
@@ -200,7 +202,7 @@ private Q_SLOTS:
         QCOMPARE(rows(p.window()), 0);
 
         // or why there won't be
-        const QString off = u"Trade searches are turned off in the settings."_s;
+        const QString off = tradeUnavailable({.enabled = false});
         p.panel.setUnavailable(off);
         QVERIFY(shown(p.window(), off));
         QVERIFY(!shown(p.window(), first));
@@ -212,7 +214,7 @@ private Q_SLOTS:
         Panel p;
         QSignalSpy unavailable(&p.panel, &ResultsPanel::unavailableChanged);
         QSignalSpy height(&p.panel, &ResultsPanel::maxHeightChanged);
-        const QString off = u"Trade searches are turned off in the settings."_s;
+        const QString off = tradeUnavailable({.enabled = false});
         p.panel.setUnavailable(off);
         p.panel.setUnavailable(off);
         QCOMPARE(unavailable.size(), 1);
@@ -569,7 +571,7 @@ private Q_SLOTS:
         p.site.searcher.setSettings(TradeSettings{.enabled = false, .league = {.name = league}});
         p.panel.show();
         QVERIFY(!p.site.results.isBusy());
-        QCOMPARE(p.site.results.error(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(p.site.results.error(), tradeUnavailable({.enabled = false}));
         QTRY_VERIFY(shown(p.window(), p.site.results.error()));
         QVERIFY(p.site.network.sent.isEmpty());
     }

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(path-of-upgrading
-    VERSION 0.1.0
+    VERSION 0.5.0
     DESCRIPTION "Path of Exile 2 item overlay that checks items against your build"
     HOMEPAGE_URL "https://github.com/coreydeli/path-of-upgrading"
     LANGUAGES CXX)
@@ -46,6 +46,8 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Widgets Qml Quick Quic
 find_package(KF6Kirigami 6.13 REQUIRED)
 find_package(KF6KirigamiAddons 1.7 REQUIRED)
 find_package(KF6Declarative 6.13 REQUIRED)
+# The colors of the app are a KDE color scheme, which this applies
+find_package(KF6ColorScheme 6.13 REQUIRED)
 # Kirigami Addons translates its text with KI18n, which the window's engine
 # is set up for
 find_package(KF6I18n 6.13 REQUIRED)
@@ -54,6 +56,9 @@ qt_standard_project_setup(REQUIRES 6.8)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml)
 
 option(BUILD_TESTING "Build the unit tests" ON)
+# The release builds of a beta turn this on. Trade searches start on in a beta,
+# and off in a release until they've been tested more, see isBetaBuild().
+option(POU_BETA "Build a beta, which has trade searches on until you turn them off" OFF)
 
 add_subdirectory(src)
 add_subdirectory(data)
@@ -63,4 +68,6 @@ if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-include(packaging/debian.cmake)
+if(NOT WIN32)
+    include(packaging/debian.cmake)
+endif()

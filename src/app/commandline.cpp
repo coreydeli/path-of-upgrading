@@ -2,6 +2,7 @@
 #include "app/commandline.h"
 
 #include <QCoreApplication>
+#include <QDir>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -9,6 +10,7 @@ namespace pou {
 namespace {
 
 const QString backgroundOption = u"background"_s;
+const QString setupOption = u"setup"_s;
 
 } // namespace
 
@@ -18,6 +20,7 @@ CommandLine::CommandLine()
     m_parser.addHelpOption();
     m_parser.addVersionOption();
     m_parser.addOption({backgroundOption, u"Start with only the tray icon, without the window."_s});
+    m_parser.addOption({setupOption, u"Show the setup guide again."_s});
 }
 
 bool CommandLine::parse(const QStringList &arguments)
@@ -35,6 +38,11 @@ bool CommandLine::background() const
     return m_parser.isSet(backgroundOption);
 }
 
+bool CommandLine::setup() const
+{
+    return m_parser.isSet(setupOption);
+}
+
 QString CommandLine::errorText() const
 {
     return m_parser.errorText();
@@ -47,7 +55,13 @@ QString CommandLine::helpText()
 
 QString CommandLine::backgroundCommand()
 {
-    return QCoreApplication::applicationName() + u" --"_s + backgroundOption;
+#ifdef Q_OS_WIN
+    // which Windows runs by its whole path
+    const QString program = u'"' + QDir::toNativeSeparators(QCoreApplication::applicationFilePath()) + u'"';
+#else
+    const QString program = QCoreApplication::applicationName();
+#endif
+    return program + u" --"_s + backgroundOption;
 }
 
 } // namespace pou

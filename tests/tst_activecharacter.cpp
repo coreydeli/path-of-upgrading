@@ -80,6 +80,23 @@ struct Characters
         return character ? *character : Character();
     }
 
+    // Makes Newcomer when there's nobody, as the app does, and counts that.
+    // Playing the one it makes is left to the active character, or to the
+    // starter when it asks.
+    int started = 0;
+    void startWithNewcomer(bool playIt = false)
+    {
+        active.setStarter([this, playIt](QString *) {
+            ++started;
+            Character newcomer;
+            newcomer.name = u"Newcomer"_s;
+            const QString id = store.add(newcomer).value_or(QString());
+            if (playIt)
+                active.setId(id);
+            return id;
+        });
+    }
+
     // once Path of Building has loaded the build and found Chaos Inoculation,
     // or not
     bool loads(bool chaosInoculation)
@@ -318,8 +335,87 @@ private Q_SLOTS:
     {
         Characters c;
         QVERIFY(!c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
-        QCOMPARE(c.active.errorString(), u"There's no character to wear it. Add one first."_s);
+        QCOMPARE(c.active.errorString(), u"There's no character. Add one first."_s);
         QVERIFY(c.active.takeOff(u"Helmet"_s));
+    }
+
+    void wearMakesOne()
+    {
+        Characters c;
+        c.startWithNewcomer();
+        QVERIFY(c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
+        QCOMPARE(c.started, 1);
+        QVERIFY(c.active.exists());
+        QCOMPARE(c.active.character().name, u"Newcomer"_s);
+        QCOMPARE(c.active.character().gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QCOMPARE(c.saved(c.active.id()).gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QCOMPARE(c.active.errorString(), QString());
+
+        // and it is the one that wears the next
+        QVERIFY(c.active.wear(u"Ring 1"_s, item(itemtexts::advancedRing)));
+        QCOMPARE(c.started, 1);
+        QCOMPARE(c.store.ids().size(), 1);
+        QStringList worn = c.active.character().gear.keys();
+        worn.sort();
+        QCOMPARE(worn, (QStringList{u"Helmet"_s, u"Ring 1"_s}));
+    }
+
+    void wearMakesOneThatPlaysItself()
+    {
+        // as the app's does, through the settings
+        Characters c;
+        c.startWithNewcomer(true);
+        QSignalSpy changed(&c.active, &ActiveCharacter::changed);
+        QVERIFY(c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
+        QCOMPARE(c.active.character().name, u"Newcomer"_s);
+        // played, and then worn
+        QCOMPARE(changed.size(), 2);
+        QCOMPARE(c.store.ids().size(), 1);
+    }
+
+    void wearElsewhereMakesNone()
+    {
+        Characters c;
+        c.startWithNewcomer();
+        QVERIFY(!c.active.wear(u"Ring 1"_s, item(itemtexts::helmetNew)));
+        QCOMPARE(c.active.errorString(), u"Doom Visage can't go in Ring 1."_s);
+        QCOMPARE(c.started, 0);
+        QVERIFY(c.store.ids().isEmpty());
+        QVERIFY(!c.active.exists());
+    }
+
+    void changeMakesOne()
+    {
+        Characters c;
+        c.startWithNewcomer();
+        QVERIFY(c.active.change([](Character &newcomer) { newcomer.buildProfile = u"es-caster"_s; }));
+        QCOMPARE(c.started, 1);
+        QCOMPARE(c.active.character().name, u"Newcomer"_s);
+        QCOMPARE(c.active.character().buildProfile, u"es-caster"_s);
+        QCOMPARE(c.saved(c.active.id()).buildProfile, u"es-caster"_s);
+    }
+
+    void takeOffMakesNone()
+    {
+        Characters c;
+        c.startWithNewcomer();
+        QVERIFY(c.active.takeOff(u"Helmet"_s));
+        QCOMPARE(c.started, 0);
+        QVERIFY(c.store.ids().isEmpty());
+    }
+
+    void cantMakeOne()
+    {
+        Characters c;
+        c.active.setStarter([](QString *why) {
+            *why = u"Couldn't save Newcomer: no room."_s;
+            return QString();
+        });
+        QVERIFY(!c.active.wear(u"Helmet"_s, item(itemtexts::helmetNew)));
+        QCOMPARE(c.active.errorString(), u"Couldn't save Newcomer: no room."_s);
+        QVERIFY(!c.active.change([](Character &) {}));
+        QCOMPARE(c.active.errorString(), u"Couldn't save Newcomer: no room."_s);
+        QVERIFY(!c.active.exists());
     }
 
     void takeOff()
@@ -376,7 +472,7 @@ private Q_SLOTS:
     {
         Characters c;
         QVERIFY(!c.active.change([](Character &) {}));
-        QCOMPARE(c.active.errorString(), u"There's no character to change. Add one first."_s);
+        QCOMPARE(c.active.errorString(), u"There's no character. Add one first."_s);
 
         const QString id = c.add(inGrimCrown(), build);
         c.active.setId(id);

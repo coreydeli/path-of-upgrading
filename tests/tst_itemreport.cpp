@@ -125,6 +125,7 @@ private Q_SLOTS:
         QTest::newRow("risky") << Verdict::Risky << u"Risky upgrade"_s << Tone::Warning;
         QTest::newRow("resistance") << Verdict::ResistLoss << u"Loses resistance"_s << Tone::Bad;
         QTest::newRow("damage") << Verdict::DamageLoss << u"Loses damage"_s << Tone::Bad;
+        QTest::newRow("defences") << Verdict::DefenceLoss << u"Loses defences"_s << Tone::Bad;
         QTest::newRow("equipped") << Verdict::Equipped << u"Equipped"_s << Tone::Plain;
     }
 
@@ -157,6 +158,8 @@ private Q_SLOTS:
         // which would read like an upgrade
         QTest::newRow("losing resistance for more")
             << PathOfBuilding << Verdict::ResistLoss << 6.0 << none << QString() << QString();
+        QTest::newRow("losing defences for more")
+            << PathOfBuilding << Verdict::DefenceLoss << 6.0 << none << QString() << QString();
         QTest::newRow("losing damage for less")
             << PathOfBuilding << Verdict::DamageLoss << -3.0 << none << u"-3%"_s << u"for your build"_s;
         QTest::newRow("gear score") << GearScores << Verdict::Upgrade << 6.0 << none << u"+6"_s
@@ -405,22 +408,22 @@ private Q_SLOTS:
         Evaluation &e = check.evaluation;
         const QString capped = u"Fire res: you're already capped, so it doesn't count."_s;
         e.gear = GearScore{.score = 50,
-                           .wasted = {u"#% increased Light Radius"_s, u"[Base] Evasion Rating"_s},
+                           .notScored = {u"#% increased Light Radius"_s, u"[Base] Evasion Rating"_s},
                            .missing = {u"Life"_s, u"Movement speed"_s},
                            .ideal = 40,
                            .resistNote = capped};
         QCOMPARE(reportOf(check).gearNotes,
-                 (QStringList{capped, u"Not used by your build: #% increased Light Radius, Evasion Rating."_s,
+                 (QStringList{capped, u"Not in the gear score: #% increased Light Radius, Evasion Rating."_s,
                               u"Missing what your build wants: Life, Movement speed."_s}));
 
         e.gear->resistNote.clear();
-        e.gear->wasted.clear();
+        e.gear->notScored.clear();
         QCOMPARE(reportOf(check).gearNotes,
                  QStringList{u"Missing what your build wants: Life, Movement speed."_s});
         e.gear->missing.clear();
-        e.gear->wasted = {u"# to Accuracy Rating"_s};
-        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Not used by your build: # to Accuracy Rating."_s});
-        e.gear->wasted.clear();
+        e.gear->notScored = {u"# to Accuracy Rating"_s};
+        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Not in the gear score: # to Accuracy Rating."_s});
+        e.gear->notScored.clear();
         QCOMPARE(reportOf(check).gearNotes, QStringList());
     }
 
@@ -431,7 +434,7 @@ private Q_SLOTS:
         e.gear =
             GearScore{.score = 70,
                       .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}},
-                      .wasted = {u"#% increased Light Radius"_s},
+                      .notScored = {u"#% increased Light Radius"_s},
                       .ideal = 50};
         QVERIFY(!reportOf(check).gearParts.isEmpty());
         QVERIFY(!reportOf(check).gearNotes.isEmpty());
@@ -457,6 +460,17 @@ private Q_SLOTS:
         const ItemReport report = reportOf(check);
         QCOMPARE(report.losses, QStringList{fire});
         QCOMPARE(report.risks, QStringList{spirit});
+    }
+
+    void defenceLosses()
+    {
+        ItemCheck check = judged(Verdict::DefenceLoss);
+        const QString health = u"Effective HP drops 20%"_s;
+        check.evaluation.risks = {health};
+        check.evaluation.losses = {health};
+        const ItemReport report = reportOf(check);
+        QCOMPARE(report.losses, QStringList{health});
+        QVERIFY(report.risks.isEmpty());
     }
 
     void caps_data()
@@ -1010,6 +1024,77 @@ private Q_SLOTS:
         QCOMPARE(reportOn(item(itemtexts::advancedRing)).wearIn, (QStringList{u"Ring 1"_s, u"Ring 2"_s}));
         // what you have on already
         QCOMPARE(reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}})).wearIn, QStringList());
+    }
+
+    void eachPlace()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.places = {
+            {.slot = u"Ring 1"_s, .wearing = u"Doom Loop, Gold Ring"_s, .score = -3.4},
+            {.slot = u"Ring 2"_s, .best = true, .score = 12},
+        };
+        const ItemReport report = reportOf(check);
+        QCOMPARE(report.placements.size(), 2);
+
+        const ReportPlacement &first = report.placements.at(0);
+        QCOMPARE(first.slot, u"Ring 1"_s);
+        QCOMPARE(first.wearing, u"Doom Loop, Gold Ring"_s);
+        QVERIFY(!first.best);
+        QCOMPARE(first.changes.size(), 1);
+        QCOMPARE(first.changes.at(0).label, u"gear score"_s);
+        QCOMPARE(first.changes.at(0).change, u"-3.4"_s);
+        QCOMPARE(first.changes.at(0).tone, Tone::Bad);
+
+        // nothing there
+        const ReportPlacement &second = report.placements.at(1);
+        QCOMPARE(second.wearing, u"Empty"_s);
+        QVERIFY(second.best);
+        QCOMPARE(second.changes.at(0).change, u"+12"_s);
+        QCOMPARE(second.changes.at(0).tone, Tone::Good);
+
+        QVERIFY(reportOf(judged(Verdict::Upgrade)).placements.isEmpty());
+    }
+
+    void eachPlaceByYourWeights()
+    {
+        ItemCheck check = judged(Verdict::Upgrade, ScoreMode::StatWeights);
+        check.places = {{.slot = u"Ring 1"_s, .mode = ScoreMode::StatWeights, .score = 0}};
+        const ReportFigure change = reportOf(check).placements.at(0).changes.at(0);
+        QCOMPARE(change.label, u"by your weights"_s);
+        QCOMPARE(change.change, u"0"_s);
+        QCOMPARE(change.tone, Tone::Plain);
+    }
+
+    void eachPlaceByPathOfBuilding()
+    {
+        ItemCheck check = judged(Verdict::Upgrade, ScoreMode::PathOfBuilding);
+        check.places = {
+            {.slot = u"Ring 1"_s, .mode = ScoreMode::PathOfBuilding, .score = 4, .damage = 12.5, .ehp = -1.2},
+            {.slot = u"Ring 2"_s,
+             .mode = ScoreMode::PathOfBuilding,
+             .score = 2.5,
+             .damage = 6,
+             .minionDamage = true},
+            // from nothing, so it can't say how much more
+            {.slot = u"Socket #3"_s, .mode = ScoreMode::PathOfBuilding, .score = 1.5},
+        };
+        const QList<ReportPlacement> places = reportOf(check).placements;
+        QCOMPARE(places.size(), 3);
+
+        QCOMPARE(places.at(0).changes.size(), 2);
+        QCOMPARE(places.at(0).changes.at(0).label, u"DPS"_s);
+        QCOMPARE(places.at(0).changes.at(0).change, u"+12.5%"_s);
+        QCOMPARE(places.at(0).changes.at(0).tone, Tone::Good);
+        QCOMPARE(places.at(0).changes.at(1).label, u"Effective HP"_s);
+        QCOMPARE(places.at(0).changes.at(1).change, u"-1.2%"_s);
+        QCOMPARE(places.at(0).changes.at(1).tone, Tone::Bad);
+
+        QCOMPARE(places.at(1).changes.size(), 1);
+        QCOMPARE(places.at(1).changes.at(0).label, u"Minion DPS"_s);
+
+        QCOMPARE(places.at(2).slot, u"Socket #3"_s);
+        QCOMPARE(places.at(2).changes.at(0).label, u"for your build"_s);
+        QCOMPARE(places.at(2).changes.at(0).change, u"+1.5%"_s);
     }
 
     void notesOnTheItem()

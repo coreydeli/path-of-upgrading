@@ -54,6 +54,15 @@ QString witch(bool withMinions = false)
            u"</Build></PathOfBuilding2>"_s;
 }
 
+// A level 60 Monk with five times as much Energy Shield as Life, whose main
+// skill hits, as Path of Building saves a hit chance only for attacks.
+QString monk()
+{
+    return u"<PathOfBuilding2><Build level=\"60\" className=\"Monk\">"
+           u"<PlayerStat stat=\"Life\" value=\"900\"/><PlayerStat stat=\"EnergyShield\" value=\"4500\"/>"
+           u"<PlayerStat stat=\"HitChance\" value=\"96\"/></Build></PathOfBuilding2>"_s;
+}
+
 // the bow as the game copies it
 Item copiedBow()
 {
@@ -88,7 +97,13 @@ struct Importer
         return id;
     }
 
-    QString builds() const { return dir.filePath(u"pob/userdata/Path of Building (PoE2)/Builds"_s); }
+    PobInstall pob() const
+    {
+        return {.folder = dir.filePath(u"pob"_s),
+                .program = u"luajit"_s,
+                .userFolder = dir.filePath(u"pob/userdata/Path of Building (PoE2)"_s)};
+    }
+    QString builds() const { return pob().userFolder + u"/Builds"_s; }
 };
 
 } // namespace
@@ -144,6 +159,17 @@ private Q_SLOTS:
         QVERIFY(i.importer.message().endsWith(
             u"Chose the Minion summoner on Energy Shield gear score profile for it."_s));
         QCOMPARE(i.store.find(wren)->buildProfile, u"minion-es"_s);
+    }
+
+    void saysTheAttackerProfile()
+    {
+        Importer i;
+        const QString wren = i.play(u"Wren"_s);
+        i.importer.importText(monk());
+        QVERIFY(!i.importer.hasFailed());
+        QCOMPARE(i.importer.message(), u"Imported the level 60 Monk build for Wren. It has no items on. "
+                                       u"Chose the Energy Shield attacker gear score profile for it."_s);
+        QCOMPARE(i.store.find(wren)->buildProfile, u"es-attacker"_s);
     }
 
     void saysNothingOfAPickedProfile()
@@ -445,7 +471,7 @@ private Q_SLOTS:
 
         // before you've saved any
         QSignalSpy changed(&i.importer, &BuildImporter::buildsChanged);
-        i.engine.setInstall({.folder = i.dir.filePath(u"pob"_s), .program = u"luajit"_s});
+        i.engine.setInstall(i.pob());
         QCOMPARE(changed.size(), 1);
         QCOMPARE(i.importer.buildsFolder(), i.builds());
         QVERIFY(i.importer.builds().isEmpty());
@@ -477,7 +503,7 @@ private Q_SLOTS:
     void savedBuildsFromTheStart()
     {
         Importer i;
-        i.engine.setInstall({.folder = i.dir.filePath(u"pob"_s), .program = u"luajit"_s});
+        i.engine.setInstall(i.pob());
         QVERIFY(writeFile(i.builds() + u"/Witch.xml"_s, "<PathOfBuilding2/>"));
         BuildImporter later(&i.list, &i.engine, &i.network);
         QCOMPARE(later.buildsFolder(), i.builds());

@@ -36,9 +36,6 @@ Rectangle {
     implicitWidth: Kirigami.Units.gridUnit * 26
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
     color: Kirigami.Theme.backgroundColor
-    radius: Kirigami.Units.cornerRadius
-    border.color: Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor,
-                                                          Kirigami.Theme.textColor, 0.2)
 
     ColumnLayout {
         id: content
@@ -56,10 +53,11 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 0
 
-                Kirigami.Heading {
+                QQC2.Label {
                     Layout.fillWidth: true
-                    level: 3
                     wrapMode: Text.Wrap
+                    font: Style.titleFont(Kirigami.Theme.defaultFont, 1.35)
+                    color: Style.gold(Kirigami.Theme)
                     text: card.results.searched ? card.results.title : qsTr("Trade Results")
                 }
 
@@ -82,6 +80,10 @@ Rectangle {
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 onClicked: card.panel.close()
             }
+        }
+
+        Ornament {
+            Layout.fillWidth: true
         }
 
         // before there's a search to show
@@ -176,5 +178,9 @@ Rectangle {
                 onClicked: Qt.openUrlExternally(card.results.url)
             }
         }
+    }
+
+    OrnateFrame {
+        anchors.fill: parent
     }
 }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/tradesession.h"
+#include "core/sessionguide.h"
 #include "fakenetwork.h"
+#include "fakeopener.h"
 #include "fakesecretstore.h"
 #include "services/tradeclient.h"
 
@@ -347,6 +349,35 @@ private Q_SLOTS:
         QCOMPARE(store.writes, 1);
         delete client.data(u"stats"_s);
         QCOMPARE(network.sent.last().request.rawHeader("Cookie"), QByteArray());
+    }
+
+    void helpComesFromTheGuide()
+    {
+        Signing s;
+        QCOMPARE(s.session.findSteps(), guideToSessionId().steps);
+        QCOMPARE(s.session.findNotes(), guideToSessionId().notes);
+    }
+
+    void opensTheSignInPageOnlyWhenAsked()
+    {
+        FakeSecretStore store;
+        FakeNetwork network;
+        TradeClient client(&network);
+        FakeOpener opener;
+        TradeSession session(&store, &client, &opener);
+        session.load();
+        QVERIFY(QTest::qWaitFor([&] { return !session.isBusy(); }, 1000));
+        QVERIFY(opener.opened.isEmpty());
+        QVERIFY(opener.copied.isEmpty());
+        session.openSignIn();
+        QCOMPARE(opener.opened, QList<QUrl>{signInUrl()});
+        QVERIFY(opener.copied.isEmpty());
+    }
+
+    void opensNothingWithoutAnOpener()
+    {
+        Signing s;
+        s.session.openSignIn();
     }
 };
 

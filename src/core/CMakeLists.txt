@@ -10,6 +10,7 @@ add_library(pou_core STATIC
     characterstore.cpp characterstore.h
     datafiles.cpp datafiles.h
     evaluation.cpp evaluation.h
+    firstrun.cpp firstrun.h
     gearscore.cpp gearscore.h
     ignore.cpp ignore.h
     item.h
@@ -18,15 +19,19 @@ add_library(pou_core STATIC
     numbers.cpp numbers.h
     parser.cpp parser.h
     placement.cpp placement.h
+    places.cpp places.h
     pobbuild.cpp pobbuild.h
     pobeval.cpp pobeval.h
+    pobguide.cpp pobguide.h
     pobinstall.cpp pobinstall.h
     pobverdict.cpp pobverdict.h
     pobweighing.cpp pobweighing.h
     ratelimit.cpp ratelimit.h
+    recommendations.cpp recommendations.h
     rates.cpp rates.h
     resists.cpp resists.h
     scorer.cpp scorer.h
+    sessionguide.cpp sessionguide.h
     seenstats.cpp seenstats.h
     settings.cpp settings.h
     slots.cpp slots.h
@@ -42,4 +47,5 @@ add_library(pou_core STATIC
 )
 
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
+target_compile_definitions(pou_core PRIVATE POU_BETA_BUILD=$<BOOL:${POU_BETA}>)
 target_link_libraries(pou_core PUBLIC Qt6::Core PRIVATE ZLIB::ZLIB)

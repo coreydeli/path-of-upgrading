@@ -10,14 +10,21 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // Your characters, the one you play, and the Path of Building builds you
 // import for them.
-FormCard.FormCardPage {
+ColumnsPage {
     id: charactersPage
 
     required property App app
     readonly property CharacterList characters: app.characterList
     readonly property BuildImporter importer: app.buildImporter
 
+    // for the window to show the gear page
+    signal gearAsked
+
     title: qsTr("Characters")
+    description: qsTr("The characters you play, and the builds that give them gear.")
+    // On a wide window the list is on the left, with the one you play beside
+    // it and the builds you can import for it. Narrower, it's one column.
+    maxColumns: wide ? 2 : 3
 
     // for builds you've saved in Path of Building since
     onIsCurrentPageChanged: {
@@ -25,7 +32,8 @@ FormCard.FormCardPage {
             importer.refreshBuilds();
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
+        column: charactersPage.wide ? 0 : -1
         title: qsTr("Your Characters")
     }
 
@@ -48,37 +56,53 @@ FormCard.FormCardPage {
                 required property string characterId
                 required property string name
                 required property string build
+                required property string profile
+                required property string score
+                required property string grade
 
                 objectName: "character:" + name
                 text: name
                 description: build !== "" ? build : qsTr("No build imported")
+                detail: score !== "" ? qsTr("Gear score goes by %1").arg(profile) : ""
                 // the list says which it is, so it stays right when that
                 // changes some other way
                 checked: characterId === charactersPage.characters.current
                 focusPolicy: Qt.StrongFocus
                 // FormDelegateBackground's, but Kirigami Addons 1.7's reads
                 // the row's card, which a removed row no longer has
-                background: Kirigami.ShadowedRectangle {
-                    readonly property var card: characterRow.parent
-                    readonly property real cornerRadius: card?._cornerRadius ?? 0
-                    readonly property real topRadius: card?._firstVisibleItem === characterRow ? cornerRadius : 0
-                    readonly property real bottomRadius: card?._lastVisibleItem === characterRow ? cornerRadius : 0
+                background: Item {
+                    Kirigami.ShadowedRectangle {
+                        readonly property var card: characterRow.parent
+                        readonly property real cornerRadius: card?._cornerRadius ?? 0
+                        readonly property real topRadius: card?._firstVisibleItem === characterRow ? cornerRadius : 0
+                        readonly property real bottomRadius: card?._lastVisibleItem === characterRow ? cornerRadius : 0
 
-                    color: Kirigami.Theme.textColor
-                    opacity: !characterRow.enabled ? 0 : characterRow.pressed ? 0.2 : characterRow.visualFocus ? 0.1 : !Kirigami.Settings.tabletMode && characterRow.hovered ? 0.07 : 0
-                    corners {
-                        topLeftRadius: topRadius
-                        topRightRadius: topRadius
-                        bottomLeftRadius: bottomRadius
-                        bottomRightRadius: bottomRadius
-                    }
+                        anchors.fill: parent
+                        color: Kirigami.Theme.textColor
+                        opacity: !characterRow.enabled ? 0 : characterRow.pressed ? 0.2 : characterRow.visualFocus ? 0.1 : !Kirigami.Settings.tabletMode && characterRow.hovered ? 0.07 : 0
+                        corners {
+                            topLeftRadius: topRadius
+                            topRightRadius: topRadius
+                            bottomLeftRadius: bottomRadius
+                            bottomRightRadius: bottomRadius
+                        }
 
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: Kirigami.Units.shortDuration
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: Kirigami.Units.shortDuration
+                            }
                         }
                     }
+
+                    // the one you play is framed in gold
+                    OrnateFrame {
+                        objectName: "playedFrame"
+                        anchors.fill: parent
+                        visible: characterRow.checked
+                        lit: true
+                    }
                 }
+
                 Accessible.role: Accessible.RadioButton
                 Accessible.checkable: true
                 Accessible.checked: checked
@@ -94,8 +118,30 @@ FormCard.FormCardPage {
                     onClicked: characterRow.clicked()
                 }
 
+                ScoreGauge {
+                    objectName: "rowScore"
+                    visible: characterRow.score !== ""
+                    score: characterRow.score
+                    grade: characterRow.grade
+                    size: "small"
+                }
+
+                // the gear page is of the one you play
+                QQC2.Button {
+                    objectName: "gearButton"
+                    visible: !charactersPage.wide
+                    text: qsTr("View Gear")
+                    icon.name: "view-list-details"
+                    Accessible.name: qsTr("View Gear of %1").arg(characterRow.name)
+                    onClicked: {
+                        charactersPage.characters.current = characterRow.characterId;
+                        charactersPage.gearAsked();
+                    }
+                }
+
                 QQC2.ToolButton {
                     objectName: "renameButton"
+                    visible: !charactersPage.wide
                     text: qsTr("Rename")
                     icon.name: "edit-rename"
                     display: QQC2.AbstractButton.IconOnly
@@ -108,6 +154,7 @@ FormCard.FormCardPage {
 
                 QQC2.ToolButton {
                     objectName: "removeButton"
+                    visible: !charactersPage.wide
                     text: qsTr("Remove")
                     icon.name: "edit-delete"
                     display: QQC2.AbstractButton.IconOnly
@@ -148,7 +195,8 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
+        column: charactersPage.wide ? 0 : -1
         title: qsTr("Add a Character")
     }
 
@@ -177,7 +225,26 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
+        objectName: "playedHeader"
+        visible: charactersPage.wide && charactersPage.characters.current !== ""
+        column: charactersPage.wide ? 1 : -1
+        title: qsTr("The Character You Play")
+    }
+
+    CharacterPanel {
+        objectName: "characterPanel"
+        Layout.fillWidth: true
+        Layout.margins: charactersPage.gutter
+        visible: charactersPage.wide && charactersPage.characters.current !== ""
+        app: charactersPage.app
+        onGearAsked: charactersPage.gearAsked()
+        onRenameAsked: renameDialog.ask(charactersPage.characters.current, charactersPage.app.gearList.character)
+        onRemoveAsked: removeDialog.ask(charactersPage.characters.current, charactersPage.app.gearList.character)
+    }
+
+    SectionHeader {
+        column: charactersPage.wide ? 1 : -1
         title: qsTr("Import a Build")
     }
 
@@ -195,6 +262,9 @@ FormCard.FormCardPage {
         FormCard.FormButtonDelegate {
             id: importButton
             objectName: "importButton"
+            // the main thing on the page
+            icon.color: Style.gold(charactersPage.Kirigami.Theme)
+            font.weight: Font.DemiBold
             text: charactersPage.importer.busy ? qsTr("Downloading the Build") : qsTr("Import")
             description: qsTr("Its gear goes on the character you play, or on a new one when you have none. Items you copied in the game stay, as they say more.")
             icon.name: "document-import"
@@ -226,8 +296,9 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         visible: savedBuilds.visible
+        column: charactersPage.wide ? 1 : -1
         title: qsTr("Saved in Path of Building")
     }
 

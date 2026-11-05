@@ -12,6 +12,33 @@
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
+namespace {
+
+// The ways a gear score falls short, a note each.
+QList<GearNote> notesOf(const GearScore &gear)
+{
+    QList<GearNote> notes;
+    if (!gear.missing.isEmpty())
+        notes << GearNote{.label = u"Missing"_s, .text = gear.missing.join(u", "_s)};
+    if (!gear.notScored.isEmpty())
+        notes << GearNote{.label = u"Not scored"_s, .text = notScoredStats(gear).join(u", "_s)};
+    if (const QStringList weak = weakRolls(gear); !weak.isEmpty())
+        notes << GearNote{.label = u"Weak rolls"_s, .text = weak.join(u", "_s) + u" of an excellent roll"_s};
+    return notes;
+}
+
+// What the build wants most in a slot with nothing in it.
+QList<GearNote> wantedIn(const QString &slot, const GearScoreOptions &options)
+{
+    QStringList labels;
+    for (const KeyStat &stat : topStats(slot, 3, options))
+        labels << stat.label;
+    if (labels.isEmpty())
+        return {};
+    return {GearNote{.label = u"Wants most"_s, .text = labels.join(u", "_s)}};
+}
+
+} // namespace
 
 GearList::GearList(ActiveCharacter *active, SettingsStore *settings, QObject *parent)
     : QAbstractListModel(parent)
@@ -57,6 +84,13 @@ QVariant GearList::data(const QModelIndex &index, int role) const
         return row.grade;
     case ExtraRole:
         return !mainSlots().contains(row.slot);
+    case NotesRole:
+        return QVariant::fromValue(row.notes);
+    case RarityRole:
+        return worn ? item->rarity : QString();
+    case FirstRole:
+        return index.row() == 0 ||
+               mainSlots().contains(m_rows.at(index.row() - 1).slot) != mainSlots().contains(row.slot);
     }
     return {};
 }
@@ -64,8 +98,9 @@ QVariant GearList::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> GearList::roleNames() const
 {
     return {
-        {SlotRole, "slot"},   {NameRole, "name"},   {BaseRole, "base"},   {FromPobRole, "fromPob"},
-        {ScoreRole, "score"}, {GradeRole, "grade"}, {ExtraRole, "extra"},
+        {SlotRole, "slot"},   {NameRole, "name"},     {BaseRole, "base"},   {FromPobRole, "fromPob"},
+        {ScoreRole, "score"}, {GradeRole, "grade"},   {ExtraRole, "extra"}, {NotesRole, "notes"},
+        {FirstRole, "first"}, {RarityRole, "rarity"},
     };
 }
 
@@ -96,23 +131,24 @@ void GearList::refresh()
 
     beginResetModel();
     m_rows.clear();
-    if (m_active->exists()) {
-        for (const QString &slot : allSlots()) {
-            const auto item = character.gear.constFind(slot);
-            if (item == character.gear.cend()) {
-                if (mainSlots().contains(slot))
-                    m_rows << Row{.slot = slot};
-                continue;
-            }
-            Row row{.slot = slot};
-            const std::optional<GearScore> score =
-                gearScore(*item, gearScoreOptions(character, slot, m_priorities));
-            if (score && score->isRated()) {
-                row.score = score->score;
-                row.grade = score->grade;
-            }
-            m_rows << row;
+    // the main slots are there to fill even before there's a character
+    for (const QString &slot : allSlots()) {
+        const auto item = character.gear.constFind(slot);
+        const GearScoreOptions options = gearScoreOptions(character, slot, m_priorities);
+        if (item == character.gear.cend()) {
+            if (mainSlots().contains(slot))
+                m_rows << Row{
+                    .slot = slot, .score = std::nullopt, .grade = {}, .notes = wantedIn(slot, options)};
+            continue;
         }
+        Row row{.slot = slot};
+        const std::optional<GearScore> score = gearScore(*item, options);
+        if (score && score->isRated()) {
+            row.score = score->score;
+            row.grade = score->grade;
+            row.notes = notesOf(*score);
+        }
+        m_rows << row;
     }
 
     // the scores worked out above
@@ -126,18 +162,6 @@ void GearList::refresh()
     const std::optional<double> overall = overallGearScore(character.gear, slotScore);
     m_overall = overall ? QString::number(*overall) : QString();
     m_overallGrade = overall ? gearGrade(int(*overall)) : QString();
-
-    QList<const Row *> rated;
-    for (const Row &row : std::as_const(m_rows)) {
-        if (row.score && mainSlots().contains(row.slot))
-            rated << &row;
-    }
-    std::stable_sort(rated.begin(), rated.end(),
-                     [](const Row *a, const Row *b) { return *a->score < *b->score; });
-    QStringList weakest;
-    for (const Row *row : rated.first(std::min<qsizetype>(3, rated.size())))
-        weakest << row->slot + u' ' + QString::number(*row->score);
-    m_weakest = weakest.join(u", "_s);
     endResetModel();
     Q_EMIT changed();
 }

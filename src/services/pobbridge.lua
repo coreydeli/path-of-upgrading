@@ -126,7 +126,7 @@ answer({ready = true, version = launch.versionNumber})
 -- The numbers items are judged by, by Path of Building's names for them.
 local statNames = {
     "FullDPS", "CombinedDPS", "TotalDPS", "TotalEHP",
-    "Life", "EnergyShield", "Mana", "Spirit", "SpiritUnreserved",
+    "Life", "EnergyShield", "Armour", "Evasion", "Mana", "Spirit", "SpiritUnreserved",
     "Str", "Dex", "Int", "ReqStr", "ReqDex", "ReqInt",
 }
 for _, element in ipairs({"Fire", "Cold", "Lightning", "Chaos"}) do

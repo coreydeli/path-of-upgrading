@@ -7,11 +7,14 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // Whether the popup searches the trade site, in which league, for what
 // you'll pay, and whether you're signed in to it.
-FormCard.FormCardPage {
+ColumnsPage {
     id: tradePage
 
     required property TradeOptions options
     required property TradeSession session
+
+    // the steps for finding the session ID
+    property bool showFindSession: false
     readonly property var sellers: [
         {
             value: "available",
@@ -46,6 +49,7 @@ FormCard.FormCardPage {
     ]
 
     title: qsTr("Trade")
+    description: qsTr("Searching the trade site from the popup, the league and what you will pay.")
 
     FormCard.FormCard {
         Layout.topMargin: Kirigami.Units.largeSpacing
@@ -53,7 +57,7 @@ FormCard.FormCardPage {
         SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Search the trade site")
-            description: qsTr("From the popup, for upgrades and for items like the one you checked.")
+            description: tradePage.options.stillTesting ? qsTr("From the popup, for upgrades and for items like the one you checked. They're still being tested in this release, so a search can fail on an item with a lot of stats.") : qsTr("From the popup, for upgrades and for items like the one you checked.")
             checked: tradePage.options.enabled
             onToggled: tradePage.options.enabled = checked
         }
@@ -65,14 +69,13 @@ FormCard.FormCardPage {
         FormCard.FormTextDelegate {
             id: unavailableText
             objectName: "unavailableText"
-            // the switch says when it's off
-            visible: tradePage.options.enabled && tradePage.options.unavailable !== ""
+            visible: tradePage.options.unavailable !== ""
             text: tradePage.options.unavailable
             textItem.wrapMode: Text.Wrap
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("League")
     }
 
@@ -127,7 +130,7 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Listings")
     }
 
@@ -143,14 +146,15 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Budget")
     }
 
     FormCard.FormCard {
         NumberField {
             objectName: "budgetMin"
-            label: qsTr("From")
+            label: qsTr("Lowest price")
+            description: qsTr("Listings cheaper than this are left out.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -162,7 +166,8 @@ FormCard.FormCardPage {
 
         NumberField {
             objectName: "budgetMax"
-            label: qsTr("Up to")
+            label: qsTr("Highest price")
+            description: qsTr("Listings that cost more are left out.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -174,7 +179,8 @@ FormCard.FormCardPage {
 
         FormCard.FormComboBoxDelegate {
             objectName: "currencyBox"
-            text: qsTr("In")
+            text: qsTr("Currency")
+            description: qsTr("What the lowest and highest price are counted in.")
             textRole: "text"
             valueRole: "value"
             model: tradePage.currencies
@@ -186,8 +192,8 @@ FormCard.FormCardPage {
 
         SwitchRow {
             objectName: "autoRateSwitch"
-            text: qsTr("Go by poe.ninja's rate")
-            description: tradePage.options.ninjaRate > 0 ? qsTr("A Divine Orb is %1 Exalted Orbs in %2.").arg(Math.round(tradePage.options.ninjaRate)).arg(tradePage.options.searchedLeague) : qsTr("It hasn't said yet, so it goes by yours.")
+            text: qsTr("Use poe.ninja's currency prices")
+            description: tradePage.options.ninjaRate > 0 ? qsTr("poe.ninja is a site that tracks what currency trades for in each league. Its price for a Divine Orb turns your budget into one currency. Right now a Divine Orb is %1 Exalted Orbs in %2.").arg(Math.round(tradePage.options.ninjaRate)).arg(tradePage.options.searchedLeague) : qsTr("poe.ninja is a site that tracks what currency trades for in each league. Its price for a Divine Orb turns your budget into one currency. It has no price yet.")
             checked: tradePage.options.autoRate
             onToggled: tradePage.options.autoRate = checked
         }
@@ -195,18 +201,32 @@ FormCard.FormCardPage {
         FormCard.FormDelegateSeparator {}
 
         NumberField {
+            objectName: "rateMinutes"
+            label: qsTr("Update poe.ninja's prices every")
+            description: tradePage.options.ratesStatus === "" ? qsTr("How many minutes to wait between updates.") : qsTr("How many minutes to wait between updates. %1").arg(tradePage.options.ratesStatus)
+            minimum: 1
+            maximum: 60
+            enabled: tradePage.options.autoRate
+            value: tradePage.options.rateMinutes
+            onEdited: value => tradePage.options.rateMinutes = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        NumberField {
             objectName: "divineRate"
             label: qsTr("Exalted Orbs to a Divine Orb")
+            description: qsTr("Used when poe.ninja's prices are off, or it has no price yet.")
             noneText: qsTr("Not set")
             decimals: 1
-            // poe.ninja's goes before it while there is one
+            // poe.ninja's price goes before it while there is one
             enabled: !tradePage.options.autoRate || tradePage.options.ninjaRate === 0
             value: tradePage.options.divineRate
             onEdited: value => tradePage.options.divineRate = value
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Signed In")
     }
 
@@ -246,6 +266,7 @@ FormCard.FormCardPage {
             QQC2.Button {
                 id: saveButton
                 objectName: "saveButton"
+                highlighted: true
                 text: qsTr("Save")
                 enabled: sessionField.text.trim() !== ""
                 onClicked: tradePage.session.save(sessionField.text)
@@ -271,9 +292,46 @@ FormCard.FormCardPage {
             textItem.wrapMode: Text.Wrap
             textItem.color: Kirigami.Theme.negativeTextColor
         }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormButtonDelegate {
+            objectName: "findSessionButton"
+            text: tradePage.showFindSession ? qsTr("Hide Where to Find It") : qsTr("Where Do I Find It?")
+            description: qsTr("It's a cookie in your browser, from signing in to the Path of Exile website.")
+            icon.name: tradePage.showFindSession ? "arrow-up" : "arrow-down"
+            onClicked: tradePage.showFindSession = !tradePage.showFindSession
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: findSessionSteps.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: findSessionSteps
+            objectName: "findSessionSteps"
+            visible: tradePage.showFindSession
+            text: tradePage.session.findSteps.join("\n")
+            description: tradePage.session.findNotes.join(" ")
+            textItem.wrapMode: Text.Wrap
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: signInButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: signInButton
+            objectName: "signInButton"
+            visible: tradePage.showFindSession
+            text: qsTr("Open the Sign In Page")
+            description: qsTr("The Path of Exile website, in your browser.")
+            icon.name: "internet-web-browser"
+            onClicked: tradePage.session.openSignIn()
+        }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "sessionHelp"
         text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. Signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
     }

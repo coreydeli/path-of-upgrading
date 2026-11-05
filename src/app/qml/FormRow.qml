@@ -12,6 +12,13 @@ FormCard.AbstractFormDelegate {
     id: row
 
     property string description
+    // a smaller line under the description
+    property string detail
+    // Set for a row of a table, with the description in a column of its own
+    // and the controls in one, as wide as these. Rows with the same widths
+    // line their columns up, and a TableHeader over them takes the same.
+    property real descriptionWidth: 0
+    property real controlsWidth: 0
     // on the left, like a radio button
     property alias leading: leadingRow.data
     default property alias controls: controlsRow.data
@@ -43,15 +50,35 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "descriptionText"
                 Layout.fillWidth: true
-                visible: row.description !== ""
+                visible: row.description !== "" && row.descriptionWidth <= 0
                 text: row.description
                 color: Kirigami.Theme.disabledTextColor
                 wrapMode: Text.Wrap
             }
+
+            QQC2.Label {
+                objectName: "detailText"
+                Layout.fillWidth: true
+                visible: row.detail !== ""
+                text: row.detail
+                color: Kirigami.Theme.disabledTextColor
+                font: Kirigami.Theme.smallFont
+                elide: Text.ElideRight
+            }
+        }
+
+        QQC2.Label {
+            objectName: "descriptionCell"
+            Layout.preferredWidth: row.descriptionWidth
+            visible: row.descriptionWidth > 0
+            text: row.description
+            color: Kirigami.Theme.disabledTextColor
+            wrapMode: Text.Wrap
         }
 
         RowLayout {
             id: controlsRow
+            Layout.preferredWidth: row.controlsWidth > 0 ? row.controlsWidth : -1
             visible: children.length > 0
             spacing: Kirigami.Units.smallSpacing
         }

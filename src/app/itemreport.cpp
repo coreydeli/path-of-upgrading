@@ -41,6 +41,8 @@ Words wordsFor(Verdict verdict)
         return {u"Loses resistance"_s, Tone::Bad};
     case Verdict::DamageLoss:
         return {u"Loses damage"_s, Tone::Bad};
+    case Verdict::DefenceLoss:
+        return {u"Loses defences"_s, Tone::Bad};
     case Verdict::Equipped:
         return {u"Equipped"_s, Tone::Plain};
     }
@@ -60,7 +62,9 @@ void putScore(ItemReport &report, const Evaluation &e)
     switch (e.mode) {
     case ScoreMode::PathOfBuilding:
         // a loss with a score above 0 would read like an upgrade
-        if ((r.verdict == Verdict::ResistLoss || r.verdict == Verdict::DamageLoss) && r.delta > 0)
+        if ((r.verdict == Verdict::ResistLoss || r.verdict == Verdict::DamageLoss ||
+             r.verdict == Verdict::DefenceLoss) &&
+            r.delta > 0)
             return;
         report.score = signedNumber(r.delta) + u'%';
         report.scoreLabel = u"for your build"_s;
@@ -399,14 +403,10 @@ QStringList gearNotesOf(const GearScore &gear)
     QStringList notes;
     if (!gear.resistNote.isEmpty())
         notes << gear.resistNote;
-    if (!gear.wasted.isEmpty()) {
-        QStringList names;
-        for (const QString &key : gear.wasted)
-            names << statName(key);
-        notes << u"Not used by your build: "_s + names.join(u", "_s) + u'.';
-    }
-    if (!gear.missing.isEmpty())
-        notes << u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
+    if (const QString unscored = notScoredNote(gear); !unscored.isEmpty())
+        notes << unscored;
+    if (const QString missing = missingNote(gear); !missing.isEmpty())
+        notes << missing;
     return notes;
 }
 
@@ -420,6 +420,36 @@ QString openAffixesOf(const Affixes &affixes)
     if (open.isEmpty())
         return u"No open affixes"_s;
     return u"Open affixes: "_s + open.join(u", "_s);
+}
+
+// What the item does in one place, by the same measure as its verdict.
+ReportPlacement placementOf(const PlaceChange &place)
+{
+    ReportPlacement p{.slot = place.slot,
+                      .wearing = place.wearing.isEmpty() ? u"Empty"_s : place.wearing,
+                      .best = place.best};
+    const auto add = [&p](const QString &label, double change, const QString &unit = {}) {
+        p.changes << ReportFigure{
+            .label = label, .change = signedNumber(change) + unit, .tone = toneOf(change)};
+    };
+    switch (place.mode) {
+    case ScoreMode::PathOfBuilding:
+        if (place.damage)
+            add(place.minionDamage ? u"Minion DPS"_s : u"DPS"_s, *place.damage, u"%"_s);
+        if (place.ehp)
+            add(u"Effective HP"_s, *place.ehp, u"%"_s);
+        // nothing to measure the others against
+        if (p.changes.isEmpty())
+            add(u"for your build"_s, place.score, u"%"_s);
+        break;
+    case ScoreMode::GearScores:
+        add(u"gear score"_s, place.score);
+        break;
+    case ScoreMode::StatWeights:
+        add(u"by your weights"_s, place.score);
+        break;
+    }
+    return p;
 }
 
 bool isUnique(const Item &item)
@@ -441,6 +471,8 @@ ItemReport reportOf(const ItemCheck &check)
     report.gear = !item.slot.isEmpty();
     if (!r.isEquipped)
         report.wearIn = slotsFor(item);
+    for (const PlaceChange &place : check.places)
+        report.placements << placementOf(place);
     if (!item.baseType.isEmpty() && item.baseType != item.name)
         report.details << item.baseType;
     if (!item.itemClass.isEmpty())

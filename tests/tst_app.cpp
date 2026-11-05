@@ -8,11 +8,13 @@
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
+#include "fakeopener.h"
 #include "fakepob.h"
 #include "fakesecretstore.h"
 #include "itemtexts.h"
 #include "tradefixtures.h"
 
+#include <QDir>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -50,8 +52,11 @@ struct Folders
     CharacterStore characters{dir.filePath(u"data/characters"_s)};
     FakePob pob;
 
+    // Trade searches are on, which only a beta starts with, unless the test
+    // sets the settings.
     Folders()
     {
+        set(Settings());
         QFile wrapper(pob.folder.filePath(u"HeadlessWrapper.lua"_s));
         if (wrapper.open(QIODevice::WriteOnly))
             wrapper.close();
@@ -72,6 +77,15 @@ struct Folders
     }
 
     void set(const Settings &settings) const { SettingsStore(paths.settings).set(settings); }
+
+    // Takes the settings away, as before the first start. There may be none
+    // to take: a beta starts with trade searches on already, so there was
+    // nothing to save for them.
+    bool firstStart() const
+    {
+        QFile::remove(paths.settings);
+        return !QFile::exists(paths.settings);
+    }
 };
 
 // What the desktop has for the app's shortcuts before it starts.
@@ -157,8 +171,8 @@ struct Running
         , keyring(theirKeyring)
         , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
-              std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
-              folders.places(), folders.paths)
+              std::unique_ptr<SecretStore>(keyring), std::make_unique<FakeOpener>(),
+              std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths)
     {}
 
     // once the keyring has said, which it does a moment after the app starts
@@ -202,6 +216,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+        // Fusion, as on Linux, as Windows' own style can't draw offscreen
+        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
         // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
         // platform plugin of its own
         qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
@@ -331,8 +347,8 @@ private Q_SLOTS:
         Running r(folders);
         r.app.pobOptions()->setLocation(folders.pob.folder.path());
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
-        QCOMPARE(r.app.pobOptions()->found(),
-                 u"Using Path of Building in %1."_s.arg(folders.pob.folder.path()));
+        QCOMPARE(r.app.pobOptions()->headline(), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(r.app.pobOptions()->installedAt(), QDir::toNativeSeparators(folders.pob.folder.path()));
 
         QVERIFY(r.app.overlayOptions()->setCheckKey(QKeySequence(u"F6"_s)));
         QCOMPARE(r.shortcuts->keys.value(u"check-item"_s), QKeySequence(u"F6"_s));
@@ -410,7 +426,7 @@ private Q_SLOTS:
         QVERIFY(r.app.settings().set(settings));
         QCOMPARE(panel.scale(), 1.5);
         QVERIFY(!panel.isColorblind());
-        QCOMPARE(panel.unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(panel.unavailable(), tradeUnavailable({.enabled = false}));
 
         settings.trade.enabled = true;
         QVERIFY(r.app.settings().set(settings));
@@ -489,16 +505,96 @@ private Q_SLOTS:
         QCOMPARE(r.app.settings().settings().overlay.resultsHotkey, u"Ctrl+T"_s);
     }
 
+    void firstRunShowsTheSetup()
+    {
+        Folders folders;
+        QVERIFY(folders.firstStart());
+        Running r(folders);
+        QVERIFY(r.app.onboarding()->isPending());
+        QCOMPARE(r.app.onboarding()->hotkey(), QKeySequence(u"F2"_s).toString(QKeySequence::NativeText));
+    }
+
+    void setupStaysUntilItsDone()
+    {
+        Folders folders;
+        QVERIFY(folders.firstStart());
+        {
+            Running quit(folders);
+            QVERIFY(quit.app.onboarding()->isPending());
+        }
+        // Where the first start wrote its own settings (autostart, the
+        // hotkeys), they aren't a choice. Windows writes none.
+        Running again(folders);
+        QVERIFY(again.app.onboarding()->isPending());
+        QVERIFY(!again.app.settings().settings().setupDone);
+    }
+
+    void finishingTheSetupIsKept()
+    {
+        Folders folders;
+        QVERIFY(folders.firstStart());
+        {
+            Running r(folders);
+            QSignalSpy pending(r.app.onboarding(), &Onboarding::pendingChanged);
+            r.app.onboarding()->finish();
+            QCOMPARE(pending.size(), 1);
+            QVERIFY(!r.app.onboarding()->isPending());
+            QVERIFY(r.app.settings().settings().setupDone);
+        }
+        Running again(folders);
+        QVERIFY(!again.app.onboarding()->isPending());
+        QVERIFY(again.app.settings().settings().setupDone);
+    }
+
+    void setupAskedForAgain()
+    {
+        Folders folders;
+        QVERIFY(folders.firstStart());
+        {
+            Running r(folders);
+            r.app.onboarding()->finish();
+            r.app.onboarding()->ask();
+            QVERIFY(r.app.onboarding()->isPending());
+            // it was done, and asking doesn't undo that
+            QVERIFY(r.app.settings().settings().setupDone);
+        }
+        Running again(folders);
+        QVERIFY(!again.app.onboarding()->isPending());
+    }
+
+    void noSetupForSettingsYouChanged()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.league.name = u"Standard"_s;
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(!r.app.onboarding()->isPending());
+        // and it didn't record anything
+        QVERIFY(!r.app.settings().settings().setupDone);
+    }
+
+    void noSetupForCharacters()
+    {
+        Folders folders;
+        QVERIFY(folders.firstStart());
+        folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
+        Running r(folders);
+        QVERIFY(!r.app.onboarding()->isPending());
+    }
+
     void startsWithTheDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         const QString name = QGuiApplication::applicationDisplayName();
         const QString file = QGuiApplication::desktopFileName();
         QGuiApplication::setApplicationDisplayName(u"Made-up Program"_s);
         QGuiApplication::setDesktopFileName(u"io.example.MadeUp"_s);
         Folders folders;
         Running r(folders);
-        QVERIFY(!r.app.overlayOptions()->startsWithDesktop());
-        r.app.overlayOptions()->setStartWithDesktop(true);
+        // as it is the first time
         QVERIFY(r.app.overlayOptions()->startsWithDesktop());
 
         QFile entry(folders.paths.autostart);
@@ -510,6 +606,23 @@ private Q_SLOTS:
         QVERIFY(text.contains(u"\nIcon=io.example.MadeUp\n"_s));
         QGuiApplication::setApplicationDisplayName(name);
         QGuiApplication::setDesktopFileName(file);
+    }
+
+    void startsWithTheDesktopUnlessTurnedOff()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Folders folders;
+        {
+            Running first(folders);
+            QVERIFY(first.app.overlayOptions()->startsWithDesktop());
+            QVERIFY(QFile::exists(folders.paths.autostart));
+            first.app.overlayOptions()->setStartWithDesktop(false);
+        }
+        Running again(folders);
+        QVERIFY(!again.app.overlayOptions()->startsWithDesktop());
+        QVERIFY(!QFile::exists(folders.paths.autostart));
     }
 
     void withoutAFileToStartFrom()
@@ -524,6 +637,9 @@ private Q_SLOTS:
 
     void foldersOnTheDesktop()
     {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
         QTemporaryDir config;
         qputenv("XDG_CONFIG_HOME", config.path().toUtf8());
         const QString file = QGuiApplication::desktopFileName();
@@ -583,11 +699,40 @@ private Q_SLOTS:
 
     void wearForNobody()
     {
+        // which makes a character to wear it, and plays it from then on
         Folders folders;
         Running r(folders);
         r.checked();
+        QVERIFY(r.app.characters().ids().isEmpty());
         r.app.checker().popup().wear(u"Helmet"_s);
-        QCOMPARE(r.app.checker().popup().wearError(), u"There's no character to wear it. Add one first."_s);
+        QCOMPARE(r.app.checker().popup().wearError(), QString());
+        QCOMPARE(r.app.characters().ids().size(), 1);
+        const QString id = r.app.characters().ids().value(0);
+        QCOMPARE(r.app.settings().settings().character, id);
+        QCOMPARE(r.app.character().id(), id);
+        QCOMPARE(r.app.character().character().name, u"My character"_s);
+        QCOMPARE(r.app.characters().find(id)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+        QCOMPARE(r.app.characterList()->current(), id);
+        QCOMPARE(r.app.characterList()->rowCount(), 1);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+
+        // and it is still the one next time
+        Running again(folders);
+        QCOMPARE(again.app.character().character().name, u"My character"_s);
+        QCOMPARE(again.app.character().character().gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
+    }
+
+    void gearScoringForNobody()
+    {
+        // changing how items are judged makes one too
+        Folders folders;
+        Running r(folders);
+        r.app.gearScoring()->setProfile(1);
+        QCOMPARE(r.app.characters().ids().size(), 1);
+        QCOMPARE(r.app.character().character().name, u"My character"_s);
+        QCOMPARE(r.app.character().character().buildProfile, u"es-caster"_s);
+        QCOMPARE(r.app.gearScoring()->profile(), 1);
+        QCOMPARE(r.app.gearScoring()->error(), QString());
     }
 
     void gearScoring()
@@ -735,11 +880,13 @@ private Q_SLOTS:
         settings.trade.enabled = false;
         folders.set(settings);
         Running r(folders);
-        QCOMPARE(r.app.trade().unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(r.app.trade().unavailable(), tradeUnavailable({.enabled = false}));
         // and neither site is asked anything
         QVERIFY(r.asked().isEmpty());
-        // nor has the popup buttons for it
+        // nor has the popup buttons for it, which says why
         QVERIFY(!r.app.checker().popup().isTradeAvailable());
+        QCOMPARE(r.app.checker().popup().tradeNote(), r.app.trade().unavailable());
+        QVERIFY(!r.app.checker().popup().tradeNote().isEmpty());
 
         // until it's on
         settings.trade.enabled = true;
@@ -748,6 +895,70 @@ private Q_SLOTS:
         QCOMPARE(r.asked().size(), 4);
         QVERIFY(r.app.trade().unavailable().isEmpty());
         QVERIFY(r.app.checker().popup().isTradeAvailable());
+        QVERIFY(r.app.checker().popup().tradeNote().isEmpty());
+    }
+
+    void tradeStartsByTheBuild()
+    {
+        // with nothing chosen, a beta searches and a release waits to be asked
+        Folders folders;
+        QFile::remove(folders.paths.settings);
+        QVERIFY(!QFile::exists(folders.paths.settings));
+        Running r(folders);
+        QCOMPARE(r.app.trade().unavailable().isEmpty(), isBetaBuild());
+        QCOMPARE(r.app.checker().popup().isTradeAvailable(), isBetaBuild());
+        QCOMPARE(r.app.checker().popup().tradeNote(), r.app.trade().unavailable());
+        QCOMPARE(r.asked().isEmpty(), !isBetaBuild());
+
+        // and what you choose is what it keeps
+        r.app.tradeOptions()->setEnabled(!isBetaBuild());
+        QCOMPARE(r.app.checker().popup().isTradeAvailable(), !isBetaBuild());
+        QCOMPARE(SettingsStore(folders.paths.settings).settings().trade.enabled, !isBetaBuild());
+    }
+
+    void ratesAreKeptFresh()
+    {
+        Folders folders;
+        Running r(folders);
+        QVERIFY(r.rated());
+        RatesRefresher &refresher = r.app.ratesRefresher();
+        QVERIFY(refresher.isRunning());
+        // for the league the site said to search
+        QCOMPARE(refresher.league(), u"Runes of Aldur"_s);
+        QCOMPARE(refresher.waitMinutes(), 10);
+
+        Settings settings = r.app.settings().settings();
+        settings.trade.rateMinutes = 25;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(refresher.isRunning());
+        QCOMPARE(refresher.waitMinutes(), 25);
+
+        // but not when it doesn't go by poe.ninja's rate
+        settings.trade.autoRate = false;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!refresher.isRunning());
+        settings.trade.autoRate = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(refresher.isRunning());
+
+        // nor with no trade searches
+        settings.trade.enabled = false;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!refresher.isRunning());
+        settings.trade.enabled = true;
+        settings.trade.league.soloSelfFound = true;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!refresher.isRunning());
+    }
+
+    void ratesAreNotKeptFreshWhileTradeIsOff()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.enabled = false;
+        folders.set(settings);
+        Running r(folders);
+        QVERIFY(!r.app.ratesRefresher().isRunning());
     }
 
     void statPicker()

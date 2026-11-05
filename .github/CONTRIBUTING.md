@@ -6,9 +6,10 @@ code building, and what a change needs before it can be merged. The
 
 ## Before you start
 
-Linux comes first, with KDE Plasma on Wayland as the first desktop. Windows
-support comes later. Anything specific to an operating system or a desktop
-belongs in `src/platform`, and the rest of the code shouldn't depend on it.
+Linux comes first, with KDE Plasma on Wayland as the first desktop, and
+there is a Windows version too. Anything specific to an operating system or a
+desktop belongs in `src/platform`, and the rest of the code shouldn't depend
+on it. The Windows code is in `src/platform/win`, behind `Q_OS_WIN`.
 
 For anything bigger than a small fix, open an issue first and describe what
 you want to change. That saves you work if it's out of scope or someone is
@@ -34,15 +35,22 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
+The beta releases add `-DPOU_BETA=ON` to the configure step, which starts trade
+searches on. Add it when you're testing that.
+
 Run the tests on the private bus the README describes:
 
 ```bash
 cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 ```
 
-CI builds on Arch Linux and on Debian 13, checks the formatting, treats
-warnings as errors and runs every test. A change has to pass all of it. The
-steps are in `.github/workflows/ci.yml`.
+CI builds on Arch Linux, on Debian 13 and on Windows in MSYS2, checks the
+formatting, treats warnings as errors and runs every test. A change has to
+pass all of it. The steps are in `.github/workflows/ci.yml`.
+
+A change to nothing but Markdown files, the `docs` folder or the issue forms
+skips those builds, and they show as skipped, which counts as a pass. Pushes
+to `main` and `beta` always build.
 
 ## Branches and pull requests
 
@@ -51,8 +59,13 @@ steps are in `.github/workflows/ci.yml`.
 2. Make small commits, each one a single step. Write each title as a short
    imperative sentence, such as "Keep the popup's place up to date as it
    grows". Don't reuse a commit title.
-3. Open a pull request into `beta` and fill in the template. Keep each pull
-   request to one change.
+3. Open a pull request into `beta` and fill in the template, with its
+   features, fixes and other changes. Keep each pull request to one change.
+   Start its title with its kind and a colon: `Feature:`, `Bug:`, `Docs:`,
+   `CI:` or `Maintenance:`, then a short sentence, such as "Feature: Spread
+   the settings pages across a wide window". Give it the label that matches
+   (`enhancement`, `bug`, `documentation`, `ci` or `maintenance`), as the
+   release notes are grouped by those labels.
 4. If `beta` moves on while you work, merge it into your branch.
 5. Delete your branch once it's merged.
 
@@ -77,13 +90,16 @@ anything newer than those.
 - Put designated initializers in declaration order.
 - Match the naming and idiom of the code around your change.
 
+The [style guide](../docs/style-guide.md) has the rest, for the code and for the
+text people read in the app and the docs.
+
 The folders split the code like this:
 
 | Folder | What goes there |
 | --- | --- |
 | `src/core` | Pure logic with no I/O: parsing items, scoring, trade queries, settings and characters |
 | `src/services` | Network and processes: the trade site, poe.ninja and Path of Building |
-| `src/platform` | The operating system: overlay windows, global shortcuts and reading the game through XWayland |
+| `src/platform` | The operating system: overlay windows, global shortcuts and reading the game, through XWayland on Linux |
 | `src/app` | The QML app, its models in C++ and the QML in `src/app/qml` |
 
 Keep comments short and plain. Explain what isn't obvious from the code, and
@@ -103,15 +119,17 @@ fine. The `#` in stat lines stays, as the trade site uses it.
 Every piece of logic gets a QTest test. Put it in `tests/tst_<name>.cpp` and
 add it to `tests/CMakeLists.txt` with the helper that fits, such as
 `pou_add_test` or `pou_add_app_test`. The fakes in `tests/`, such as
-`fakenetwork.h` and `fakegameinput.h`, stand in for the network, the game and
-the other things a test shouldn't touch.
+`fakenetwork.h`, `fakegameinput.h` and `fakeopener.h`, stand in for the network,
+the game, the browser and the clipboard, and the other things a test shouldn't
+touch.
 
 - Use made-up names and items in fixtures. Don't copy your own Path of Building
   builds into the tests, and don't commit them.
 - Window tests run offscreen. `initMain` sets `QT_QPA_PLATFORM=offscreen`, and
   the tests call `QTest::failOnWarning()`.
-- Tests must not touch the clipboard, map visible windows, send XTest input,
-  register real global shortcuts or set off desktop prompts.
+- Tests must not touch the clipboard, open a page in the browser, map visible
+  windows, send XTest input, register real global shortcuts or set off desktop
+  prompts.
 - Test fakes don't use `Q_OBJECT`.
 - In a test, use normal strings rather than a raw string with an apostrophe or
   `//` in it, as moc then skips the file.

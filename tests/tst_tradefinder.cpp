@@ -1497,7 +1497,7 @@ private Q_SLOTS:
         Site site;
         site.searcher.setSettings({.enabled = false});
         QVERIFY(site.finds(helmet));
-        QCOMPARE(site.finder.errorString(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(site.finder.errorString(), tradeUnavailable({.enabled = false}));
         QVERIFY(!site.finder.found());
         QVERIFY(site.network.sent.isEmpty());
     }
@@ -1552,7 +1552,7 @@ private Q_SLOTS:
         site.finder.find(helmet, Kind::Similar);
         site.searcher.setSettings({.enabled = false});
         QVERIFY(finished.wait());
-        QCOMPARE(site.finder.errorString(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(site.finder.errorString(), tradeUnavailable({.enabled = false}));
         QVERIFY(site.ninja.sent.isEmpty());
         QCOMPARE(site.network.sent.size(), 3);
     }

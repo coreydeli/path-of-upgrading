@@ -36,14 +36,6 @@ namespace {
 constexpr int fromSide = 16;
 constexpr int fromEdge = 4;
 
-// And in the top left corner when it's bigger than the screen.
-QPoint withinScreen(QPoint at, const QSize &window, const QSize &screen)
-{
-    at.setX(std::max(fromEdge, std::min(at.x(), screen.width() - window.width() - fromEdge)));
-    at.setY(std::max(fromEdge, std::min(at.y(), screen.height() - window.height() - fromEdge)));
-    return at;
-}
-
 // How far down the windows at the sides go.
 int sideTop(const QSize &screen)
 {
@@ -51,6 +43,14 @@ int sideTop(const QSize &screen)
 }
 
 } // namespace
+
+// And in the top left corner when it's bigger than the screen.
+QPoint withinScreen(QPoint at, const QSize &window, const QSize &screen)
+{
+    at.setX(std::max(fromEdge, std::min(at.x(), screen.width() - window.width() - fromEdge)));
+    at.setY(std::max(fromEdge, std::min(at.y(), screen.height() - window.height() - fromEdge)));
+    return at;
+}
 
 QPoint placePopup(PopupPosition where, const QSize &popup, const QSize &screen,
                   const std::optional<QPoint> &mouse)

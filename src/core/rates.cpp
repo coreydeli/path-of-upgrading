@@ -101,4 +101,27 @@ CurrencyRates currencyRatesInExalts(const QJsonObject &overview)
     return rates;
 }
 
+QString timeAgo(const QDateTime &then, const QDateTime &now)
+{
+    const qint64 minutes = then.secsTo(now) / 60;
+    if (minutes < 1)
+        return u"just now"_s;
+    if (minutes < 60)
+        return minutes == 1 ? u"1 minute ago"_s : u"%1 minutes ago"_s.arg(minutes);
+    const qint64 hours = minutes / 60;
+    if (hours < 48)
+        return hours == 1 ? u"1 hour ago"_s : u"%1 hours ago"_s.arg(hours);
+    return u"%1 days ago"_s.arg(hours / 24);
+}
+
+QString ratesStatus(const QDateTime &fetched, const QString &error, const QDateTime &now)
+{
+    const bool have = fetched.isValid();
+    if (error.isEmpty())
+        return have ? u"Prices updated "_s + timeAgo(fetched, now) + u'.'
+                    : u"The prices haven't come in yet."_s;
+    const QString why = error.endsWith(u'.') ? error : error + u'.';
+    return have ? why + u" Last updated "_s + timeAgo(fetched, now) + u'.' : why;
+}
+
 } // namespace pou

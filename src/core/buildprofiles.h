@@ -3,6 +3,7 @@
 
 #include "core/resists.h"
 
+#include <QHash>
 #include <QList>
 #include <QRegularExpression>
 #include <QString>
@@ -62,6 +63,7 @@ struct BuildProfile
 
 inline constexpr QStringView defaultBuildProfile = u"life-res";
 inline constexpr QStringView energyShieldProfile = u"es-caster";
+inline constexpr QStringView energyShieldAttackerProfile = u"es-attacker";
 inline constexpr QStringView minionProfile = u"minion-es";
 // For scoring by your stat weights alone, as no profile has it.
 inline constexpr QStringView noBuildProfile = u"none";
@@ -87,5 +89,11 @@ struct TweakableStat
 
 // In the order of the profile's stats.
 QList<TweakableStat> tweakableStats(const BuildProfile &profile);
+
+// Tweaks are saved by stat label. Moves those saved under the short critical
+// labels of older versions to the labels they have now. "Crit" was a spell
+// stat in one profile and an attack stat in the other, so it goes by the
+// character's profile. A tweak already under the new label is kept.
+void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId);
 
 } // namespace pou

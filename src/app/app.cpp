@@ -4,6 +4,7 @@
 #include "app/commandline.h"
 #include "platform/gameinput.h"
 #include "platform/globalshortcuts.h"
+#include "platform/opener.h"
 #include "platform/secretstore.h"
 
 #include <QCoreApplication>
@@ -19,18 +20,33 @@ App::Paths App::defaultPaths()
 {
     // ~/.config/path-of-upgradingrc, ~/.local/share/path-of-upgrading,
     // ~/.cache/path-of-upgrading and the entry in ~/.config/autostart
+    //
+    // The color scheme is in the data folders, and a build folder run can
+    // name the one in the source.
+    QString colors = qEnvironmentVariable("PATH_OF_UPGRADING_COLORS");
+    if (colors.isEmpty()) {
+#ifdef Q_OS_WIN
+        // where KDE's programs on Windows have theirs, in the data folder next to the program
+        const QString relative = u"color-schemes/PathOfUpgrading.colors"_s;
+#else
+        const QString relative = u"path-of-upgrading/color-schemes/PathOfUpgrading.colors"_s;
+#endif
+        colors = QStandardPaths::locate(QStandardPaths::GenericDataLocation, relative);
+    }
     return {
         .settings = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + u'/' +
                     QCoreApplication::applicationName() + u"rc"_s,
         .data = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation),
         .cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation),
         .autostart = Autostart::fileFor(QGuiApplication::desktopFileName()),
+        .colors = colors,
     };
 }
 
 App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
-         std::unique_ptr<SecretStore> secrets, std::unique_ptr<QNetworkAccessManager> network,
-         const PobPlaces &places, const Paths &paths, QObject *parent)
+         std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
+         std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
+         QObject *parent)
     : QObject(parent)
     , m_places(places)
     , m_settings(paths.settings)
@@ -42,11 +58,13 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_hotkeys(m_shortcuts.get())
     , m_history(paths.data + u"/history.json"_s)
     , m_secrets(std::move(secrets))
+    , m_opener(std::move(opener))
     , m_network(std::move(network))
     , m_tradeClient(m_network.get())
-    , m_tradeSession(m_secrets.get(), &m_tradeClient)
+    , m_tradeSession(m_secrets.get(), &m_tradeClient, m_opener.get())
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
+    , m_ratesRefresher(&m_rates)
     , m_trade(&m_tradeClient)
     , m_finder(&m_trade, &m_tradeData, &m_rates)
     , m_results(&m_trade, &m_rates)
@@ -54,6 +72,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)
+    , m_upgrades(&m_character, &m_settings, &m_trade, &m_tradeData, &m_rates, &m_results)
     , m_resistances(&m_character)
     , m_gearScoring(&m_character)
     , m_statWeights(&m_character)
@@ -65,9 +84,20 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
                                     .exec = CommandLine::backgroundCommand(),
                                     .icon = QGuiApplication::desktopFileName()})
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
-    , m_pobOptions(&m_settings, &m_pob)
+    , m_pobOptions(&m_settings, &m_pob, m_places, m_opener.get())
+    , m_appearance(&m_settings, paths.colors)
+    , m_onboarding(&m_settings, &m_characterList, &m_overlayOptions)
 {
     m_characterList.load();
+    // which needs the characters
+    m_onboarding.decide();
+    // so you can wear gear and set weights before adding a character
+    m_character.setStarter([this](QString *why) {
+        const QString id = m_characterList.add(u"My character"_s);
+        if (id.isEmpty())
+            *why = m_characterList.error();
+        return id;
+    });
     connect(&m_character, &ActiveCharacter::changed, this, [this] {
         m_checker.setCharacter(m_character.character(), m_character.build());
         m_finder.setCharacter(m_character.character());
@@ -85,12 +115,15 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_checker.setPob(&m_pob);
     m_checker.setFinder(&m_finder);
     m_finder.setPob(&m_pob);
+    m_upgrades.finder().setPob(&m_pob);
     m_checker.setSettings(settings);
     m_results.judge().setPob(&m_pob);
     m_results.judge().setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
     connect(&m_checker, &ItemChecker::resultsAsked, &m_resultsPanel, &ResultsPanel::show);
+    connect(&m_upgrades, &RecommendedUpgrades::resultsAsked, &m_resultsPanel,
+            [this] { m_resultsPanel.show(); });
     connect(&m_checkedItems, &CheckedItems::checkAgainAsked, &m_checker, &ItemChecker::checkItem);
     connect(&m_checker, &ItemChecker::wearAsked, this, [this](const Item &item, const QString &slot) {
         m_character.wear(slot, item);
@@ -103,6 +136,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
         m_trade.setLeagues(m_tradeData.leagues());
         if (m_trade.unavailable().isEmpty())
             m_rates.refresh(m_trade.league().tradeId());
+        followRates();
     });
     // what a search finds is what the results have, and they ask the site
     // only once you want to see them
@@ -112,8 +146,10 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     });
     // the site takes bigger searches signed in, so what it limited them to
     // before isn't kept
-    connect(&m_tradeSession, &TradeSession::idChanged, this,
-            [this] { m_finder.setSignedIn(m_tradeSession.isSaved()); });
+    connect(&m_tradeSession, &TradeSession::idChanged, this, [this] {
+        m_finder.setSignedIn(m_tradeSession.isSaved());
+        m_upgrades.finder().setSignedIn(m_tradeSession.isSaved());
+    });
     followTrade();
 
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
@@ -127,6 +163,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     // which have the keys they had last time, when they've been changed on
     // the desktop since
     followKeys();
+    m_overlayOptions.startByDefault();
 }
 
 App::~App() = default;
@@ -170,6 +207,8 @@ void App::followTrade()
     m_trade.setSettings(m_settings.settings().trade);
     m_finder.setSettings(m_settings.settings());
     m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
+    m_checker.popup().setTradeNote(m_trade.unavailable());
+    m_upgrades.setTradeAvailable(m_trade.unavailable().isEmpty());
     m_resultsPanel.setUnavailable(m_trade.unavailable());
     m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());
     if (m_trade.unavailable().isEmpty()) {
@@ -178,6 +217,16 @@ void App::followTrade()
         // and this asks the keyring once
         m_tradeSession.load();
     }
+    followRates();
+}
+
+void App::followRates()
+{
+    // which carries on as it was when nothing about it changed
+    if (m_trade.unavailable().isEmpty() && m_settings.settings().trade.autoRate)
+        m_ratesRefresher.follow(m_trade.league().tradeId(), m_settings.settings().trade.rateMinutes);
+    else
+        m_ratesRefresher.stop();
 }
 
 } // namespace pou

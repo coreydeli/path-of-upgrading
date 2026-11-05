@@ -46,12 +46,12 @@ void ActiveCharacter::reload()
 bool ActiveCharacter::wear(const QString &slot, const Item &item)
 {
     const Character *saved = m_store->find(m_id);
-    if (!saved)
-        return fail(u"There's no character to wear it. Add one first."_s);
-    const std::optional<Character> worn = pou::wear(*saved, slot, item);
-    if (!worn)
+    // so a character isn't made for an item that can't go there
+    if (!pou::wear(saved ? *saved : Character(), slot, item))
         return fail(u"%1 can't go in %2."_s.arg(item.name, slot));
-    return save(*worn);
+    if (!saved && !(saved = playing()))
+        return false;
+    return save(*pou::wear(*saved, slot, item));
 }
 
 bool ActiveCharacter::takeOff(const QString &slot)
@@ -64,9 +64,9 @@ bool ActiveCharacter::takeOff(const QString &slot)
 
 bool ActiveCharacter::change(const std::function<void(Character &)> &edit)
 {
-    const Character *saved = m_store->find(m_id);
+    const Character *saved = playing();
     if (!saved)
-        return fail(u"There's no character to change. Add one first."_s);
+        return false;
     Character character = *saved;
     edit(character);
     return save(character);
@@ -80,6 +80,26 @@ bool ActiveCharacter::save(const Character &character)
     // which has Path of Building wear it too
     reload();
     return true;
+}
+
+const Character *ActiveCharacter::playing()
+{
+    if (const Character *saved = m_store->find(m_id))
+        return saved;
+    if (!m_starter) {
+        fail(u"There's no character. Add one first."_s);
+        return nullptr;
+    }
+    QString why;
+    const QString id = m_starter(&why);
+    if (id.isEmpty()) {
+        fail(why);
+        return nullptr;
+    }
+    // unless starting it had you play it already
+    if (id != m_id)
+        setId(id);
+    return m_store->find(m_id);
 }
 
 bool ActiveCharacter::fail(const QString &why)

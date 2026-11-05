@@ -14,6 +14,22 @@ namespace pou {
 class ActiveCharacter;
 class SettingsStore;
 
+// One thing to say about a slot: "Missing" and the stats it lacks.
+struct GearNote
+{
+    Q_GADGET
+    QML_VALUE_TYPE(gearNote)
+
+    Q_PROPERTY(QString label MEMBER label)
+    Q_PROPERTY(QString text MEMBER text)
+
+public:
+    QString label; // "Weak rolls"
+    QString text;  // "Mana 13%, Fire res 33%"
+
+    friend bool operator==(const GearNote &, const GearNote &) = default;
+};
+
 // What the character you play wears, as the window lists it: each of the
 // main slots, worn or not, then the second weapon set, flasks, charms and
 // jewels it has on.
@@ -32,9 +48,6 @@ class GearList : public QAbstractListModel
     // when none of them has a gear score.
     Q_PROPERTY(QString overall READ overall NOTIFY changed)
     Q_PROPERTY(QString overallGrade READ overallGrade NOTIFY changed)
-    // The three main slots with the lowest gear scores, "Gloves 31, Boots 40,
-    // Belt 44".
-    Q_PROPERTY(QString weakest READ weakest NOTIFY changed)
     // Why the last change couldn't be made, empty when it could.
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
@@ -47,6 +60,9 @@ public:
         ScoreRole,                   // its gear score, "78", empty when it has none
         GradeRole,                   // "A"
         ExtraRole,                   // not one of the main slots
+        NotesRole,  // QList<GearNote>: what would raise its score, or what an empty slot wants
+        FirstRole,  // the first of the main slots, or of the others
+        RarityRole, // "Rare", empty when there is nothing on
     };
 
     // They have to outlive it.
@@ -60,7 +76,6 @@ public:
     bool hasExtras() const;
     QString overall() const { return m_overall; }
     QString overallGrade() const { return m_overallGrade; }
-    QString weakest() const { return m_weakest; }
 
     Q_INVOKABLE bool takeOff(const QString &slot);
 
@@ -76,6 +91,9 @@ private:
         QString slot;
         std::optional<int> score;
         QString grade;
+        // for a worn item the ways its score falls short, for an empty main
+        // slot what the build wants most there
+        QList<GearNote> notes;
     };
 
     void refresh();
@@ -87,7 +105,6 @@ private:
     PobPriorities m_priorities; // what the scores were worked out with
     QString m_overall;
     QString m_overallGrade;
-    QString m_weakest;
     QString m_error;
 };
 

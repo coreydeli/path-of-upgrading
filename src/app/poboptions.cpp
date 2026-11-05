@@ -2,6 +2,7 @@
 #include "app/poboptions.h"
 
 #include "app/settingsstore.h"
+#include "platform/opener.h"
 #include "services/pobengine.h"
 
 #include <algorithm>
@@ -11,14 +12,17 @@ using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
 
-PobOptions::PobOptions(SettingsStore *settings, PobEngine *pob, QObject *parent)
+PobOptions::PobOptions(SettingsStore *settings, PobEngine *pob, const PobPlaces &places, Opener *opener,
+                       QObject *parent)
     : QObject(parent)
     , m_settings(settings)
     , m_pob(pob)
+    , m_places(places)
+    , m_opener(opener)
 {
-    connect(settings, &SettingsStore::changed, this, &PobOptions::changed);
-    connect(pob, &PobEngine::installChanged, this, &PobOptions::changed);
-    connect(pob, &PobEngine::stateChanged, this, &PobOptions::changed);
+    connect(settings, &SettingsStore::changed, this, &PobOptions::follow);
+    connect(pob, &PobEngine::installChanged, this, &PobOptions::follow);
+    connect(pob, &PobEngine::stateChanged, this, &PobOptions::follow);
 }
 
 const PobSettings &PobOptions::pob() const
@@ -72,6 +76,11 @@ void PobOptions::setKeepDamage(bool keep)
     change([&](PobSettings &pob) { pob.priorities.keepDamage = keep; });
 }
 
+void PobOptions::setKeepDefence(bool keep)
+{
+    change([&](PobSettings &pob) { pob.priorities.keepDefence = keep; });
+}
+
 void PobOptions::setSpirit(bool spirit)
 {
     change([&](PobSettings &pob) { pob.priorities.spirit = spirit; });
@@ -82,22 +91,54 @@ void PobOptions::setAttributes(bool attributes)
     change([&](PobSettings &pob) { pob.priorities.attributes = attributes; });
 }
 
-QString PobOptions::found() const
+const PobGuide &PobOptions::guide() const
 {
-    const std::optional<PobInstall> &install = m_pob->install();
-    if (!install)
-        return {};
-    if (install->flatpak)
-        return u"Using the Path of Building Flatpak."_s;
-    return u"Using Path of Building in %1."_s.arg(install->folder);
+    if (!m_guide) {
+        const PobEngine::State state = m_pob->state();
+        const QString runProblem = state == PobEngine::State::Failed ? m_pob->errorString() : QString();
+        m_guide = guideToPob(m_places, pob().location, m_pob->install(), runProblem);
+    }
+    return *m_guide;
 }
 
-QString PobOptions::problem() const
+void PobOptions::follow()
 {
-    const PobEngine::State state = m_pob->state();
-    if (state == PobEngine::State::Unavailable || state == PobEngine::State::Failed)
-        return m_pob->errorString();
-    return {};
+    m_guide.reset();
+    Q_EMIT changed();
+}
+
+QString PobOptions::installCommand() const
+{
+    return pobInstallCommand();
+}
+
+void PobOptions::openDiscover()
+{
+    if (m_opener)
+        m_opener->open(QUrl(pobDiscoverUrl()));
+}
+
+void PobOptions::openFlathub()
+{
+    if (m_opener)
+        m_opener->open(QUrl(pobFlathubUrl()));
+}
+
+void PobOptions::openInstaller()
+{
+    if (m_opener)
+        m_opener->open(QUrl(pobInstallerUrl()));
+}
+
+void PobOptions::copyInstallCommand()
+{
+    if (m_opener)
+        m_opener->copy(pobInstallCommand());
+}
+
+void PobOptions::useUsualPlaces()
+{
+    setLocation({});
 }
 
 } // namespace pou

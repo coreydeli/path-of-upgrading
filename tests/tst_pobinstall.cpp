@@ -54,6 +54,22 @@ struct Computer
     }
 };
 
+// Windows, in a temporary folder, with the LuaJIT that comes with the app.
+struct WindowsComputer
+{
+    QTemporaryDir dir;
+    PobPlaces places{
+        .home = dir.filePath(u"Users/Someone"_s),
+        .dataHome = dir.filePath(u"Users/Someone/AppData/Local"_s),
+        .luajit = u"C:/Program Files/Path of Upgrading/luajit.exe"_s,
+        .appData = dir.filePath(u"Users/Someone/AppData/Roaming"_s),
+        .documents = dir.filePath(u"Users/Someone/Documents"_s),
+    };
+
+    // where its installer puts it
+    QString installFolder() const { return places.appData + u"/Path of Building Community (PoE2)"_s; }
+};
+
 // Path of Building's files, as far as finding it goes, with the manifest
 // when it's given.
 bool addPob(const QString &folder, const QByteArray &manifest = {})
@@ -81,6 +97,7 @@ private Q_SLOTS:
         QCOMPARE(pob->program, u"/usr/bin/flatpak"_s);
         QCOMPARE(pob->arguments, flatpakArguments);
         QVERIFY(pob->flatpak);
+        QCOMPARE(pob->userFolder, computer.flatpakFolder() + u"/userdata/Path of Building (PoE2)"_s);
     }
 
     void flatpakForYou()
@@ -154,6 +171,7 @@ private Q_SLOTS:
         QCOMPARE(pob->program, u"/usr/bin/luajit"_s);
         QVERIFY(pob->arguments.isEmpty());
         QVERIFY(!pob->flatpak);
+        QCOMPARE(pob->userFolder, folder + u"/userdata/Path of Building (PoE2)"_s);
 
         computer.places.luajit.clear();
         QString why;
@@ -192,6 +210,7 @@ private Q_SLOTS:
         QCOMPARE(pob->program, u"/usr/bin/luajit"_s);
         QVERIFY(pob->arguments.isEmpty());
         QVERIFY(!pob->flatpak);
+        QCOMPARE(pob->userFolder, folder + u"/userdata/Path of Building (PoE2)"_s);
 
         QCOMPARE(findPob(computer.places, folder + u'/'), pob);
     }
@@ -250,11 +269,117 @@ private Q_SLOTS:
         QCOMPARE(why, u"The Path of Building in %1 is for Path of Exile 1."_s.arg(root));
     }
 
+    void windows()
+    {
+        WindowsComputer computer;
+        QVERIFY(addPob(computer.installFolder()));
+        QVERIFY(writeFile(computer.installFolder() + u"/installed.cfg"_s, {}));
+        QString why;
+        const std::optional<PobInstall> pob = findPob(computer.places, {}, &why);
+        QVERIFY2(pob, qPrintable(why));
+        QCOMPARE(pob->folder, computer.installFolder());
+        QCOMPARE(pob->program, u"C:/Program Files/Path of Upgrading/luajit.exe"_s);
+        QVERIFY(pob->arguments.isEmpty());
+        QVERIFY(!pob->flatpak);
+        // as installed, it keeps what's yours in your Documents
+        const QString user = computer.places.documents + u"/Path of Building (PoE2)"_s;
+        QCOMPARE(pob->userFolder, user);
+        QCOMPARE(pobBuildsFolder(*pob), user + u"/Builds"_s);
+    }
+
+    void windowsNotInstalled()
+    {
+        WindowsComputer computer;
+        // not where rusty-path-of-building would have it
+        QVERIFY(addPob(computer.places.dataHome + u"/RustyPathOfBuilding2"_s));
+        QString why;
+        QVERIFY(!findPob(computer.places, {}, &why));
+        QCOMPARE(why, u"Path of Building isn't installed. Get Path of Building Community (PoE2) from: "
+                      u"https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases"_s);
+    }
+
+    void windowsWithoutLuajit()
+    {
+        WindowsComputer computer;
+        QVERIFY(addPob(computer.installFolder()));
+        computer.places.luajit.clear();
+        QString why;
+        QVERIFY(!findPob(computer.places, {}, &why));
+        QCOMPARE(why,
+                 u"LuaJIT is missing from Path of Upgrading's folder. Installing it again puts it back."_s);
+    }
+
+    void windowsUnzipped()
+    {
+        WindowsComputer computer;
+        // with no installed.cfg, it keeps what's yours in its own folder
+        const QString folder = computer.dir.filePath(u"Games/PathOfBuilding-PoE2"_s);
+        QVERIFY(addPob(folder));
+        const std::optional<PobInstall> pob = findPob(computer.places, folder);
+        QVERIFY(pob);
+        QCOMPARE(pob->folder, folder);
+        QCOMPARE(pob->userFolder, folder);
+        QCOMPARE(pobBuildsFolder(*pob), folder + u"/Builds"_s);
+    }
+
+    void problems()
+    {
+        Computer computer;
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NotInstalled);
+
+        // the Flatpak is there, without Path of Building downloaded
+        QVERIFY(computer.installFlatpak());
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NotOpened);
+
+        // Path of Building in the data folder, with nothing to run it
+        Computer native;
+        QVERIFY(addPob(native.places.dataHome + u"/RustyPathOfBuilding2"_s));
+        native.places.luajit.clear();
+        QCOMPARE(lookForPob(native.places, {}).problem, PobProblem::NoLuajit);
+
+        // in the words findPob gives
+        QString why;
+        QVERIFY(!findPob(native.places, {}, &why));
+        QCOMPARE(lookForPob(native.places, {}).why, why);
+        QVERIFY(lookForPob(computer.places, {}).install == std::nullopt);
+    }
+
+    void folderProblems()
+    {
+        Computer computer;
+        const QString empty = computer.dir.filePath(u"empty"_s);
+        QVERIFY(QDir().mkpath(empty));
+        QCOMPARE(lookForPob(computer.places, empty).problem, PobProblem::NothingInFolder);
+
+        const QString poe1 = computer.dir.filePath(u"poe1"_s);
+        QVERIFY(addPob(poe1, poe1Manifest));
+        QCOMPARE(lookForPob(computer.places, poe1).problem, PobProblem::ForPoe1);
+
+        const QString folder = computer.dir.filePath(u"pob"_s);
+        QVERIFY(addPob(folder));
+        computer.places.luajit.clear();
+        QCOMPARE(lookForPob(computer.places, folder).problem, PobProblem::FolderNoLuajit);
+
+        // the folder you set, even when the Flatpak is fine
+        QVERIFY(computer.installFlatpak());
+        QVERIFY(addPob(computer.flatpakFolder()));
+        QVERIFY(!lookForPob(computer.places, empty).install);
+    }
+
+    void windowsProblems()
+    {
+        WindowsComputer computer;
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NotInstalledOnWindows);
+        QVERIFY(addPob(computer.installFolder()));
+        computer.places.luajit.clear();
+        QCOMPARE(lookForPob(computer.places, {}).problem, PobProblem::NoLuajitOnWindows);
+    }
+
     void buildsFolder()
     {
         Computer computer;
-        const PobInstall pob{.folder = computer.flatpakFolder()};
         const QString user = computer.flatpakFolder() + u"/userdata/Path of Building (PoE2)"_s;
+        const PobInstall pob{.folder = computer.flatpakFolder(), .userFolder = user};
         QCOMPARE(pobBuildsFolder(pob), user + u"/Builds"_s);
 
         // with the rest of its settings, which aren't read
@@ -273,8 +398,8 @@ private Q_SLOTS:
     void buildsFolderNotChosen()
     {
         Computer computer;
-        const PobInstall pob{.folder = computer.flatpakFolder()};
         const QString user = computer.flatpakFolder() + u"/userdata/Path of Building (PoE2)"_s;
+        const PobInstall pob{.folder = computer.flatpakFolder(), .userFolder = user};
         // only its own options count
         const QByteArray settings = "<PathOfBuilding><SharedItems><Misc buildPath=\"" +
                                     computer.dir.path().toUtf8() +

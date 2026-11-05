@@ -208,6 +208,29 @@ private Q_SLOTS:
         QVERIFY(change->resists.isEmpty());
     }
 
+    void armourAndEvasionAreTracked()
+    {
+        const Equipped worn = {
+            {u"Body Armour"_s, withStats({{u"[Base] Armour"_s, 400}, {u"[Base] Evasion Rating"_s, 100}})}};
+        const auto change =
+            changeIfEquipped(worn, withStats({{u"[Base] Armour"_s, 150}, {u"[Base] Evasion Rating"_s, 300}}),
+                             {u"Body Armour"_s});
+        QCOMPARE(change->totals.size(), 2);
+        QCOMPARE(change->totals.at(0).label, u"Armour"_s);
+        QCOMPARE(change->totals.at(0).delta, -250.0);
+        QCOMPARE(change->totals.at(1).label, u"Evasion"_s);
+        QCOMPARE(change->totals.at(1).delta, 200.0);
+    }
+
+    void healthBeforeIsLifeAndEnergyShield()
+    {
+        const Equipped worn = {
+            {u"Amulet"_s, withStats({{u"# to maximum Life"_s, 40}, {u"# to maximum Energy Shield"_s, 25}})},
+            {u"Helmet"_s, withStats({{u"[Base] Energy Shield"_s, 60}})}};
+        const auto change = changeIfEquipped(worn, withStats({{u"# to maximum Life"_s, 10}}), {u"Amulet"_s});
+        QCOMPARE(change->healthBefore, 125.0);
+    }
+
     void jewelleryEnergyShieldAddsUp()
     {
         const QString flat = u"# to maximum Energy Shield"_s;

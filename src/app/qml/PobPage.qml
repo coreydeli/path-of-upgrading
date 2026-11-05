@@ -6,14 +6,23 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Which Path of Building the app runs and what matters when it judges items.
-FormCard.FormCardPage {
+// Build Analysis: which Path of Building the app runs and what matters when
+// it judges items with your build.
+ColumnsPage {
     id: pobPage
 
     required property App app
     readonly property PobOptions options: app.pobOptions
 
-    title: qsTr("Path of Building")
+    property bool showPlaces: false
+
+    title: qsTr("Build Analysis")
+    description: qsTr("Which Path of Building is used to judge items, and what matters when it does.")
+
+    SectionText {
+        objectName: "analysisIntro"
+        text: qsTr("Path of Building checks each item with your build, for the damage and defences it would give.")
+    }
 
     FormCard.FormCard {
         Layout.topMargin: Kirigami.Units.largeSpacing
@@ -27,15 +36,118 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("Where It Is")
     }
 
     FormCard.FormCard {
         FormCard.FormTextDelegate {
             objectName: "foundText"
-            text: pobPage.options.found !== "" ? pobPage.options.found : qsTr("Path of Building wasn't found.")
-            description: pobPage.options.problem
+            text: pobPage.options.headline
+            description: pobPage.options.details.join(" ")
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: installedAtText.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: installedAtText
+            objectName: "installedAtText"
+            visible: pobPage.options.installedAt !== ""
+            text: qsTr("Program files")
+            description: pobPage.options.installedAt
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: buildsAtText.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: buildsAtText
+            objectName: "buildsAtText"
+            visible: pobPage.options.buildsAt !== ""
+            text: qsTr("Your builds")
+            description: pobPage.options.buildsAt
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: stepsText.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: stepsText
+            objectName: "stepsText"
+            visible: pobPage.options.steps.length > 0
+            text: qsTr("What to do")
+            description: pobPage.options.steps.join("\n")
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: discoverButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: discoverButton
+            objectName: "discoverButton"
+            visible: pobPage.options.offersFlatpak
+            text: qsTr("Open in Discover")
+            description: qsTr("Install it from Discover, the app store on KDE Plasma.")
+            icon.name: "plasmadiscover"
+            onClicked: pobPage.options.openDiscover()
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: flathubButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: flathubButton
+            objectName: "flathubButton"
+            visible: pobPage.options.offersFlatpak
+            text: qsTr("Open Flathub in the Browser")
+            description: qsTr("Its page on Flathub, for any other app store.")
+            icon.name: "internet-web-browser"
+            onClicked: pobPage.options.openFlathub()
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: copyCommandButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: copyCommandButton
+            objectName: "copyCommandButton"
+            visible: pobPage.options.offersFlatpak
+            text: qsTr("Copy the Install Command")
+            description: pobPage.options.installCommand
+            icon.name: "edit-copy"
+            onClicked: pobPage.options.copyInstallCommand()
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: installerButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: installerButton
+            objectName: "installerButton"
+            visible: pobPage.options.offersInstaller
+            text: qsTr("Open the Download Page")
+            description: qsTr("Its releases page on GitHub, with the installer.")
+            icon.name: "internet-web-browser"
+            onClicked: pobPage.options.openInstaller()
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormButtonDelegate {
+            objectName: "lookAgainButton"
+            text: qsTr("Look Again")
+            description: qsTr("Look in the usual places again. Use it after you install Path of Building, "
+                              + "or open it for Path of Exile 2 for the first time.")
+            icon.name: "view-refresh"
+            onClicked: pobPage.app.lookForPob()
         }
 
         FormCard.FormDelegateSeparator {}
@@ -44,32 +156,78 @@ FormCard.FormCardPage {
             id: folderField
             objectName: "folderField"
             label: qsTr("Folder")
-            placeholderText: qsTr("The Flatpak, or the usual places")
-            text: pobPage.options.location
+            placeholderText: qsTr("Leave empty to use the one found")
+            // Set from the options by hand, as Kirigami Addons 1.7 drops a
+            // binding on this one
+            Component.onCompleted: text = pobPage.options.location
             onEditingFinished: pobPage.options.location = text
+            Connections {
+                target: pobPage.options
+                function onChanged() {
+                    if (folderField.text !== pobPage.options.location)
+                        folderField.text = pobPage.options.location
+                }
+            }
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormTextDelegate {
+            objectName: "folderNote"
+            text: pobPage.options.folderNote
+            textItem.wrapMode: Text.Wrap
+            textItem.color: pobPage.options.folderProblem ? Kirigami.Theme.negativeTextColor
+                                                          : Kirigami.Theme.textColor
         }
 
         FormCard.FormDelegateSeparator {}
 
         FormCard.FormButtonDelegate {
+            objectName: "chooseFolderButton"
             text: qsTr("Choose a Folder")
-            description: qsTr("For a Path of Building that isn't the Flatpak.")
+            description: qsTr("The one with HeadlessWrapper.lua in it, or its repository.")
             icon.name: "document-open-folder"
             onClicked: folderDialog.open()
         }
 
+        FormCard.FormDelegateSeparator {
+            visible: usualPlacesButton.visible
+        }
+
+        FormCard.FormButtonDelegate {
+            id: usualPlacesButton
+            objectName: "usualPlacesButton"
+            visible: pobPage.options.location !== ""
+            text: qsTr("Use the Usual Places")
+            description: qsTr("Clears the folder, and goes back to the one found.")
+            icon.name: "edit-clear"
+            onClicked: pobPage.options.useUsualPlaces()
+        }
+
         FormCard.FormDelegateSeparator {}
 
         FormCard.FormButtonDelegate {
-            objectName: "lookAgainButton"
-            text: qsTr("Look Again")
-            description: qsTr("Once you've installed it, or opened it for Path of Exile 2 the first time.")
-            icon.name: "view-refresh"
-            onClicked: pobPage.app.lookForPob()
+            objectName: "placesButton"
+            text: pobPage.showPlaces ? qsTr("Hide Where It Looks") : qsTr("Show Where It Looks")
+            description: qsTr("Every place it looks in, and whether Path of Building is there.")
+            icon.name: pobPage.showPlaces ? "arrow-up" : "arrow-down"
+            onClicked: pobPage.showPlaces = !pobPage.showPlaces
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: placesText.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: placesText
+            objectName: "placesText"
+            visible: pobPage.showPlaces
+            text: pobPage.options.places.join("\n")
+            textItem.wrapMode: Text.Wrap
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: qsTr("What Matters Most")
     }
 
@@ -144,6 +302,16 @@ FormCard.FormCardPage {
             description: qsTr("An item that costs a good part of your damage is never an upgrade.")
             checked: pobPage.options.keepDamage
             onToggled: pobPage.options.keepDamage = checked
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SwitchRow {
+            objectName: "keepDefenceSwitch"
+            text: qsTr("Never lose defences")
+            description: qsTr("An item that costs a good part of your Effective HP, Life or Energy Shield is never an upgrade.")
+            checked: pobPage.options.keepDefence
+            onToggled: pobPage.options.keepDefence = checked
         }
 
         FormCard.FormDelegateSeparator {}

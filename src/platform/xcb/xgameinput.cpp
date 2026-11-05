@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 
+using namespace Qt::Literals::StringLiterals;
 using namespace std::chrono_literals;
 
 namespace pou {
@@ -34,6 +35,35 @@ QList<NamedScreen> qtScreens()
 QString windowName(const WindowInfo &window)
 {
     return window.classes.isEmpty() ? window.program : window.classes.last();
+}
+
+// The monitors or screens as the log has them: DP-1 1920x1080 at 0,0.
+QString listed(const QList<NamedScreen> &screens)
+{
+    QStringList each;
+    for (const NamedScreen &screen : screens) {
+        const QRect &g = screen.geometry;
+        each << u"%1 %2x%3 at %4,%5"_s.arg(screen.name).arg(g.width()).arg(g.height()).arg(g.x()).arg(g.y());
+    }
+    return each.isEmpty() ? u"none"_s : each.join(u", "_s);
+}
+
+// Says where the mouse is, or why that can't be told: the X server's monitors
+// and Qt's screens are what the two are matched on.
+void logMouse(XConnection &x, const XPointer &pointer, const std::optional<ScreenPoint> &mouse)
+{
+    if (mouse) {
+        qCDebug(lcPlacement) << "The mouse is at" << pointer.position << "on the X screen, which is"
+                             << mouse->position << "on" << mouse->screen;
+        return;
+    }
+    qCInfo(lcPlacement).noquote()
+        << u"Can't tell where the mouse is. It is at %1,%2 on the X screen, over %3. X monitors: %4. Qt "
+           "screens: %5."_s.arg(pointer.position.x())
+               .arg(pointer.position.y())
+               .arg(pointer.window == XCB_WINDOW_NONE ? u"no window the X server knows"_s
+                                                      : u"window %1"_s.arg(pointer.window))
+               .arg(listed(xMonitors(x)), listed(qtScreens()));
 }
 
 } // namespace
@@ -98,6 +128,7 @@ void XGameInput::findGame()
     const XPointer pointer = queryPointer(*m_x);
     m_overGame = pointer.window != XCB_WINDOW_NONE && isGameWindow(describeWindow(*m_x, pointer.window));
     m_mouse = mouseAt(pointer);
+    logMouse(*m_x, pointer, m_mouse);
 
     const WindowInfo inFront = describeWindow(*m_x, activeWindow(*m_x));
     qCDebug(lcInput) << "In front:" << inFront.classes << inFront.program

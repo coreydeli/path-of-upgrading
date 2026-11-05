@@ -127,8 +127,23 @@ bool OverlayOptions::startsWithDesktop() const
 void OverlayOptions::setStartWithDesktop(bool start)
 {
     m_autostart->setEnabled(start);
-    // even when it didn't work, for the switch to go back and say why
-    Q_EMIT changed();
+    // it's your choice now, whether or not it worked
+    const bool settled = overlay().startChosen;
+    change([](OverlaySettings &overlay) { overlay.startChosen = true; });
+    // even when it didn't work, for the switch to go back and say why, which
+    // saving the choice has done the first time
+    if (settled)
+        Q_EMIT changed();
+}
+
+void OverlayOptions::startByDefault()
+{
+    if (overlay().startChosen)
+        return;
+    // one that's there already counts, and one that couldn't be made is tried
+    // again next time
+    if (m_autostart->isEnabled() || m_autostart->setEnabled(true))
+        change([](OverlaySettings &overlay) { overlay.startChosen = true; });
 }
 
 QString OverlayOptions::startError() const

@@ -3,6 +3,7 @@
 
 #include "core/datafiles.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -21,12 +22,10 @@ namespace {
 constexpr QStringView poe2Folder = u"/RustyPathOfBuilding2";
 // and where that keeps what's yours, next to it
 constexpr QStringView userFolder = u"/userdata/Path of Building (PoE2)";
-
-void setWhy(QString *why, const QString &text)
-{
-    if (why)
-        *why = text;
-}
+// Where its installer puts it on Windows, in %APPDATA%
+constexpr QStringView windowsFolder = u"/Path of Building Community (PoE2)";
+// and where that keeps what's yours, in your Documents
+constexpr QStringView documentsFolder = u"/Path of Building (PoE2)";
 
 bool hasPob(const QString &folder)
 {
@@ -56,25 +55,58 @@ bool isForPoe1(const QString &folder)
     return false;
 }
 
-std::optional<PobInstall> pobIn(const PobPlaces &places, const QString &location, QString *why)
+// rusty-path-of-building keeps what's yours next to Path of Building. On
+// Windows the installed one keeps it in your Documents, and one unzipped
+// anywhere else keeps it in its own folder.
+QString userFolderOf(const PobPlaces &places, const QString &folder)
+{
+    if (places.appData.isEmpty())
+        return folder + userFolder;
+    if (QFile::exists(folder + u"/installed.cfg"_s))
+        return places.documents + documentsFolder;
+    return folder;
+}
+
+PobLookup notFound(PobProblem problem, const QString &why)
+{
+    return {.problem = problem, .why = why};
+}
+
+PobLookup pobIn(const PobPlaces &places, const QString &location)
 {
     QString folder = QDir::cleanPath(location);
     if (!hasPob(folder))
         folder += u"/src"_s; // a copy of its repository
-    if (!hasPob(folder)) {
-        setWhy(why, u"There's no Path of Building in %1."_s.arg(location));
-        return std::nullopt;
-    }
+    if (!hasPob(folder))
+        return notFound(PobProblem::NothingInFolder, u"There's no Path of Building in %1."_s.arg(location));
     if (isForPoe1(folder)) {
-        setWhy(why, u"The Path of Building in %1 is for Path of Exile 1."_s.arg(location));
-        return std::nullopt;
+        return notFound(PobProblem::ForPoe1,
+                        u"The Path of Building in %1 is for Path of Exile 1."_s.arg(location));
     }
     if (places.luajit.isEmpty()) {
-        setWhy(why,
-               u"Running the Path of Building in %1 needs LuaJIT, which isn't installed."_s.arg(location));
-        return std::nullopt;
+        return notFound(
+            PobProblem::FolderNoLuajit,
+            u"Running the Path of Building in %1 needs LuaJIT, which isn't installed."_s.arg(location));
     }
-    return PobInstall{.folder = folder, .program = places.luajit};
+    return {.install = PobInstall{
+                .folder = folder, .program = places.luajit, .userFolder = userFolderOf(places, folder)}};
+}
+
+PobLookup installedOnWindows(const PobPlaces &places)
+{
+    const QString folder = places.appData + windowsFolder;
+    if (!hasPob(folder)) {
+        return notFound(PobProblem::NotInstalledOnWindows,
+                        u"Path of Building isn't installed. Get Path of Building Community (PoE2) from: "
+                        u"https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/releases"_s);
+    }
+    if (places.luajit.isEmpty()) {
+        return notFound(
+            PobProblem::NoLuajitOnWindows,
+            u"LuaJIT is missing from Path of Upgrading's folder. Installing it again puts it back."_s);
+    }
+    return {.install = PobInstall{
+                .folder = folder, .program = places.luajit, .userFolder = userFolderOf(places, folder)}};
 }
 
 // The builds folder chosen in Path of Building's options. Nothing else in
@@ -100,7 +132,7 @@ QString chosenBuildsFolder(const QString &settings)
 PobPlaces pobPlaces()
 {
     const QString dataHome = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    return {
+    PobPlaces places{
         .home = QDir::homePath(),
         .dataHome = dataHome,
         // where flatpak itself looks
@@ -109,44 +141,99 @@ PobPlaces pobPlaces()
         .flatpak = QStandardPaths::findExecutable(u"flatpak"_s),
         .luajit = QStandardPaths::findExecutable(u"luajit"_s),
     };
+#ifdef Q_OS_WIN
+    // the one that comes with the app, next to it
+    if (const QString bundled =
+            QStandardPaths::findExecutable(u"luajit"_s, {QCoreApplication::applicationDirPath()});
+        !bundled.isEmpty())
+        places.luajit = bundled;
+    places.appData = QDir::fromNativeSeparators(qEnvironmentVariable("APPDATA"));
+    places.documents = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+#endif
+    return places;
 }
 
-std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why)
+PobLookup lookForPob(const PobPlaces &places, const QString &location)
 {
     if (!location.isEmpty())
-        return pobIn(places, location, why);
+        return pobIn(places, location);
+    if (!places.appData.isEmpty())
+        return installedOnWindows(places);
 
     const bool flatpak = hasFlatpak(places);
     // in its own data folder, which is $XDG_DATA_HOME in the sandbox
     const QString sandboxed = places.home + u"/.var/app/"_s + pobFlatpakId + u"/data"_s + poe2Folder;
     if (flatpak && hasPob(sandboxed)) {
-        return PobInstall{
-            .folder = sandboxed,
-            .program = places.flatpak,
-            // stopped along with the app, and without the network, which
-            // nothing the app asks of it needs
-            .arguments = {u"run"_s, u"--die-with-parent"_s, u"--unshare=network"_s, u"--command=luajit"_s,
-                          pobFlatpakId.toString()},
-            .flatpak = true,
-        };
+        return {.install = PobInstall{
+                    .folder = sandboxed,
+                    .program = places.flatpak,
+                    // stopped along with the app, and without the network, which
+                    // nothing the app asks of it needs
+                    .arguments = {u"run"_s, u"--die-with-parent"_s, u"--unshare=network"_s,
+                                  u"--command=luajit"_s, pobFlatpakId.toString()},
+                    .flatpak = true,
+                    .userFolder = sandboxed + userFolder,
+                }};
     }
     const QString native = places.dataHome + poe2Folder;
-    if (hasPob(native) && !places.luajit.isEmpty())
-        return PobInstall{.folder = native, .program = places.luajit};
+    if (hasPob(native) && !places.luajit.isEmpty()) {
+        return {.install = PobInstall{
+                    .folder = native, .program = places.luajit, .userFolder = native + userFolder}};
+    }
 
-    if (flatpak)
-        setWhy(why, u"Open Path of Building PoE 2 once, so it downloads what it needs."_s);
-    else if (hasPob(native))
-        setWhy(why, u"Running Path of Building needs LuaJIT, which isn't installed."_s);
-    else
-        setWhy(why, u"Path of Building isn't installed. Get it from Flathub with: "
-                    u"flatpak install flathub %1"_s.arg(pobFlatpakId));
-    return std::nullopt;
+    if (flatpak) {
+        return notFound(PobProblem::NotOpened,
+                        u"Open Path of Building PoE 2 once, so it downloads what it needs."_s);
+    }
+    if (hasPob(native)) {
+        PobLookup lookup = notFound(PobProblem::NoLuajit,
+                                    u"Running Path of Building needs LuaJIT, which isn't installed."_s);
+        lookup.folder = native;
+        return lookup;
+    }
+    return notFound(PobProblem::NotInstalled, u"Path of Building isn't installed. Get it from Flathub with: "
+                                              u"flatpak install flathub %1"_s.arg(pobFlatpakId));
+}
+
+QList<PobPlace> searchedPlaces(const PobPlaces &places, const QString &location)
+{
+    if (!location.isEmpty()) {
+        const QString folder = QDir::cleanPath(location);
+        return {{u"The folder you chose"_s, folder, hasPob(folder) || hasPob(folder + u"/src"_s)}};
+    }
+    if (!places.appData.isEmpty()) {
+        const QString folder = places.appData + windowsFolder;
+        return {{u"Where its installer puts it"_s, folder, hasPob(folder)}};
+    }
+
+    QList<PobPlace> list;
+    for (qsizetype i = 0; i < places.flatpakInstallations.size(); ++i) {
+        const QString &installation = places.flatpakInstallations[i];
+        const QString app = installation + u"/app/"_s + pobFlatpakId;
+        list << PobPlace{i == 0 ? u"The Flatpak, installed for you"_s
+                                : u"The Flatpak, installed for everyone"_s,
+                         app, QFileInfo::exists(app + u"/current/active"_s)};
+    }
+    const QString sandboxed = places.home + u"/.var/app/"_s + pobFlatpakId + u"/data"_s + poe2Folder;
+    const QString native = places.dataHome + poe2Folder;
+    list << PobPlace{u"The Flatpak's files for Path of Exile 2"_s, sandboxed, hasPob(sandboxed)}
+         << PobPlace{u"Not from the Flatpak"_s, native, hasPob(native)}
+         << PobPlace{u"The flatpak command"_s, places.flatpak, !places.flatpak.isEmpty()}
+         << PobPlace{u"LuaJIT"_s, places.luajit, !places.luajit.isEmpty()};
+    return list;
+}
+
+std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why)
+{
+    PobLookup lookup = lookForPob(places, location);
+    if (!lookup.install && why)
+        *why = lookup.why;
+    return lookup.install;
 }
 
 QString pobBuildsFolder(const PobInstall &install)
 {
-    const QString user = install.folder + userFolder;
+    const QString &user = install.userFolder;
     // one chosen in the Flatpak's sandbox can be a folder only it has
     if (const QString chosen = chosenBuildsFolder(user + u"/Settings.xml"_s);
         !chosen.isEmpty() && QFileInfo(chosen).isDir())

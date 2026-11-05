@@ -1,23 +1,34 @@
 # SPDX-License-Identifier: MIT
 #
-# Pushing a version tag, like v0.1.0, makes a release on GitHub with the
-# source, an Arch Linux package and a Debian 13 package: the source first, then
-# every check CI makes, then the packages, then the release, each once the
-# stages before it have passed. Pull requests that change how they're made
-# build the packages too, without releasing anything.
+# Each push to main or beta makes a release on GitHub, with the source, an Arch
+# Linux package, a Debian 13 package, a Windows installer and zip, and the
+# changes since the last one.
+# Main releases the version in CMakeLists.txt as the latest release, once. Beta
+# releases it as a pre-release, v0.1.0-beta.1 and on, until that version is
+# out. The source comes first, then CI's build of each platform, which tests
+# it and makes its package, then the release, each once the stages before it
+# have passed. Pull requests that change how they're made build the packages
+# too, without releasing anything.
 name: Release
 
 on:
   push:
-    tags: ['v*']
+    branches: [main, beta]
   pull_request:
     paths:
       - .github/workflows/release.yml
+      - .github/workflows/ci.yml
       - .github/scripts/**
       - packaging/**
 
 permissions:
   contents: read
+
+# One at a time, so two betas can't take the same number. A pull request only
+# needs its latest push.
+concurrency:
+  group: packages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   source:
@@ -25,20 +36,29 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
+      arch-version: ${{ steps.version.outputs.arch-version }}
+      debian-version: ${{ steps.version.outputs.debian-version }}
+      beta: ${{ steps.version.outputs.beta }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # for the tags
+          fetch-depth: 0
       - name: Check the version
         id: version
         run: |
-          if [ "$GITHUB_REF_TYPE" = tag ]; then
-              version=$(sh .github/scripts/check-version.sh "$GITHUB_REF_NAME")
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+              sh .github/scripts/release-tag.sh "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
           else
-              version=$(sh .github/scripts/check-version.sh)
+              sh .github/scripts/release-tag.sh >> "$GITHUB_OUTPUT"
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Make the tarball
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          name=path-of-upgrading-${{ steps.version.outputs.version }}
+          name=path-of-upgrading-${TAG#v}
           git archive --prefix="$name/" -o "$name.tar.gz" HEAD
       - uses: actions/upload-artifact@v7
         with:
@@ -46,97 +66,55 @@ jobs:
           path: path-of-upgrading-*.tar.gz
           if-no-files-found: error
 
-  checks:
-    name: Checks
-    # a pull request has them from CI already
-    if: github.ref_type == 'tag'
+  build:
+    name: Build
     needs: source
+    # The packages come from the build the tests ran on. Without anything to
+    # release, a push is only checked.
     uses: ./.github/workflows/ci.yml
-
-  arch:
-    name: Arch Linux package
-    needs: [source, checks]
-    # once the checks have passed, or without them on a pull request
-    if: ${{ !cancelled() && !failure() }}
-    runs-on: ubuntu-latest
-    container: archlinux:latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install the build tools and libraries
-        run: sh .github/scripts/install-arch.sh
-      # where makepkg looks for the PKGBUILD's source before downloading it
-      - uses: actions/download-artifact@v8
-        with:
-          name: dist-source
-          path: packaging/arch
-      - name: Build and test the package
-        working-directory: packaging/arch
-        # makepkg won't run as root
-        run: |
-          useradd -m builder
-          chown -R builder .
-          runuser -u builder -- makepkg
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist-arch
-          # not the debug package
-          path: packaging/arch/path-of-upgrading-[0-9]*.pkg.tar.zst
-          if-no-files-found: error
-
-  debian:
-    name: Debian 13 package
-    needs: [source, checks]
-    if: ${{ !cancelled() && !failure() }}
-    runs-on: ubuntu-latest
-    container: debian:trixie
-    env:
-      LANG: C.UTF-8
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install the build tools and libraries
-        run: sh .github/scripts/install-debian.sh
-      - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build
-        run: cmake --build build
-      - name: Test
-        working-directory: build
-        run: sh ../.github/scripts/run-tests.sh
-      - name: Make the package
-        working-directory: build
-        run: cpack
-      # which fails when a package it depends on has the wrong name
-      - name: Install the package
-        run: |
-          apt-get install -y ./build/path-of-upgrading_*.deb
-          QT_QPA_PLATFORM=offscreen path-of-upgrading --version
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist-debian
-          path: build/path-of-upgrading_*.deb
-          if-no-files-found: error
+    with:
+      package: ${{ github.event_name == 'pull_request' || needs.source.outputs.release == 'true' }}
+      version: ${{ needs.source.outputs.version }}
+      tag: ${{ needs.source.outputs.tag }}
+      arch-version: ${{ needs.source.outputs.arch-version }}
+      debian-version: ${{ needs.source.outputs.debian-version }}
+      beta: ${{ needs.source.outputs.beta == 'true' }}
 
   release:
     name: Release
-    if: github.ref_type == 'tag'
-    needs: [source, checks, arch, debian]
+    if: needs.source.outputs.release == 'true' && github.event_name == 'push'
+    needs: [source, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      # not the builds the checks handed on
+      - uses: actions/checkout@v7
+        with:
+          # for the commits since the last release
+          fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
           pattern: dist-*
           path: dist
           merge-multiple: true
+      - name: Write the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.source.outputs.tag }}
+        run: sh .github/scripts/release-notes.sh "$TAG" "$GITHUB_SHA" > notes.md
       - name: Make the release
         working-directory: dist
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.source.outputs.tag }}
+          VERSION: ${{ needs.source.outputs.version }}
         run: |
           sha256sum -- * > SHA256SUMS
-          gh release create "$GITHUB_REF_NAME" --verify-tag \
-              --title "Path of Upgrading ${{ needs.source.outputs.version }}" \
-              --generate-notes *
+          if [ "$GITHUB_REF_NAME" = beta ]; then
+              n=${TAG##*-beta.}
+              set -- --title "Path of Upgrading $VERSION beta $n" --prerelease --latest=false
+          else
+              set -- --title "Path of Upgrading $VERSION" --latest
+          fi
+          gh release create "$TAG" --target "$GITHUB_SHA" --notes-file ../notes.md "$@" -- *

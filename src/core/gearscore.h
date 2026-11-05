@@ -20,8 +20,9 @@ namespace pou {
 // build in its slot. Each stat the build profile wants scores
 //   importance x roll quality (the roll against an excellent one),
 // and the total is measured against the best a slot can do: an item with
-// the slot's most important stats at excellent rolls. Stats the build has
-// no use for add nothing and are listed as wasted.
+// the slot's most important stats at excellent rolls. Stats the profile
+// doesn't rate add nothing, and are listed as not scored. That says nothing
+// about whether they help.
 
 // Importance multipliers by profile stat label, set in the gear score editor.
 using ProfileTweaks = QHash<QString, double>;
@@ -57,7 +58,7 @@ struct GearScore
     int score = 0;
     QString grade;                         // S, A, B, C or D; empty when unrated
     QList<GearContribution> contributions; // most points first
-    QStringList wasted;                    // mods the build has no use for
+    QStringList notScored;                 // mods the profile doesn't rate
     QStringList missing;                   // up to three important stats the item doesn't have
     double ideal = 0;                      // points of an excellent item for the slot
     QString resistNote;                    // why some resistance counted for less
@@ -69,6 +70,24 @@ struct GearScore
 std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &options = {});
 
 QString gearGrade(int score);
+
+// The stats that keep a gear score down, one to a string. The notes below are
+// built on them.
+//   the mods the profile doesn't rate, by name: "#% increased Rarity of Items found"
+QStringList notScoredStats(const GearScore &gear);
+//   the weakest rolls, "Life 40%", under that share of an excellent roll
+QStringList weakRolls(const GearScore &gear, int underPercent = 50);
+
+// What would raise a gear score, in the words the popup uses. Each is empty
+// when there's nothing to say.
+//   "Missing what your build wants: Life, Fire res."
+QString missingNote(const GearScore &gear);
+//   "Not in the gear score: #% increased Rarity of Items found."
+QString notScoredNote(const GearScore &gear);
+// The stats rolled under a share of an excellent roll, the weakest first and
+// three at most, "Weak rolls: Life 40%, Cold res 35% of an excellent roll."
+// Runes aren't rolls, so they're left out.
+QString weakRollsNote(const GearScore &gear, int underPercent = 50);
 
 // Points per unit of a stat for the build in that slot, with your tweaks; 0
 // when the build doesn't want it there.
@@ -85,6 +104,10 @@ struct KeyStat
 // The build's most important stats for a slot that can be searched for by
 // key, most important first. Resistances are left out.
 QList<KeyStat> topStats(const QString &slot, int count = 2, const GearScoreOptions &options = {});
+
+// The least of a stat worth searching for, from how much a top roll of it
+// gives: a bit over half of it, and at least 1.
+double searchMinimum(double cap);
 
 // One part of a slot's gear score, as a trade search weight.
 struct SearchWeight

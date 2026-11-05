@@ -11,6 +11,7 @@ public:
 
     void setWindow(QWindow *window) override { this->window = window; }
     void setPaused(bool paused) override { this->paused = paused; }
+    void showMessage(const QString &title, const QString &text) override { messages << title + u'\n' + text; }
 
     // as the menu does
     void chooseShow() { Q_EMIT showRequested(); }
@@ -22,4 +23,6 @@ public:
 
     QWindow *window = nullptr;
     bool paused = false;
+    // each title and text, on two lines
+    QStringList messages;
 };

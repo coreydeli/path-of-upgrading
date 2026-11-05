@@ -2,19 +2,28 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as QQC2
+import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // What the character you play wears, which items are judged against.
-FormCard.FormCardPage {
+ColumnsPage {
     id: gearPage
 
     required property App app
     readonly property GearList gear: app.gearList
     readonly property Resistances resists: app.resistances
 
+    // On a wide window the slots are laid out like the character's equipment
+    // screen, which wants the page to itself. Narrower, they're a list.
+    readonly property bool equipment: wide
+
     title: qsTr("Your Gear")
+    description: qsTr("What your character wears, and where an upgrade would help most.")
+    // the slots need room to put their notes beside them
+    minColumnWidth: Kirigami.Units.gridUnit * 44
+    maxColumnWidth: Kirigami.Units.gridUnit * (equipment ? 66 : 60)
+    maxColumns: equipment ? 1 : 3
 
     // One of them, typed in off the character sheet.
     component ResistField: NumberField {
@@ -23,51 +32,27 @@ FormCard.FormCardPage {
         maximum: 500
     }
 
-    // A slot and what's in it.
-    component SlotRow: FormRow {
-        id: slotRow
-
-        required property string slot
-        required property string name
-        required property string base
-        required property bool fromPob
-        required property string score
-        required property string grade
-
-        objectName: "slot:" + slot
-        text: slot
-        description: {
-            if (name === "")
-                return qsTr("Nothing saved");
-            const parts = [name];
-            if (base !== "")
-                parts.push(base);
-            if (fromPob)
-                parts.push(qsTr("from Path of Building"));
-            return parts.join(", ");
-        }
-
-        QQC2.Label {
-            objectName: "gearScore"
-            visible: slotRow.score !== ""
-            text: qsTr("Gear score %1 %2").arg(slotRow.score).arg(slotRow.grade)
-        }
-
-        QQC2.ToolButton {
-            objectName: "takeOffButton"
-            visible: slotRow.name !== ""
-            text: qsTr("Take Off")
-            icon.name: "list-remove"
-            display: QQC2.AbstractButton.IconOnly
-            Accessible.name: qsTr("Take Off %1").arg(slotRow.slot)
-            QQC2.ToolTip.text: text
-            QQC2.ToolTip.visible: hovered
-            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-            onClicked: gearPage.gear.takeOff(slotRow.slot)
-        }
+    // A slot, which takes itself off when asked.
+    component GearSlot: SlotRow {
+        onTakeOffAsked: gearPage.gear.takeOff(slot)
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
+        visible: recommended.visible
+        title: qsTr("Recommended Upgrades")
+    }
+
+    RecommendationCard {
+        id: recommended
+        upgrades: gearPage.app.recommendedUpgrades
+    }
+
+    SectionText {
+        visible: recommended.visible
+        text: qsTr("The slots where a better item helps most, and the stats to look for in it. Empty slots come first, then the lowest gear scores.")
+    }
+
+    SectionHeader {
         title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
     }
 
@@ -77,27 +62,38 @@ FormCard.FormCardPage {
             objectName: "overallScore"
             visible: gearPage.gear.overall !== ""
             text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
-            description: qsTr("Upgrade first: %1").arg(gearPage.gear.weakest)
-        }
-
-        FormCard.FormDelegateSeparator {
-            visible: overall.visible
+            // the headline of the page
+            textItem.font: Style.titleFont(Kirigami.Theme.defaultFont, 1.3)
+            textItem.color: Style.grade(gearPage.gear.overallGrade, Kirigami.Theme)
         }
 
         FormCard.FormTextDelegate {
+            id: nobody
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("Add a character or import a build on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: overall.visible || nobody.visible
+        }
+
+        EquipmentBoard {
+            Layout.fillWidth: true
+            Layout.margins: Kirigami.Units.gridUnit
+            visible: gearPage.equipment
+            gear: gearPage.gear
+            upgrades: gearPage.app.recommendedUpgrades
         }
 
         Repeater {
             model: gearPage.gear
 
-            delegate: SlotRow {
+            delegate: GearSlot {
                 required property bool extra
 
-                visible: !extra
+                visible: !extra && !gearPage.equipment
             }
         }
 
@@ -115,21 +111,18 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormSectionText {
+    SectionText {
         objectName: "gearHelp"
-        visible: gearPage.gear.character !== ""
         text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
     }
 
-    FormCard.FormHeader {
-        visible: resistances.visible
+    SectionHeader {
         title: qsTr("Your Resistances")
     }
 
     FormCard.FormCard {
         id: resistances
         objectName: "resistances"
-        visible: gearPage.gear.character !== ""
 
         FormCard.FormTextDelegate {
             id: resistSummary
@@ -220,20 +213,21 @@ FormCard.FormCardPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         visible: extras.visible
         title: qsTr("Weapon Swap, Flasks, Charms and Jewels")
     }
 
+    // on the equipment screen they're under the rest
     FormCard.FormCard {
         id: extras
         objectName: "extras"
-        visible: gearPage.gear.hasExtras
+        visible: gearPage.gear.hasExtras && !gearPage.equipment
 
         Repeater {
             model: gearPage.gear
 
-            delegate: SlotRow {
+            delegate: GearSlot {
                 required property bool extra
 
                 visible: extra

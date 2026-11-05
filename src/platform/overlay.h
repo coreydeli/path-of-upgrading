@@ -12,7 +12,8 @@ namespace pou {
 // Windows that stay over the game, fullscreen or not, and never take the
 // keyboard from it. On Wayland they're layer shell surfaces in the
 // compositor's overlay layer, which is above fullscreen windows, so this
-// needs a compositor with layer shell, like KWin.
+// needs a compositor with layer shell, like KWin. On Windows they're kept on
+// top, which is over the game in its windowed fullscreen.
 
 // The screen with that name, or else the main one.
 QScreen *screenNamed(const QString &name);
