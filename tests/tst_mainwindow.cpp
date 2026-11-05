@@ -493,6 +493,44 @@ private Q_SLOTS:
                      .toBool());
     }
 
+    void viewGear()
+    {
+        Window w;
+        CharacterList *list = w.app->characterList();
+        const QString wren = list->add(u"Wren"_s);
+        const QString ash = list->add(u"Ash"_s);
+        QVERIFY(w.show(u"charactersAction"_s));
+        QCOMPARE(list->current(), ash);
+
+        // plays the one it is on, and shows what it wears
+        QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"gearButton"_s)));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QCOMPARE(list->current(), wren);
+        QCOMPARE(w.settings().character, wren);
+        QVERIFY(w.window->findChild<QObject *>(u"gearAction"_s)->property("checked").toBool());
+        QVERIFY(!w.window->findChild<QObject *>(u"charactersAction"_s)->property("checked").toBool());
+
+        // the others are as they were
+        QCOMPARE(list->rowCount(), 2);
+        QVERIFY(w.show(u"charactersAction"_s));
+        QVERIFY(w.find(u"character:Wren"_s)->property("checked").toBool());
+        QVERIFY(!w.find(u"character:Ash"_s)->property("checked").toBool());
+
+        // the one that's played already just opens it
+        QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"gearButton"_s)));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QCOMPARE(list->current(), wren);
+    }
+
+    void gearButtonName()
+    {
+        Window w;
+        w.app->characterList()->add(u"Wren"_s);
+        QObject *button = w.find(u"character:Wren"_s)->findChild<QObject *>(u"gearButton"_s);
+        QCOMPARE(text(button), u"View Gear"_s);
+        QCOMPARE(spoken(button), u"View Gear of Wren"_s);
+    }
+
     void characterButtonNames()
     {
         // which are icons that all look alike, so each says whose it is
