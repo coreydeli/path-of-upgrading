@@ -1982,8 +1982,22 @@ private Q_SLOTS:
                  u"A Divine Orb is 400 Exalted Orbs in Runes of Aldur."_s);
         // which goes before yours
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), false);
+
+        // and is asked for again every ten minutes, as it says
+        QObject *minutes = w.find(u"rateMinutes"_s);
+        QCOMPARE(minutes->property("description").toString(),
+                 u"How many minutes to wait between updates. Rates updated just now."_s);
+        QCOMPARE(w.spinBox(u"rateMinutes"_s)->property("value").toInt(), 10);
+        QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 20, "valueModified"));
+        QCOMPARE(w.settings().trade.rateMinutes, 20);
+        QCOMPARE(w.app->ratesRefresher().waitMinutes(), 20);
+        QVERIFY(minutes->property("enabled").toBool());
+
         QVERIFY(toggle(autoRate));
         QCOMPARE(w.settings().trade.autoRate, false);
+        // when it isn't, there's nothing to wait for
+        QVERIFY(!minutes->property("enabled").toBool());
+        QCOMPARE(minutes->property("description").toString(), u"How many minutes to wait between updates."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
         QVERIFY(setValue(w.spinBox(u"divineRate"_s), 3505, "valueModified"));
         QCOMPARE(w.settings().trade.budget.divineRate, 350.5);
@@ -1999,6 +2013,8 @@ private Q_SLOTS:
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(w.find(u"autoRateSwitch"_s)->property("description").toString(),
                  u"It hasn't said yet, so it goes by yours."_s);
+        QCOMPARE(w.find(u"rateMinutes"_s)->property("description").toString(),
+                 u"How many minutes to wait between updates. The rates haven't come in yet."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
     }
 

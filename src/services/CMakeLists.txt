@@ -3,6 +3,7 @@ add_library(pou_services STATIC
     logging.cpp logging.h
     network.cpp network.h
     pobengine.cpp pobengine.h
+    ratesrefresher.cpp ratesrefresher.h
     ratesstore.cpp ratesstore.h
     tradeclient.cpp tradeclient.h
     tradedatastore.cpp tradedatastore.h

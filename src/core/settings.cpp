@@ -97,6 +97,7 @@ Settings loadSettings(const QSettings &store, bool beta)
     trade.budget.currency = currencyFromId(store.value(u"trade/currency"_s).toString());
     read(store, u"trade/divineRate"_s, trade.budget.divineRate, 0, noLimit);
     read(store, u"trade/autoRate"_s, trade.autoRate);
+    read(store, u"trade/rateMinutes"_s, trade.rateMinutes, minRateMinutes, maxRateMinutes);
 
     PobSettings &pob = s.pob;
     read(store, u"pob/enabled"_s, pob.enabled);
@@ -145,6 +146,7 @@ void saveSettings(QSettings &store, const Settings &s, bool beta)
     store.setValue(u"trade/currency"_s, currencyId(trade.budget.currency));
     store.setValue(u"trade/divineRate"_s, trade.budget.divineRate);
     store.setValue(u"trade/autoRate"_s, trade.autoRate);
+    store.setValue(u"trade/rateMinutes"_s, trade.rateMinutes);
 
     const PobSettings &pob = s.pob;
     store.setValue(u"pob/enabled"_s, pob.enabled);

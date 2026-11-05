@@ -15,6 +15,10 @@ namespace pou {
 
 // What you choose in the settings window, kept between runs.
 
+// The limits on how often the rate is asked for again.
+constexpr int minRateMinutes = 1;
+constexpr int maxRateMinutes = 60;
+
 // Whether this is a beta, as the release builds of one say with POU_BETA.
 // Trade searches start on in a beta and off otherwise, until you choose.
 bool isBetaBuild();
@@ -26,6 +30,8 @@ struct TradeSettings
     ListingStatus status = ListingStatus::Available;
     Budget budget;        // with the divine rate you typed in
     bool autoRate = true; // or poe.ninja's instead
+    // How often poe.ninja's rate is asked for again while that's in use.
+    int rateMinutes = 10;
 
     friend bool operator==(const TradeSettings &, const TradeSettings &) = default;
 };

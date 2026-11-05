@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <QDateTime>
 #include <QHash>
 #include <QJsonObject>
 #include <QString>
@@ -25,5 +26,15 @@ std::optional<double> divineInExalts(const QJsonObject &overview);
 // overview has no way to tell.
 using CurrencyRates = QHash<QString, double>;
 CurrencyRates currencyRatesInExalts(const QJsonObject &overview);
+
+// How long ago, as people say it: "just now", "1 minute ago", "3 hours ago".
+// A time ahead of the clock is just now.
+QString timeAgo(const QDateTime &then, const QDateTime &now);
+
+// What the settings window says of the rates: "Rates updated 3 minutes
+// ago.", the reason they couldn't be updated (with when they last were, if
+// ever), or that none have come in. The reason is empty when the last try
+// worked.
+QString ratesStatus(const QDateTime &fetched, const QString &error, const QDateTime &now);
 
 } // namespace pou
