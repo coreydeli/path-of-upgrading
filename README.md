@@ -28,8 +28,8 @@ released.
 - The gear score uses a build profile: life and resistances, Energy Shield
   spellcaster, Energy Shield attacker, or minion summoner. You can change how
   much each stat adds under Affix Impact, from Not at all (0x) to Three times
-  (3x). Stat weights can be edited or suggested from the gear you wear, and stats you don't care
-  about can be ignored or left out of searches.
+  (3x). Stat weights can be edited or suggested from the gear you wear, and
+  stats you don't care about can be ignored or left out of searches.
 - Imports builds from Path of Building: from a code, a link, a file, or one
   you saved in Path of Building's own folder. It runs Path of Building without
   its window, so your build's own numbers judge the item. The import picks the
