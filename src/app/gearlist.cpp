@@ -86,6 +86,8 @@ QVariant GearList::data(const QModelIndex &index, int role) const
         return !mainSlots().contains(row.slot);
     case NotesRole:
         return QVariant::fromValue(row.notes);
+    case RarityRole:
+        return worn ? item->rarity : QString();
     case FirstRole:
         return index.row() == 0 ||
                mainSlots().contains(m_rows.at(index.row() - 1).slot) != mainSlots().contains(row.slot);
@@ -96,9 +98,9 @@ QVariant GearList::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> GearList::roleNames() const
 {
     return {
-        {SlotRole, "slot"},       {NameRole, "name"},   {BaseRole, "base"},
-        {FromPobRole, "fromPob"}, {ScoreRole, "score"}, {GradeRole, "grade"},
-        {ExtraRole, "extra"},     {NotesRole, "notes"}, {FirstRole, "first"},
+        {SlotRole, "slot"},   {NameRole, "name"},     {BaseRole, "base"},   {FromPobRole, "fromPob"},
+        {ScoreRole, "score"}, {GradeRole, "grade"},   {ExtraRole, "extra"}, {NotesRole, "notes"},
+        {FirstRole, "first"}, {RarityRole, "rarity"},
     };
 }
 

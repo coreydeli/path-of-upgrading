@@ -60,8 +60,9 @@ public:
         ScoreRole,                   // its gear score, "78", empty when it has none
         GradeRole,                   // "A"
         ExtraRole,                   // not one of the main slots
-        NotesRole, // QList<GearNote>: what would raise its score, or what an empty slot wants
-        FirstRole, // the first of the main slots, or of the others
+        NotesRole,  // QList<GearNote>: what would raise its score, or what an empty slot wants
+        FirstRole,  // the first of the main slots, or of the others
+        RarityRole, // "Rare", empty when there is nothing on
     };
 
     // They have to outlive it.
