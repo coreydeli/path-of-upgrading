@@ -136,6 +136,12 @@ Kirigami.ApplicationWindow {
 
     Binding {
         target: Style
+        property: "plain"
+        value: root.app.appearance.plain
+    }
+
+    Binding {
+        target: Style
         property: "headingFamily"
         value: root.app.appearance.headingFamily
     }

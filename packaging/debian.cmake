@@ -28,7 +28,7 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS
     "qt6-wayland, \
 qml6-module-qtqml, qml6-module-qtqml-models, qml6-module-qtqml-workerscript, \
 qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-dialogs, \
-qml6-module-qtquick-layouts, qml6-module-qtquick-templates, qml6-module-qtquick-window, \
+qml6-module-qtquick-layouts, qml6-module-qtquick-shapes, qml6-module-qtquick-templates, qml6-module-qtquick-window, \
 qml6-module-org-kde-kirigami, qml6-module-org-kde-kirigamiaddons-components, \
 qml6-module-org-kde-kirigamiaddons-delegates, qml6-module-org-kde-kirigamiaddons-formcard, \
 qml6-module-org-kde-kquickcontrols")
