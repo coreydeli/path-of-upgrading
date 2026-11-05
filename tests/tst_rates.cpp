@@ -172,9 +172,9 @@ private Q_SLOTS:
     {
         const QDateTime now(QDate(2026, 11, 4), QTime(12, 0), QTimeZone::UTC);
         const QDateTime fiveAgo = now.addSecs(-5 * 60);
-        QCOMPARE(ratesStatus(fiveAgo, {}, now), u"Rates updated 5 minutes ago."_s);
-        QCOMPARE(ratesStatus(now, {}, now), u"Rates updated just now."_s);
-        QCOMPARE(ratesStatus({}, {}, now), u"The rates haven't come in yet."_s);
+        QCOMPARE(ratesStatus(fiveAgo, {}, now), u"Prices updated 5 minutes ago."_s);
+        QCOMPARE(ratesStatus(now, {}, now), u"Prices updated just now."_s);
+        QCOMPARE(ratesStatus({}, {}, now), u"The prices haven't come in yet."_s);
         // when it let them down, with the reason and what there is
         QCOMPARE(ratesStatus(fiveAgo, u"poe.ninja didn't answer in time."_s, now),
                  u"poe.ninja didn't answer in time. Last updated 5 minutes ago."_s);
