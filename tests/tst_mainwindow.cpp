@@ -837,7 +837,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Path of Building"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"gearScoreAction"_s));
@@ -1701,9 +1701,22 @@ private Q_SLOTS:
         // the sidebar entry and the page both say Settings, and the others stay their own pages
         QCOMPARE(text(w.window->findChild<QObject *>(u"overlayAction"_s)), u"Settings"_s);
         QCOMPARE(text(w.window->findChild<QObject *>(u"tradeAction"_s)), u"Trade"_s);
-        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Path of Building"_s);
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+    }
+
+    void buildAnalysisName()
+    {
+        Window w;
+        // the sidebar entry and the page say Build Analysis, and the program keeps its own name inside
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
+        QVERIFY(w.show(u"pobAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
+        QCOMPARE(
+            text(w.find(u"analysisIntro"_s)),
+            u"Path of Building checks each item with your build, for the damage and defences it would give."_s);
+        QCOMPARE(text(w.find(u"enabledSwitch"_s)), u"Judge items with Path of Building"_s);
     }
 
     void itemHistoryName()
