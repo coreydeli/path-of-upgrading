@@ -513,8 +513,8 @@ private Q_SLOTS:
             Running quit(folders);
             QVERIFY(quit.app.onboarding()->isPending());
         }
-        // the first start wrote its own settings by now, which aren't a choice
-        QVERIFY(QFile::exists(folders.paths.settings));
+        // Where the first start wrote its own settings (autostart, the
+        // hotkeys), they aren't a choice. Windows writes none.
         Running again(folders);
         QVERIFY(again.app.onboarding()->isPending());
         QVERIFY(!again.app.settings().settings().setupDone);
