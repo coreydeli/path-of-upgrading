@@ -22,6 +22,8 @@ public:
 
     // Starts with only the tray icon, as it does when you log in.
     bool background() const;
+    // Shows the setup guide again, as on the first run.
+    bool setup() const;
     QString errorText() const;
     QString helpText();
 

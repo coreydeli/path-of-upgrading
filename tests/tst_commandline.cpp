@@ -17,12 +17,25 @@ private Q_SLOTS:
         CommandLine line;
         QVERIFY(line.parse({u"path-of-upgrading"_s}));
         QVERIFY(!line.background());
+        QVERIFY(!line.setup());
     }
 
     void background()
     {
         CommandLine line;
         QVERIFY(line.parse({u"path-of-upgrading"_s, u"--background"_s}));
+        QVERIFY(line.background());
+    }
+
+    void setup()
+    {
+        CommandLine line;
+        QVERIFY(line.parse({u"path-of-upgrading"_s, u"--setup"_s}));
+        QVERIFY(line.setup());
+        QVERIFY(!line.background());
+        // and it can be asked for in the background
+        QVERIFY(line.parse({u"path-of-upgrading"_s, u"--setup"_s, u"--background"_s}));
+        QVERIFY(line.setup());
         QVERIFY(line.background());
     }
 
@@ -47,6 +60,7 @@ private Q_SLOTS:
         CommandLine line;
         const QString help = line.helpText();
         QVERIFY(help.contains(u"--background"_s));
+        QVERIFY(help.contains(u"--setup"_s));
         QVERIFY(help.contains(u"--help"_s));
         QVERIFY(help.contains(u"--version"_s));
         QVERIFY(help.contains(u"Checks Path of Exile 2 items"_s));

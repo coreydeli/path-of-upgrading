@@ -8,6 +8,7 @@
 #include "faketray.h"
 #include "platform/autostart.h"
 
+#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QWindow>
@@ -129,6 +130,33 @@ private Q_SLOTS:
         Setup s;
         s.desktop.setWindow(&s.window);
         s.desktop.startedAgain(arguments);
+        QCOMPARE(s.window.isVisible(), shown);
+    }
+
+    void startedAgainForTheSetup_data()
+    {
+        QTest::addColumn<QStringList>("arguments");
+        QTest::addColumn<bool>("asked");
+        QTest::addColumn<bool>("shown");
+        const QString program = u"path-of-upgrading"_s;
+        QTest::newRow("setup") << QStringList{program, u"--setup"_s} << true << true;
+        QTest::newRow("in the background")
+            << QStringList{program, u"--setup"_s, u"--background"_s} << true << false;
+        QTest::newRow("plain") << QStringList{program} << false << true;
+        QTest::newRow("from the launcher") << QStringList() << false << true;
+        QTest::newRow("at login") << QStringList{program, u"--background"_s} << false << false;
+    }
+
+    void startedAgainForTheSetup()
+    {
+        QFETCH(QStringList, arguments);
+        QFETCH(bool, asked);
+        QFETCH(bool, shown);
+        Setup s;
+        s.desktop.setWindow(&s.window);
+        QSignalSpy setupAsked(&s.desktop, &Desktop::setupAsked);
+        s.desktop.startedAgain(arguments);
+        QCOMPARE(setupAsked.size(), asked ? 1 : 0);
         QCOMPARE(s.window.isVisible(), shown);
     }
 
