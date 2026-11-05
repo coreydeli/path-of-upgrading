@@ -2031,7 +2031,7 @@ private Q_SLOTS:
         QTRY_VERIFY(settledOpen());
 
         // it's shut by the time it's modal
-        w.window->resize(700, 1400);
+        w.window->resize(450, 1400);
         QTRY_VERIFY(modal());
         QVERIFY(!open());
 
@@ -2039,7 +2039,7 @@ private Q_SLOTS:
         QTRY_VERIFY(settledOpen());
 
         // and a window that's wide again while the sidebar closes keeps it
-        w.window->resize(700, 1400);
+        w.window->resize(450, 1400);
         QTRY_VERIFY(drawer->property("animating").toBool());
         w.window->resize(1900, 900);
         QTRY_VERIFY(settledOpen());
