@@ -2396,6 +2396,18 @@ private Q_SLOTS:
         QCOMPARE(style->property("appColors").toBool(), true);
     }
 
+    void styleFollowsTheDecorations()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        auto *style = w.qml.singletonInstance<QObject *>("PathOfUpgrading", "Style");
+        QVERIFY(style);
+        QCOMPARE(style->property("plain").toBool(), false);
+        w.app->appearance()->setDecorations(u"plain"_s);
+        QCOMPARE(style->property("plain").toBool(), true);
+        w.app->appearance()->setDecorations(u"full"_s);
+        QCOMPARE(style->property("plain").toBool(), false);
+    }
+
     void showsAppearanceSettings()
     {
         Window w;

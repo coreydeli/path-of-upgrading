@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/fonts.h"
+#include "app/itemreport.h"
 
+#include <QAccessible>
 #include <QColor>
 #include <QFont>
 #include <QFontDatabase>
@@ -38,6 +40,9 @@ const char *probe = "import QtQuick\n"
                     "    function frame() { return Style.frame(Kirigami.Theme); }\n"
                     "    function inner() { return Style.inner(Kirigami.Theme); }\n"
                     "    function title(font) { return Style.titleFont(font); }\n"
+                    "    function gold() { return Style.gold(Kirigami.Theme); }\n"
+                    "    function clear(c) { return Style.clear(c); }\n"
+                    "    function bigTitle(font) { return Style.titleFont(font, 2); }\n"
                     "    readonly property color text: Kirigami.Theme.textColor\n"
                     "    readonly property color background: Kirigami.Theme.backgroundColor\n"
                     "    readonly property color highlight: Kirigami.Theme.highlightColor\n"
@@ -83,6 +88,7 @@ private Q_SLOTS:
 
     void cleanup()
     {
+        m_style->setProperty("plain", false);
         m_style->setProperty("appColors", false);
         m_style->setProperty("headingFamily", u"Cinzel"_s);
     }
@@ -204,7 +210,161 @@ private Q_SLOTS:
         QVERIFY(QFontDatabase::isSmoothlyScalable(u"Cinzel"_s, QFontDatabase::styles(u"Cinzel"_s).value(0)));
     }
 
+    void goldIsTheAppsOrTheDesktops()
+    {
+        m_style->setProperty("appColors", true);
+        QCOMPARE(call(u"gold"_s).value<QColor>(), hex("#d4b06a"));
+        m_style->setProperty("appColors", false);
+        QCOMPARE(call(u"gold"_s).value<QColor>(), color(u"highlight"_s));
+    }
+
+    void clearKeepsTheColorAndLosesItsAlpha()
+    {
+        const QColor from = hex("#d4b06a");
+        const QColor out = call(u"clear"_s, {from}).value<QColor>();
+        QCOMPARE(out.alpha(), 0);
+        QCOMPARE(out.red(), from.red());
+        QCOMPARE(out.green(), from.green());
+        QCOMPARE(out.blue(), from.blue());
+    }
+
+    void titlesScaleTheFontTheyAreGiven()
+    {
+        QFont base;
+        base.setPointSizeF(10);
+        QCOMPARE(call(u"title"_s, {base}).value<QFont>().pointSizeF(), 10.0);
+        QCOMPARE(call(u"bigTitle"_s, {base}).value<QFont>().pointSizeF(), 20.0);
+    }
+
+    void decorationsAreOnUnlessPlain() { QCOMPARE(m_style->property("plain").toBool(), false); }
+
+    void aGaugeFillsToItsScoreInTheColorOfItsGrade()
+    {
+        std::unique_ptr<QQuickItem> gauge = make("ScoreGauge { score: \"72\"; grade: \"A\" }");
+        QVERIFY(gauge);
+        QCOMPARE(gauge->property("fraction").toDouble(), 0.72);
+        QCOMPARE(gauge->property("tint").value<QColor>(), grade(u"A"_s));
+        QCOMPARE(gauge->property("ring").toBool(), true);
+        QCOMPARE(gauge->property("text").toString(), u"72 A"_s);
+        QVERIFY(gauge->implicitWidth() > 0);
+        QCOMPARE(gauge->implicitWidth(), gauge->implicitHeight());
+    }
+
+    void aGaugeStaysWithinTheRing()
+    {
+        std::unique_ptr<QQuickItem> over = make("ScoreGauge { score: \"140\"; grade: \"S\" }");
+        QCOMPARE(over->property("fraction").toDouble(), 1.0);
+        std::unique_ptr<QQuickItem> none = make("ScoreGauge { score: \"\"; grade: \"\" }");
+        QCOMPARE(none->property("fraction").toDouble(), 0.0);
+    }
+
+    void gaugesComeInThreeSizes()
+    {
+        const auto width = [&](const char *size) {
+            return make(QByteArray("ScoreGauge { score: \"50\"; grade: \"C\"; size: \"") + size + "\" }")
+                ->implicitWidth();
+        };
+        QVERIFY(width("small") < width("medium"));
+        QVERIFY(width("medium") < width("large"));
+    }
+
+    void aGaugeIsReadAsItsScore()
+    {
+        std::unique_ptr<QQuickItem> gauge = make("ScoreGauge { score: \"72\"; grade: \"A\" }");
+        QAccessibleInterface *read = QAccessible::queryAccessibleInterface(gauge.get());
+        QVERIFY(read);
+        QCOMPARE(read->text(QAccessible::Name), u"Gear score 72, grade A"_s);
+    }
+
+    void plainDrawsAGaugeAsText()
+    {
+        m_style->setProperty("plain", true);
+        std::unique_ptr<QQuickItem> gauge = make("ScoreGauge { score: \"72\"; grade: \"A\" }");
+        QCOMPARE(gauge->property("ring").toBool(), false);
+        // the size of a line of text, not of a ring
+        QVERIFY(gauge->implicitHeight() < 3 * 16);
+    }
+
+    void aFrameHasFourCorners() { QCOMPARE(corners(), 4); }
+
+    void plainLeavesOutTheCorners()
+    {
+        m_style->setProperty("plain", true);
+        QCOMPARE(corners(), 0);
+    }
+
+    void aFrameLightsInGold()
+    {
+        m_style->setProperty("appColors", true);
+        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
+        const auto outline = [&] {
+            return frame->childItems()
+                .at(0)
+                ->property("border")
+                .value<QObject *>()
+                ->property("color")
+                .value<QColor>();
+        };
+        QCOMPARE(outline(), hex("#5c4a32"));
+        frame->setProperty("lit", true);
+        QCOMPARE(outline(), hex("#d4b06a"));
+    }
+
+    void aTableMeasuresItsChangesAgainstTheBiggest()
+    {
+        std::unique_ptr<QQuickItem> table = make("ChangesTable { function size(c) { return sizeOf(c) } }");
+        QVERIFY(table);
+        QList<ReportFigure> figures;
+        for (const QString &change : {u"+1,234%"_s, u"-300"_s, u"at cap"_s}) {
+            ReportFigure figure;
+            figure.change = change;
+            figures << figure;
+        }
+        table->setProperty("figures", QVariant::fromValue(figures));
+        QCOMPARE(table->property("biggest").toDouble(), 1234.0);
+        QVariant size;
+        QVERIFY(QMetaObject::invokeMethod(table.get(), "size", Q_RETURN_ARG(QVariant, size),
+                                          Q_ARG(QVariant, u"-300"_s)));
+        QCOMPARE(size.toDouble(), 300.0);
+        QVERIFY(QMetaObject::invokeMethod(table.get(), "size", Q_RETURN_ARG(QVariant, size),
+                                          Q_ARG(QVariant, u"at cap"_s)));
+        QCOMPARE(size.toDouble(), 0.0);
+    }
+
+    void aPillIsTintedInTheColorOfItsTone()
+    {
+        std::unique_ptr<QQuickItem> pill = make("TonePill { text: \"Upgrade\"; tone: 1 }");
+        QCOMPARE(pill->property("tint").value<QColor>(), tone(good, false));
+        std::unique_ptr<QQuickItem> blind = make("TonePill { text: \"Upgrade\"; tone: 1; colorblind: true }");
+        QCOMPARE(blind->property("tint").value<QColor>(), tone(good, true));
+        QVERIFY(pill->implicitWidth() > 0);
+    }
+
 private:
+    std::unique_ptr<QQuickItem> make(const QByteArray &body)
+    {
+        QQmlComponent component(&m_engine);
+        component.setData("import QtQuick\nimport PathOfUpgrading\n" + body + "\n", QUrl());
+        std::unique_ptr<QQuickItem> item(qobject_cast<QQuickItem *>(component.create()));
+        if (!item)
+            qWarning("%s", qPrintable(component.errorString()));
+        else
+            item->setParentItem(m_window.contentItem());
+        return item;
+    }
+
+    // the corner pieces are the children that are ten by ten
+    int corners()
+    {
+        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
+        int count = 0;
+        for (QQuickItem *child : frame->childItems()) {
+            if (child->width() == 10 && child->height() == 10)
+                ++count;
+        }
+        return count;
+    }
+
     QVariant call(const QString &name, const QVariantList &args = {}) const
     {
         QVariant result;

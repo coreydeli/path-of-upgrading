@@ -19,8 +19,16 @@ ColumnLayout {
     // in whole pixels, as Qt 6.8's layouts round it down and the widest
     // number wouldn't fit
     readonly property int numberWidth: Math.ceil(number.implicitWidth)
+    // the biggest change shown, which the bars are measured against
+    readonly property real biggest: figures.reduce((most, figure) => Math.max(most, sizeOf(figure.change)), 0)
 
     spacing: 0
+
+    // "+1,234%" is 1234
+    function sizeOf(change: string): real {
+        const size = Math.abs(parseFloat(change.replace(/,/g, "")));
+        return isNaN(size) ? 0 : size;
+    }
 
     // The widest a number gets, in bold like the change, so the columns line
     // up. It's a label like theirs, as the style can draw labels wider than
@@ -30,6 +38,7 @@ ColumnLayout {
 
         visible: false
         font.bold: true
+        font.features: ({"tnum": 1})
         text: "+88,888%"
     }
 
@@ -101,6 +110,7 @@ ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 horizontalAlignment: Text.AlignRight
                 opacity: 0.7
+                font.features: ({"tnum": 1})
                 text: change.modelData.from
             }
 
@@ -108,17 +118,40 @@ ColumnLayout {
                 Layout.preferredWidth: table.numberWidth
                 Layout.alignment: Qt.AlignTop
                 horizontalAlignment: Text.AlignRight
+                font.features: ({"tnum": 1})
                 text: change.modelData.to
             }
 
-            ToneLabel {
+            Item {
                 Layout.preferredWidth: table.numberWidth
+                Layout.preferredHeight: figure.implicitHeight
                 Layout.alignment: Qt.AlignTop
-                horizontalAlignment: Text.AlignRight
-                font.bold: true
-                text: change.modelData.change
-                tone: change.modelData.tone
-                colorblind: table.colorblind
+
+                // how big the change is, to the right for a gain and the
+                // left for a loss, behind the number
+                Rectangle {
+                    readonly property real part: table.biggest > 0 ? table.sizeOf(change.modelData.change) / table.biggest : 0
+
+                    x: change.modelData.tone === Tone.Bad ? parent.width / 2 - width : parent.width / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.max(part > 0 ? 2 : 0, part * parent.width / 2)
+                    height: parent.height - 4
+                    visible: change.modelData.tone === Tone.Good || change.modelData.tone === Tone.Bad
+                    color: Style.tint(Kirigami.Theme.backgroundColor,
+                                      Style.tone(change.modelData.tone, table.colorblind, Kirigami.Theme), 0.3)
+                }
+
+                ToneLabel {
+                    id: figure
+
+                    width: parent.width
+                    horizontalAlignment: Text.AlignRight
+                    font.bold: true
+                    font.features: ({"tnum": 1})
+                    text: change.modelData.change
+                    tone: change.modelData.tone
+                    colorblind: table.colorblind
+                }
             }
         }
     }

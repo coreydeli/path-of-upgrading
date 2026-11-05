@@ -12,6 +12,9 @@ QtObject {
     property bool appColors: false
     // the family the headings are set in, which is Cinzel unless it's changed
     property string headingFamily: "Cinzel"
+    // Whether the extras are left out: the corner pieces, the gauges' rings
+    // and the popup's fade.
+    property bool plain: false
 
     // the item colors the game's players read at a glance
     function rarity(rarity: string, theme): color {
@@ -91,12 +94,27 @@ QtObject {
         return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.1);
     }
 
-    // The heading font, the size of the one it's given. Cinzel only has
-    // capitals, its lower case are small ones, so it's used as it is.
-    function titleFont(base: font): font {
+    // what the frames' diamonds and the lit edges are in
+    function gold(theme): color {
+        return appColors ? "#d4b06a" : theme.highlightColor;
+    }
+
+    // a color with part of another laid over it
+    function tint(base: color, over: color, part: real): color {
+        return Kirigami.ColorUtils.tintWithAlpha(base, over, part);
+    }
+
+    // the same color, but see through
+    function clear(from: color): color {
+        return Qt.rgba(from.r, from.g, from.b, 0);
+    }
+
+    // The heading font, the size of the one it's given times scale. Cinzel
+    // only has capitals, its lower case are small ones, so it's used as it is.
+    function titleFont(base: font, scale = 1): font {
         return Qt.font({
             family: headingFamily,
-            pointSize: base.pointSize,
+            pointSize: base.pointSize * scale,
             weight: Font.Bold,
             letterSpacing: 0.5
         });

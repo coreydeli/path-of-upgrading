@@ -11,6 +11,7 @@ Item {
     id: row
 
     required property string name
+    required property string rarity
     required property string base
     required property int itemLevel
     required property var properties
@@ -26,17 +27,52 @@ Item {
     // How much of the right edge the scroll bar covers, which the row keeps clear
     property real clearance: 0
 
+    // the room a row leaves round its text, inside its frame
+    readonly property real inset: Kirigami.Units.largeSpacing
+
     width: ListView.view.width
-    implicitHeight: content.implicitHeight + 2 * Kirigami.Units.smallSpacing
+    implicitHeight: content.implicitHeight + 2 * inset + Kirigami.Units.smallSpacing
+
+    HoverHandler {
+        id: hover
+    }
+
+    // the frame, with a strip down the left in the color of its rarity
+    Item {
+        id: card
+
+        anchors {
+            fill: parent
+            bottomMargin: Kirigami.Units.smallSpacing
+            rightMargin: row.clearance
+        }
+
+        Rectangle {
+            anchors {
+                top: parent.top
+                bottom: parent.bottom
+                left: parent.left
+                margins: 1
+            }
+            width: 3
+            color: Style.rarity(row.rarity, Kirigami.Theme)
+        }
+
+        OrnateFrame {
+            anchors.fill: parent
+            lit: hover.hovered
+        }
+    }
 
     ColumnLayout {
         id: content
 
         anchors {
-            fill: parent
-            topMargin: Kirigami.Units.smallSpacing
-            bottomMargin: Kirigami.Units.smallSpacing
-            rightMargin: row.clearance
+            fill: card
+            topMargin: row.inset
+            bottomMargin: row.inset
+            leftMargin: row.inset + 3
+            rightMargin: row.inset
         }
         spacing: 0
 
@@ -53,6 +89,7 @@ Item {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     font.bold: true
+                    color: Style.rarity(row.rarity, Kirigami.Theme)
                     text: row.name
                 }
 
@@ -94,10 +131,26 @@ Item {
                 Layout.alignment: Qt.AlignTop
                 spacing: 0
 
-                QQC2.Label {
+                // the price, the way it's said at the market
+                Rectangle {
                     Layout.alignment: Qt.AlignRight
-                    font.bold: true
-                    text: row.price
+                    implicitWidth: priceLabel.implicitWidth + 2 * Kirigami.Units.smallSpacing
+                    implicitHeight: priceLabel.implicitHeight + 2
+                    color: Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.1)
+                    border {
+                        width: 1
+                        color: Style.gold(Kirigami.Theme)
+                    }
+
+                    QQC2.Label {
+                        id: priceLabel
+
+                        anchors.centerIn: parent
+                        font.bold: true
+                        // digits of one width, so the prices line up
+                        font.features: {"tnum": 1}
+                        text: row.price
+                    }
                 }
 
                 QQC2.Label {
@@ -122,8 +175,7 @@ Item {
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.largeSpacing
 
-                ToneLabel {
-                    font.bold: true
+                TonePill {
                     text: row.verdict.verdict
                     tone: row.verdict.tone
                     colorblind: row.colorblind
@@ -135,6 +187,14 @@ Item {
                     text: row.verdict.score
                     tone: row.verdict.tone
                     colorblind: row.colorblind
+                }
+
+                // the ring is for the gear score; plain leaves it to the line below
+                ScoreGauge {
+                    visible: !Style.plain && row.verdict.gearPoints !== ""
+                    size: "small"
+                    score: row.verdict.gearPoints
+                    grade: row.verdict.gearGrade
                 }
             }
 
@@ -271,14 +331,6 @@ Item {
                 font: Kirigami.Theme.smallFont
                 text: row.listed
             }
-        }
-    }
-
-    Kirigami.Separator {
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
         }
     }
 }

@@ -82,7 +82,9 @@ released.
   the hotkeys couldn't be set up.
 - Has dark colors of its own, as a KDE color scheme, or follows your desktop's
   colors, from the Appearance page. The same page picks the heading font, the
-  text font and the text size.
+  text font and the text size. Decorations there can be set to Plain, which
+  leaves out the popup's corner pieces and fade, and the rings round gear
+  scores.
 
 
 ## Installing
