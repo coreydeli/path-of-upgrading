@@ -31,6 +31,10 @@ on:
       debian-version:
         type: string
         default: ""
+      beta:
+        description: Build a beta, which has trade searches on by default
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -166,7 +170,7 @@ jobs:
           DEBIAN_VERSION: ${{ inputs.debian-version }}
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DPOU_BETA=${{ inputs.beta && 'ON' || 'OFF' }}
           ${DEBIAN_VERSION:+"-DPOU_PACKAGE_VERSION=$DEBIAN_VERSION"}
       - name: Build
         run: |
@@ -244,6 +248,7 @@ jobs:
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DPOU_BETA=${{ inputs.beta && 'ON' || 'OFF' }}
       # going on past an error, so each run shows them all
       - name: Build
         run: |

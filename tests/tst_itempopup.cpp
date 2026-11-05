@@ -259,6 +259,28 @@ private Q_SLOTS:
         QVERIFY(popup.isTradeAvailable());
     }
 
+    void tradeNote()
+    {
+        // why there are no trade buttons, for the popup to say
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        QSignalSpy changed(&popup, &ItemPopup::tradeChanged);
+        QVERIFY(popup.tradeNote().isEmpty());
+        popup.setTradeNote(u"Trade searches are turned off."_s);
+        QCOMPARE(popup.tradeNote(), u"Trade searches are turned off."_s);
+        QCOMPARE(changed.size(), 1);
+        popup.setTradeNote(u"Trade searches are turned off."_s);
+        QCOMPARE(changed.size(), 1);
+
+        // and it stays for the next item
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QCOMPARE(popup.tradeNote(), u"Trade searches are turned off."_s);
+        popup.setTradeNote({});
+        QVERIFY(popup.tradeNote().isEmpty());
+        QCOMPARE(changed.size(), 2);
+    }
+
     void tradeButtons_data()
     {
         QTest::addColumn<QString>("text");
@@ -302,6 +324,28 @@ private Q_SLOTS:
         currency.gear = false;
         popup.showReport(currency, mouseAt(200, 300));
         QVERIFY(!button(popup, u"Same or Better"_s));
+    }
+
+    void saysWhyThereAreNoTradeButtons()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        const QString why = u"Trade searches are turned off. Turn them on on the Trade page."_s;
+        popup.setTradeNote(why);
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
+        QVERIFY(shown(popup, why));
+
+        // not once there are, or for what isn't gear
+        popup.setTradeAvailable(true);
+        QVERIFY(!shown(popup, why));
+        popup.setTradeAvailable(false);
+        QVERIFY(shown(popup, why));
+        ItemReport currency = aReport();
+        currency.gear = false;
+        popup.showReport(currency, mouseAt(200, 300));
+        QVERIFY(!shown(popup, why));
     }
 
     void tradeSearched()

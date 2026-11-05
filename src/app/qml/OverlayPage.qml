@@ -184,8 +184,9 @@ ColumnsPage {
 
         NumberField {
             objectName: "autoHide"
-            label: qsTr("Seconds until it hides")
-            description: qsTr("It stays while the mouse is over it.")
+            label: qsTr("Popup Timeout")
+            description: qsTr("How many seconds the popup stays up before it hides. "
+                              + "It stays while the mouse is over it.")
             minimum: 2
             maximum: 120
             value: overlayPage.options.autoHideSeconds

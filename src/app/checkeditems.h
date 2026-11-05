@@ -18,6 +18,9 @@ class CheckedItems : public QAbstractListModel
     QML_ELEMENT
     QML_UNCREATABLE("The app has the one.")
 
+    // How many items it lists, for the page to say.
+    Q_PROPERTY(int limit READ limit CONSTANT)
+
 public:
     enum Role {
         NameRole = Qt::UserRole + 1, // "Storm Crown", or its base type when it has no name
@@ -34,6 +37,8 @@ public:
     int rowCount(const QModelIndex &parent = {}) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
+
+    int limit() const;
 
     // Has the popup show the item again, judged for the character you play
     // now. Nothing for a row that isn't there.

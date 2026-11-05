@@ -35,8 +35,10 @@ released.
   its window, so your build's own numbers judge the item. The import picks the
   profile that fits the build.
 - Finds Path of Building as the Flatpak from Flathub
-  (`community.pathofbuilding.PathOfBuilding`), as other installs of
-  rusty-path-of-building, or in a folder you choose.
+  (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
+  installer on Windows, or in a folder you choose. When it can't be found or
+  won't work, the Path of Building page says why and what to do, with buttons
+  for Discover, Flathub, the install command and, on Windows, the download page.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
@@ -50,10 +52,15 @@ released.
   hardcore. Solo self-found turns them off, as there is no trading in it.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
-  score of each slot, the overall score, the three slots to upgrade first, and
-  what each slot needs to score more. It also has your resistances, from your
-  build or typed in off the character sheet, so an item that leaves one under
-  the cap says so.
+  score of each slot, the overall score, and what each slot needs to score
+  more. Its Recommended Upgrades card lists up to three slots to upgrade first,
+  with the stats to look for in a better item. Each slot with an item also has
+  Find an Upgrade, which searches the trade site when trade searches are on.
+  The gear page also has your resistances, from your build or typed in off the
+  character sheet, so an item that leaves one under the cap says so.
+- Spreads the settings pages across a wide window. Their cards flow into up to
+  three columns, and stack again on a narrow one. On the gear page, your
+  resistances and the other worn items sit beside the main gear.
 - Can sign in to the trade site with your session ID, which is kept in your
   system keyring. Signed out, the site only takes simple searches, so upgrade
   searches look for a few of your build's key stats, and the results window
@@ -185,7 +192,9 @@ by the gear score or your stat weights.
 - Windows, from the zip: delete the folder
 
 Your settings and characters are kept, in the folders under
-[Your data](#your-data) on Linux, and in AppData on Windows.
+[Your data](#your-data) on Linux, and in AppData on Windows. On Linux the
+autostart entry stays too, so turn off Start with the desktop before you
+uninstall.
 
 ## Requirements
 
@@ -271,8 +280,10 @@ an X server of their own from `xvfb-run`.
 - `~/.cache/path-of-upgrading` has what it learned from the trade site and
   poe.ninja
 
-If you turn on Start with the desktop, there is also an entry in
-`~/.config/autostart`, which you can turn off in System Settings too.
+The app writes an entry to `~/.config/autostart` the first time it starts, so it
+can start with your desktop. You can turn that off with the Start with the
+desktop switch, or in System Settings. Removing the package doesn't remove the
+entry, so turn the switch off before you uninstall.
 
 The session ID is not in any of them. It is in the system keyring.
 

@@ -3,6 +3,7 @@
 
 #include "core/resists.h"
 
+#include <QHash>
 #include <QList>
 #include <QRegularExpression>
 #include <QString>
@@ -88,5 +89,11 @@ struct TweakableStat
 
 // In the order of the profile's stats.
 QList<TweakableStat> tweakableStats(const BuildProfile &profile);
+
+// Tweaks are saved by stat label. Moves those saved under the short critical
+// labels of older versions to the labels they have now. "Crit" was a spell
+// stat in one profile and an attack stat in the other, so it goes by the
+// character's profile. A tweak already under the new label is kept.
+void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId);
 
 } // namespace pou

@@ -187,7 +187,7 @@ private Q_SLOTS:
         QTest::addColumn<QString>("why");
         TradeSettings off;
         off.enabled = false;
-        QTest::newRow("turned off") << off << u"Trade searches are turned off in the settings."_s;
+        QTest::newRow("turned off") << off << tradeUnavailable({.enabled = false});
         const QString solo = u"There's no trading in solo self-found, so trade searches are off."_s;
         QTest::newRow("solo self-found") << inLeague({}, false, true) << solo;
         QTest::newRow("hardcore SSF") << inLeague(u"Standard"_s, true, true) << solo;

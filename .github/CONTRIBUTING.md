@@ -116,15 +116,17 @@ fine. The `#` in stat lines stays, as the trade site uses it.
 Every piece of logic gets a QTest test. Put it in `tests/tst_<name>.cpp` and
 add it to `tests/CMakeLists.txt` with the helper that fits, such as
 `pou_add_test` or `pou_add_app_test`. The fakes in `tests/`, such as
-`fakenetwork.h` and `fakegameinput.h`, stand in for the network, the game and
-the other things a test shouldn't touch.
+`fakenetwork.h`, `fakegameinput.h` and `fakeopener.h`, stand in for the network,
+the game, the browser and the clipboard, and the other things a test shouldn't
+touch.
 
 - Use made-up names and items in fixtures. Don't copy your own Path of Building
   builds into the tests, and don't commit them.
 - Window tests run offscreen. `initMain` sets `QT_QPA_PLATFORM=offscreen`, and
   the tests call `QTest::failOnWarning()`.
-- Tests must not touch the clipboard, map visible windows, send XTest input,
-  register real global shortcuts or set off desktop prompts.
+- Tests must not touch the clipboard, open a page in the browser, map visible
+  windows, send XTest input, register real global shortcuts or set off desktop
+  prompts.
 - Test fakes don't use `Q_OBJECT`.
 - In a test, use normal strings rather than a raw string with an apostrophe or
   `//` in it, as moc then skips the file.

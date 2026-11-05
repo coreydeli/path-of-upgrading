@@ -53,7 +53,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Search the trade site")
-            description: qsTr("From the popup, for upgrades and for items like the one you checked.")
+            description: tradePage.options.stillTesting ? qsTr("From the popup, for upgrades and for items like the one you checked. They're still being tested in this release, so a search can fail on an item with a lot of stats.") : qsTr("From the popup, for upgrades and for items like the one you checked.")
             checked: tradePage.options.enabled
             onToggled: tradePage.options.enabled = checked
         }
@@ -65,8 +65,7 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             id: unavailableText
             objectName: "unavailableText"
-            // the switch says when it's off
-            visible: tradePage.options.enabled && tradePage.options.unavailable !== ""
+            visible: tradePage.options.unavailable !== ""
             text: tradePage.options.unavailable
             textItem.wrapMode: Text.Wrap
         }

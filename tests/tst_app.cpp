@@ -8,6 +8,7 @@
 #include "fakegameinput.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
+#include "fakeopener.h"
 #include "fakepob.h"
 #include "fakesecretstore.h"
 #include "itemtexts.h"
@@ -51,8 +52,11 @@ struct Folders
     CharacterStore characters{dir.filePath(u"data/characters"_s)};
     FakePob pob;
 
+    // Trade searches are on, which only a beta starts with, unless the test
+    // sets the settings.
     Folders()
     {
+        set(Settings());
         QFile wrapper(pob.folder.filePath(u"HeadlessWrapper.lua"_s));
         if (wrapper.open(QIODevice::WriteOnly))
             wrapper.close();
@@ -158,8 +162,8 @@ struct Running
         , keyring(theirKeyring)
         , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
-              std::unique_ptr<SecretStore>(keyring), std::unique_ptr<QNetworkAccessManager>(network),
-              folders.places(), folders.paths)
+              std::unique_ptr<SecretStore>(keyring), std::make_unique<FakeOpener>(),
+              std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths)
     {}
 
     // once the keyring has said, which it does a moment after the app starts
@@ -334,8 +338,8 @@ private Q_SLOTS:
         Running r(folders);
         r.app.pobOptions()->setLocation(folders.pob.folder.path());
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
-        QCOMPARE(r.app.pobOptions()->found(),
-                 u"Using Path of Building in %1."_s.arg(QDir::toNativeSeparators(folders.pob.folder.path())));
+        QCOMPARE(r.app.pobOptions()->headline(), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(r.app.pobOptions()->installedAt(), QDir::toNativeSeparators(folders.pob.folder.path()));
 
         QVERIFY(r.app.overlayOptions()->setCheckKey(QKeySequence(u"F6"_s)));
         QCOMPARE(r.shortcuts->keys.value(u"check-item"_s), QKeySequence(u"F6"_s));
@@ -413,7 +417,7 @@ private Q_SLOTS:
         QVERIFY(r.app.settings().set(settings));
         QCOMPARE(panel.scale(), 1.5);
         QVERIFY(!panel.isColorblind());
-        QCOMPARE(panel.unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(panel.unavailable(), tradeUnavailable({.enabled = false}));
 
         settings.trade.enabled = true;
         QVERIFY(r.app.settings().set(settings));
@@ -503,8 +507,7 @@ private Q_SLOTS:
         QGuiApplication::setDesktopFileName(u"io.example.MadeUp"_s);
         Folders folders;
         Running r(folders);
-        QVERIFY(!r.app.overlayOptions()->startsWithDesktop());
-        r.app.overlayOptions()->setStartWithDesktop(true);
+        // as it is the first time
         QVERIFY(r.app.overlayOptions()->startsWithDesktop());
 
         QFile entry(folders.paths.autostart);
@@ -516,6 +519,23 @@ private Q_SLOTS:
         QVERIFY(text.contains(u"\nIcon=io.example.MadeUp\n"_s));
         QGuiApplication::setApplicationDisplayName(name);
         QGuiApplication::setDesktopFileName(file);
+    }
+
+    void startsWithTheDesktopUnlessTurnedOff()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("On Windows it starts from the registry, which the tests keep out of");
+#endif
+        Folders folders;
+        {
+            Running first(folders);
+            QVERIFY(first.app.overlayOptions()->startsWithDesktop());
+            QVERIFY(QFile::exists(folders.paths.autostart));
+            first.app.overlayOptions()->setStartWithDesktop(false);
+        }
+        Running again(folders);
+        QVERIFY(!again.app.overlayOptions()->startsWithDesktop());
+        QVERIFY(!QFile::exists(folders.paths.autostart));
     }
 
     void withoutAFileToStartFrom()
@@ -773,11 +793,13 @@ private Q_SLOTS:
         settings.trade.enabled = false;
         folders.set(settings);
         Running r(folders);
-        QCOMPARE(r.app.trade().unavailable(), u"Trade searches are turned off in the settings."_s);
+        QCOMPARE(r.app.trade().unavailable(), tradeUnavailable({.enabled = false}));
         // and neither site is asked anything
         QVERIFY(r.asked().isEmpty());
-        // nor has the popup buttons for it
+        // nor has the popup buttons for it, which says why
         QVERIFY(!r.app.checker().popup().isTradeAvailable());
+        QCOMPARE(r.app.checker().popup().tradeNote(), r.app.trade().unavailable());
+        QVERIFY(!r.app.checker().popup().tradeNote().isEmpty());
 
         // until it's on
         settings.trade.enabled = true;
@@ -786,6 +808,25 @@ private Q_SLOTS:
         QCOMPARE(r.asked().size(), 4);
         QVERIFY(r.app.trade().unavailable().isEmpty());
         QVERIFY(r.app.checker().popup().isTradeAvailable());
+        QVERIFY(r.app.checker().popup().tradeNote().isEmpty());
+    }
+
+    void tradeStartsByTheBuild()
+    {
+        // with nothing chosen, a beta searches and a release waits to be asked
+        Folders folders;
+        QFile::remove(folders.paths.settings);
+        QVERIFY(!QFile::exists(folders.paths.settings));
+        Running r(folders);
+        QCOMPARE(r.app.trade().unavailable().isEmpty(), isBetaBuild());
+        QCOMPARE(r.app.checker().popup().isTradeAvailable(), isBetaBuild());
+        QCOMPARE(r.app.checker().popup().tradeNote(), r.app.trade().unavailable());
+        QCOMPARE(r.asked().isEmpty(), !isBetaBuild());
+
+        // and what you choose is what it keeps
+        r.app.tradeOptions()->setEnabled(!isBetaBuild());
+        QCOMPARE(r.app.checker().popup().isTradeAvailable(), !isBetaBuild());
+        QCOMPARE(SettingsStore(folders.paths.settings).settings().trade.enabled, !isBetaBuild());
     }
 
     void statPicker()

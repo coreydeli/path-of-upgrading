@@ -80,7 +80,7 @@ Kirigami.ApplicationWindow {
             },
             Kirigami.Action {
                 objectName: "checkedAction"
-                text: qsTr("Checked Items")
+                text: qsTr("Item History")
                 icon.name: "view-history"
                 checkable: true
                 QQC2.ActionGroup.group: pages

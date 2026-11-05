@@ -48,13 +48,6 @@ class GearList : public QAbstractListModel
     // when none of them has a gear score.
     Q_PROPERTY(QString overall READ overall NOTIFY changed)
     Q_PROPERTY(QString overallGrade READ overallGrade NOTIFY changed)
-    // The three main slots with the lowest gear scores, "Gloves 31, Boots 40,
-    // Belt 44".
-    Q_PROPERTY(QString weakest READ weakest NOTIFY changed)
-    // What to do first, from the weakest of them that has something to
-    // improve: "Start with Gloves. Missing what your build wants: Life." The
-    // rest is in the slot's notes.
-    Q_PROPERTY(QString focus READ focus NOTIFY changed)
     // Why the last change couldn't be made, empty when it could.
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
@@ -82,8 +75,6 @@ public:
     bool hasExtras() const;
     QString overall() const { return m_overall; }
     QString overallGrade() const { return m_overallGrade; }
-    QString weakest() const { return m_weakest; }
-    QString focus() const { return m_focus; }
 
     Q_INVOKABLE bool takeOff(const QString &slot);
 
@@ -102,8 +93,6 @@ private:
         // for a worn item the ways its score falls short, for an empty main
         // slot what the build wants most there
         QList<GearNote> notes;
-        // the first way it falls short, as a sentence
-        QString todo;
     };
 
     void refresh();
@@ -115,8 +104,6 @@ private:
     PobPriorities m_priorities; // what the scores were worked out with
     QString m_overall;
     QString m_overallGrade;
-    QString m_weakest;
-    QString m_focus;
     QString m_error;
 };
 

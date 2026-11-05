@@ -29,6 +29,8 @@ public:
 
     // The same item again moves to the front.
     void add(const Item &item);
+    // How many it keeps, the oldest dropping off.
+    static constexpr qsizetype recentLimit = 30;
     const QList<Item> &recent() const { return m_recent; }
     // Forgets the items but not the stats, which the stat picker keeps.
     void clearRecent();

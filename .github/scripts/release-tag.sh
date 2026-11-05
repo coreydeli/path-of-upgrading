@@ -3,7 +3,8 @@
 #
 # Says what a push to a branch releases, as lines for GITHUB_OUTPUT: the
 # version, the tag, whether to release, and the version the Arch Linux and
-# Debian packages say. Main releases the version once, and beta releases
+# Debian packages say, and whether it's a beta, which has trade searches on by
+# default. Main releases the version once, and beta releases
 # v0.1.0-beta.1, v0.1.0-beta.2 and so on, until v0.1.0 is out. The packages of
 # a beta come before the release's, as 0.1.0beta2 and 0.1.0~beta.2.
 set -eu
@@ -13,6 +14,7 @@ tag=v$version
 arch=$version
 debian=$version
 release=false
+beta=false
 out=false
 if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
     out=true
@@ -35,8 +37,9 @@ beta)
         arch=${version}beta$n
         debian=$version~beta.$n
         release=true
+        beta=true
     fi
     ;;
 esac
-printf 'version=%s\ntag=%s\nrelease=%s\narch-version=%s\ndebian-version=%s\n' \
-    "$version" "$tag" "$release" "$arch" "$debian"
+printf 'version=%s\ntag=%s\nrelease=%s\narch-version=%s\ndebian-version=%s\nbeta=%s\n' \
+    "$version" "$tag" "$release" "$arch" "$debian" "$beta"
