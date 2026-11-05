@@ -53,9 +53,20 @@ struct PobJudgement
     PobVerdict verdict;
 };
 
-// The place an item does best in, see bestVerdict(). An item you wear, found
-// by its name, is only judged in the place it's in. Empty when it wasn't
-// tried anywhere, and the eval says why.
+// How an item does in each place it was tried in, with the one it does best
+// in, see bestVerdict(). An item you wear, found by its name, is only judged
+// in the place it's in.
+struct PobPlacements
+{
+    QList<PobJudgement> judgements;
+    qsizetype best = -1; // none when it wasn't tried anywhere
+};
+
+PobPlacements judgePlacements(const PobStats &before, const PobItemEval &eval, const Item &item,
+                              const PobVerdictOptions &options = {});
+
+// The place an item does best in. Empty when it wasn't tried anywhere, and
+// the eval says why.
 std::optional<PobJudgement> bestPlacement(const PobStats &before, const PobItemEval &eval, const Item &item,
                                           const PobVerdictOptions &options = {});
 
