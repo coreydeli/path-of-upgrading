@@ -77,6 +77,15 @@ struct Folders
     }
 
     void set(const Settings &settings) const { SettingsStore(paths.settings).set(settings); }
+
+    // Takes the settings away, as before the first start. There may be none
+    // to take: a beta starts with trade searches on already, so there was
+    // nothing to save for them.
+    bool firstStart() const
+    {
+        QFile::remove(paths.settings);
+        return !QFile::exists(paths.settings);
+    }
 };
 
 // What the desktop has for the app's shortcuts before it starts.
@@ -499,7 +508,7 @@ private Q_SLOTS:
     void firstRunShowsTheSetup()
     {
         Folders folders;
-        QVERIFY(QFile::remove(folders.paths.settings));
+        QVERIFY(folders.firstStart());
         Running r(folders);
         QVERIFY(r.app.onboarding()->isPending());
         QCOMPARE(r.app.onboarding()->hotkey(), QKeySequence(u"F2"_s).toString(QKeySequence::NativeText));
@@ -508,7 +517,7 @@ private Q_SLOTS:
     void setupStaysUntilItsDone()
     {
         Folders folders;
-        QVERIFY(QFile::remove(folders.paths.settings));
+        QVERIFY(folders.firstStart());
         {
             Running quit(folders);
             QVERIFY(quit.app.onboarding()->isPending());
@@ -523,7 +532,7 @@ private Q_SLOTS:
     void finishingTheSetupIsKept()
     {
         Folders folders;
-        QVERIFY(QFile::remove(folders.paths.settings));
+        QVERIFY(folders.firstStart());
         {
             Running r(folders);
             QSignalSpy pending(r.app.onboarding(), &Onboarding::pendingChanged);
@@ -540,7 +549,7 @@ private Q_SLOTS:
     void setupAskedForAgain()
     {
         Folders folders;
-        QVERIFY(QFile::remove(folders.paths.settings));
+        QVERIFY(folders.firstStart());
         {
             Running r(folders);
             r.app.onboarding()->finish();
@@ -568,7 +577,7 @@ private Q_SLOTS:
     void noSetupForCharacters()
     {
         Folders folders;
-        QVERIFY(QFile::remove(folders.paths.settings));
+        QVERIFY(folders.firstStart());
         folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
         Running r(folders);
         QVERIFY(!r.app.onboarding()->isPending());

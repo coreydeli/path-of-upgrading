@@ -3390,6 +3390,8 @@ private Q_SLOTS:
         QTRY_VERIFY(w.guide()->property("opened").toBool());
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        // a beta asks the keyring at the start, and the field waits for it
+        QVERIFY(w.keyringAnswered());
         // nothing is in the keyring until you type one
         QCOMPARE(w.keyring->writes, 0);
         QObject *field = w.inGuide(u"setupSessionField"_s);
@@ -3411,6 +3413,7 @@ private Q_SLOTS:
         QTRY_VERIFY(w.guide()->property("opened").toBool());
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(w.keyringAnswered());
         w.keyring->failure = u"The keyring is locked."_s;
         QVERIFY(w.inGuide(u"setupSessionField"_s)->setProperty("text", fakeId));
         QVERIFY(click(w.inGuide(u"setupSaveButton"_s)));
