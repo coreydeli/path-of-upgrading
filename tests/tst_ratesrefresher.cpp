@@ -45,7 +45,7 @@ struct Refresher
     bool answers()
     {
         QSignalSpy refreshed(&store, &RatesStore::refreshed);
-        return refreshed.wait(5000);
+        return refreshed.wait(10000);
     }
 };
 
@@ -111,21 +111,27 @@ private Q_SLOTS:
         r.refresher.follow(league, 10);
         QCOMPARE(r.refresher.waitMinutes(), 10);
 
-        // twice as long each time, up to an hour
-        for (const int wait : {20, 40, 60, 60}) {
-            QVERIFY(r.answers());
-            QCOMPARE(r.refresher.waitMinutes(), wait);
-        }
-        // and back to what it was when poe.ninja answers
-        QVERIFY(r.answers());
-        QCOMPARE(r.refresher.waitMinutes(), 10);
-        QVERIFY(r.store.errorString().isEmpty());
+        // The wait after each answer, taken as it comes in. A slow machine
+        // can get several in before the test looks.
+        QList<int> waits;
+        QList<bool> succeeded;
+        connect(&r.store, &RatesStore::refreshed, &r.store, [&] {
+            waits.append(r.refresher.waitMinutes());
+            succeeded.append(r.store.errorString().isEmpty());
+        });
+        QTRY_VERIFY_WITH_TIMEOUT(waits.size() >= 5, 10000);
+
+        // twice as long each time, up to an hour, and back to what it was
+        // when poe.ninja answers
+        QCOMPARE(waits.first(5), (QList<int>{20, 40, 60, 60, 10}));
+        QCOMPARE(succeeded.first(5), (QList<bool>{false, false, false, false, true}));
     }
 
     void followingTheSameThingKeepsTheBackoff()
     {
         Refresher r;
-        r.network.answers = {down};
+        // the second ask never gets an answer, so the wait stays put
+        r.network.answers = {down, {.never = true}};
         r.refresher.follow(league, 3);
         QVERIFY(r.answers());
         QCOMPARE(r.refresher.waitMinutes(), 6);
