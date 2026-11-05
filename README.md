@@ -81,7 +81,8 @@ released.
   on the Settings page, and it stays off. It tells you with a notification if
   the hotkeys couldn't be set up.
 - Has dark colors of its own, as a KDE color scheme, or follows your desktop's
-  colors, from the Appearance page.
+  colors, from the Appearance page. The same page picks the heading font, the
+  text font and the text size.
 
 
 ## Installing

@@ -2,11 +2,16 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 namespace pou {
 
 // The heading font the app carries.
 QString headingFontFamily();
+
+// The installed font families that scale to any size. Bitmap fonts are left
+// out, as they only look right at the sizes they were made for.
+QStringList scalableFamilies();
 
 // Adds the fonts in the program's resources to the font database. False when
 // a font can't be read.

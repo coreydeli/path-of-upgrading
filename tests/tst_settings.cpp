@@ -118,6 +118,9 @@ private Q_SLOTS:
         s.overlay.paused = true;
         s.appearance.colors = ColorTheme::Desktop;
         s.appearance.decorations = Decorations::Plain;
+        s.appearance.headingFont = u"Palatino"_s;
+        s.appearance.textFont = u"Sans Mono"_s;
+        s.appearance.textSize = 11.5;
         s.overlay.startChosen = true;
 
         QTemporaryDir dir;
@@ -133,6 +136,9 @@ private Q_SLOTS:
         QCOMPARE(again.value(u"overlay/position"_s).toString(), u"top"_s);
         QCOMPARE(again.value(u"appearance/theme"_s).toString(), u"desktop"_s);
         QCOMPARE(again.value(u"appearance/decorations"_s).toString(), u"plain"_s);
+        QCOMPARE(again.value(u"appearance/headingFont"_s).toString(), u"Palatino"_s);
+        QCOMPARE(again.value(u"appearance/textFont"_s).toString(), u"Sans Mono"_s);
+        QCOMPARE(again.value(u"appearance/textSize"_s).toDouble(), 11.5);
     }
 
     void outOfRange()
@@ -147,6 +153,7 @@ private Q_SLOTS:
         store.setValue(u"overlay/position"_s, u"sideways"_s);
         store.setValue(u"appearance/theme"_s, u"neon"_s);
         store.setValue(u"appearance/decorations"_s, u"lots"_s);
+        store.setValue(u"appearance/textSize"_s, 500);
 
         const Settings s = loadSettings(store);
         QCOMPARE(s.overlay.autoHideSeconds, 120);
@@ -157,6 +164,30 @@ private Q_SLOTS:
         QCOMPARE(s.overlay.position, PopupPosition::Cursor);
         QCOMPARE(s.appearance.colors, ColorTheme::App);
         QCOMPARE(s.appearance.decorations, Decorations::Full);
+        QCOMPARE(s.appearance.textSize, largestTextSize);
+    }
+
+    void textSizeIsReadable_data()
+    {
+        QTest::addColumn<QVariant>("saved");
+        QTest::addColumn<double>("size");
+        QTest::newRow("desktop's") << QVariant(0) << 0.0;
+        QTest::newRow("negative") << QVariant(-4) << 0.0;
+        QTest::newRow("too small") << QVariant(2.5) << smallestTextSize;
+        QTest::newRow("between") << QVariant(13.5) << 13.5;
+        QTest::newRow("words") << QVariant(u"big"_s) << 0.0;
+        QTest::newRow("missing") << QVariant() << 0.0;
+    }
+
+    void textSizeIsReadable()
+    {
+        QFETCH(QVariant, saved);
+        QFETCH(double, size);
+        QTemporaryDir dir;
+        QSettings store(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+        if (saved.isValid())
+            store.setValue(u"appearance/textSize"_s, saved);
+        QCOMPARE(loadSettings(store).appearance.textSize, size);
     }
 
     void tradeOff_data()
@@ -226,6 +257,9 @@ private Q_SLOTS:
             [](Settings &s) { s.overlay.paused = true; },
             [](Settings &s) { s.appearance.colors = ColorTheme::Desktop; },
             [](Settings &s) { s.appearance.decorations = Decorations::Plain; },
+            [](Settings &s) { s.appearance.headingFont = u"text"_s; },
+            [](Settings &s) { s.appearance.textFont = u"Sans Mono"_s; },
+            [](Settings &s) { s.appearance.textSize = 12; },
             [](Settings &s) { s.overlay.startChosen = true; },
         };
 

@@ -81,7 +81,11 @@ private Q_SLOTS:
         QVERIFY(m_style);
     }
 
-    void cleanup() { m_style->setProperty("appColors", false); }
+    void cleanup()
+    {
+        m_style->setProperty("appColors", false);
+        m_style->setProperty("headingFamily", u"Cinzel"_s);
+    }
 
     void rarityColorsAreTheGames()
     {
@@ -178,6 +182,17 @@ private Q_SLOTS:
         QCOMPARE(font.pointSizeF(), 11.0);
         QCOMPARE(font.letterSpacing(), 0.5);
         QCOMPARE(font.capitalization(), QFont::MixedCase);
+    }
+
+    void titlesAreInTheHeadingFamily()
+    {
+        QFont base;
+        base.setPointSizeF(10);
+        m_style->setProperty("headingFamily", u"Made Up Serif"_s);
+        const QFont font = call(u"title"_s, {base}).value<QFont>();
+        QCOMPARE(font.family(), u"Made Up Serif"_s);
+        QCOMPARE(font.pointSizeF(), 10.0);
+        QCOMPARE(font.weight(), QFont::Bold);
     }
 
     void cinzelIsInTheProgram()

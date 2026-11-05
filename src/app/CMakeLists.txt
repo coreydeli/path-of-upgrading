@@ -47,7 +47,8 @@ qt_add_qml_module(pou_app
         qml/ColumnsPage.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
-        qml/FormRow.qml
+        qml/FontPickerDialog.qml
+    qml/FormRow.qml
         qml/GearPage.qml
         qml/GearScorePage.qml
         qml/IgnoredStatsPage.qml
