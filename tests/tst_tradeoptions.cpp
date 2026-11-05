@@ -319,22 +319,22 @@ private Q_SLOTS:
         // five minutes after they came in
         o.options.setClock([&o] { return o.rates.fetched().addSecs(5 * 60); });
         QSignalSpy changed(&o.options, &TradeOptions::ratesStatusChanged);
-        QCOMPARE(o.options.ratesStatus(), u"The rates haven't come in yet."_s);
+        QCOMPARE(o.options.ratesStatus(), u"The prices haven't come in yet."_s);
         QVERIFY(o.hasRates(u"Runes of Aldur"_s, 300));
         QCOMPARE(changed.size(), 1);
-        QCOMPARE(o.options.ratesStatus(), u"Rates updated 5 minutes ago."_s);
+        QCOMPARE(o.options.ratesStatus(), u"Prices updated 5 minutes ago."_s);
 
         // for the league searched, not another
         o.options.setHardcore(true);
         QCOMPARE(changed.size(), 2);
-        QCOMPARE(o.options.ratesStatus(), u"The rates haven't come in yet."_s);
+        QCOMPARE(o.options.ratesStatus(), u"The prices haven't come in yet."_s);
         o.options.setHardcore(false);
 
         // and nothing of them while they're not kept fresh
         o.options.setAutoRate(false);
         QVERIFY(o.options.ratesStatus().isEmpty());
         o.options.setAutoRate(true);
-        QCOMPARE(o.options.ratesStatus(), u"Rates updated 5 minutes ago."_s);
+        QCOMPARE(o.options.ratesStatus(), u"Prices updated 5 minutes ago."_s);
         o.options.setEnabled(false);
         QVERIFY(o.options.ratesStatus().isEmpty());
         o.options.setEnabled(true);
