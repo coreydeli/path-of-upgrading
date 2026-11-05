@@ -86,8 +86,11 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
     , m_pobOptions(&m_settings, &m_pob, m_places, m_opener.get())
     , m_appearance(&m_settings, paths.colors)
+    , m_onboarding(&m_settings, &m_characterList, &m_overlayOptions)
 {
     m_characterList.load();
+    // which needs the characters
+    m_onboarding.decide();
     // so you can wear gear and set weights before adding a character
     m_character.setStarter([this](QString *why) {
         const QString id = m_characterList.add(u"My character"_s);

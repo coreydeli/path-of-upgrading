@@ -1026,6 +1026,77 @@ private Q_SLOTS:
         QCOMPARE(reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}})).wearIn, QStringList());
     }
 
+    void eachPlace()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        check.places = {
+            {.slot = u"Ring 1"_s, .wearing = u"Doom Loop, Gold Ring"_s, .score = -3.4},
+            {.slot = u"Ring 2"_s, .best = true, .score = 12},
+        };
+        const ItemReport report = reportOf(check);
+        QCOMPARE(report.placements.size(), 2);
+
+        const ReportPlacement &first = report.placements.at(0);
+        QCOMPARE(first.slot, u"Ring 1"_s);
+        QCOMPARE(first.wearing, u"Doom Loop, Gold Ring"_s);
+        QVERIFY(!first.best);
+        QCOMPARE(first.changes.size(), 1);
+        QCOMPARE(first.changes.at(0).label, u"gear score"_s);
+        QCOMPARE(first.changes.at(0).change, u"-3.4"_s);
+        QCOMPARE(first.changes.at(0).tone, Tone::Bad);
+
+        // nothing there
+        const ReportPlacement &second = report.placements.at(1);
+        QCOMPARE(second.wearing, u"Empty"_s);
+        QVERIFY(second.best);
+        QCOMPARE(second.changes.at(0).change, u"+12"_s);
+        QCOMPARE(second.changes.at(0).tone, Tone::Good);
+
+        QVERIFY(reportOf(judged(Verdict::Upgrade)).placements.isEmpty());
+    }
+
+    void eachPlaceByYourWeights()
+    {
+        ItemCheck check = judged(Verdict::Upgrade, ScoreMode::StatWeights);
+        check.places = {{.slot = u"Ring 1"_s, .mode = ScoreMode::StatWeights, .score = 0}};
+        const ReportFigure change = reportOf(check).placements.at(0).changes.at(0);
+        QCOMPARE(change.label, u"by your weights"_s);
+        QCOMPARE(change.change, u"0"_s);
+        QCOMPARE(change.tone, Tone::Plain);
+    }
+
+    void eachPlaceByPathOfBuilding()
+    {
+        ItemCheck check = judged(Verdict::Upgrade, ScoreMode::PathOfBuilding);
+        check.places = {
+            {.slot = u"Ring 1"_s, .mode = ScoreMode::PathOfBuilding, .score = 4, .damage = 12.5, .ehp = -1.2},
+            {.slot = u"Ring 2"_s,
+             .mode = ScoreMode::PathOfBuilding,
+             .score = 2.5,
+             .damage = 6,
+             .minionDamage = true},
+            // from nothing, so it can't say how much more
+            {.slot = u"Socket #3"_s, .mode = ScoreMode::PathOfBuilding, .score = 1.5},
+        };
+        const QList<ReportPlacement> places = reportOf(check).placements;
+        QCOMPARE(places.size(), 3);
+
+        QCOMPARE(places.at(0).changes.size(), 2);
+        QCOMPARE(places.at(0).changes.at(0).label, u"DPS"_s);
+        QCOMPARE(places.at(0).changes.at(0).change, u"+12.5%"_s);
+        QCOMPARE(places.at(0).changes.at(0).tone, Tone::Good);
+        QCOMPARE(places.at(0).changes.at(1).label, u"Effective HP"_s);
+        QCOMPARE(places.at(0).changes.at(1).change, u"-1.2%"_s);
+        QCOMPARE(places.at(0).changes.at(1).tone, Tone::Bad);
+
+        QCOMPARE(places.at(1).changes.size(), 1);
+        QCOMPARE(places.at(1).changes.at(0).label, u"Minion DPS"_s);
+
+        QCOMPARE(places.at(2).slot, u"Socket #3"_s);
+        QCOMPARE(places.at(2).changes.at(0).label, u"for your build"_s);
+        QCOMPARE(places.at(2).changes.at(0).change, u"+1.5%"_s);
+    }
+
     void notesOnTheItem()
     {
         const Item corrupted = item(itemtexts::helmetNew + u"\n--------\nCorrupted"_s);

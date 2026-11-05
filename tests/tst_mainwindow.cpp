@@ -40,6 +40,7 @@
 #include <QtQuickTest/quicktest.h>
 #include <functional>
 #include <memory>
+#include <optional>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
@@ -143,6 +144,15 @@ const QString luckyJewel = u"Item Class: Jewels\nRarity: Rare\nGrim Spark\nEmera
 // a build with nothing on
 const QString ranger = u"<PathOfBuilding2><Build level=\"40\" className=\"Ranger\"/></PathOfBuilding2>"_s;
 
+// The settings of someone who has been through the setup guide, with trade
+// searches on, which only a beta starts with.
+Settings used()
+{
+    Settings settings;
+    settings.setupDone = true;
+    return settings;
+}
+
 // The app with its window, and stand-ins for the game, the desktop and the
 // sites. Path of Building isn't in any of the usual places.
 struct Window
@@ -159,11 +169,13 @@ struct Window
 
     // The app's colors are only on when there's a scheme file for them, as
     // they go on the whole program.
-    explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {})
+    // The settings are saved before it starts, or none for the first run.
+    explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {},
+                    const std::optional<Settings> &saved = used())
     {
         shortcuts->available = hotkeys;
-        // with trade searches on, which only a beta starts with
-        SettingsStore(dir.filePath(u"settings.conf"_s)).set(Settings());
+        if (saved)
+            SettingsStore(dir.filePath(u"settings.conf"_s)).set(*saved);
         app = std::make_unique<App>(
             &qml, std::make_unique<FakeGameInput>(), std::unique_ptr<GlobalShortcuts>(shortcuts),
             std::unique_ptr<SecretStore>(keyring), std::unique_ptr<Opener>(opener),
@@ -255,6 +267,18 @@ struct Window
             }
         }
         return QString();
+    }
+
+    // the setup guide's dialog
+    QObject *guide() const { return window->findChild<QObject *>(u"setupGuide"_s); }
+
+    // what it has by that name
+    QObject *inGuide(const QString &name) const
+    {
+        QObject *found = search(guide(), [&](QObject *o) { return o->objectName() == name; });
+        if (!found)
+            qWarning() << "There's no" << name << "in the guide";
+        return found;
     }
 
     QQuickItem *page() const
@@ -1118,6 +1142,208 @@ private Q_SLOTS:
         // and only there
         QVERIFY(!isVisible(w.find(u"slot:Jewel 2"_s)));
         QVERIFY(!isVisible(w.in(u"extras"_s, u"slot:Helmet"_s)));
+    }
+
+    // The gear page on a window wide enough for the equipment screen.
+    static bool wide(Window &w)
+    {
+        if (!w.show(u"gearAction"_s) || !w.shown())
+            return false;
+        w.window->resize(1500, 900);
+        return QTest::qWaitFor([&] { return w.settled() && isVisible(w.find(u"equipment"_s)); }, 2000);
+    }
+
+    static QPointF where(Window &w, const QString &name)
+    {
+        const auto *item = qobject_cast<QQuickItem *>(w.find(name));
+        return item ? item->mapToScene(QPointF(0, 0)) : QPointF(-1, -1);
+    }
+
+    void gearListWhenNarrow()
+    {
+        Window w;
+        QVERIFY(w.show(u"gearAction"_s));
+        QVERIFY(w.shown());
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        QVERIFY(!isVisible(w.find(u"equipment"_s)));
+        QVERIFY(isVisible(w.find(u"slot:Helmet"_s)));
+        QVERIFY(isVisible(w.find(u"slot:Gloves"_s)));
+
+        // and the list goes when it's wide
+        w.window->resize(1500, 900);
+        QTRY_VERIFY(w.settled() && isVisible(w.find(u"equipment"_s)));
+        QVERIFY(!isVisible(w.find(u"slot:Helmet"_s)));
+        QVERIFY(!isVisible(w.find(u"slot:Gloves"_s)));
+        w.window->resize(1000, 700);
+        QTRY_VERIFY(w.settled() && !isVisible(w.find(u"equipment"_s)));
+        QVERIFY(isVisible(w.find(u"slot:Helmet"_s)));
+    }
+
+    void equipmentScreen()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)},
+                {u"Ring 1"_s, item(itemtexts::advancedRing)},
+                {u"Jewel 2"_s, item(jewel)}},
+               {u"Ring 1"_s});
+        QVERIFY(w.settled());
+
+        // the rest of the page stays
+        QVERIFY(isVisible(w.find(u"recommendedUpgrades"_s)));
+        QVERIFY(isVisible(w.find(u"resistances"_s)));
+        QVERIFY(isVisible(w.find(u"overallScore"_s)));
+        QVERIFY(isVisible(w.find(u"gearHelp"_s)));
+
+        // the helmet at the top with the amulet beside it, the weapons either side of
+        // the body armour, the gloves and a ring below, the belt, the boots
+        const auto at = [&](const char *slot) {
+            return where(w, u"tile:"_s + QString::fromLatin1(slot));
+        };
+        QCOMPARE(at("Helmet").x(), at("Body Armour").x());
+        QVERIFY(at("Helmet").y() < at("Body Armour").y());
+        QVERIFY(at("Amulet").x() > at("Helmet").x());
+        QCOMPARE(at("Amulet").y(), at("Helmet").y());
+        QVERIFY(at("Weapon").x() < at("Body Armour").x());
+        QCOMPARE(at("Weapon").y(), at("Body Armour").y());
+        QVERIFY(at("Offhand").x() > at("Body Armour").x());
+        QCOMPARE(at("Offhand").y(), at("Body Armour").y());
+        QCOMPARE(at("Gloves").x(), at("Weapon").x());
+        QVERIFY(at("Gloves").y() > at("Weapon").y());
+        QCOMPARE(at("Belt").x(), at("Body Armour").x());
+        QCOMPARE(at("Belt").y(), at("Gloves").y());
+        QCOMPARE(at("Ring 1").x(), at("Offhand").x());
+        QCOMPARE(at("Ring 1").y(), at("Gloves").y());
+        QCOMPARE(at("Boots").x(), at("Belt").x());
+        QVERIFY(at("Boots").y() > at("Belt").y());
+        QCOMPARE(at("Ring 2").x(), at("Ring 1").x());
+        QCOMPARE(at("Ring 2").y(), at("Boots").y());
+        // the slots that aren't on the screen are in a row underneath
+        QVERIFY(at("Jewel 2").y() > at("Boots").y());
+        QVERIFY(isVisible(w.find(u"equipmentOthers"_s)));
+
+        // what a worn slot says
+        QObject *helmet = w.find(u"tile:Helmet"_s);
+        QCOMPARE(text(helmet->findChild<QObject *>(u"slotName"_s)), u"Helmet"_s);
+        QCOMPARE(text(helmet->findChild<QObject *>(u"itemName"_s)), u"Grim Crown"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QCOMPARE(spoken(helmet), u"Helmet"_s);
+        QVERIFY(isVisible(helmet->findChild<QObject *>(u"tileGauge"_s)));
+        QCOMPARE(w.find(u"tile:Ring 1"_s)->property("description").toString(),
+                 u"Storm Loop, Sapphire Ring, from Path of Building"_s);
+
+        // and an empty one is a dashed frame that says so, with no score
+        QObject *gloves = w.find(u"tile:Gloves"_s);
+        QVERIFY(gloves->property("empty").toBool());
+        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Empty"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
+        QVERIFY(!isVisible(gloves->findChild<QObject *>(u"tileGauge"_s)));
+        QVERIFY(!helmet->property("empty").toBool());
+
+        // each slot once
+        for (const char *slot : {"Weapon", "Offhand", "Helmet", "Body Armour", "Gloves", "Boots", "Belt",
+                                 "Amulet", "Ring 1", "Ring 2", "Jewel 2"})
+            QCOMPARE(findAll(w.page(), u"tile:"_s + QString::fromLatin1(slot)).size(), 1);
+    }
+
+    void equipmentTabOrder()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        // across the screen and then down it
+        const QStringList reading{u"Helmet"_s, u"Amulet"_s, u"Weapon"_s, u"Body Armour"_s, u"Offhand"_s,
+                                  u"Gloves"_s, u"Belt"_s,   u"Ring 1"_s, u"Boots"_s,       u"Ring 2"_s};
+        auto *tile = qobject_cast<QQuickItem *>(w.find(u"tile:"_s + reading.first()));
+        QVERIFY(tile);
+        QVERIFY(tile->activeFocusOnTab());
+        for (qsizetype i = 1; i < reading.size(); ++i) {
+            tile = tile->nextItemInFocusChain(true);
+            QVERIFY(tile);
+            QCOMPARE(tile->objectName(), u"tile:"_s + reading.at(i));
+        }
+    }
+
+    void equipmentPanel()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        const RecommendedUpgrades *upgrades = w.app->recommendedUpgrades();
+
+        // nothing picked, so it says to
+        QVERIFY(isVisible(w.find(u"panelHint"_s)));
+        QCOMPARE(text(w.find(u"panelHint"_s)), u"Pick a slot to see what would improve it."_s);
+        QVERIFY(findAll(w.page(), u"panelContent"_s).isEmpty());
+
+        // a worn slot shows its notes, what to look for and a search
+        QVERIFY(click(w.find(u"tile:Helmet"_s)));
+        QCOMPARE(upgrades->chosen(), u"Helmet"_s);
+        QVERIFY(w.settled());
+        QVERIFY(!isVisible(w.find(u"panelHint"_s)));
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Grim Crown"_s);
+        QCOMPARE(text(w.find(u"panelBase"_s)), u"Visored Helm"_s);
+        QVERIFY(isVisible(w.find(u"panelGauge"_s)));
+        const auto notes = w.app->gearList()->index(2).data(GearList::NotesRole).value<QList<GearNote>>();
+        QVERIFY(!notes.isEmpty());
+        const QList<QObject *> labels = findAll(w.find(u"panelNotes"_s), u"noteLabel"_s);
+        QCOMPARE(labels.size(), notes.size());
+        QCOMPARE(text(labels.first()), notes.first().label);
+        const QString lookFor = text(w.find(u"panelLookFor"_s));
+        QVERIFY(lookFor.contains(u" or more"_s));
+        QCOMPARE(lookFor, upgrades->chosenLookFor());
+        QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());
+        QVERIFY(!w.find(u"tile:Gloves"_s)->property("chosen").toBool());
+
+        QObject *find = w.find(u"panelFind"_s);
+        QVERIFY(isVisible(find));
+        QVERIFY(!isVisible(w.find(u"panelTradeStatus"_s)));
+        w.network->answers = {{.never = true}};
+        QVERIFY(click(find));
+        QVERIFY(isVisible(w.find(u"panelTradeStatus"_s)));
+        QCOMPARE(text(w.in(u"panelTradeStatus"_s, u"tradeStatusText"_s)), u"Searching the trade site"_s);
+        QVERIFY(!find->property("enabled").toBool());
+
+        // another slot takes its place
+        QVERIFY(click(w.find(u"tile:Boots"_s)));
+        QTRY_COMPARE(text(w.find(u"panelSlot"_s)), u"Boots"_s);
+        QCOMPARE(findAll(w.page(), u"panelContent"_s).size(), 1);
+        QVERIFY(!isVisible(w.find(u"panelTradeStatus"_s)));
+        QVERIFY(w.find(u"tile:Boots"_s)->property("chosen").toBool());
+        QVERIFY(!w.find(u"tile:Helmet"_s)->property("chosen").toBool());
+    }
+
+    void equipmentPanelEmptySlot()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        QVERIFY(click(w.find(u"tile:Gloves"_s)));
+        QVERIFY(w.settled());
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Gloves"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved"_s);
+        QVERIFY(!isVisible(w.find(u"panelBase"_s)));
+        QVERIFY(!isVisible(w.find(u"panelGauge"_s)));
+        QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Wants most"_s);
+        QVERIFY(text(w.find(u"panelLookFor"_s)).contains(u" or more"_s));
+        // there's nothing worn to search for a better one of
+        QVERIFY(!isVisible(w.find(u"panelFind"_s)));
+        QVERIFY(!isVisible(w.find(u"panelTakeOff"_s)));
+
+        // taking off what's worn leaves the slot picked, and empty
+        QVERIFY(click(w.find(u"tile:Helmet"_s)));
+        QVERIFY(w.settled());
+        QVERIFY(click(w.find(u"panelTakeOff"_s)));
+        QVERIFY(w.settled());
+        QVERIFY(w.app->character().character().gear.isEmpty());
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved"_s);
+        QVERIFY(w.find(u"tile:Helmet"_s)->property("empty").toBool());
     }
 
     void takeOffGear()
@@ -2933,6 +3159,362 @@ private Q_SLOTS:
         QObject *autoHide = w.spinBox(u"autoHide"_s);
         QCOMPARE(autoHide->property("from").toInt(), 2);
         QCOMPARE(autoHide->property("to").toInt(), 120);
+    }
+
+    // the setup guide
+
+    void setupGuideOpensOnTheFirstRun()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QVERIFY(guide);
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QCOMPARE(guide->property("title").toString(), u"Welcome to Path of Upgrading"_s);
+        QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
+        QVERIFY(!isVisible(w.inGuide(u"leagueStep"_s)));
+        QCOMPARE(text(w.inGuide(u"nextButton"_s)), u"Set It Up"_s);
+        QVERIFY(isVisible(w.inGuide(u"skipButton"_s)));
+        QVERIFY(!isVisible(w.inGuide(u"backButton"_s)));
+        // it's shown, and only recorded when it's done
+        QVERIFY(!w.settings().setupDone);
+    }
+
+    void setupGuideStaysAwayFromThoseWhoUseTheApp()
+    {
+        Settings settings;
+        settings.trade.league.name = u"Standard"_s;
+        Window w(true, false, {}, settings);
+        QVERIFY(!w.guide()->property("visible").toBool());
+        QVERIFY(!w.app->onboarding()->isPending());
+        // and the usual window is the same
+        Window done;
+        QVERIFY(!done.guide()->property("visible").toBool());
+    }
+
+    void setupGuideWalksThroughTheSteps()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QObject *next = w.inGuide(u"nextButton"_s);
+
+        QVERIFY(click(next));
+        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
+        QVERIFY(!isVisible(w.inGuide(u"welcomeStep"_s)));
+        QCOMPARE(text(next), u"Next"_s);
+        QVERIFY(isVisible(w.inGuide(u"backButton"_s)));
+
+        QVERIFY(click(next));
+        QCOMPARE(guide->property("title").toString(), u"Trade Searches"_s);
+        QVERIFY(isVisible(w.inGuide(u"tradeStep"_s)));
+
+        QVERIFY(click(next));
+        QCOMPARE(guide->property("title").toString(), u"Your Character"_s);
+        QVERIFY(isVisible(w.inGuide(u"characterStep"_s)));
+
+        QVERIFY(click(next));
+        QCOMPARE(guide->property("title").toString(), u"You're All Set"_s);
+        QVERIFY(isVisible(w.inGuide(u"doneStep"_s)));
+        QCOMPARE(text(next), u"Finish"_s);
+        QVERIFY(!isVisible(w.inGuide(u"skipButton"_s)));
+        QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
+                 u"Hold the mouse over an item in the game and press %1."_s.arg(
+                     QKeySequence(u"F2"_s).toString(QKeySequence::NativeText)));
+        QVERIFY(!w.settings().setupDone);
+
+        QVERIFY(click(next));
+        QTRY_VERIFY(!guide->property("visible").toBool());
+        QVERIFY(w.settings().setupDone);
+        QVERIFY(!w.app->onboarding()->isPending());
+        QVERIFY(SettingsStore(w.dir.filePath(u"settings.conf"_s)).settings().setupDone);
+    }
+
+    void setupGuideGoesBack()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(w.guide()->property("title").toString(), u"Trade Searches"_s);
+        QVERIFY(click(w.inGuide(u"backButton"_s)));
+        QCOMPARE(w.guide()->property("title").toString(), u"Your League"_s);
+        QVERIFY(click(w.inGuide(u"backButton"_s)));
+        QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
+        QVERIFY(!isVisible(w.inGuide(u"backButton"_s)));
+    }
+
+    void setupGuideSkip()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        const Settings before = w.settings();
+        QVERIFY(click(w.inGuide(u"skipButton"_s)));
+        QTRY_VERIFY(!guide->property("visible").toBool());
+        QVERIFY(w.settings().setupDone);
+        QVERIFY(!w.app->onboarding()->isPending());
+        // nothing else was changed
+        QCOMPARE(w.settings().trade, before.trade);
+        QCOMPARE(w.settings().character, before.character);
+    }
+
+    void setupGuideSkipFromALaterStep()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(click(w.inGuide(u"skipButton"_s)));
+        QTRY_VERIFY(!guide->property("visible").toBool());
+        QVERIFY(w.settings().setupDone);
+    }
+
+    void setupGuideClosedWithEscape()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QVERIFY(QMetaObject::invokeMethod(guide, "close"));
+        QTRY_VERIFY(!guide->property("visible").toBool());
+        QVERIFY(w.settings().setupDone);
+    }
+
+    void setupGuideLeague()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        // the site's leagues come while trade searches are on
+        QSignalSpy refreshed(&w.app->rates(), &RatesStore::refreshed);
+        Settings on = w.settings();
+        on.trade.enabled = true;
+        QVERIFY(w.app->settings().set(on));
+        QVERIFY(refreshed.wait());
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+
+        QObject *league = w.inGuide(u"setupLeagueBox"_s);
+        QCOMPARE(league->property("count").toInt(), 3);
+        QVERIFY(activate(league, 2));
+        QCOMPARE(w.settings().trade.league.name, u"Standard"_s);
+
+        QVERIFY(toggle(w.inGuide(u"setupHardcoreSwitch"_s)));
+        QVERIFY(w.settings().trade.league.hardcore);
+        QVERIFY(toggle(w.inGuide(u"setupSoloSwitch"_s)));
+        QVERIFY(w.settings().trade.league.soloSelfFound);
+        QVERIFY(w.inGuide(u"setupSoloSwitch"_s)
+                    ->property("description")
+                    .toString()
+                    .contains(u"turns trade searches off"_s));
+        // the same as the Trade page has
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.find(u"soloSwitch"_s)->property("checked").toBool());
+        QVERIFY(w.find(u"hardcoreSwitch"_s)->property("checked").toBool());
+    }
+
+    void setupGuideLeavesOutTradeInSoloSelfFound()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QObject *next = w.inGuide(u"nextButton"_s);
+        QVERIFY(click(next));
+        QVERIFY(toggle(w.inGuide(u"setupSoloSwitch"_s)));
+
+        QVERIFY(click(next));
+        QCOMPARE(guide->property("title").toString(), u"Your Character"_s);
+        QVERIFY(!isVisible(w.inGuide(u"tradeStep"_s)));
+        QVERIFY(click(w.inGuide(u"backButton"_s)));
+        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+
+        // and back in when it's turned off
+        QVERIFY(toggle(w.inGuide(u"setupSoloSwitch"_s)));
+        QVERIFY(click(next));
+        QCOMPARE(guide->property("title").toString(), u"Trade Searches"_s);
+        QVERIFY(isVisible(w.inGuide(u"tradeStep"_s)));
+    }
+
+    void setupGuideTradeSwitch()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QObject *trade = w.inGuide(u"setupTradeSwitch"_s);
+        const bool before = w.settings().trade.enabled;
+        QCOMPARE(trade->property("checked").toBool(), before);
+        QVERIFY(toggle(trade));
+        QCOMPARE(w.settings().trade.enabled, !before);
+        QVERIFY(toggle(trade));
+        QCOMPARE(w.settings().trade.enabled, before);
+    }
+
+    void setupGuideSavesTheSessionId()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        // nothing is in the keyring until you type one
+        QCOMPARE(w.keyring->writes, 0);
+        QObject *field = w.inGuide(u"setupSessionField"_s);
+        QObject *save = w.inGuide(u"setupSaveButton"_s);
+        QVERIFY(!save->property("enabled").toBool());
+        QVERIFY(field->setProperty("text", fakeId));
+        QVERIFY(save->property("enabled").toBool());
+        QVERIFY(click(save));
+        QVERIFY(w.keyringAnswered());
+        QCOMPARE(w.keyring->secrets.value(u"POESESSID"_s), fakeId);
+        QCOMPARE(text(w.inGuide(u"setupSessionStatus"_s)), u"A session ID is saved."_s);
+        // which isn't shown again
+        QCOMPARE(text(field), QString());
+    }
+
+    void setupGuideSessionIdRefused()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        w.keyring->failure = u"The keyring is locked."_s;
+        QVERIFY(w.inGuide(u"setupSessionField"_s)->setProperty("text", fakeId));
+        QVERIFY(click(w.inGuide(u"setupSaveButton"_s)));
+        QVERIFY(w.keyringAnswered());
+        QVERIFY(isVisible(w.inGuide(u"setupSessionError"_s)));
+        QCOMPARE(text(w.inGuide(u"setupSessionError"_s)), u"The keyring is locked."_s);
+    }
+
+    void setupGuideAddsACharacter()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        for (int i = 0; i < 3; ++i)
+            QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(w.guide()->property("title").toString(), u"Your Character"_s);
+
+        QObject *add = w.inGuide(u"setupAddButton"_s);
+        QObject *name = w.inGuide(u"setupNameField"_s);
+        QVERIFY(!add->property("enabled").toBool());
+        QVERIFY(name->setProperty("text", u" Wren "_s));
+        QVERIFY(click(add));
+        QCOMPARE(w.app->characterList()->rowCount(), 1);
+        QCOMPARE(w.settings().character, w.app->characterList()->current());
+        QCOMPARE(text(name), QString());
+        QVERIFY(w.inGuide(u"setupCharacter:Wren"_s));
+    }
+
+    void setupGuideImportsABuild()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        for (int i = 0; i < 3; ++i)
+            QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QObject *code = w.inGuide(u"setupCodeField"_s);
+        QVERIFY(code->setProperty("text", ranger));
+        QVERIFY(click(w.inGuide(u"setupImportButton"_s)));
+        QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
+                 u"Imported the level 40 Ranger build for Ranger. It has no items on."_s);
+        QCOMPARE(text(code), QString());
+        QCOMPARE(w.inGuide(u"setupCharacter:Ranger"_s)->property("description").toString(),
+                 u"Level 40 Ranger"_s);
+    }
+
+    void setupGuideImportFails()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        for (int i = 0; i < 3; ++i)
+            QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QObject *code = w.inGuide(u"setupCodeField"_s);
+        QVERIFY(code->setProperty("text", u"nonsense"_s));
+        QVERIFY(QMetaObject::invokeMethod(code, "accepted"));
+        QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
+                 u"That isn't a Path of Building code or a link to one."_s);
+        QCOMPARE(text(code), u"nonsense"_s);
+        QCOMPARE(w.app->characterList()->rowCount(), 0);
+        // and it can be left for later
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(isVisible(w.inGuide(u"doneStep"_s)));
+    }
+
+    void setupGuideListsSavedBuilds()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        const QString folder = w.pob.folder.path();
+        QVERIFY(makePob(folder));
+        w.app->pobOptions()->setLocation(folder);
+        QVERIFY(writeFile(w.app->buildImporter()->buildsFolder() + u"/Leveling.xml"_s, ranger.toUtf8()));
+        for (int i = 0; i < 3; ++i)
+            QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QObject *saved = w.inGuide(u"setupSaved:Leveling"_s);
+        QVERIFY(saved);
+        QVERIFY(click(saved));
+        QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
+                 u"Imported the level 40 Ranger build for Leveling. It has no items on."_s);
+    }
+
+    void setupGuideShowsTheHotkeyItHas()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        QVERIFY(w.app->overlayOptions()->setCheckKey(QKeySequence(u"F7"_s)));
+        for (int i = 0; i < 4; ++i)
+            QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
+                 u"Hold the mouse over an item in the game and press %1."_s.arg(
+                     QKeySequence(u"F7"_s).toString(QKeySequence::NativeText)));
+    }
+
+    void setupGuideSaysWhenThereIsNoHotkey()
+    {
+        Window w(false, false, {}, std::nullopt);
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        for (int i = 0; i < 4; ++i)
+            QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
+                 u"The key to check an item isn't set. Choose one on the Settings page."_s);
+    }
+
+    // as --setup asks
+    void setupGuideComesBack()
+    {
+        Window w;
+        QObject *guide = w.guide();
+        QVERIFY(!guide->property("visible").toBool());
+        w.app->onboarding()->ask();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(click(w.inGuide(u"skipButton"_s)));
+        QTRY_VERIFY(!guide->property("visible").toBool());
+
+        // from the start again
+        w.app->onboarding()->ask();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
+    }
+
+    // in the background, as it is at login
+    void setupGuideWaitsForTheWindow()
+    {
+        Window w(true, true, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QVERIFY(w.app->onboarding()->isPending());
+        QVERIFY(!guide->property("visible").toBool());
+        w.window->show();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
+    }
+
+    void setupGuideAskedWhileHidden()
+    {
+        Window w(true, true);
+        QVERIFY(!w.app->onboarding()->isPending());
+        w.app->onboarding()->ask();
+        QVERIFY(!w.guide()->property("visible").toBool());
+        w.window->show();
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
     }
 };
 

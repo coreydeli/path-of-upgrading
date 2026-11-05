@@ -127,6 +127,27 @@ private Q_SLOTS:
         QCOMPARE(judgement->verdict.score, judgeWithPob(before, eval.placements.at(1).stats).score);
     }
 
+    void everyPlace()
+    {
+        const PobItemEval eval = {.placements = {
+                                      ring(u"Ring 1"_s, u"Doom Loop, Gold Ring"_s, 1100),
+                                      ring(u"Ring 2"_s, u"Woe Band, Ruby Ring"_s, 1300),
+                                  }};
+        const PobPlacements judged = judgePlacements(before, eval, grimGrasp);
+        QCOMPARE(judged.judgements.size(), 2);
+        QCOMPARE(judged.judgements.at(0).placement.slot, u"Ring 1"_s);
+        QCOMPARE(judged.judgements.at(1).placement.slot, u"Ring 2"_s);
+        QCOMPARE(judged.judgements.at(0).verdict.score,
+                 judgeWithPob(before, eval.placements.at(0).stats).score);
+        QCOMPARE(judged.best, qsizetype(1));
+        // the same one it picks
+        QCOMPARE(bestPlacement(before, eval, grimGrasp)->placement.slot, u"Ring 2"_s);
+
+        const PobPlacements nowhere = judgePlacements(before, {.error = u"No."_s}, grimGrasp);
+        QVERIFY(nowhere.judgements.isEmpty());
+        QCOMPARE(nowhere.best, qsizetype(-1));
+    }
+
     void itemYouWear()
     {
         // it can't be in the other ring slot as well

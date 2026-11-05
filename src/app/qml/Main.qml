@@ -167,6 +167,12 @@ Kirigami.ApplicationWindow {
         value: root.app.appearance.headingFamily
     }
 
+    SetupGuide {
+        objectName: "setupGuide"
+        app: root.app
+        windowShown: root.visible
+    }
+
     // The pages wait here while they aren't shown, so they keep where you
     // were on them.
     Item {

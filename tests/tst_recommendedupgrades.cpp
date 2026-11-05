@@ -402,6 +402,124 @@ private Q_SLOTS:
         site.upgrades.showResults(-1);
         QCOMPARE(asked.size(), 2);
     }
+
+    void aChosenSlotSaysWhatToLookFor()
+    {
+        Site site;
+        site.play(wearingOldHelmet());
+        QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::chosenChanged);
+        QCOMPARE(site.upgrades.chosen(), QString());
+        QCOMPARE(site.upgrades.chosenLookFor(), QString());
+        QVERIFY(!site.upgrades.chosenWorn());
+
+        // any slot, not only those that are recommended
+        site.upgrades.choose(u"Helmet"_s);
+        QCOMPARE(changed.size(), 1);
+        QCOMPARE(site.upgrades.chosen(), u"Helmet"_s);
+        QVERIFY(site.upgrades.chosenWorn());
+        QCOMPARE(site.upgrades.chosenLookFor(),
+                 site.in(u"Helmet"_s, RecommendedUpgrades::LookForRole).toString());
+        site.upgrades.choose(u"Helmet"_s);
+        QCOMPARE(changed.size(), 1);
+
+        // an empty slot has what the build wants in it
+        site.upgrades.choose(u"Offhand"_s);
+        QVERIFY(!site.upgrades.chosenWorn());
+        QCOMPARE(site.upgrades.chosenLookFor(),
+                 site.in(u"Offhand"_s, RecommendedUpgrades::LookForRole).toString());
+        QVERIFY(!site.upgrades.chosenLookFor().isEmpty());
+
+        // one that has all it needs has nothing to look for
+        site.upgrades.choose(u"Boots"_s);
+        QVERIFY(site.upgrades.chosenWorn());
+        QCOMPARE(site.upgrades.chosenLookFor(), QString());
+
+        // a slot that doesn't exist isn't picked, and empty puts it back
+        site.upgrades.choose(u"Tail"_s);
+        QCOMPARE(site.upgrades.chosen(), u"Boots"_s);
+        site.upgrades.choose(QString());
+        QCOMPARE(site.upgrades.chosen(), QString());
+        QCOMPARE(site.upgrades.chosenLookFor(), QString());
+    }
+
+    void aTwoHandedWeaponLeavesTheOffhandAlone()
+    {
+        Site site;
+        Character c = wearingOldHelmet();
+        c.gear.insert(u"Weapon"_s, item(u"Two Hand Maces"_s, u"Doom Maul"_s, plenty));
+        site.play(c);
+        QVERIFY(c.gear.value(u"Weapon"_s).twoHanded);
+        site.upgrades.choose(u"Offhand"_s);
+        QCOMPARE(site.upgrades.chosenLookFor(), QString());
+    }
+
+    void searchesTheChosenSlot()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        site.play(wearingOldHelmet());
+        QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::chosenChanged);
+        // the boots aren't one of the recommendations
+        QCOMPARE(site.rowOf(u"Boots"_s), -1);
+        site.upgrades.choose(u"Boots"_s);
+        site.network.answers = {searchFound(u"Bt4"_s, 2)};
+        site.upgrades.findChosen();
+        QVERIFY(site.upgrades.chosenTrade().busy);
+        QCOMPARE(site.upgrades.chosenTrade().status, u"Searching the trade site"_s);
+        QTRY_VERIFY(!site.upgrades.chosenTrade().busy);
+        QCOMPARE(site.upgrades.chosenTrade().status, u"2 listed in Runes of Aldur"_s);
+        QVERIFY(changed.size() >= 2);
+
+        // and shows what it found
+        QSignalSpy asked(&site.upgrades, &RecommendedUpgrades::resultsAsked);
+        site.upgrades.showChosenResults();
+        QCOMPARE(asked.size(), 1);
+        QCOMPARE(site.results.total(), 2);
+
+        // another slot has its own report
+        site.upgrades.choose(u"Helmet"_s);
+        QVERIFY(!site.upgrades.chosenTrade().asked);
+        site.upgrades.choose(u"Boots"_s);
+        QVERIFY(site.upgrades.chosenTrade().listed);
+
+        // there's nothing to search in an empty slot
+        site.upgrades.choose(u"Offhand"_s);
+        const qsizetype sent = site.network.sent.size();
+        site.upgrades.findChosen();
+        QVERIFY(!site.upgrades.chosenTrade().asked);
+        QCOMPARE(site.network.sent.size(), sent);
+    }
+
+    void aSearchEndsWhenTheItemIsChanged()
+    {
+        Site site;
+        QVERIFY(site.hasData());
+        site.play(wearingOldHelmet());
+        site.upgrades.choose(u"Boots"_s);
+        site.network.answers = {{.never = true}};
+        site.upgrades.findChosen();
+        QVERIFY(site.upgrades.chosenTrade().busy);
+        QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::chosenChanged);
+
+        // the same item saved again keeps it
+        site.active.reload();
+        QVERIFY(site.upgrades.chosenTrade().busy);
+
+        // another one in the slot is not what it searched for, though the
+        // recommendations stay as they were
+        QSignalSpy reset(&site.upgrades, &QAbstractItemModel::modelReset);
+        QVERIFY(site.active.wear(u"Boots"_s, item(u"Boots"_s, u"Dusk Step"_s, plenty)));
+        QCOMPARE(reset.size(), 0);
+        QVERIFY(!site.upgrades.chosenTrade().asked);
+        QVERIFY(!site.upgrades.chosenTrade().busy);
+        QVERIFY(changed.size() >= 1);
+        QCOMPARE(site.upgrades.chosen(), u"Boots"_s);
+
+        // and the look for follows what's worn
+        QCOMPARE(site.upgrades.chosenLookFor(), QString());
+        QVERIFY(site.active.wear(u"Boots"_s, item(u"Boots"_s, u"Ash Step"_s, u"+10 to maximum Life"_s)));
+        QVERIFY(!site.upgrades.chosenLookFor().isEmpty());
+    }
 };
 
 QTEST_MAIN(TestRecommendedUpgrades)

@@ -18,9 +18,13 @@ released.
 
 - Compares the item you check with the one you wear in the same slot. The
   verdict goes by Path of Building once you have imported a build, by a gear
-  score for your build, or by your own stat weights.
+  score for your build, or by your own stat weights. A ring, charm or jewel
+  also shows what it would do in each place it fits.
 - Works without a build too. Wear gear or set stat weights before you add a
   character, and the app makes one called My character and plays it.
+- Opens a setup guide the first time the window opens, for your league, trade
+  searches, a first character and the key that checks an item. Start the
+  program with `path-of-upgrading --setup` to see it again.
 - Judges what an item costs you as well as what it gives. A big drop in
   damage, Effective HP, Life or Energy Shield counts against it, and "Never
   lose damage" and "Never lose defences" make either one mean an item is never
@@ -62,14 +66,17 @@ released.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and what each slot needs to score
-  more. Its Recommended Upgrades card lists up to three slots to upgrade first,
-  with the stats to look for in a better item. Each slot with an item also has
-  Find an Upgrade, which searches the trade site when trade searches are on.
-  The gear page also has your resistances, from your build or typed in off the
-  character sheet, so an item that leaves one under the cap says so.
+  more. On a wide window the slots are laid out like your character's equipment
+  screen. Pick one to see what would improve it, the stats to look for in a
+  better item, and a Find an Upgrade search of the trade site when trade
+  searches are on. Its Recommended Upgrades card lists up to three slots to
+  upgrade first, with the stats to look for. The gear page also has your
+  resistances, from your build or typed in off the character sheet, so an item
+  that leaves one under the cap says so.
 - Spreads the settings pages across a wide window. Their cards flow into up to
-  three columns, and stack again on a narrow one. On the gear page, your
-  resistances and the other worn items sit beside the main gear.
+  three columns, and stack again on a narrow one. The gear page stays in one
+  column on a wide window, with the equipment screen under the overall score,
+  and is a plain list of the slots on a narrow one.
 - Can sign in to the trade site with your session ID, which is kept in your
   system keyring. The Trade page has the steps for finding it in your browser.
   Signed out, the site only takes simple searches, so upgrade searches look for

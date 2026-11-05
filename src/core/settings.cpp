@@ -85,6 +85,7 @@ Settings loadSettings(const QSettings &store, bool beta)
     Settings s;
     s.trade.enabled = beta;
     read(store, u"character"_s, s.character);
+    read(store, u"app/setupDone"_s, s.setupDone);
 
     TradeSettings &trade = s.trade;
     read(store, u"trade/enabled"_s, trade.enabled);
@@ -138,6 +139,7 @@ Settings loadSettings(const QSettings &store, bool beta)
 void saveSettings(QSettings &store, const Settings &s, bool beta)
 {
     store.setValue(u"character"_s, s.character);
+    store.setValue(u"app/setupDone"_s, s.setupDone);
 
     const TradeSettings &trade = s.trade;
     // once it's been chosen, it's kept

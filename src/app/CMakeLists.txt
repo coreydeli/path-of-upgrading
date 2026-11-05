@@ -8,6 +8,7 @@ qt_add_library(pou_app STATIC
     checkeditems.cpp checkeditems.h
     commandline.cpp commandline.h
     desktop.cpp desktop.h
+    equipmentlist.cpp equipmentlist.h
     fonts.cpp fonts.h
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
@@ -20,6 +21,7 @@ qt_add_library(pou_app STATIC
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
     listingjudge.cpp listingjudge.h
+    onboarding.cpp onboarding.h
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
@@ -47,6 +49,8 @@ qt_add_qml_module(pou_app
         qml/ColumnsPage.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
+        qml/EquipmentBoard.qml
+        qml/EquipmentTile.qml
         qml/FontPickerDialog.qml
     qml/FormRow.qml
         qml/GearPage.qml
@@ -60,6 +64,7 @@ qt_add_qml_module(pou_app
         qml/OrnateFrame.qml
         qml/OverlayPage.qml
         qml/PageHeader.qml
+        qml/PlacementsTable.qml
         qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml
@@ -71,15 +76,22 @@ qt_add_qml_module(pou_app
         qml/ScoreGauge.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
+        qml/SlotNotes.qml
+        qml/SlotPanel.qml
         qml/SlotRow.qml
         qml/SectionHeader.qml
         qml/SidebarHeader.qml
         qml/SectionText.qml
+        qml/SetupCharacterStep.qml
+        qml/SetupGuide.qml
+        qml/SetupLeagueStep.qml
+        qml/SetupTradeStep.qml
         qml/Style.qml
         qml/SwitchRow.qml
         qml/ToneLabel.qml
         qml/TonePill.qml
         qml/TradePage.qml
+        qml/TradeStatus.qml
         qml/WindowGlow.qml
 )
 
