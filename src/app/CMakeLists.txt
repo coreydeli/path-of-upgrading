@@ -71,6 +71,7 @@ qt_add_qml_module(pou_app
         qml/ScoreGauge.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
+        qml/SlotNotes.qml
         qml/SlotRow.qml
         qml/SectionHeader.qml
         qml/SidebarHeader.qml
@@ -80,6 +81,7 @@ qt_add_qml_module(pou_app
         qml/ToneLabel.qml
         qml/TonePill.qml
         qml/TradePage.qml
+        qml/TradeStatus.qml
         qml/WindowGlow.qml
 )
 

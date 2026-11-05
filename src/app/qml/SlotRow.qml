@@ -110,8 +110,8 @@ FormCard.AbstractFormDelegate {
             }
         }
 
-        // what would raise the score, a labelled line each
-        ColumnLayout {
+        // what would raise the score
+        SlotNotes {
             objectName: "slotNotes"
             Layout.row: row.wide ? 0 : 1
             Layout.column: row.wide ? 1 : 0
@@ -119,35 +119,7 @@ FormCard.AbstractFormDelegate {
             Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
             visible: row.notes.length > 0
-            spacing: Kirigami.Units.smallSpacing
-
-            Repeater {
-                model: row.notes
-
-                delegate: RowLayout {
-                    id: note
-
-                    required property var modelData
-
-                    Layout.fillWidth: true
-                    spacing: Kirigami.Units.largeSpacing
-
-                    QQC2.Label {
-                        objectName: "noteLabel"
-                        Layout.alignment: Qt.AlignTop
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                        text: note.modelData.label
-                        color: Kirigami.Theme.disabledTextColor
-                    }
-
-                    QQC2.Label {
-                        objectName: "noteText"
-                        Layout.fillWidth: true
-                        text: note.modelData.text
-                        wrapMode: Text.Wrap
-                    }
-                }
-            }
+            lines: row.notes
         }
 
         // the score and taking it off
