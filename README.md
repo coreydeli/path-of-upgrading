@@ -42,7 +42,9 @@ released.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
-  one that finds nothing is tried again a little looser.
+  one that finds nothing is tried again a little looser. While trade searches
+  are on, poe.ninja's rates are updated every 10 minutes, or as often as you
+  set on the Trade page.
 - Shows the listings a search found in a window over the game, opened from the
   popup or with the Results hotkey. Each says whether it is an upgrade for the
   character you play, by how much and what it changes, the way the popup does,
@@ -64,10 +66,11 @@ released.
   three columns, and stack again on a narrow one. On the gear page, your
   resistances and the other worn items sit beside the main gear.
 - Can sign in to the trade site with your session ID, which is kept in your
-  system keyring. Signed out, the site only takes simple searches, so upgrade
-  searches look for a few of your build's key stats, and the results window
-  rates each listing. Signed in, Path of Building weighs them for your build,
-  the way its own trade searches do, or they go by your whole gear score.
+  system keyring. The Trade page has the steps for finding it in your browser.
+  Signed out, the site only takes simple searches, so upgrade searches look for
+  a few of your build's key stats, and the results window rates each listing.
+  Signed in, Path of Building weighs them for your build, the way its own trade
+  searches do, or they go by your whole gear score.
 - The popup can be dragged by its title to move it. When you copy an item
   yourself with Ctrl+C, it appears by the mouse.
 - Stays in the system tray when you close the window. The tray icon shows the
