@@ -1717,8 +1717,11 @@ private Q_SLOTS:
         // it says what it is, also before there is anything in it
         QObject *intro = w.find(u"historyIntro"_s);
         QVERIFY(isVisible(intro));
-        QCOMPARE(text(intro), u"Every item you check in the game with the hotkey is kept here, the newest "
-                              "first, up to the last 30. When the list is full, the oldest drops off."_s);
+        QCOMPARE(text(intro),
+                 u"The items you check in the game are kept here, the newest first, up to the last "
+                 "30: those you check with the hotkey, and gear you copy yourself while "
+                 "\"Also check gear you copy yourself\" is on. When the list is full, the "
+                 "oldest drops off."_s);
         QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 
