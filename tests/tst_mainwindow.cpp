@@ -1946,6 +1946,19 @@ private Q_SLOTS:
         QVERIFY(pos(u"budgetMin"_s).y() < pos(u"sessionField"_s).y());
     }
 
+    void budgetLabels()
+    {
+        Window w;
+        QVERIFY(w.show(u"tradeAction"_s));
+        QCOMPARE(w.find(u"budgetMin"_s)->property("label").toString(), u"Lowest price"_s);
+        QCOMPARE(w.find(u"budgetMax"_s)->property("label").toString(), u"Highest price"_s);
+        QCOMPARE(w.find(u"budgetMin"_s)->property("description").toString(),
+                 u"Listings cheaper than this are left out."_s);
+        QCOMPARE(w.find(u"budgetMax"_s)->property("description").toString(),
+                 u"Listings that cost more are left out."_s);
+        QCOMPARE(w.find(u"currencyBox"_s)->property("text").toString(), u"Currency"_s);
+    }
+
     void budget()
     {
         Window w;
