@@ -32,6 +32,8 @@ public:
     void stop();
 
     bool isRunning() const { return m_running; }
+    // The league it keeps the rates for.
+    QString league() const { return m_league; }
     // How many minutes until the next try, with the wait backed off.
     int waitMinutes() const;
 
