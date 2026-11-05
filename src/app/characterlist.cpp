@@ -3,6 +3,9 @@
 
 #include "app/activecharacter.h"
 #include "app/settingsstore.h"
+#include "core/buildprofiles.h"
+#include "core/evaluation.h"
+#include "core/gearscore.h"
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -37,6 +40,20 @@ CharacterList::CharacterList(CharacterStore *store, ActiveCharacter *active, Set
     , m_current(settings->settings().character)
 {
     connect(settings, &SettingsStore::changed, this, &CharacterList::followSettings);
+    // the build of the one you play is read off the rows
+    const auto follow = [this] {
+        Q_EMIT currentBuildChanged();
+    };
+    connect(this, &CharacterList::currentChanged, this, follow);
+    connect(this, &QAbstractItemModel::dataChanged, this, follow);
+    connect(this, &QAbstractItemModel::modelReset, this, follow);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, follow);
+    // wearing something or tuning the gear score changes the one you play
+    connect(active, &ActiveCharacter::changed, this, [this] {
+        const int row = int(m_ids.indexOf(m_active->id()));
+        if (row >= 0)
+            Q_EMIT dataChanged(index(row), index(row), {ProfileRole, ScoreRole, GradeRole});
+    });
 }
 
 void CharacterList::load()
@@ -74,6 +91,23 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
         return {};
     case BuildRole:
         return m_builds.value(id);
+    case ProfileRole: {
+        const Character *character = m_store->find(id);
+        if (!character)
+            return {};
+        if (character->buildProfile == noBuildProfile)
+            return u"Your stat weights"_s;
+        const BuildProfile *profile = buildProfile(character->buildProfile);
+        return profile ? profile->name : QString();
+    }
+    case ScoreRole:
+    case GradeRole: {
+        const Character *character = m_store->find(id);
+        if (!character)
+            return {};
+        const auto [score, grade] = rating(*character);
+        return role == ScoreRole ? score : grade;
+    }
     }
     return {};
 }
@@ -81,10 +115,23 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> CharacterList::roleNames() const
 {
     return {
-        {IdRole, "characterId"},
-        {NameRole, "name"},
-        {BuildRole, "build"},
+        {IdRole, "characterId"},  {NameRole, "name"},   {BuildRole, "build"},
+        {ProfileRole, "profile"}, {ScoreRole, "score"}, {GradeRole, "grade"},
     };
+}
+
+std::pair<QString, QString> CharacterList::rating(const Character &character) const
+{
+    const PobPriorities &priorities = m_settings->settings().pob.priorities;
+    // each slot is scored on its own, and the average is over the rated ones
+    const GearScoreFn slotScore = [&](const Item &item, const QString &slot) -> std::optional<double> {
+        const std::optional<GearScore> score = gearScore(item, gearScoreOptions(character, slot, priorities));
+        return score && score->isRated() ? std::optional<double>(score->score) : std::nullopt;
+    };
+    const std::optional<double> overall = overallGearScore(character.gear, slotScore);
+    if (!overall)
+        return {};
+    return {QString::number(*overall), gearGrade(int(*overall))};
 }
 
 void CharacterList::setCurrent(const QString &id)

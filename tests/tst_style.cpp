@@ -43,6 +43,7 @@ const char *probe = "import QtQuick\n"
                     "    function gold() { return Style.gold(Kirigami.Theme); }\n"
                     "    function clear(c) { return Style.clear(c); }\n"
                     "    function bigTitle(font) { return Style.titleFont(font, 2); }\n"
+                    "    function section(font) { return Style.sectionFont(font); }\n"
                     "    readonly property color text: Kirigami.Theme.textColor\n"
                     "    readonly property color background: Kirigami.Theme.backgroundColor\n"
                     "    readonly property color highlight: Kirigami.Theme.highlightColor\n"
@@ -234,6 +235,25 @@ private Q_SLOTS:
         base.setPointSizeF(10);
         QCOMPARE(call(u"title"_s, {base}).value<QFont>().pointSizeF(), 10.0);
         QCOMPARE(call(u"bigTitle"_s, {base}).value<QFont>().pointSizeF(), 20.0);
+    }
+
+    // Cinzel's lower case are small capitals already, so other fonts are made them
+    void sectionTitlesAreSmallCapitalsUnlessCinzel()
+    {
+        QFont base;
+        base.setPointSizeF(10);
+        m_style->setProperty("headingFamily", u"Cinzel"_s);
+        QFont font = call(u"section"_s, {base}).value<QFont>();
+        QCOMPARE(font.family(), u"Cinzel"_s);
+        QCOMPARE(font.weight(), QFont::Bold);
+        QCOMPARE(font.letterSpacing(), 0.5);
+        QCOMPARE(font.capitalization(), QFont::MixedCase);
+        QCOMPARE(font.pointSizeF(), 9.0);
+
+        m_style->setProperty("headingFamily", u"Made Up Serif"_s);
+        font = call(u"section"_s, {base}).value<QFont>();
+        QCOMPARE(font.family(), u"Made Up Serif"_s);
+        QCOMPARE(font.capitalization(), QFont::SmallCaps);
     }
 
     void decorationsAreOnUnlessPlain() { QCOMPARE(m_style->property("plain").toBool(), false); }

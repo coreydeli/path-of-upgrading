@@ -15,6 +15,7 @@ ColumnsPage {
     required property StatPicker picker
 
     title: qsTr("Ignored Stats")
+    description: qsTr("Stats your character does not want counted.")
 
     // A group of stats, with how they count beside it.
     component GroupRow: FormRow {
@@ -73,7 +74,7 @@ ColumnsPage {
         }
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         title: ignoredPage.ignored.character !== "" ? qsTr("For %1").arg(ignoredPage.ignored.character) : qsTr("Ignored Stats")
     }
 
@@ -110,7 +111,7 @@ ColumnsPage {
         text: qsTr("An ignored stat counts for nothing in the gear score and your weights, and the trade searches leave it out. An excluded one is ignored too, and the trade searches skip every listing that has it.")
     }
 
-    FormCard.FormHeader {
+    SectionHeader {
         visible: singleStats.visible
         title: qsTr("One by One")
     }
