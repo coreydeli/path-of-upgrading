@@ -356,6 +356,15 @@ Rectangle {
             }
         }
 
+        // each place it could go, when you wear something in more than one
+        PlacementsTable {
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: placements.length > 0
+            placements: card.report.placements
+            colorblind: card.popup.colorblind
+        }
+
         ChangesTable {
             Layout.fillWidth: true
             Layout.topMargin: Kirigami.Units.smallSpacing

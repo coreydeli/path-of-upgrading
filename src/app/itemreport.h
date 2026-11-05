@@ -52,6 +52,28 @@ public:
     friend bool operator==(const ReportFigure &, const ReportFigure &) = default;
 };
 
+// How an item does in one of the places it could go.
+struct ReportPlacement
+{
+    Q_GADGET
+    QML_VALUE_TYPE(reportPlacement)
+
+    Q_PROPERTY(QString slot MEMBER slot)
+    Q_PROPERTY(QString wearing MEMBER wearing)
+    Q_PROPERTY(bool best MEMBER best)
+    Q_PROPERTY(QList<pou::ReportFigure> changes MEMBER changes)
+
+public:
+    QString slot;      // "Ring 2"
+    QString wearing;   // the item there now, or "Empty"
+    bool best = false; // the place its verdict is for
+    // What it does to your build there: "+3.2%" of "DPS", or its gear score
+    // change.
+    QList<ReportFigure> changes;
+
+    friend bool operator==(const ReportPlacement &, const ReportPlacement &) = default;
+};
+
 // What the popup says about an item you checked.
 struct ItemReport
 {
@@ -63,6 +85,7 @@ struct ItemReport
     Q_PROPERTY(bool gear MEMBER gear)
     Q_PROPERTY(QStringList details MEMBER details)
     Q_PROPERTY(QStringList wearIn MEMBER wearIn)
+    Q_PROPERTY(QList<pou::ReportPlacement> placements MEMBER placements)
     Q_PROPERTY(QString openAffixes MEMBER openAffixes)
     Q_PROPERTY(QString verdict MEMBER verdict)
     Q_PROPERTY(pou::Tone::Tone verdictTone MEMBER verdictTone)
@@ -93,6 +116,9 @@ public:
     QStringList details; // its base type, item class and item level
     // The slots you can say you wear it in, none when you wear it already.
     QStringList wearIn;
+    // How it does in each of them when something is worn in more than one, the
+    // way the verdict chose between them.
+    QList<ReportPlacement> placements;
     // "Open affixes: 1 prefix, 2 suffixes", when the copy said which are which
     QString openAffixes;
     QString verdict; // "Upgrade", empty for an item that isn't gear

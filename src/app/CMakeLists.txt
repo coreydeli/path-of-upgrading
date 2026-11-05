@@ -60,6 +60,7 @@ qt_add_qml_module(pou_app
         qml/OrnateFrame.qml
         qml/OverlayPage.qml
         qml/PageHeader.qml
+        qml/PlacementsTable.qml
         qml/PobPage.qml
         qml/PopupCard.qml
         qml/PopupWindow.qml

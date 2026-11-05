@@ -49,8 +49,8 @@ QString pobItemName(const Item &item)
     return item.name;
 }
 
-std::optional<PobJudgement> bestPlacement(const PobStats &before, const PobItemEval &eval, const Item &item,
-                                          const PobVerdictOptions &options)
+PobPlacements judgePlacements(const PobStats &before, const PobItemEval &eval, const Item &item,
+                              const PobVerdictOptions &options)
 {
     const QString name = pobItemName(item);
     QList<PobPlacement> placements;
@@ -61,13 +61,23 @@ std::optional<PobJudgement> bestPlacement(const PobStats &before, const PobItemE
     if (placements.isEmpty())
         placements = eval.placements;
 
+    PobPlacements judged;
     QList<PobVerdict> verdicts;
-    for (const PobPlacement &placement : placements)
+    for (const PobPlacement &placement : placements) {
         verdicts << judgeWithPob(before, placement.stats, options);
-    const qsizetype best = bestVerdict(verdicts);
-    if (best < 0)
+        judged.judgements << PobJudgement{placement, verdicts.last()};
+    }
+    judged.best = bestVerdict(verdicts);
+    return judged;
+}
+
+std::optional<PobJudgement> bestPlacement(const PobStats &before, const PobItemEval &eval, const Item &item,
+                                          const PobVerdictOptions &options)
+{
+    const PobPlacements judged = judgePlacements(before, eval, item, options);
+    if (judged.best < 0)
         return std::nullopt;
-    return PobJudgement{placements.at(best), verdicts.at(best)};
+    return judged.judgements.at(judged.best);
 }
 
 } // namespace pou
