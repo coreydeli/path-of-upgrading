@@ -52,18 +52,27 @@ QString listed(const QList<NamedScreen> &screens)
 // and Qt's screens are what the two are matched on.
 void logMouse(XConnection &x, const XPointer &pointer, const std::optional<ScreenPoint> &mouse)
 {
+    const auto over = [&] {
+        if (pointer.window == XCB_WINDOW_NONE)
+            return u"no window of a program"_s;
+        return u"window %1 (%2)"_s.arg(pointer.window).arg(windowName(describeWindow(x, pointer.window)));
+    };
     if (mouse) {
-        qCDebug(lcPlacement) << "The mouse is at" << pointer.position << "on the X screen, which is"
-                             << mouse->position << "on" << mouse->screen;
+        qCDebug(lcPlacement).noquote()
+            << u"The mouse is at %1,%2 on the X screen, over %3. That is %4,%5 on %6."_s
+                   .arg(pointer.position->x())
+                   .arg(pointer.position->y())
+                   .arg(over())
+                   .arg(mouse->position.x())
+                   .arg(mouse->position.y())
+                   .arg(mouse->screen);
         return;
     }
     qCInfo(lcPlacement).noquote()
-        << u"Can't tell where the mouse is. It is at %1,%2 on the X screen, over %3. X monitors: %4. Qt "
-           "screens: %5."_s.arg(pointer.position.x())
-               .arg(pointer.position.y())
-               .arg(pointer.window == XCB_WINDOW_NONE ? u"no window the X server knows"_s
-                                                      : u"window %1"_s.arg(pointer.window))
-               .arg(listed(xMonitors(x)), listed(qtScreens()));
+        << u"Can't tell where the mouse is. The X server says %1, over %2. X monitors: %3. Qt screens: %4."_s
+               .arg(pointer.position ? u"%1,%2"_s.arg(pointer.position->x()).arg(pointer.position->y())
+                                     : u"nothing"_s,
+                    over(), listed(xMonitors(x)), listed(qtScreens()));
 }
 
 } // namespace
@@ -156,10 +165,7 @@ std::optional<ScreenPoint> XGameInput::mouse() const
 
 std::optional<ScreenPoint> XGameInput::mouseAt(const XPointer &pointer) const
 {
-    // Over a Wayland window, the X server doesn't know where the mouse is.
-    if (pointer.window == XCB_WINDOW_NONE)
-        return std::nullopt;
-    return mapToScreen(pointer.position, xMonitors(*m_x), qtScreens());
+    return pointerOnScreens(pointer, xMonitors(*m_x), qtScreens());
 }
 
 void XGameInput::connectToServer()
