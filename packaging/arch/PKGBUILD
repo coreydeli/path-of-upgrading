@@ -2,7 +2,7 @@
 # Maintainer: Corey Deli <55706677+coreydeli@users.noreply.github.com>
 
 pkgname=path-of-upgrading
-pkgver=0.5.0
+pkgver=0.6.0
 pkgrel=1
 pkgdesc='Path of Exile 2 item overlay that checks items against your build'
 arch=(x86_64)
