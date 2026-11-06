@@ -21,9 +21,9 @@ Kirigami.ApplicationWindow {
         // goes back to the top for any other. A drawer you pull out lets go
         // either way.
         if (page !== gearScorePage && page !== weightsPage && page !== ignoredPage)
-            globalDrawer.resetMenu();
-        else if (globalDrawer.modal)
-            globalDrawer.drawerOpen = false;
+            drawer.resetMenu();
+        else if (drawer.modal)
+            drawer.drawerOpen = false;
     }
 
     width: Kirigami.Units.gridUnit * 46
@@ -57,6 +57,7 @@ Kirigami.ApplicationWindow {
         app.overlayOptions.lookAtStart()
 
     globalDrawer: Kirigami.GlobalDrawer {
+        id: drawer
         objectName: "sidebar"
         isMenu: false
         modal: !root.sidebar
