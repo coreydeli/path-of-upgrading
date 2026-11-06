@@ -3192,23 +3192,36 @@ private Q_SLOTS:
 
         QVERIFY(w.clickRow(u"Stat Weights"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
-        // and the sidebar is back at the top, with Gear lit
+        // the sidebar stays on Gear, so the next page is one click away
+        QTest::qWait(500);
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), true);
+        QVERIFY(w.clickRow(u"Ignored Stats"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
+        QTest::qWait(500);
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QCOMPARE(w.sidebarRow(u"Ignored Stats"_s)->property("checked").toBool(), true);
+        QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), false);
+        QVERIFY(w.clickRow(u"Gear Grade"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
+
+        // Back goes up a level without picking a page
+        QVERIFY(w.clickRow(u"Back"_s));
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
         QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
         QCOMPARE(w.sidebarRow(u"Characters"_s)->property("checked").toBool(), false);
 
-        // Back goes up a level without picking a page
+        // a page from outside the group takes the sidebar back to the top
         QVERIFY(w.clickRow(u"Gear"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
-        // once it has slid in
-        QTest::qWait(500);
-        QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), true);
-        QVERIFY(w.clickRow(u"Back"_s));
+        QVERIFY(w.show(u"gearAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
+        QTRY_VERIFY(!w.sidebarRow(u"Back"_s));
 
         // the other pages stay one click away
         QVERIFY(w.clickRow(u"Your Gear"_s));
@@ -3242,6 +3255,14 @@ private Q_SLOTS:
         QCOMPARE(w.focusedRow(), u"Ignored Stats"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Space);
         QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
+
+        // the sidebar is still on Gear, so another page is a key press away
+        QTest::qWait(500);
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        w.sidebarRow(u"Stat Weights"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"Stat Weights"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Return);
+        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
     }
 
     // where the sidebar is a drawer you open
@@ -3264,14 +3285,33 @@ private Q_SLOTS:
         QTest::qWait(500);
         QVERIFY(w.clickRow(u"Gear Grade"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
-        // the drawer lets go once a page is picked, and starts from the top again
+        // the drawer lets go once a page is picked
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
 
+        // and opens on Gear again, so the next page is one click away
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Stat Weights"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Stat Weights"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
+
+        // Back goes up a level, and a page from outside the group starts from the top
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(w.clickRow(u"Back"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+        QVERIFY(w.clickRow(u"Your Gear"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
     }
 
     // the title and what the page is for, at the top of each page
