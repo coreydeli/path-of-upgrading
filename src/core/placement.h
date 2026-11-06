@@ -16,9 +16,10 @@ QString popupPositionId(PopupPosition position);
 PopupPosition popupPositionFromId(QStringView id);
 
 // Where the popup's top left goes on the screen the mouse is on, counted from
-// the screen's top left. Next to the mouse it goes on the right, or on the
-// left when there's no room there, and at the top when we don't know where
-// the mouse is. It stays a few pixels in from the edges.
+// the screen's top left. Next to the mouse it goes on the left, level with
+// the mouse and a small gap from it, or on the right when there's no room on
+// the left, and at the top when we don't know where the mouse is. It stays a
+// few pixels in from the edges.
 QPoint placePopup(PopupPosition where, const QSize &popup, const QSize &screen,
                   const std::optional<QPoint> &mouse);
 
