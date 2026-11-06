@@ -17,6 +17,13 @@ Kirigami.ApplicationWindow {
     function show(page: Item): void {
         pageStack.clear();
         pageStack.push(page);
+        // The sidebar stays on Gear while you move between its pages, and
+        // goes back to the top for any other. A drawer you pull out lets go
+        // either way.
+        if (page !== gearScorePage && page !== weightsPage && page !== ignoredPage)
+            drawer.resetMenu();
+        else if (drawer.modal)
+            drawer.drawerOpen = false;
     }
 
     width: Kirigami.Units.gridUnit * 46
@@ -50,10 +57,13 @@ Kirigami.ApplicationWindow {
         app.overlayOptions.lookAtStart()
 
     globalDrawer: Kirigami.GlobalDrawer {
+        id: drawer
         objectName: "sidebar"
         isMenu: false
         modal: !root.sidebar
         handleVisible: modal
+        // show() decides when it goes back to the top
+        resetMenuOnTriggered: false
 
         // closed, if it was closing to turn modal
         onVisibleChanged: root.followWidth()
