@@ -21,14 +21,28 @@ private Q_SLOTS:
         QTest::addColumn<QPoint>("expected");
 
         const QSize popup(400, 300);
-        QTest::newRow("right of the mouse")
-            << PopupPosition::Cursor << popup << Mouse(QPoint(500, 500)) << QPoint(524, 400);
-        QTest::newRow("left of the mouse by the right edge")
-            << PopupPosition::Cursor << popup << Mouse(QPoint(1700, 500)) << QPoint(1276, 400);
+        QTest::newRow("left of the mouse")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(500, 500)) << QPoint(80, 500);
+        QTest::newRow("by the right edge")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(1900, 500)) << QPoint(1480, 500);
+        QTest::newRow("fits on the left by the least")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(424, 500)) << QPoint(4, 500);
+        QTest::newRow("one pixel short of fitting on the left")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(423, 500)) << QPoint(443, 500);
+        QTest::newRow("right of the mouse by the left edge")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(300, 500)) << QPoint(320, 500);
+        QTest::newRow("mouse in the left corner")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(0, 0)) << QPoint(20, 4);
         QTest::newRow("mouse near the top")
-            << PopupPosition::Cursor << popup << Mouse(QPoint(500, 50)) << QPoint(524, 4);
+            << PopupPosition::Cursor << popup << Mouse(QPoint(500, 2)) << QPoint(80, 4);
         QTest::newRow("mouse near the bottom")
-            << PopupPosition::Cursor << popup << Mouse(QPoint(500, 1050)) << QPoint(524, 776);
+            << PopupPosition::Cursor << popup << Mouse(QPoint(500, 1050)) << QPoint(80, 776);
+        QTest::newRow("mouse at the bottom edge")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(500, 1079)) << QPoint(80, 776);
+        QTest::newRow("left edge and bottom")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(10, 1070)) << QPoint(30, 776);
+        QTest::newRow("right edge and top")
+            << PopupPosition::Cursor << popup << Mouse(QPoint(1919, 0)) << QPoint(1499, 4);
         QTest::newRow("mouse we can't see") << PopupPosition::Cursor << popup << Mouse() << QPoint(760, 16);
         QTest::newRow("left side") << PopupPosition::Left << popup << Mouse(QPoint(500, 500))
                                    << QPoint(16, 129);
@@ -37,8 +51,13 @@ private Q_SLOTS:
         QTest::newRow("top") << PopupPosition::Top << popup << Mouse(QPoint(500, 500)) << QPoint(760, 16);
         QTest::newRow("bigger than the screen")
             << PopupPosition::Cursor << QSize(2000, 1200) << Mouse(QPoint(500, 500)) << QPoint(4, 4);
+        // where there's more room, on the left when there's the same
         QTest::newRow("no room on either side")
-            << PopupPosition::Cursor << QSize(1000, 300) << Mouse(QPoint(960, 500)) << QPoint(4, 400);
+            << PopupPosition::Cursor << QSize(1000, 300) << Mouse(QPoint(960, 500)) << QPoint(4, 500);
+        QTest::newRow("no room on either side, more on the right")
+            << PopupPosition::Cursor << QSize(1000, 300) << Mouse(QPoint(900, 500)) << QPoint(916, 500);
+        QTest::newRow("no room on either side, more on the left")
+            << PopupPosition::Cursor << QSize(1000, 300) << Mouse(QPoint(1000, 500)) << QPoint(4, 500);
     }
 
     void popup()
@@ -49,6 +68,23 @@ private Q_SLOTS:
         QFETCH(QPoint, expected);
 
         QCOMPARE(placePopup(where, popup, QSize(1920, 1080), mouse), expected);
+    }
+
+    void eachScreenOnItsOwn()
+    {
+        // the mouse is counted from the corner of the screen it's on, so the
+        // same spot gives the same place whatever the screens are
+        const QSize popup(400, 300);
+        const QPoint mouse(1000, 600);
+        QCOMPARE(placePopup(PopupPosition::Cursor, popup, QSize(1920, 1080), mouse), QPoint(580, 600));
+        QCOMPARE(placePopup(PopupPosition::Cursor, popup, QSize(7680, 2160), mouse), QPoint(580, 600));
+        // a smaller screen next to a bigger one has the edges closer
+        QCOMPARE(placePopup(PopupPosition::Cursor, popup, QSize(1280, 720), QPoint(1200, 700)),
+                 QPoint(780, 416));
+        QCOMPARE(placePopup(PopupPosition::Cursor, popup, QSize(1280, 720), QPoint(200, 50)),
+                 QPoint(220, 50));
+        QCOMPARE(placePopup(PopupPosition::Cursor, popup, QSize(2560, 1440), QPoint(2500, 1400)),
+                 QPoint(2080, 1136));
     }
 
     void keptOnTheScreen()
