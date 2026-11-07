@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT
+#
+# What rpmlint says that's left as it is. The program tells what it takes with
+# --help, and has no manual page.
+addFilter("no-manual-page-for-binary")
