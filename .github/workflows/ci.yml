@@ -297,3 +297,20 @@ jobs:
             dist/*.exe
             dist/*.zip
           if-no-files-found: error
+
+  # The rule on beta waits for a check called CI, so this is it. It passes
+  # once every stage has passed or been left out, as they are for the docs.
+  ci:
+    name: CI
+    needs: [changes, format, arch, debian, windows]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every stage passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          case " $RESULTS " in
+          *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
