@@ -11,7 +11,7 @@
 %bcond check 1
 
 Name:           path-of-upgrading
-Version:        0.5.0
+Version:        0.6.0
 Release:        1%{?dist}
 # the release a beta leads up to, whose folder the tarball unpacks to
 %global srcver  %(echo '%{version}' | cut -d '~' -f 1)
