@@ -69,6 +69,14 @@ XPointer queryPointer(XConnection &x)
     return pointer;
 }
 
+std::optional<ScreenPoint> pointerOnScreens(const XPointer &pointer, const QList<NamedScreen> &monitors,
+                                            const QList<NamedScreen> &screens)
+{
+    if (!pointer.position)
+        return std::nullopt;
+    return mapToScreen(*pointer.position, monitors, screens);
+}
+
 void activate(XConnection &x, xcb_window_t window)
 {
     xcb_client_message_event_t message = {
