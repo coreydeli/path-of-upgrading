@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 #
 # Each push to main or beta makes a release on GitHub, with the source, an Arch
-# Linux package, a Debian 13 package, a Windows installer and zip, and the
-# changes since the last one.
+# Linux package, a Debian 13 package, a Fedora package, a Windows installer and
+# zip, and the changes since the last one.
 # Main releases the version in CMakeLists.txt as the latest release, once. Beta
 # releases it as a pre-release, v0.1.0-beta.1 and on, until that version is
 # out. The source comes first, then CI's build of each platform, which tests
@@ -40,6 +40,7 @@ jobs:
       release: ${{ steps.version.outputs.release }}
       arch-version: ${{ steps.version.outputs.arch-version }}
       debian-version: ${{ steps.version.outputs.debian-version }}
+      rpm-version: ${{ steps.version.outputs.rpm-version }}
       beta: ${{ steps.version.outputs.beta }}
     steps:
       - uses: actions/checkout@v7
@@ -78,6 +79,7 @@ jobs:
       tag: ${{ needs.source.outputs.tag }}
       arch-version: ${{ needs.source.outputs.arch-version }}
       debian-version: ${{ needs.source.outputs.debian-version }}
+      rpm-version: ${{ needs.source.outputs.rpm-version }}
       beta: ${{ needs.source.outputs.beta == 'true' }}
 
   release:
