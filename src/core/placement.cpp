@@ -35,6 +35,8 @@ namespace {
 
 constexpr int fromSide = 16;
 constexpr int fromEdge = 4;
+// the gap between the popup and the mouse
+constexpr int fromMouse = 20;
 
 // How far down the windows at the sides go.
 int sideTop(const QSize &screen)
@@ -55,20 +57,23 @@ QPoint withinScreen(QPoint at, const QSize &window, const QSize &screen)
 QPoint placePopup(PopupPosition where, const QSize &popup, const QSize &screen,
                   const std::optional<QPoint> &mouse)
 {
-    constexpr int fromMouse = 24;
-
     if (where == PopupPosition::Cursor && !mouse)
         where = PopupPosition::Top;
 
     QPoint at;
     switch (where) {
-    case PopupPosition::Cursor:
-        at.setX(mouse->x() + fromMouse);
-        if (at.x() + popup.width() > screen.width())
-            at.setX(mouse->x() - popup.width() - fromMouse);
-        // with the mouse a third of the way down it
-        at.setY(mouse->y() - popup.height() / 3);
+    case PopupPosition::Cursor: {
+        const int left = mouse->x() - fromMouse - popup.width();
+        const int right = mouse->x() + fromMouse;
+        const bool fitsLeft = left >= fromEdge;
+        const bool fitsRight = right + popup.width() <= screen.width() - fromEdge;
+        // on the left unless there's no room there, and if there's none on
+        // either side, where there's more
+        const bool onTheLeft = fitsLeft || (!fitsRight && mouse->x() >= screen.width() - mouse->x());
+        at.setX(onTheLeft ? left : right);
+        at.setY(mouse->y());
         break;
+    }
     case PopupPosition::Left:
         at = {fromSide, sideTop(screen)};
         break;

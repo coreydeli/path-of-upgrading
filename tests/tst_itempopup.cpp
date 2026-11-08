@@ -170,6 +170,21 @@ private Q_SLOTS:
         QVERIFY(shown(popup, u"Upgrade"_s));
     }
 
+    void leftOfTheMouse()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(700, 300));
+        const QWindow *window = popup.window();
+        // a small gap from the mouse, and level with it
+        QCOMPARE(window->position().x(), 700 - 20 - window->width());
+        QCOMPARE(window->position().y(), 300);
+        // on the other side of the mouse when it's by the left edge
+        popup.showReport(aReport(), mouseAt(100, 300));
+        QCOMPARE(window->position(), QPoint(120, 300));
+    }
+
     void mouseUnknown()
     {
         QQmlEngine engine;
@@ -188,7 +203,7 @@ private Q_SLOTS:
         QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=true"_s);
         // the popup grows once it's shown, so there can be more than one
         QTest::ignoreMessage(QtDebugMsg,
-                             QRegularExpression(u"The mouse is 200,300 on .*goes to 224,\\d+ on"_s));
+                             QRegularExpression(u"The mouse is 200,300 on .*goes to 220,\\d+ on"_s));
         popup.showReport(aReport(), mouseAt(200, 300));
         QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=false"_s);
     }
