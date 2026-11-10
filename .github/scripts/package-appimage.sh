@@ -60,6 +60,8 @@ mkdir -p "$appdir/usr/lib/qt6/qml/org/kde" "$appdir/usr/lib/qt6/plugins"
 cp -r "$lib/qt6/qml/org/kde/desktop" "$lib/qt6/qml/org/kde/qqc2desktopstyle" \
     "$appdir/usr/lib/qt6/qml/org/kde/"
 cp -r "$lib/qt6/plugins/kf6" "$appdir/usr/lib/qt6/plugins/"
+# and the app's own style for Kirigami, which the install put in Debian's folder
+mv "$(find "$appdir" -name PouStyle.so)" "$appdir/usr/lib/qt6/plugins/kf6/kirigami/platform/"
 # The Wayland plugins, with LayerShellQt's shell integration for the overlay
 cp -r "$lib"/qt6/plugins/wayland-* "$appdir/usr/lib/qt6/plugins/"
 
