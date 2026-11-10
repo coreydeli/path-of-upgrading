@@ -3,6 +3,7 @@
 
 #include "app/commandline.h"
 #include "platform/gameinput.h"
+#include "platform/gamewatcher.h"
 #include "platform/globalshortcuts.h"
 #include "platform/opener.h"
 #include "platform/secretstore.h"
@@ -46,7 +47,7 @@ App::Paths App::defaultPaths()
 App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
          std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
          std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
-         QObject *parent)
+         std::unique_ptr<GameWatcher> game, QObject *parent)
     : QObject(parent)
     , m_places(places)
     , m_settings(paths.settings)
@@ -55,7 +56,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_input(std::move(input))
     , m_checker(qml, m_input.get())
     , m_shortcuts(std::move(shortcuts))
-    , m_hotkeys(m_shortcuts.get())
+    , m_game(std::move(game))
+    , m_hotkeys(m_shortcuts.get(), m_game.get())
     , m_history(paths.data + u"/history.json"_s)
     , m_secrets(std::move(secrets))
     , m_opener(std::move(opener))

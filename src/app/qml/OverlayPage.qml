@@ -58,6 +58,18 @@ ColumnsPage {
         }
 
         FormCard.FormDelegateSeparator {
+            visible: gameOnlyText.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: gameOnlyText
+            objectName: "gameOnlyNote"
+            visible: overlayPage.options.hotkeysFollowGame
+            text: qsTr("These keys only work while Path of Exile 2 is running. The rest of the time other programs get them, so you can type them as usual.")
+            textItem.wrapMode: Text.Wrap
+        }
+
+        FormCard.FormDelegateSeparator {
             visible: refusedText.visible
         }
 
