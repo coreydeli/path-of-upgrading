@@ -43,7 +43,15 @@ std::optional<ResistRecord> resistsOf(const PobBuild &build, const Equipped &gea
                                  [](const std::optional<double> &r) { return r.has_value(); });
     if (!any)
         return std::nullopt;
-    return snapshotResists({.values = build.resists}, gear, ResistSource::Pob, previous);
+    // the build's maximums have what its gear adds in them, which is counted
+    // again for the gear you wear
+    const PerElement<double> fromGear = gearMaxResists(gear);
+    ResistEntry entry{.values = build.resists, .cap = {}, .buffer = {}};
+    for (Element e : allElements) {
+        if (build.resistMax[e])
+            entry.cap[e] = *build.resistMax[e] - fromGear[e];
+    }
+    return snapshotResists(entry, gear, ResistSource::Pob, previous);
 }
 
 } // namespace
@@ -73,6 +81,8 @@ BuildImport importBuild(const Character &character, const PobBuild &build)
         if (items.value(slot).missingDamage)
             ++out.withoutDamage;
     }
+
+    c.wielding = build.wielding;
 
     if (!c.profilePicked) {
         const QString fitting = fittingProfile(build);

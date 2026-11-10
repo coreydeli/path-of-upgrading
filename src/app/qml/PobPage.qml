@@ -142,12 +142,13 @@ ColumnsPage {
         FormCard.FormDelegateSeparator {}
 
         FormCard.FormButtonDelegate {
-            objectName: "lookAgainButton"
-            text: qsTr("Look Again")
-            description: qsTr("Look in the usual places again. Use it after you install Path of Building, "
-                              + "or open it for Path of Exile 2 for the first time.")
+            objectName: "updateButton"
+            text: qsTr("Update")
+            description: qsTr("Look in the usual places again, and for the builds you've saved since. "
+                              + "Use it after you install Path of Building, or open it for Path of Exile 2 "
+                              + "for the first time.")
             icon.name: "view-refresh"
-            onClicked: pobPage.app.lookForPob()
+            onClicked: pobPage.app.updatePob()
         }
 
         FormCard.FormDelegateSeparator {}

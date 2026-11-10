@@ -25,7 +25,7 @@ QList<PlaceChange> gearPlaces(const Item &item, const Character &character, cons
         return {};
 
     QList<PlaceChange> places;
-    for (const QString &slot : slotsFor(item)) {
+    for (const QString &slot : slotsFor(item, character)) {
         const Evaluation e = evaluate(item, character, priorities, slot);
         if (!e.comparison.ok || e.comparison.isEquipped)
             return {};

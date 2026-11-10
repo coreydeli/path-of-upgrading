@@ -156,13 +156,10 @@ private Q_SLOTS:
     {
         LiveResists resists;
         resists.values[Element::Cold] = 85;
-        resists.cap = 80;
         const Item item = withStats({{u"#% to Cold Resistance"_s, 10}});
-        QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}, &resists), Element::Cold)->cap, 80.0);
         // the cap for that element, when there is one
         resists.caps[Element::Cold] = 78;
         QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}, &resists), Element::Cold)->cap, 78.0);
-        resists.cap = 0;
         resists.caps[Element::Cold] = 0;
         QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}, &resists), Element::Cold)->cap, 75.0);
         QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}), Element::Cold)->cap, 75.0);

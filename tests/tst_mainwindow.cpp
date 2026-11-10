@@ -854,7 +854,7 @@ private Q_SLOTS:
 
         // once it's there
         QVERIFY(makePob(folder));
-        QVERIFY(QMetaObject::invokeMethod(w.find(u"lookAgainButton"_s), "clicked"));
+        QVERIFY(QMetaObject::invokeMethod(w.find(u"updateButton"_s), "clicked"));
         QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
     }
 
@@ -1735,14 +1735,13 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         w.play({});
         QVERIFY(isVisible(w.find(u"resistances"_s)));
-        QObject *summary = w.find(u"resistSummary"_s);
-        QVERIFY(isVisible(summary));
-        QCOMPARE(text(summary), u"Not known yet"_s);
-        QCOMPARE(summary->property("description").toString(),
-                 u"Import a build, or type them in off your character sheet."_s);
+        QCOMPARE(w.find(u"resistancesHeader"_s)->property("title").toString(), u"Resistances"_s);
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
+        QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QVERIFY(!isVisible(w.find(u"maximumResist"_s)));
+        QVERIFY(!isVisible(w.find(u"fireMaximum"_s)));
         QVERIFY(!isVisible(w.find(u"resistMargin"_s)));
         QVERIFY(!isVisible(w.find(u"resistError"_s)));
     }
@@ -1760,12 +1759,18 @@ private Q_SLOTS:
         }));
         QObject *summary = w.find(u"resistSummary"_s);
         QCOMPARE(text(summary), u"Fire 80%, Cold 60%"_s);
-        QCOMPARE(summary->property("description").toString(),
+        QCOMPARE(text(w.find(u"resistSource"_s)),
                  u"From your build in Path of Building, with what you wear now."_s);
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QVERIFY(isVisible(w.find(u"maximumResist"_s)));
-        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 75);
+        for (const QString &field :
+             {u"fireMaximum"_s, u"coldMaximum"_s, u"lightningMaximum"_s, u"chaosMaximum"_s}) {
+            QVERIFY(isVisible(w.find(field)));
+            QCOMPARE(w.spinBox(field)->property("value").toInt(), 75);
+        }
         QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 15);
+        QObject *buffer = w.find(u"resistMargin"_s);
+        QCOMPARE(buffer->property("label").toString(), u"Safety buffer"_s);
+        QVERIFY(buffer->property("description").toString().startsWith(u"How far over the maximum"_s));
     }
 
     void typeInResistances()
@@ -1777,6 +1782,8 @@ private Q_SLOTS:
         QVERIFY(toggle(w.find(u"fromSheetSwitch"_s)));
         QVERIFY(resists->isFromSheet());
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Typed in from your character sheet, with what you wear now."_s);
         for (const QString &field :
              {u"fireResist"_s, u"coldResist"_s, u"lightningResist"_s, u"chaosResist"_s})
             QVERIFY(isVisible(w.find(field)));
@@ -1786,9 +1793,12 @@ private Q_SLOTS:
         QVERIFY(setValue(w.spinBox(u"lightningResist"_s), 30, "valueModified"));
         QVERIFY(setValue(w.spinBox(u"chaosResist"_s), -20, "valueModified"));
         QCOMPARE(resists->summary(), u"Fire 76%, Cold 120%, Lightning 30%, Chaos -20%"_s);
-        QVERIFY(setValue(w.spinBox(u"maximumResist"_s), 78, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"fireMaximum"_s), 78, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"chaosMaximum"_s), 70, "valueModified"));
         QVERIFY(setValue(w.spinBox(u"resistMargin"_s), 2, "valueModified"));
-        QCOMPARE(resists->maximum(), 78.0);
+        QCOMPARE(resists->fireMaximum(), 78.0);
+        QCOMPARE(resists->coldMaximum(), 75.0);
+        QCOMPARE(resists->chaosMaximum(), 70.0);
         QCOMPARE(resists->margin(), 2.0);
         // no sheet goes that high
         QVERIFY(setValue(w.spinBox(u"fireResist"_s), 900, "valueModified"));
@@ -1799,19 +1809,21 @@ private Q_SLOTS:
         resists->setCold(40);
         resists->setLightning(45);
         resists->setChaos(-5);
-        resists->setMaximum(77);
+        resists->setLightningMaximum(77);
         resists->setMargin(4);
         QCOMPARE(w.spinBox(u"fireResist"_s)->property("value").toInt(), 50);
         QCOMPARE(w.spinBox(u"coldResist"_s)->property("value").toInt(), 40);
         QCOMPARE(w.spinBox(u"lightningResist"_s)->property("value").toInt(), 45);
         QCOMPARE(w.spinBox(u"chaosResist"_s)->property("value").toInt(), -5);
-        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 77);
+        QCOMPARE(w.spinBox(u"lightningMaximum"_s)->property("value").toInt(), 77);
         QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 4);
 
         resists->setFromSheet(false);
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QCOMPARE(text(w.find(u"resistSummary"_s)), u"Not known yet"_s);
+        QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
     }
 
     void cantSaveResistances()
@@ -2413,8 +2425,9 @@ private Q_SLOTS:
         };
         QVERIFY(top(u"Build Review"_s) > top(u"Trade"_s));
         QVERIFY(top(u"Build Review"_s) > top(u"Item History"_s));
-        QVERIFY(top(u"Your Gear"_s) < top(u"Gear"_s));
-        QVERIFY(top(u"Build Review"_s) - top(u"Gear"_s) > 2 * (top(u"Gear"_s) - top(u"Your Gear"_s)));
+        QVERIFY(top(u"Your Gear"_s) < top(u"Gear Settings"_s));
+        QVERIFY(top(u"Build Review"_s) - top(u"Gear Settings"_s) >
+                2 * (top(u"Gear Settings"_s) - top(u"Your Gear"_s)));
     }
 
     void itemHistoryName()
@@ -2804,7 +2817,9 @@ private Q_SLOTS:
                  u"Divine Orb turns your budget into one currency. Right now a Divine Orb is 400 Exalted "
                  u"Orbs in Runes of Aldur."_s);
         QCOMPARE(w.find(u"rateMinutes"_s)->property("label").toString(),
-                 u"Update poe.ninja's prices every"_s);
+                 u"Update poe.ninja's prices automatically"_s);
+        QCOMPARE(w.find(u"rateMinutes"_s)->property("unit").toString(), u"minutes"_s);
+        QVERIFY(w.settings().trade.rateMinutes > 1);
         QCOMPARE(w.find(u"divineRate"_s)->property("label").toString(), u"Exalted Orbs to a Divine Orb"_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("description").toString(),
                  u"Used when poe.ninja's prices are off, or it has no price yet."_s);
@@ -2852,10 +2867,14 @@ private Q_SLOTS:
         // and is asked for again every ten minutes, as it says
         QObject *minutes = w.find(u"rateMinutes"_s);
         QCOMPARE(minutes->property("description").toString(),
-                 u"How many minutes to wait between updates. Prices updated just now."_s);
+                 u"Asks poe.ninja again after this many minutes, from 1 to 60. Prices updated just now."_s);
         QCOMPARE(w.spinBox(u"rateMinutes"_s)->property("value").toInt(), 10);
         QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 20, "valueModified"));
         QCOMPARE(w.settings().trade.rateMinutes, 20);
+        QCOMPARE(minutes->property("unit").toString(), u"minutes"_s);
+        QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 1, "valueModified"));
+        QCOMPARE(minutes->property("unit").toString(), u"minute"_s);
+        QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 20, "valueModified"));
         QCOMPARE(w.app->ratesRefresher().waitMinutes(), 20);
         QVERIFY(minutes->property("enabled").toBool());
 
@@ -2863,7 +2882,8 @@ private Q_SLOTS:
         QCOMPARE(w.settings().trade.autoRate, false);
         // when it isn't, there's nothing to wait for
         QVERIFY(!minutes->property("enabled").toBool());
-        QCOMPARE(minutes->property("description").toString(), u"How many minutes to wait between updates."_s);
+        QCOMPARE(minutes->property("description").toString(),
+                 u"Asks poe.ninja again after this many minutes, from 1 to 60."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
         QVERIFY(setValue(w.spinBox(u"divineRate"_s), 3505, "valueModified"));
         QCOMPARE(w.settings().trade.budget.divineRate, 350.5);
@@ -2881,8 +2901,9 @@ private Q_SLOTS:
                     ->property("description")
                     .toString()
                     .endsWith(u" It has no price yet."_s));
-        QCOMPARE(w.find(u"rateMinutes"_s)->property("description").toString(),
-                 u"How many minutes to wait between updates. The prices haven't come in yet."_s);
+        QCOMPARE(
+            w.find(u"rateMinutes"_s)->property("description").toString(),
+            u"Asks poe.ninja again after this many minutes, from 1 to 60. The prices haven't come in yet."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
     }
 
@@ -3261,7 +3282,7 @@ private Q_SLOTS:
         Window w;
         QObject *group = w.window->findChild<QObject *>(u"gearGroupAction"_s);
         QVERIFY(group);
-        QCOMPARE(group->property("text").toString(), u"Gear"_s);
+        QCOMPARE(group->property("text").toString(), u"Gear Settings"_s);
         for (const QString &name : {u"gearScoreAction"_s, u"weightsAction"_s, u"ignoredAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
@@ -3290,14 +3311,14 @@ private Q_SLOTS:
         QVERIFY(w.shown());
         QCOMPARE(w.window->property("wideScreen").toBool(), true);
         // the pages aren't in the sidebar until Gear is opened
-        QTRY_VERIFY(w.sidebarRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Your Gear"_s));
         QVERIFY(!w.sidebarRow(u"Gear Grade"_s));
         QVERIFY(!w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(!w.sidebarRow(u"Ignored Stats"_s));
         QVERIFY(!w.sidebarRow(u"Gear Score"_s));
 
-        QVERIFY(w.clickRow(u"Gear"_s));
+        QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
         QVERIFY(w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(w.sidebarRow(u"Ignored Stats"_s));
@@ -3327,11 +3348,11 @@ private Q_SLOTS:
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+        QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), true);
         QCOMPARE(w.sidebarRow(u"Characters"_s)->property("checked").toBool(), false);
 
         // a page from outside the group takes the sidebar back to the top
-        QVERIFY(w.clickRow(u"Gear"_s));
+        QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
         QVERIFY(w.show(u"gearAction"_s));
@@ -3342,7 +3363,7 @@ private Q_SLOTS:
         // the other pages stay one click away
         QVERIFY(w.clickRow(u"Your Gear"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), false);
+        QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), false);
     }
 
     void sidebarGearWorksWithTheKeyboard()
@@ -3355,7 +3376,7 @@ private Q_SLOTS:
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Your Gear"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
-        QCOMPARE(w.focusedRow(), u"Gear"_s);
+        QCOMPARE(w.focusedRow(), u"Gear Settings"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
@@ -3394,8 +3415,8 @@ private Q_SLOTS:
 
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
-        QTRY_VERIFY(w.sidebarRow(u"Gear"_s));
-        QVERIFY(w.clickRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Settings"_s));
+        QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
         // once it has slid in
         QTest::qWait(500);
@@ -3421,7 +3442,7 @@ private Q_SLOTS:
         QVERIFY(w.clickRow(u"Back"_s));
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+        QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), true);
         QVERIFY(w.clickRow(u"Your Gear"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);

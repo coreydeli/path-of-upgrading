@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(path-of-upgrading
-    VERSION 0.6.0
+    VERSION 0.7.0
     DESCRIPTION "Path of Exile 2 item overlay that checks items against your build"
     HOMEPAGE_URL "https://github.com/coreydeli/path-of-upgrading"
     LANGUAGES CXX)

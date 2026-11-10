@@ -421,7 +421,7 @@ private Q_SLOTS:
         QCOMPARE(p.id, u"es-attacker"_s);
         QCOMPARE(p.name, u"Energy Shield attacker"_s);
         // damage per second on weapons, boots keep their speed
-        QCOMPARE(statLabelled(p, u"Weapon DPS"_s)->importance.at(u"Weapon"_s), 10.0);
+        QCOMPARE(statLabelled(p, u"Weapon damage per second"_s)->importance.at(u"Weapon"_s), 10.0);
         QCOMPARE(statLabelled(p, u"Movement speed"_s)->importance.at(u"Boots"_s), 10.0);
         // Evasion counts, but less than Energy Shield
         const ProfileStat *evasion = statLabelled(p, u"Evasion"_s);
@@ -657,6 +657,21 @@ private Q_SLOTS:
         QCOMPARE(gearScore(armoured)->missing, QStringList{u"Lightning res"_s});
     }
 
+    void aWeaponIsNeverMissingItsDamage()
+    {
+        // Path of Building weapons come without damage lines
+        const auto g = gearScore(item(u"Item Class: One Hand Swords\nRarity: Rare\nA\nB"_s));
+        QVERIFY(!g->missing.contains(u"Weapon damage per second"_s));
+    }
+
+    void missingStatsSayWhatTheSlotCanRoll()
+    {
+        GearScore g;
+        g.missing = {u"Life"_s, u"Fire res"_s};
+        g.missingBest = {{u"Life"_s, 149}};
+        QCOMPARE(missingStats(g), (QStringList{u"Life (up to 149)"_s, u"Fire res"_s}));
+    }
+
     void notesToImprove()
     {
         GearScore g;
@@ -684,13 +699,17 @@ private Q_SLOTS:
                            part(u"Mana"_s, 10, StatOrigin::Socket), part(u"Lightning res"_s, 45),
                            // and not under, only up to
                            part(u"Strength"_s, 50)};
-        QCOMPARE(weakRollsNote(g), u"Weak rolls: Spirit 20%, Cold res 35%, Life 40% of an excellent roll."_s);
+        QCOMPARE(
+            weakRollsNote(g),
+            u"Weak rolls: Spirit 20% of an excellent roll, Cold res 35% of an excellent roll, Life 40% of an excellent roll."_s);
         QCOMPARE(weakRollsNote(g, 25), u"Weak rolls: Spirit 20% of an excellent roll."_s);
         QCOMPARE(weakRollsNote(g, 20), QString());
 
         // the same stats, one to a string
-        QCOMPARE(weakRolls(g), (QStringList{u"Spirit 20%"_s, u"Cold res 35%"_s, u"Life 40%"_s}));
-        QCOMPARE(weakRolls(g, 25), QStringList{u"Spirit 20%"_s});
+        QCOMPARE(weakRolls(g),
+                 (QStringList{u"Spirit 20% of an excellent roll"_s, u"Cold res 35% of an excellent roll"_s,
+                              u"Life 40% of an excellent roll"_s}));
+        QCOMPARE(weakRolls(g, 25), QStringList{u"Spirit 20% of an excellent roll"_s});
         QCOMPARE(weakRolls(g, 20), QStringList());
     }
 
@@ -711,7 +730,7 @@ private Q_SLOTS:
         // a bare body armour has nothing but what it lacks
         const auto bare = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB"_s));
         QCOMPARE(missingNote(*bare),
-                 u"Missing what your build wants: Armour / Evasion, Energy Shield, Life."_s);
+                 u"Missing what your build wants: Armour / Evasion, Energy Shield, Life (up to 214)."_s);
         QCOMPARE(notScoredNote(*bare), QString());
         QCOMPARE(weakRollsNote(*bare), QString());
 

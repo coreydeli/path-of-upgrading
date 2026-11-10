@@ -353,6 +353,32 @@ private Q_SLOTS:
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
     }
 
+    void updateReadsSavedBuilds()
+    {
+        Folders folders;
+        QTemporaryDir later;
+        Settings settings;
+        settings.pob.location = later.path();
+        folders.set(settings);
+        Running r(folders);
+        QFile wrapper(later.filePath(u"HeadlessWrapper.lua"_s));
+        QVERIFY(wrapper.open(QIODevice::WriteOnly));
+        wrapper.close();
+        r.app.updatePob();
+        QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
+        QVERIFY(r.app.buildImporter()->builds().isEmpty());
+
+        // a build saved since
+        const QString saved = r.app.buildImporter()->buildsFolder() + u"/Witch.xml"_s;
+        QVERIFY(QDir().mkpath(QFileInfo(saved).path()));
+        QFile build(saved);
+        QVERIFY(build.open(QIODevice::WriteOnly));
+        build.close();
+        QVERIFY(r.app.buildImporter()->builds().isEmpty());
+        r.app.updatePob();
+        QCOMPARE(r.app.buildImporter()->builds().size(), 1);
+    }
+
     void settingsPages()
     {
         // which change what it runs with
