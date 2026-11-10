@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 #include "app/itempopup.h"
+#include "core/parser.h"
 #include "core/placement.h"
 #include "fakegameinput.h"
+#include "maptexts.h"
 
 #include <QColor>
 #include <QDesktopServices>
@@ -170,6 +172,21 @@ private Q_SLOTS:
         QVERIFY(shown(popup, u"Upgrade"_s));
     }
 
+    void leftOfTheMouse()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        popup.showReport(aReport(), mouseAt(700, 300));
+        const QWindow *window = popup.window();
+        // a small gap from the mouse, and level with it
+        QCOMPARE(window->position().x(), 700 - 20 - window->width());
+        QCOMPARE(window->position().y(), 300);
+        // on the other side of the mouse when it's by the left edge
+        popup.showReport(aReport(), mouseAt(100, 300));
+        QCOMPARE(window->position(), QPoint(120, 300));
+    }
+
     void mouseUnknown()
     {
         QQmlEngine engine;
@@ -188,7 +205,7 @@ private Q_SLOTS:
         QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=true"_s);
         // the popup grows once it's shown, so there can be more than one
         QTest::ignoreMessage(QtDebugMsg,
-                             QRegularExpression(u"The mouse is 200,300 on .*goes to 224,\\d+ on"_s));
+                             QRegularExpression(u"The mouse is 200,300 on .*goes to 220,\\d+ on"_s));
         popup.showReport(aReport(), mouseAt(200, 300));
         QLoggingCategory::setFilterRules(u"pathofupgrading.placement.debug=false"_s);
     }
@@ -1390,6 +1407,31 @@ private Q_SLOTS:
         const int looks = input.mouseLooks;
         QTest::qWait(300);
         QCOMPARE(input.mouseLooks, looks);
+    }
+
+    void waystoneSection()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        // gear has none of it
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        QVERIFY(!shown(popup, u"What to do"_s));
+
+        const Item waystone = parseItem(maptexts::bad).value();
+        ItemCheck check{.item = waystone};
+        MapBuild build;
+        build.imported = true;
+        check.map = checkMap(waystone, MapKind::Waystone, build);
+        popup.updateReport(reportOf(check));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        QVERIFY(shown(popup, u"What to do"_s));
+        QVERIFY(shown(popup, u"Bad waystone"_s));
+        QVERIFY(shown(popup, popup.report().mapExperimental));
+        QVERIFY(shown(popup, popup.report().mapBuild));
+        QVERIFY(shown(popup, popup.report().mapSuggestions.first()));
+        QVERIFY(shown(popup, popup.report().mapMods.at(2).text));
     }
 
     void notByTheMouse()

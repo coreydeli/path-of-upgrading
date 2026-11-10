@@ -6,6 +6,7 @@
 #include "core/sessionguide.h"
 #include "core/weights.h"
 #include "fakegameinput.h"
+#include "fakegamewatcher.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
 #include "fakeopener.h"
@@ -170,8 +171,10 @@ struct Window
     // The app's colors are only on when there's a scheme file for them, as
     // they go on the whole program.
     // The settings are saved before it starts, or none for the first run.
+    // It has trade, which a release build of the app leaves out.
     explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {},
-                    const std::optional<Settings> &saved = used())
+                    const std::optional<Settings> &saved = used(), bool tradeOffered = true,
+                    FakeGameWatcher *game = nullptr)
     {
         shortcuts->available = hotkeys;
         if (saved)
@@ -185,7 +188,9 @@ struct Window
                        .data = dir.filePath(u"data"_s),
                        .cache = dir.filePath(u"cache"_s),
                        .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
-                       .colors = colors});
+                       .colors = colors,
+                       .tradeOffered = tradeOffered},
+            std::unique_ptr<GameWatcher>(game));
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
         QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
@@ -955,7 +960,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Build Review"_s);
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"gearScoreAction"_s));
@@ -2381,22 +2386,37 @@ private Q_SLOTS:
         // the sidebar entry and the page both say Settings, and the others stay their own pages
         QCOMPARE(text(w.window->findChild<QObject *>(u"overlayAction"_s)), u"Settings"_s);
         QCOMPARE(text(w.window->findChild<QObject *>(u"tradeAction"_s)), u"Trade"_s);
-        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Review"_s);
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
     }
 
-    void buildAnalysisName()
+    void buildReviewName()
     {
         Window w;
-        // the sidebar entry and the page say Build Analysis, and the program keeps its own name inside
-        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
+        // the sidebar entry and the page say Build Review, and the program keeps its own name inside
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Review"_s);
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
-        QCOMPARE(
-            text(w.find(u"analysisIntro"_s)),
-            u"Path of Building checks each item with your build, for the damage and defences it would give."_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Build Review"_s);
+        QCOMPARE(text(w.find(u"analysisIntro"_s)),
+                 u"Path of Building works out what an item would do to your build's damage and defences."_s);
         QCOMPARE(text(w.find(u"enabledSwitch"_s)), u"Judge items with Path of Building"_s);
+    }
+
+    void buildReviewSitsApart()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        // a top level row, below Trade and well away from the gear entries
+        QTRY_VERIFY(w.sidebarRow(u"Build Review"_s));
+        const auto top = [&](const QString &text) {
+            QQuickItem *row = w.sidebarRow(text);
+            return row ? row->mapToScene(QPointF(0, 0)).y() : -1.0;
+        };
+        QVERIFY(top(u"Build Review"_s) > top(u"Trade"_s));
+        QVERIFY(top(u"Build Review"_s) > top(u"Item History"_s));
+        QVERIFY(top(u"Your Gear"_s) < top(u"Gear"_s));
+        QVERIFY(top(u"Build Review"_s) - top(u"Gear"_s) > 2 * (top(u"Gear"_s) - top(u"Your Gear"_s)));
     }
 
     void itemHistoryName()
@@ -2598,13 +2618,98 @@ private Q_SLOTS:
         QVERIFY(w.app->checker().popup().tradeNote().isEmpty());
     }
 
-    void stillTesting()
+    void releaseSidebarHasNoTrade()
     {
-        // a release says so under the switch, and a beta says nothing of it
+        Window release(true, false, {}, used(), false);
+        QVERIFY(release.window->findChild<QObject *>(u"tradeAction"_s));
+        QVERIFY(!isVisible(release.window->findChild<QObject *>(u"tradeAction"_s)));
+        QVERIFY(!release.app->tradeOffered());
+        QVERIFY(release.settings().trade.enabled);
+        QVERIFY(release.app->checker().popup().tradeNote().isEmpty());
+        QVERIFY(!release.app->checker().popup().isTradeAvailable());
+        QVERIFY(release.network->sent.isEmpty());
+    }
+
+    void sidebarHasTradeWhenOffered()
+    {
         Window w;
-        QVERIFY(w.show(u"tradeAction"_s));
-        const QString description = w.find(u"enabledSwitch"_s)->property("description").toString();
-        QCOMPARE(description.contains(u"still being tested"_s), !isBetaBuild());
+        QVERIFY(w.app->tradeOffered());
+        QVERIFY(isVisible(w.window->findChild<QObject *>(u"tradeAction"_s)));
+    }
+
+    void releaseSettingsHaveNoResultsKey()
+    {
+        Window release(true, false, {}, used(), false);
+        QVERIFY(release.show(u"overlayAction"_s));
+        QVERIFY(isVisible(release.find(u"checkKey"_s)));
+        QVERIFY(!isVisible(release.find(u"resultsKey"_s)));
+        QVERIFY(!release.shortcuts->names.contains(u"trade-results"_s));
+    }
+
+    void releaseSetupGuideHasTheLeagueButNoTradeStep()
+    {
+        Window w(true, false, {}, std::nullopt, false);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QCOMPARE(guide->property("steps").toStringList(),
+                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
+        // solo self-found, with or without hardcore, has nothing to turn off here
+        QObject *solo = w.inGuide(u"setupSoloSwitch"_s);
+        QCOMPARE(solo->property("description").toString(), u"For characters that play without trading."_s);
+        QVERIFY(toggle(w.inGuide(u"setupHardcoreSwitch"_s)));
+        QVERIFY(toggle(solo));
+        QVERIFY(w.settings().trade.league.hardcore);
+        QVERIFY(w.settings().trade.league.soloSelfFound);
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(guide->property("title").toString(), u"Your Character"_s);
+        QVERIFY(!isVisible(w.inGuide(u"tradeStep"_s)));
+        QVERIFY(w.network->sent.isEmpty());
+    }
+
+    void setupGuideSoloSelfFoundTurnsTradeOff()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        // trade is on, which a first start only has in a beta build
+        Settings on = w.settings();
+        on.trade.enabled = true;
+        QVERIFY(w.app->settings().set(on));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(w.app->trade().unavailable().isEmpty());
+        QVERIFY(toggle(w.inGuide(u"setupHardcoreSwitch"_s)));
+        QVERIFY(toggle(w.inGuide(u"setupSoloSwitch"_s)));
+        QVERIFY(!w.app->trade().unavailable().isEmpty());
+        QVERIFY(!w.app->checker().popup().isTradeAvailable());
+        QCOMPARE(guide->property("steps").toStringList(),
+                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
+        QVERIFY(w.inGuide(u"setupSoloSwitch"_s)
+                    ->property("description")
+                    .toString()
+                    .contains(u"turns trade searches off"_s));
+    }
+
+    void releaseSettingsHaveTheLeague()
+    {
+        Window w(true, false, {}, used(), false);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(isVisible(w.find(u"leagueBox"_s)));
+        QVERIFY(toggle(w.find(u"hardcoreSwitch"_s)));
+        QVERIFY(toggle(w.find(u"soloSwitch"_s)));
+        QVERIFY(w.settings().trade.league.hardcore);
+        QVERIFY(w.settings().trade.league.soloSelfFound);
+        // as the setup guide has them
+        QVERIFY(w.network->sent.isEmpty());
+    }
+
+    void settingsLeagueIsOnTheTradePageWhenOffered()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(!isVisible(w.find(u"leagueBox"_s)));
     }
 
     void cardsInColumns()
@@ -2973,6 +3078,19 @@ private Q_SLOTS:
         QCOMPARE(w.shortcuts->keys.value(u"check-item"_s), QKeySequence(Qt::Key_F2));
     }
 
+    void saysWhenTheKeysOnlyWorkInTheGame()
+    {
+        Window always;
+        QVERIFY(always.show(u"overlayAction"_s));
+        QCOMPARE(always.find(u"gameOnlyNote"_s)->property("visible").toBool(), false);
+
+        auto *game = new FakeGameWatcher;
+        Window w(true, false, {}, used(), true, game);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(w.find(u"gameOnlyNote"_s)->property("visible").toBool(), true);
+        QVERIFY(text(w.find(u"gameOnlyNote"_s)).contains(u"only work while Path of Exile 2 is running"_s));
+    }
+
     void noHotkeys()
     {
         Window w(false);
@@ -3192,23 +3310,36 @@ private Q_SLOTS:
 
         QVERIFY(w.clickRow(u"Stat Weights"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
-        // and the sidebar is back at the top, with Gear lit
+        // the sidebar stays on Gear, so the next page is one click away
+        QTest::qWait(500);
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), true);
+        QVERIFY(w.clickRow(u"Ignored Stats"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
+        QTest::qWait(500);
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QCOMPARE(w.sidebarRow(u"Ignored Stats"_s)->property("checked").toBool(), true);
+        QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), false);
+        QVERIFY(w.clickRow(u"Gear Grade"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
+
+        // Back goes up a level without picking a page
+        QVERIFY(w.clickRow(u"Back"_s));
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
         QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
         QCOMPARE(w.sidebarRow(u"Characters"_s)->property("checked").toBool(), false);
 
-        // Back goes up a level without picking a page
+        // a page from outside the group takes the sidebar back to the top
         QVERIFY(w.clickRow(u"Gear"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
-        // once it has slid in
-        QTest::qWait(500);
-        QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), true);
-        QVERIFY(w.clickRow(u"Back"_s));
+        QVERIFY(w.show(u"gearAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
+        QTRY_VERIFY(!w.sidebarRow(u"Back"_s));
 
         // the other pages stay one click away
         QVERIFY(w.clickRow(u"Your Gear"_s));
@@ -3242,6 +3373,14 @@ private Q_SLOTS:
         QCOMPARE(w.focusedRow(), u"Ignored Stats"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Space);
         QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
+
+        // the sidebar is still on Gear, so another page is a key press away
+        QTest::qWait(500);
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        w.sidebarRow(u"Stat Weights"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"Stat Weights"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Return);
+        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
     }
 
     // where the sidebar is a drawer you open
@@ -3264,14 +3403,190 @@ private Q_SLOTS:
         QTest::qWait(500);
         QVERIFY(w.clickRow(u"Gear Grade"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
-        // the drawer lets go once a page is picked, and starts from the top again
+        // the drawer lets go once a page is picked
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
 
+        // and opens on Gear again, so the next page is one click away
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Stat Weights"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Stat Weights"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
+
+        // Back goes up a level, and a page from outside the group starts from the top
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(w.clickRow(u"Back"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+        QVERIFY(w.clickRow(u"Your Gear"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+    }
+
+    // Settings and Appearance are one level down, under Settings
+    void settingsPagesAreUnderSettings()
+    {
+        Window w;
+        QObject *group = w.window->findChild<QObject *>(u"settingsGroupAction"_s);
+        QVERIFY(group);
+        QCOMPARE(group->property("text").toString(), u"Settings"_s);
+        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s}) {
+            QObject *action = w.window->findChild<QObject *>(name);
+            QVERIFY2(action, qPrintable(name));
+            QCOMPARE(action->parent(), group);
+        }
+        QCOMPARE(group->parent(), w.window->findChild<QObject *>(u"gearGroupAction"_s)->parent());
+
+        QCOMPARE(group->property("checked").toBool(), false);
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"tradeAction"_s));
+        QCOMPARE(group->property("checked").toBool(), false);
+    }
+
+    void sidebarOpensSettings()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Settings"_s));
+        QVERIFY(!w.sidebarRow(u"Appearance"_s));
+
+        QVERIFY(w.clickRow(u"Settings"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        // opening it shows no page yet
+        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+
+        QVERIFY(w.clickRow(u"Appearance"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QTest::qWait(500);
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QCOMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), true);
+
+        // Back goes up a level without picking a page
+        QVERIFY(w.clickRow(u"Back"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Appearance"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QCOMPARE(w.sidebarRow(u"Settings"_s)->property("checked").toBool(), true);
+
+        // a page from outside the group takes the sidebar back to the top
+        QVERIFY(w.clickRow(u"Settings"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(w.show(u"tradeAction"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Back"_s));
+        QCOMPARE(w.sidebarRow(u"Settings"_s)->property("checked").toBool(), false);
+    }
+
+    // a button elsewhere that shows a page in another group, or from the top
+    void sidebarFollowsPagesShownByCode()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Back"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_COMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), false);
+
+        // from a Gear page straight to a Settings page
+        QVERIFY(w.show(u"weightsAction"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Stat Weights"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Appearance"_s));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_COMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), true);
+
+        // and back to Gear
+        QVERIFY(w.show(u"ignoredAction"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Ignored Stats"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Appearance"_s));
+    }
+
+    void sidebarSettingsWorksWithTheKeyboard()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        w.sidebarRow(u"Settings"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Return);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Back"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Appearance"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Space);
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+
+        // still on Settings, so the other page is a key press away
+        QTest::qWait(500);
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        w.sidebarRow(u"Settings"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Return);
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+    }
+
+    void sidebarSettingsWorksInANarrowWindow()
+    {
+        Window w;
+        w.window->resize(500, 700);
+        w.window->show();
+        QVERIFY(QTest::qWaitForWindowExposed(w.window.get()));
+        QVERIFY(w.settled());
+        QTRY_COMPARE(w.window->property("wideScreen").toBool(), false);
+        QTRY_COMPARE(w.drawer()->property("modal").toBool(), true);
+
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Settings"_s));
+        QVERIFY(w.clickRow(u"Settings"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Appearance"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
+
+        // it opens on Settings again
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Back"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Your Gear"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
     }
 
     // the title and what the page is for, at the top of each page

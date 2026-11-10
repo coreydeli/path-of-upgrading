@@ -59,6 +59,7 @@ qt_add_qml_module(pou_app
         qml/IgnoredStatsPage.qml
         qml/ItemPanel.qml
         qml/KeyField.qml
+        qml/LeagueCard.qml
         qml/Main.qml
         qml/NumberBox.qml
         qml/NumberField.qml

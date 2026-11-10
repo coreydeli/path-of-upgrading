@@ -57,7 +57,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Search the trade site")
-            description: tradePage.options.stillTesting ? qsTr("From the popup, for upgrades and for items like the one you checked. They're still being tested in this release, so a search can fail on an item with a lot of stats.") : qsTr("From the popup, for upgrades and for items like the one you checked.")
+            description: qsTr("From the popup, for upgrades and for items like the one you checked.")
             checked: tradePage.options.enabled
             onToggled: tradePage.options.enabled = checked
         }
@@ -79,43 +79,8 @@ ColumnsPage {
         title: qsTr("League")
     }
 
-    FormCard.FormCard {
-        FormCard.FormComboBoxDelegate {
-            objectName: "leagueBox"
-            text: qsTr("League")
-            textRole: "text"
-            valueRole: "value"
-            model: [
-                {
-                    value: "",
-                    text: qsTr("The current league")
-                }
-            ].concat(tradePage.options.leagues.map(league => ({
-                        value: league,
-                        text: league
-                    })))
-            currentIndex: tradePage.options.league === "" ? 0 : tradePage.options.leagues.indexOf(tradePage.options.league) + 1
-            onActivated: tradePage.options.league = currentValue
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        SwitchRow {
-            objectName: "hardcoreSwitch"
-            text: qsTr("Hardcore")
-            checked: tradePage.options.hardcore
-            onToggled: tradePage.options.hardcore = checked
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        SwitchRow {
-            objectName: "soloSwitch"
-            text: qsTr("Solo self-found")
-            description: qsTr("There's no trading in solo self-found, so this turns trade searches off.")
-            checked: tradePage.options.soloSelfFound
-            onToggled: tradePage.options.soloSelfFound = checked
-        }
+    LeagueCard {
+        options: tradePage.options
 
         FormCard.FormDelegateSeparator {
             visible: searchedText.visible

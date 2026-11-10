@@ -1,14 +1,16 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
 #
-# Prints the version from CMakeLists.txt, once the metainfo's newest release
-# and the PKGBUILD say the same.
+# Prints the version from CMakeLists.txt, once the metainfo's newest release,
+# the PKGBUILD and the spec say the same.
 set -eu
 cd "$(dirname "$0")/../.."
 metainfo=data/io.github.coreydeli.PathOfUpgrading.metainfo.xml
 version=$(sed -n 's/^    VERSION \([0-9.]*\)$/\1/p' CMakeLists.txt)
 released=$(sed -n 's/.*<release version="\([^"]*\)".*/\1/p' "$metainfo" | head -n 1)
 pkgver=$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)
+spec=packaging/rpm/path-of-upgrading.spec
+specver=$(sed -n 's/^Version: *//p' "$spec")
 ok=true
 if [ -z "$version" ]; then
     echo "::error file=CMakeLists.txt::There's no VERSION in the project() call" >&2
@@ -20,6 +22,10 @@ if [ "$released" != "$version" ]; then
 fi
 if [ "$pkgver" != "$version" ]; then
     echo "::error file=packaging/arch/PKGBUILD::pkgver is $pkgver, not $version" >&2
+    ok=false
+fi
+if [ "$specver" != "$version" ]; then
+    echo "::error file=$spec::Version is $specver, not $version" >&2
     ok=false
 fi
 $ok

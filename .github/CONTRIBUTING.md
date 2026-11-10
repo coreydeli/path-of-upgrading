@@ -35,8 +35,9 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
-The beta releases add `-DPOU_BETA=ON` to the configure step, which starts trade
-searches on. Add it when you're testing that.
+The beta releases add `-DPOU_BETA=ON` to the configure step, which turns trade
+searches on. Without it, a build has no trade at all. Add it when you're
+testing that.
 
 Run the tests on the private bus the README describes:
 
@@ -44,13 +45,22 @@ Run the tests on the private bus the README describes:
 cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 ```
 
-CI builds on Arch Linux, on Debian 13 and on Windows in MSYS2, checks the
-formatting, treats warnings as errors and runs every test. A change has to
-pass all of it. The steps are in `.github/workflows/ci.yml`.
+CI builds on Arch Linux, on Debian 13, on Fedora and on Windows in MSYS2,
+checks the formatting, treats warnings as errors and runs every test. The
+Fedora job also builds the RPM and checks it with rpmlint, and for a release
+another job installs it in a clean Fedora container to see that it starts.
+The Debian job makes the AppImage, and for a release another job starts it in
+clean Fedora and Arch Linux containers. A change has to pass all of it. The
+steps are in `.github/workflows/ci.yml`.
+
+The check named CI is the one `beta` requires before a pull request can merge.
+It passes once every other job has passed or been skipped.
 
 A change to nothing but Markdown files, the `docs` folder or the issue forms
 skips those builds, and they show as skipped, which counts as a pass. Pushes
-to `main` and `beta` always build.
+to `main` always build. A merge into `beta` doesn't build again, as its pull
+request was checked. A beta release is made by hand, or each night when `beta`
+has new code.
 
 ## Branches and pull requests
 
@@ -66,7 +76,9 @@ to `main` and `beta` always build.
    the settings pages across a wide window". Give it the label that matches
    (`enhancement`, `bug`, `documentation`, `ci` or `maintenance`), as the
    release notes are grouped by those labels.
-4. If `beta` moves on while you work, merge it into your branch.
+4. If `beta` moves on while you work, merge it into your branch. The check
+   named CI also needs your branch up to date with `beta`, so merge it again
+   when `beta` has moved on.
 5. Delete your branch once it's merged.
 
 The maintainer merges `beta` into `main` when there's a release, so you don't
@@ -139,6 +151,10 @@ touch.
 
 If your change alters what the app does, update the README in the same pull
 request.
+
+A change players would notice also gets a line under Unreleased in
+[the changelog](../docs/CHANGELOG.md), in plain words: what it does for them,
+not how it's built.
 
 ## License
 

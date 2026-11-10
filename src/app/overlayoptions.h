@@ -27,6 +27,7 @@ class OverlayOptions : public QObject
     Q_PROPERTY(QKeySequence checkKey READ checkKey NOTIFY changed)
     Q_PROPERTY(QKeySequence resultsKey READ resultsKey NOTIFY changed)
     Q_PROPERTY(QString hotkeysError READ hotkeysError NOTIFY changed)
+    Q_PROPERTY(bool hotkeysFollowGame READ hotkeysFollowGame CONSTANT)
     Q_PROPERTY(bool advancedCopy READ isAdvancedCopy WRITE setAdvancedCopy NOTIFY changed)
     Q_PROPERTY(bool watchClipboard READ isWatchingClipboard WRITE setWatchClipboard NOTIFY changed)
     Q_PROPERTY(QString position READ position WRITE setPosition NOTIFY changed)
@@ -52,6 +53,8 @@ public:
     Q_INVOKABLE bool setResultsKey(const QKeySequence &key);
     // Why the hotkeys don't work, or empty when they do.
     QString hotkeysError() const;
+    // Whether the keys are only taken while the game is running.
+    bool hotkeysFollowGame() const;
 
     bool isAdvancedCopy() const { return overlay().advancedCopy; }
     void setAdvancedCopy(bool advanced);

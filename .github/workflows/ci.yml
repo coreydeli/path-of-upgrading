@@ -3,11 +3,12 @@
 # Checks the format, then builds with no warnings and runs every test, each
 # stage once the one before it has passed. It builds on Arch Linux for the
 # newest Qt and KDE Frameworks and on Debian 13 for the oldest the app
-# supports, and on Windows in MSYS2. Each is built once, as it's released, and
+# supports, on Fedora, and on Windows in MSYS2. Each is built once, as it's released, and
 # the packages come from that build when release.yml asks for them. A branch
 # is built as a beta on Debian and as a release on the others, as the tests
-# have to pass in both. Main and beta are checked by the release builds, which
-# run it. A change to nothing but the docs isn't built, except on those.
+# have to pass in both. Main and the betas are checked by the release builds,
+# which run it, and a merge into beta was checked on its pull request. A change
+# to nothing but the docs isn't built, except for a release.
 name: CI
 
 on:
@@ -30,6 +31,9 @@ on:
         type: string
         default: ""
       debian-version:
+        type: string
+        default: ""
+      rpm-version:
         type: string
         default: ""
       beta:
@@ -197,12 +201,151 @@ jobs:
         run: |
           apt-get install -y ./build/path-of-upgrading_*.deb
           QT_QPA_PLATFORM=offscreen path-of-upgrading --version
+      # The build's own packages may have brought it in already, so this checks
+      # the package itself asks for it.
+      - name: Check it brings the Wayland overlay plugin
+        if: inputs.package
+        run: dpkg-deb -f build/path-of-upgrading_*.deb Depends | grep -qw layer-shell-qt
       - uses: actions/upload-artifact@v7
         if: inputs.package
         with:
           name: dist-debian
           path: build/path-of-upgrading_*.deb
           if-no-files-found: error
+      # The AppImage is made from this build, as Debian 13 is the oldest
+      # system it can run on. The Wayland plugins, the SVG icon engine and
+      # LayerShellQt's plugin are only found when they're installed.
+      - name: Make the AppImage
+        if: inputs.package
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          apt-get install -y --no-install-recommends curl file binutils \
+              qt6-wayland qt6-svg-plugins layer-shell-qt
+          mkdir dist
+          cd dist
+          sh ../.github/scripts/package-appimage.sh ../build "${TAG#v}"
+          rm -rf AppDir
+      - uses: actions/upload-artifact@v7
+        if: inputs.package
+        with:
+          name: dist-appimage
+          path: dist/PathOfUpgrading-*-x86_64.AppImage
+          if-no-files-found: error
+
+  # The package is made by rpmbuild, which builds it from the tarball of the
+  # source, tests it and packs it in one go, as makepkg does on Arch. LTO is
+  # left out as it only slows the build down here, and a warning fails it.
+  fedora:
+    name: Fedora
+    needs: format
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 100M
+    steps:
+      # so the checkout is a repository, which the tarball is made from
+      - name: Install git
+        run: dnf -y install git
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-fedora.sh
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-fedora-${{ github.sha }}
+          restore-keys: ccache-fedora-
+      # where rpmbuild looks for the source. A beta's tarball unpacks to the
+      # release's folder, so the paths stay the same from one beta to the next.
+      - name: Make the source tarball
+        env:
+          RPM_VERSION: ${{ inputs.rpm-version }}
+        run: |
+          spec=packaging/rpm/path-of-upgrading.spec
+          version=${RPM_VERSION:-$(sed -n 's/^Version: *//p' $spec)}
+          sed -i -e "s/^Version:.*/Version:        $version/" \
+              -e "s/^\(\* .* - \).*-1\$/\1$version-1/" $spec
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p ~/rpmbuild/SOURCES
+          git archive --prefix="path-of-upgrading-${version%%~*}/" \
+              -o ~/rpmbuild/SOURCES/path-of-upgrading-$version.tar.gz HEAD
+      - name: Build, test and package
+        env:
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        run: |
+          ccache --zero-stats
+          rpmbuild -bb packaging/rpm/path-of-upgrading.spec --with werror \
+              -D "build_cxxflags %{optflags} -g1" -D "_lto_cflags %{nil}"
+          ccache --show-stats
+      - name: Check the package
+        run: >-
+          rpmlint -r packaging/rpm/path-of-upgrading.rpmlintrc
+          ~/rpmbuild/RPMS/x86_64/path-of-upgrading-[0-9]*.rpm packaging/rpm/path-of-upgrading.spec
+      # not the debug packages
+      - name: Collect the package
+        if: inputs.package
+        run: |
+          mkdir dist
+          cp ~/rpmbuild/RPMS/x86_64/path-of-upgrading-[0-9]*.rpm dist
+      - uses: actions/upload-artifact@v7
+        if: inputs.package
+        with:
+          name: dist-fedora
+          path: dist/*.rpm
+          if-no-files-found: error
+
+  # In a container with nothing else, to see that dnf finds everything the
+  # package needs, and that the program starts with it. It runs until the
+  # timeout, unless a QML module is missing, which stops it at once.
+  fedora-install:
+    name: Install on Fedora
+    if: inputs.package
+    needs: fedora
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-fedora
+          path: dist
+      - name: Install the package
+        run: dnf -y install ./dist/path-of-upgrading-*.rpm dbus-daemon
+      - name: Check it brought the Wayland overlay plugin
+        run: test -f /usr/lib64/qt6/plugins/wayland-shell-integration/liblayer-shell.so
+      - name: Start it
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_NO_XDG_DESKTOP_PORTAL: "1"
+          XDG_RUNTIME_DIR: /tmp/runtime
+        run: |
+          mkdir -m 700 "$XDG_RUNTIME_DIR"
+          path-of-upgrading --version
+          status=0
+          timeout 10 dbus-run-session -- path-of-upgrading || status=$?
+          test "$status" -eq 124
+
+  # On other distributions with nothing else, to see that the AppImage has
+  # the QML modules and plugins it needs, and starts.
+  appimage-check:
+    name: Run the AppImage
+    if: inputs.package
+    needs: debian
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [fedora:latest, archlinux:latest]
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-appimage
+          path: dist
+      - name: Start it
+        run: sh .github/scripts/check-appimage.sh dist/PathOfUpgrading-*-x86_64.AppImage
 
   windows:
     name: Windows
@@ -297,3 +440,20 @@ jobs:
             dist/*.exe
             dist/*.zip
           if-no-files-found: error
+
+  # The rule on beta waits for a check called CI, so this is it. It passes
+  # once every stage has passed or been left out, as they are for the docs.
+  ci:
+    name: CI
+    needs: [changes, format, arch, debian, appimage-check, fedora, fedora-install, windows]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every stage passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          case " $RESULTS " in
+          *" failure "* | *" cancelled "*) exit 1 ;;
+          esac

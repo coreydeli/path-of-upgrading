@@ -28,6 +28,7 @@
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
+#include "platform/gamewatcher.h"
 #include "services/pobengine.h"
 #include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
@@ -70,6 +71,8 @@ class App : public QObject
     Q_PROPERTY(pou::StatPicker *statPicker READ statPicker CONSTANT)
     Q_PROPERTY(pou::IgnoredStats *ignoredStats READ ignoredStats CONSTANT)
     Q_PROPERTY(pou::CheckedItems *checkedItems READ checkedItems CONSTANT)
+    // Whether the app has trade searches at all, see Paths::tradeOffered.
+    Q_PROPERTY(bool tradeOffered READ tradeOffered CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
@@ -86,16 +89,21 @@ public:
         QString cache;     // and for what the trade site and poe.ninja said
         QString autostart; // the file that starts it with the desktop, or none
         QString colors;    // the app's color scheme, see Appearance
+        // Whether there is trade at all, which a release leaves out.
+        bool tradeOffered = isBetaBuild();
+        // Whether waystones and tablets are checked, which a release leaves out for now.
+        bool mapsOffered = isBetaBuild();
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
 
     // The engine has to outlive it. Path of Building is looked for in the
-    // places, see findPob().
+    // places, see findPob(). The hotkeys are taken only while the game watcher
+    // says it's running, or always without one.
     App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
         std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
         std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
-        QObject *parent = nullptr);
+        std::unique_ptr<GameWatcher> game = nullptr, QObject *parent = nullptr);
     ~App() override;
 
     // Looks for Path of Building again, as once you've installed it.
@@ -132,6 +140,8 @@ public:
     StatPicker *statPicker() { return &m_statPicker; }
     IgnoredStats *ignoredStats() { return &m_ignoredStats; }
     CheckedItems *checkedItems() { return &m_checkedItems; }
+    bool tradeOffered() const { return m_tradeOffered; }
+    bool mapsOffered() const { return m_mapsOffered; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     TradeSession *tradeSession() { return &m_tradeSession; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
@@ -146,6 +156,8 @@ private:
     void followRates();
 
     PobPlaces m_places;
+    bool m_tradeOffered;
+    bool m_mapsOffered;
     SettingsStore m_settings;
     CharacterStore m_characters;
     PobEngine m_pob;
@@ -153,6 +165,7 @@ private:
     std::unique_ptr<GameInput> m_input;
     ItemChecker m_checker;
     std::unique_ptr<GlobalShortcuts> m_shortcuts;
+    std::unique_ptr<GameWatcher> m_game;
     Hotkeys m_hotkeys;
     ItemHistory m_history;
     QString m_pobLocation; // where it was last looked for

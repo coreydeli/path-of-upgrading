@@ -8,8 +8,26 @@ using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
 
+MapBuild mapBuildOf(const Character &character, const std::optional<PobBuild> &build)
+{
+    MapBuild out;
+    out.imported = build.has_value();
+    if (character.resists)
+        out.resists = liveResists(*character.resists, character.gear);
+    if (build)
+        out.health = build->life + build->energyShield;
+    return out;
+}
+
 ItemCheck firstCheck(const Item &item, const Judging &judging)
 {
+    if (judging.maps) {
+        if (const std::optional<MapKind> kind = mapKindOf(item)) {
+            ItemCheck check{.item = item};
+            check.map = checkMap(item, *kind, mapBuildOf(judging.character, judging.build));
+            return check;
+        }
+    }
     ItemCheck check{.item = item,
                     .evaluation = evaluate(item, judging.character, judging.options.priorities)};
     const Comparison &r = check.evaluation.comparison;
@@ -80,6 +98,11 @@ void ItemJudge::setPriorities(const PobPriorities &priorities)
 void ItemJudge::setDamageWeight(double weight)
 {
     m_judging.options.damageWeight = weight;
+}
+
+void ItemJudge::setMaps(bool on)
+{
+    m_judging.maps = on;
 }
 
 void ItemJudge::check(const Item &item)

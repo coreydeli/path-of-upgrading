@@ -7,6 +7,7 @@ add_library(pou_platform STATIC
     autostart.cpp autostart.h
     copykeys.cpp copykeys.h
     gameinput.cpp gameinput.h
+    gamewatcher.cpp gamewatcher.h
     gamewindow.cpp gamewindow.h
     globalshortcuts.cpp globalshortcuts.h
     kde/kdetray.cpp kde/kdetray.h
@@ -36,7 +37,9 @@ if(WIN32)
     target_sources(pou_platform PRIVATE
         win/wingameinput.cpp win/wingameinput.h
         win/winglobalshortcuts.cpp win/winglobalshortcuts.h
+        win/wingamewatcher.cpp win/wingamewatcher.h
         win/winkeysender.cpp win/winkeysender.h
+        win/winwindows.cpp win/winwindows.h
     )
     target_compile_definitions(pou_platform PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
     target_link_libraries(pou_platform PRIVATE user32)
@@ -57,6 +60,7 @@ else()
         kde/kdenotifier.cpp kde/kdenotifier.h
         xcb/xconnection.cpp xcb/xconnection.h
         xcb/xgameinput.cpp xcb/xgameinput.h
+        xcb/xgamewatcher.cpp xcb/xgamewatcher.h
         xcb/xkeysender.cpp xcb/xkeysender.h
         xcb/xmonitors.cpp xcb/xmonitors.h
         xcb/xselectionwatcher.cpp xcb/xselectionwatcher.h

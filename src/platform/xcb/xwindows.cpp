@@ -2,6 +2,7 @@
 #include "platform/xcb/xwindows.h"
 
 #include <QFile>
+#include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -39,6 +40,12 @@ WindowInfo describeWindow(XConnection &x, xcb_window_t window)
     return info;
 }
 
+bool anyGameWindow(XConnection &x, const QList<xcb_window_t> &windows)
+{
+    return std::ranges::any_of(windows,
+                               [&x](xcb_window_t window) { return isGameWindow(describeWindow(x, window)); });
+}
+
 XPointer queryPointer(XConnection &x)
 {
     XPointer pointer;
@@ -67,6 +74,14 @@ XPointer queryPointer(XConnection &x)
         }
     }
     return pointer;
+}
+
+std::optional<ScreenPoint> pointerOnScreens(const XPointer &pointer, const QList<NamedScreen> &monitors,
+                                            const QList<NamedScreen> &screens)
+{
+    if (!pointer.position)
+        return std::nullopt;
+    return mapToScreen(*pointer.position, monitors, screens);
 }
 
 void activate(XConnection &x, xcb_window_t window)

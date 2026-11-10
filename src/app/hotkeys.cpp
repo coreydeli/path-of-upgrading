@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "app/hotkeys.h"
 
+#include "platform/gamewatcher.h"
 #include "platform/globalshortcuts.h"
 
 #include <QKeySequence>
@@ -44,10 +45,16 @@ QString textOf(const QKeySequence &sequence)
 
 } // namespace
 
-Hotkeys::Hotkeys(GlobalShortcuts *shortcuts, QObject *parent)
+Hotkeys::Hotkeys(GlobalShortcuts *shortcuts, GameWatcher *game, QObject *parent)
     : QObject(parent)
     , m_shortcuts(shortcuts)
+    , m_game(game)
 {
+    if (game) {
+        // before they're added, so they aren't taken for a moment
+        shortcuts->setGrabbed(game->isRunning());
+        connect(game, &GameWatcher::runningChanged, shortcuts, &GlobalShortcuts::setGrabbed);
+    }
     connect(shortcuts, &GlobalShortcuts::activated, this, [this](const QString &id) {
         if (const std::optional<Hotkey> hotkey = hotkeyOf(id))
             Q_EMIT pressed(*hotkey);
@@ -58,11 +65,12 @@ Hotkeys::Hotkeys(GlobalShortcuts *shortcuts, QObject *parent)
     });
 }
 
-void Hotkeys::add(const OverlaySettings &settings)
+void Hotkeys::add(const OverlaySettings &settings, bool withResults)
 {
     m_shortcuts->add(idOf(Hotkey::Check), u"Check the item under the mouse"_s, sequenceOf(settings.hotkey));
-    m_shortcuts->add(idOf(Hotkey::Results), u"Show the trade results for it"_s,
-                     sequenceOf(settings.resultsHotkey));
+    if (withResults)
+        m_shortcuts->add(idOf(Hotkey::Results), u"Show the trade results for it"_s,
+                         sequenceOf(settings.resultsHotkey));
 }
 
 QString Hotkeys::key(Hotkey hotkey) const

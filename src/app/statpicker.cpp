@@ -114,6 +114,12 @@ void StatPicker::setSiteAllowed(bool allowed)
     m_siteAllowed = allowed;
 }
 
+void StatPicker::setTradeOffered(bool offered)
+{
+    m_tradeOffered = offered;
+    updateMessage();
+}
+
 void StatPicker::refresh()
 {
     if (m_siteAllowed)
@@ -205,7 +211,7 @@ void StatPicker::filter()
 
 QString StatPicker::missingStats() const
 {
-    if (!m_data->data().stats.isEmpty())
+    if (!m_data->data().stats.isEmpty() || !m_tradeOffered)
         return {};
     if (!m_siteAllowed)
         return u"The trade site's list of stats comes with trade search, so here are only the item's own "

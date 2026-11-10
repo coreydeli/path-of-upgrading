@@ -2,8 +2,9 @@
 #
 # A Debian package of the build, made with cpack in the build folder, as the
 # release builds do on Debian 13. dpkg-shlibdeps finds the libraries the app
-# links, but not the QML modules it only loads when it runs, so those are named
-# here.
+# links, but not the QML modules and plugins it only loads when it runs, so
+# those are named here. The overlay needs layer-shell-qt's Wayland plugin,
+# which Debian keeps apart from the library the app links.
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VENDOR "Corey Deli")
@@ -25,7 +26,7 @@ set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
 set(CPACK_DEBIAN_PACKAGE_SECTION games)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "qt6-wayland, \
+    "qt6-wayland, layer-shell-qt, \
 qml6-module-qtqml, qml6-module-qtqml-models, qml6-module-qtqml-workerscript, \
 qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-dialogs, \
 qml6-module-qtquick-layouts, qml6-module-qtquick-shapes, qml6-module-qtquick-templates, qml6-module-qtquick-window, \

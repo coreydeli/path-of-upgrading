@@ -3,6 +3,7 @@
 
 #include "app/commandline.h"
 #include "platform/gameinput.h"
+#include "platform/gamewatcher.h"
 #include "platform/globalshortcuts.h"
 #include "platform/opener.h"
 #include "platform/secretstore.h"
@@ -46,16 +47,19 @@ App::Paths App::defaultPaths()
 App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
          std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
          std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
-         QObject *parent)
+         std::unique_ptr<GameWatcher> game, QObject *parent)
     : QObject(parent)
     , m_places(places)
+    , m_tradeOffered(paths.tradeOffered)
+    , m_mapsOffered(paths.mapsOffered)
     , m_settings(paths.settings)
     , m_characters(paths.data + u"/characters"_s)
     , m_character(&m_characters, &m_pob)
     , m_input(std::move(input))
     , m_checker(qml, m_input.get())
     , m_shortcuts(std::move(shortcuts))
-    , m_hotkeys(m_shortcuts.get())
+    , m_game(std::move(game))
+    , m_hotkeys(m_shortcuts.get(), m_game.get())
     , m_history(paths.data + u"/history.json"_s)
     , m_secrets(std::move(secrets))
     , m_opener(std::move(opener))
@@ -117,6 +121,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_finder.setPob(&m_pob);
     m_upgrades.finder().setPob(&m_pob);
     m_checker.setSettings(settings);
+    m_checker.setMapsOffered(m_mapsOffered);
     m_results.judge().setPob(&m_pob);
     m_results.judge().setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
@@ -155,11 +160,12 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
         if (hotkey == Hotkeys::Hotkey::Check)
             m_checker.check();
-        else if (hotkey == Hotkeys::Hotkey::Results && !m_settings.settings().overlay.paused)
+        else if (hotkey == Hotkeys::Hotkey::Results && m_tradeOffered &&
+                 !m_settings.settings().overlay.paused)
             m_resultsPanel.toggle();
     });
     connect(&m_hotkeys, &Hotkeys::keyChanged, this, &App::followKeys);
-    m_hotkeys.add(settings.overlay);
+    m_hotkeys.add(settings.overlay, m_tradeOffered);
     // which have the keys they had last time, when they've been changed on
     // the desktop since
     followKeys();
@@ -198,16 +204,24 @@ void App::followKeys()
         return;
     Settings settings = m_settings.settings();
     settings.overlay.hotkey = m_hotkeys.key(Hotkeys::Hotkey::Check);
-    settings.overlay.resultsHotkey = m_hotkeys.key(Hotkeys::Hotkey::Results);
+    // which a release doesn't have, and keeps the key it was given
+    if (m_tradeOffered)
+        settings.overlay.resultsHotkey = m_hotkeys.key(Hotkeys::Hotkey::Results);
     m_settings.set(settings);
 }
 
 void App::followTrade()
 {
-    m_trade.setSettings(m_settings.settings().trade);
-    m_finder.setSettings(m_settings.settings());
+    // A release has no trade whatever the file says, which is left as it is
+    // for a beta to find.
+    Settings settings = m_settings.settings();
+    if (!m_tradeOffered)
+        settings.trade.enabled = false;
+    m_trade.setSettings(settings.trade);
+    m_finder.setSettings(settings);
     m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
-    m_checker.popup().setTradeNote(m_trade.unavailable());
+    m_checker.popup().setTradeNote(m_tradeOffered ? m_trade.unavailable() : QString());
+    m_statPicker.setTradeOffered(m_tradeOffered);
     m_upgrades.setTradeAvailable(m_trade.unavailable().isEmpty());
     m_resultsPanel.setUnavailable(m_trade.unavailable());
     m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());
