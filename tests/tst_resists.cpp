@@ -105,11 +105,12 @@ private Q_SLOTS:
         ResistRecord record;
         record.entered[Element::Fire] = 70;
         for (const double cap : {0.0, -5.0}) {
-            record.cap = cap;
-            QCOMPARE(liveResists(record, {})->cap, 75.0);
+            record.cap[Element::Fire] = cap;
+            QCOMPARE(liveResists(record, {})->caps[Element::Fire], 75.0);
         }
-        record.cap = 80;
-        QCOMPARE(liveResists(record, {})->cap, 80.0);
+        record.cap[Element::Fire] = 80;
+        QCOMPARE(liveResists(record, {})->caps[Element::Fire], 80.0);
+        QCOMPARE(liveResists(record, {})->caps[Element::Cold], 75.0);
     }
 
     void nothingEntered() { QVERIFY(!liveResists(snapshotResists({}, {}, ResistSource::Manual), {})); }
@@ -132,14 +133,56 @@ private Q_SLOTS:
         QVERIFY(!c.bufferSet);
     }
 
+    void eachCapFromTheEntry()
+    {
+        ResistEntry entry;
+        entry.values[Element::Fire] = 70;
+        entry.cap[Element::Cold] = 78;
+        entry.cap[Element::Chaos] = 0;
+        const ResistRecord a = snapshotResists(entry, {}, ResistSource::Pob);
+        QCOMPARE(a.cap, (PerElement<double>{{75, 78, 75, 75}}));
+        QCOMPARE(a.capSet, PerElement<bool>());
+
+        // the build's own say goes, unless you set that one
+        ResistRecord set = a;
+        set.cap[Element::Cold] = 77;
+        set.capSet[Element::Cold] = true;
+        entry.cap[Element::Cold] = 79;
+        entry.cap[Element::Fire] = 76;
+        const ResistRecord b = snapshotResists(entry, {}, ResistSource::Pob, &set);
+        QCOMPARE(b.cap, (PerElement<double>{{76, 77, 75, 75}}));
+        QCOMPARE(b.capSet, (PerElement<bool>{{false, true, false, false}}));
+
+        // and what it doesn't say stays as it was
+        entry.cap = {};
+        QCOMPARE(snapshotResists(entry, {}, ResistSource::Game, &b).cap, b.cap);
+    }
+
+    void oneSavedMaximumIsAllFour()
+    {
+        QJsonObject saved = toJson(ResistRecord());
+        saved.insert(u"cap", 78);
+        saved.remove(u"capSet");
+        const ResistRecord r = resistRecordFromJson(saved);
+        QCOMPARE(r.cap, PerElement<double>::filled(78));
+        QCOMPARE(r.capSet, PerElement<bool>::filled(true));
+
+        // the usual one wasn't chosen
+        saved.insert(u"cap", 75);
+        QCOMPARE(resistRecordFromJson(saved).capSet, PerElement<bool>());
+        QCOMPARE(resistRecordFromJson(saved).cap, PerElement<double>::filled(75));
+    }
+
     void jsonRoundTrip()
     {
         ResistEntry entry;
         entry.values[Element::Fire] = 78;
         entry.values[Element::Chaos] = -10;
-        entry.cap = 76;
-        const ResistRecord record =
+        entry.cap[Element::Cold] = 76;
+        ResistRecord record =
             snapshotResists(entry, {{u"Gloves"_s, withStats({{cold, 45}})}}, ResistSource::Pob);
+        record.cap[Element::Lightning] = 80;
+        record.capSet[Element::Lightning] = true;
         QCOMPARE(resistRecordFromJson(toJson(record)), record);
     }
 };

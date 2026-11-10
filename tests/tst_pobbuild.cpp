@@ -695,6 +695,21 @@ private Q_SLOTS:
         QCOMPARE(broken.energyShield, 0.0);
     }
 
+    void resistMaximums()
+    {
+        // as it says, or by how far under it the resistance is
+        const PobBuild build = saving({{u"FireResist"_s, u"75"_s},
+                                       {u"FireResistMax"_s, u"80"_s},
+                                       {u"ColdResist"_s, u"60"_s},
+                                       {u"MissingColdResist"_s, u"15"_s},
+                                       {u"LightningResist"_s, u"75"_s},
+                                       {u"ChaosResistMax"_s, u"nan"_s}});
+        QCOMPARE(build.resistMax[Element::Fire], 80.0);
+        QCOMPARE(build.resistMax[Element::Cold], 75.0);
+        QVERIFY(!build.resistMax[Element::Lightning]);
+        QVERIFY(!build.resistMax[Element::Chaos]);
+    }
+
     void minionDamage()
     {
         // the combined damage when it has it, else the hits

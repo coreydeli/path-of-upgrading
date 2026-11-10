@@ -84,7 +84,7 @@ private Q_SLOTS:
         QCOMPARE(r.resists.sourceNote(),
                  u"Not known yet. Import a build, or type them in from your character sheet."_s);
         QCOMPARE(r.resists.fire(), 0.0);
-        QCOMPARE(r.resists.maximum(), 75.0);
+        QCOMPARE(r.resists.fireMaximum(), 75.0);
         QCOMPARE(r.resists.margin(), 0.0);
 
         r.resists.setFromSheet(true);
@@ -102,7 +102,7 @@ private Q_SLOTS:
         QCOMPARE(r.resists.summary(), QString());
 
         // there's nothing to set them on
-        r.resists.setMaximum(80);
+        r.resists.setFireMaximum(80);
         r.resists.setMargin(3);
         QVERIFY(!r.saved());
     }
@@ -240,46 +240,90 @@ private Q_SLOTS:
     {
         Resists r;
         r.play(withTheBuilds(), build);
-        r.resists.setMaximum(78);
+        r.resists.setFireMaximum(78);
         r.resists.setMargin(12);
-        QCOMPARE(r.resists.maximum(), 78.0);
+        QCOMPARE(r.resists.fireMaximum(), 78.0);
         QCOMPARE(r.resists.margin(), 12.0);
-        QCOMPARE(r.saved()->cap, 78.0);
+        QCOMPARE(r.saved()->cap[Element::Fire], 78.0);
+        QVERIFY(r.saved()->capSet[Element::Fire]);
         QVERIFY(r.saved()->bufferSet);
 
         // which typing them in keeps, and going back to the build's
         r.resists.setFromSheet(true);
-        QCOMPARE(r.resists.maximum(), 78.0);
+        QCOMPARE(r.resists.fireMaximum(), 78.0);
         QCOMPARE(r.resists.margin(), 12.0);
         r.resists.setFromSheet(false);
-        QCOMPARE(r.resists.maximum(), 78.0);
+        QCOMPARE(r.resists.fireMaximum(), 78.0);
         QCOMPARE(r.resists.margin(), 12.0);
 
         // none at all is fine, a maximum of none isn't
         r.resists.setMargin(0);
         QCOMPARE(r.resists.margin(), 0.0);
-        r.resists.setMaximum(0);
+        r.resists.setFireMaximum(0);
         r.resists.setMargin(-1);
-        QCOMPARE(r.resists.maximum(), 78.0);
+        QCOMPARE(r.resists.fireMaximum(), 78.0);
         QCOMPARE(r.resists.margin(), 0.0);
 
         // and numbers only
-        r.resists.setMaximum(qQNaN());
-        r.resists.setMaximum(qInf());
+        r.resists.setFireMaximum(qQNaN());
+        r.resists.setFireMaximum(qInf());
         r.resists.setMargin(qQNaN());
         r.resists.setMargin(qInf());
-        QCOMPARE(r.resists.maximum(), 78.0);
+        QCOMPARE(r.resists.fireMaximum(), 78.0);
         QCOMPARE(r.resists.margin(), 0.0);
+    }
+
+    void eachMaximumOnItsOwn()
+    {
+        Resists r;
+        r.play(withTheBuilds(), build);
+        r.resists.setColdMaximum(80);
+        r.resists.setChaosMaximum(70);
+        QCOMPARE(r.resists.fireMaximum(), 75.0);
+        QCOMPARE(r.resists.coldMaximum(), 80.0);
+        QCOMPARE(r.resists.lightningMaximum(), 75.0);
+        QCOMPARE(r.resists.chaosMaximum(), 70.0);
+        const ResistRecord saved = r.saved().value();
+        QCOMPARE(saved.cap, (PerElement<double>{{75, 80, 75, 70}}));
+        QCOMPARE(saved.capSet, (PerElement<bool>{{false, true, false, true}}));
+        // and each is the one that counts for its own resistance
+        QCOMPARE(liveResists(saved, {})->caps, (PerElement<double>{{75, 80, 75, 70}}));
+    }
+
+    void maximumsFromTheBuildUnlessSet()
+    {
+        // the build says its fire maximum is 80, with 3 of that from its gear
+        const QString maxed = u"<PathOfBuilding2><Build level=\"90\" className=\"Witch\">"
+                              u"<PlayerStat stat=\"FireResist\" value=\"75\"/>"
+                              u"<PlayerStat stat=\"FireResistMax\" value=\"80\"/>"
+                              u"<PlayerStat stat=\"ColdResist\" value=\"60\"/>"
+                              u"<PlayerStat stat=\"ColdResistMax\" value=\"78\"/>"
+                              u"</Build></PathOfBuilding2>"_s;
+        Resists r;
+        r.play(tester(), maxed);
+        // takes the build's
+        r.resists.setFromSheet(true);
+        r.resists.setFromSheet(false);
+        QCOMPARE(r.resists.fireMaximum(), 80.0);
+        QCOMPARE(r.resists.coldMaximum(), 78.0);
+        QCOMPARE(r.resists.lightningMaximum(), 75.0);
+
+        // one set by hand stays, the others follow the build
+        r.resists.setColdMaximum(76);
+        r.resists.setFromSheet(true);
+        r.resists.setFromSheet(false);
+        QCOMPARE(r.resists.fireMaximum(), 80.0);
+        QCOMPARE(r.resists.coldMaximum(), 76.0);
     }
 
     void sameMaximumAndMargin()
     {
         Resists r;
         r.play(withTheBuilds(), build);
-        r.resists.setMaximum(78);
+        r.resists.setFireMaximum(78);
         r.resists.setMargin(12);
         QSignalSpy changed(&r.resists, &Resistances::changed);
-        r.resists.setMaximum(78);
+        r.resists.setFireMaximum(78);
         r.resists.setMargin(12);
         QCOMPARE(changed.size(), 0);
     }
