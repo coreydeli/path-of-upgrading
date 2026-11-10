@@ -200,6 +200,11 @@ jobs:
         run: |
           apt-get install -y ./build/path-of-upgrading_*.deb
           QT_QPA_PLATFORM=offscreen path-of-upgrading --version
+      # The build's own packages may have brought it in already, so this checks
+      # the package itself asks for it.
+      - name: Check it brings the Wayland overlay plugin
+        if: inputs.package
+        run: dpkg-deb -f build/path-of-upgrading_*.deb Depends | grep -qw layer-shell-qt
       - uses: actions/upload-artifact@v7
         if: inputs.package
         with:
@@ -306,6 +311,8 @@ jobs:
           path: dist
       - name: Install the package
         run: dnf -y install ./dist/path-of-upgrading-*.rpm dbus-daemon
+      - name: Check it brought the Wayland overlay plugin
+        run: test -f /usr/lib64/qt6/plugins/wayland-shell-integration/liblayer-shell.so
       - name: Start it
         env:
           QT_QPA_PLATFORM: offscreen
