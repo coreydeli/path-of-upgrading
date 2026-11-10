@@ -23,19 +23,22 @@ public:
     void add(const QString &id, const QString &name, const QKeySequence &key) override;
     QKeySequence key(const QString &id) const override;
     bool setKey(const QString &id, const QKeySequence &key) override;
+    void setGrabbed(bool grabbed) override;
 
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
 
 private:
     struct Shortcut
     {
-        int number = 0;   // what Windows knows it by
-        QKeySequence key; // none when Windows wouldn't take it
+        int number = 0;    // what Windows knows it by
+        QKeySequence key;  // none when Windows wouldn't take it
+        bool held = false; // whether Windows has it for us
     };
 
     bool take(int number, const QKeySequence &key);
 
     QHash<QString, Shortcut> m_shortcuts;
+    bool m_grabbed = true;
     int m_lastNumber = 0;
 };
 
