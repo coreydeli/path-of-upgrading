@@ -90,6 +90,8 @@ public:
         QString colors;    // the app's color scheme, see Appearance
         // Whether there is trade at all, which a release leaves out.
         bool tradeOffered = isBetaBuild();
+        // Whether waystones and tablets are checked, which a release leaves out for now.
+        bool mapsOffered = isBetaBuild();
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
@@ -137,6 +139,7 @@ public:
     IgnoredStats *ignoredStats() { return &m_ignoredStats; }
     CheckedItems *checkedItems() { return &m_checkedItems; }
     bool tradeOffered() const { return m_tradeOffered; }
+    bool mapsOffered() const { return m_mapsOffered; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     TradeSession *tradeSession() { return &m_tradeSession; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
@@ -152,6 +155,7 @@ private:
 
     PobPlaces m_places;
     bool m_tradeOffered;
+    bool m_mapsOffered;
     SettingsStore m_settings;
     CharacterStore m_characters;
     PobEngine m_pob;

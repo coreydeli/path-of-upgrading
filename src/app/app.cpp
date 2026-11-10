@@ -50,6 +50,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     : QObject(parent)
     , m_places(places)
     , m_tradeOffered(paths.tradeOffered)
+    , m_mapsOffered(paths.mapsOffered)
     , m_settings(paths.settings)
     , m_characters(paths.data + u"/characters"_s)
     , m_character(&m_characters, &m_pob)
@@ -118,6 +119,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_finder.setPob(&m_pob);
     m_upgrades.finder().setPob(&m_pob);
     m_checker.setSettings(settings);
+    m_checker.setMapsOffered(m_mapsOffered);
     m_results.judge().setPob(&m_pob);
     m_results.judge().setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
