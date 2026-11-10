@@ -459,6 +459,50 @@ bool isUnique(const Item &item)
 
 } // namespace
 
+namespace {
+
+void putMap(ItemReport &report, const MapCheck &map)
+{
+    report.map = true;
+    const QString what = map.kind == MapKind::Waystone ? u"waystone"_s : u"tablet"_s;
+    switch (map.grade) {
+    case MapGrade::Good:
+        report.verdict = u"Good "_s + what;
+        report.verdictTone = Tone::Good;
+        break;
+    case MapGrade::Fine:
+        report.verdict = u"Fine "_s + what;
+        report.verdictTone = Tone::Warning;
+        break;
+    case MapGrade::Bad:
+        report.verdict = u"Bad "_s + what;
+        report.verdictTone = Tone::Bad;
+        break;
+    }
+    report.mapSummary = map.summary;
+    for (const MapMod &m : map.mods) {
+        ReportMapMod out{.text = m.lines.join(u"\n"_s),
+                         .gives = m.gives.join(u", "_s),
+                         .costs = m.costs,
+                         .danger = m.danger > Danger::Harmless ? dangerName(m.danger) : QString(),
+                         .buildNote = m.buildNote};
+        out.tone = m.isBad() ? Tone::Bad : (m.danger == Danger::Mild ? Tone::Warning : Tone::Good);
+        report.mapMods << out;
+    }
+    report.mapSuggestions = map.suggestions;
+    if (map.corrupted)
+        report.notes << u"It's corrupted."_s;
+    if (map.usedBuild) {
+        report.mapBuild = map.buildChanged
+                              ? u"Counted against your character: the mods marked below are worse for it."_s
+                              : u"Checked against your character. Nothing here is worse for it."_s;
+    }
+    report.mapExperimental =
+        u"Experimental: checking maps is still being tested, and is only in beta versions."_s;
+}
+
+} // namespace
+
 ItemReport reportOf(const ItemCheck &check)
 {
     const Item &item = check.item;
@@ -481,6 +525,10 @@ ItemReport reportOf(const ItemCheck &check)
         report.details << u"Item level %1"_s.arg(item.itemLevel);
     if (item.affixes.known)
         report.openAffixes = openAffixesOf(item.affixes);
+    if (check.map) {
+        putMap(report, *check.map);
+        return report;
+    }
     if (!r.ok) {
         report.notes << r.reason;
         return report;

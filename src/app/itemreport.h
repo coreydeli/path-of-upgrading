@@ -74,6 +74,30 @@ public:
     friend bool operator==(const ReportPlacement &, const ReportPlacement &) = default;
 };
 
+// One mod of a waystone or a tablet.
+struct ReportMapMod
+{
+    Q_GADGET
+    QML_VALUE_TYPE(reportMapMod)
+
+    Q_PROPERTY(QString text MEMBER text)
+    Q_PROPERTY(QString gives MEMBER gives)
+    Q_PROPERTY(QString costs MEMBER costs)
+    Q_PROPERTY(QString danger MEMBER danger)
+    Q_PROPERTY(QString buildNote MEMBER buildNote)
+    Q_PROPERTY(pou::Tone::Tone tone MEMBER tone)
+
+public:
+    QString text;      // its lines, as the game wrote them
+    QString gives;     // "15% more Waystones found, 8% more pack size"
+    QString costs;     // what it does to you
+    QString danger;    // "Risky", empty when it's harmless
+    QString buildNote; // why your build makes it worse
+    Tone::Tone tone = Tone::Plain;
+
+    friend bool operator==(const ReportMapMod &, const ReportMapMod &) = default;
+};
+
 // What the popup says about an item you checked.
 struct ItemReport
 {
@@ -108,6 +132,12 @@ struct ItemReport
     Q_PROPERTY(bool pobChecking MEMBER pobChecking)
     Q_PROPERTY(QString pobStatus MEMBER pobStatus)
     Q_PROPERTY(QStringList notes MEMBER notes)
+    Q_PROPERTY(bool map MEMBER map)
+    Q_PROPERTY(QString mapSummary MEMBER mapSummary)
+    Q_PROPERTY(QList<pou::ReportMapMod> mapMods MEMBER mapMods)
+    Q_PROPERTY(QStringList mapSuggestions MEMBER mapSuggestions)
+    Q_PROPERTY(QString mapBuild MEMBER mapBuild)
+    Q_PROPERTY(QString mapExperimental MEMBER mapExperimental)
 
 public:
     QString name;
@@ -160,6 +190,15 @@ public:
     bool pobChecking = false;
     QString pobStatus;
     QStringList notes;
+    // A waystone or a tablet, rated by its mods in place of gear.
+    bool map = false;
+    QString mapSummary;
+    QList<ReportMapMod> mapMods;
+    QStringList mapSuggestions;
+    // Whether your build was counted, and what it changed. Empty without one.
+    QString mapBuild;
+    // The popup says it's still being tested.
+    QString mapExperimental;
 
     friend bool operator==(const ItemReport &, const ItemReport &) = default;
 };

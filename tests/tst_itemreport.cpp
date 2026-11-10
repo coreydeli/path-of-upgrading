@@ -2,6 +2,7 @@
 #include "app/itemreport.h"
 #include "core/parser.h"
 #include "itemtexts.h"
+#include "maptexts.h"
 
 #include <QTest>
 #include <algorithm>
@@ -1102,6 +1103,74 @@ private Q_SLOTS:
         const Item corrupted = item(itemtexts::helmetNew + u"\n--------\nCorrupted"_s);
         const ItemReport report = reportOn(corrupted, wearing({{u"Helmet"_s, helmetOld}}));
         QVERIFY(report.notes.contains(u"Corrupted, so it can't be modified any further."_s));
+    }
+
+    void aWaystone()
+    {
+        const Item waystone = item(maptexts::bad);
+        ItemCheck check{.item = waystone};
+        check.map = checkMap(waystone, MapKind::Waystone);
+        const ItemReport report = reportOf(check);
+        QVERIFY(report.map);
+        QCOMPARE(report.verdict, u"Bad waystone"_s);
+        QCOMPARE(report.verdictTone, Tone::Bad);
+        QCOMPARE(report.name, u"Grim Haven"_s);
+        QCOMPARE(report.mapMods.size(), 4);
+        QCOMPARE(report.mapMods.at(2).danger, u"Can end the run"_s);
+        QCOMPARE(report.mapMods.at(2).tone, Tone::Bad);
+        QCOMPARE(report.mapMods.at(0).tone, Tone::Warning);
+        QVERIFY(report.mapMods.at(0).gives.contains(u"7% more pack size, 10% more Waystones found"_s));
+        QVERIFY(!report.mapSuggestions.isEmpty());
+        QVERIFY(report.mapExperimental.startsWith(u"Experimental"_s));
+        // nothing about gear, and no build was there
+        QVERIFY(report.notes.isEmpty());
+        QVERIFY(report.wearIn.isEmpty());
+        QVERIFY(report.mapBuild.isEmpty());
+    }
+
+    void waystoneVerdicts()
+    {
+        const struct
+        {
+            QString text;
+            QString verdict;
+            Tone::Tone tone;
+        } rows[] = {{maptexts::good, u"Good waystone"_s, Tone::Good},
+                    {maptexts::fine, u"Fine waystone"_s, Tone::Warning},
+                    {maptexts::tablet, u"Fine tablet"_s, Tone::Warning}};
+        for (const auto &row : rows) {
+            const Item i = item(row.text);
+            ItemCheck check{.item = i};
+            check.map = checkMap(i, *mapKindOf(i));
+            const ItemReport report = reportOf(check);
+            QCOMPARE(report.verdict, row.verdict);
+            QCOMPARE(report.verdictTone, row.tone);
+        }
+    }
+
+    void saysWhenItUsedTheBuild()
+    {
+        const Item waystone = item(maptexts::bad);
+        MapBuild build;
+        build.imported = true;
+        build.health = 9000;
+        ItemCheck check{.item = waystone};
+        check.map = checkMap(waystone, MapKind::Waystone, build);
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"Checked against your character"_s));
+
+        build.health = 2000;
+        const Item thin = item(maptexts::header + u"12% increased Monster Damage\n"_s);
+        check.map = checkMap(thin, MapKind::Waystone, build);
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"Counted against your character"_s));
+        QVERIFY(!reportOf(check).mapMods.first().buildNote.isEmpty());
+    }
+
+    void corruptedWaystone()
+    {
+        const Item waystone = item(maptexts::bad + u"\n--------\nCorrupted"_s);
+        ItemCheck check{.item = waystone};
+        check.map = checkMap(waystone, MapKind::Waystone);
+        QVERIFY(reportOf(check).notes.contains(u"It's corrupted."_s));
     }
 };
 
