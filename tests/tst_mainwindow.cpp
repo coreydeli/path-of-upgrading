@@ -1743,7 +1743,7 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QVERIFY(!isVisible(w.find(u"maximumResist"_s)));
+        QVERIFY(!isVisible(w.find(u"fireMaximum"_s)));
         QVERIFY(!isVisible(w.find(u"resistMargin"_s)));
         QVERIFY(!isVisible(w.find(u"resistError"_s)));
     }
@@ -1764,8 +1764,11 @@ private Q_SLOTS:
         QCOMPARE(text(w.find(u"resistSource"_s)),
                  u"From your build in Path of Building, with what you wear now."_s);
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QVERIFY(isVisible(w.find(u"maximumResist"_s)));
-        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 75);
+        for (const QString &field :
+             {u"fireMaximum"_s, u"coldMaximum"_s, u"lightningMaximum"_s, u"chaosMaximum"_s}) {
+            QVERIFY(isVisible(w.find(field)));
+            QCOMPARE(w.spinBox(field)->property("value").toInt(), 75);
+        }
         QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 15);
         QObject *buffer = w.find(u"resistMargin"_s);
         QCOMPARE(buffer->property("label").toString(), u"Safety buffer"_s);
@@ -1792,9 +1795,12 @@ private Q_SLOTS:
         QVERIFY(setValue(w.spinBox(u"lightningResist"_s), 30, "valueModified"));
         QVERIFY(setValue(w.spinBox(u"chaosResist"_s), -20, "valueModified"));
         QCOMPARE(resists->summary(), u"Fire 76%, Cold 120%, Lightning 30%, Chaos -20%"_s);
-        QVERIFY(setValue(w.spinBox(u"maximumResist"_s), 78, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"fireMaximum"_s), 78, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"chaosMaximum"_s), 70, "valueModified"));
         QVERIFY(setValue(w.spinBox(u"resistMargin"_s), 2, "valueModified"));
-        QCOMPARE(resists->maximum(), 78.0);
+        QCOMPARE(resists->fireMaximum(), 78.0);
+        QCOMPARE(resists->coldMaximum(), 75.0);
+        QCOMPARE(resists->chaosMaximum(), 70.0);
         QCOMPARE(resists->margin(), 2.0);
         // no sheet goes that high
         QVERIFY(setValue(w.spinBox(u"fireResist"_s), 900, "valueModified"));
@@ -1805,13 +1811,13 @@ private Q_SLOTS:
         resists->setCold(40);
         resists->setLightning(45);
         resists->setChaos(-5);
-        resists->setMaximum(77);
+        resists->setLightningMaximum(77);
         resists->setMargin(4);
         QCOMPARE(w.spinBox(u"fireResist"_s)->property("value").toInt(), 50);
         QCOMPARE(w.spinBox(u"coldResist"_s)->property("value").toInt(), 40);
         QCOMPARE(w.spinBox(u"lightningResist"_s)->property("value").toInt(), 45);
         QCOMPARE(w.spinBox(u"chaosResist"_s)->property("value").toInt(), -5);
-        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 77);
+        QCOMPARE(w.spinBox(u"lightningMaximum"_s)->property("value").toInt(), 77);
         QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 4);
 
         resists->setFromSheet(false);

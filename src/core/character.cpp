@@ -121,7 +121,6 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
             change.totals << TotalChange{t.label, roundTo(a, 1), roundTo(b, 1), delta};
     }
 
-    const double cap = resists && resists->cap != 0 ? resists->cap : 75;
     const double buffer = resists ? resists->buffer : 0;
     const QString source =
         resists && resists->source == ResistSource::Pob ? u"Path of Building's"_s : u"Your"_s;
@@ -135,7 +134,7 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
         r.element = e;
         r.label = elementName(e) + u" res"_s;
         r.delta = delta;
-        r.cap = resists && resists->caps[e] != 0 ? resists->caps[e] : cap;
+        r.cap = resists && resists->caps[e] != 0 ? resists->caps[e] : 75;
         r.safe = r.cap + buffer;
         if (resists && resists->values[e]) {
             const double from = *resists->values[e];

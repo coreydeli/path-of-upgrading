@@ -32,6 +32,13 @@ ColumnsPage {
         maximum: 500
     }
 
+    // The most one resistance can be.
+    component MaximumField: NumberField {
+        visible: gearPage.resists.known
+        minimum: 1
+        maximum: 100
+    }
+
     // A slot, which takes itself off when asked.
     component GearSlot: SlotRow {
         onTakeOffAsked: gearPage.gear.takeOff(slot)
@@ -182,19 +189,37 @@ ColumnsPage {
         }
 
         FormCard.FormDelegateSeparator {
-            visible: maximumResist.visible
+            visible: fireMaximum.visible
         }
 
-        NumberField {
-            id: maximumResist
-            objectName: "maximumResist"
-            visible: gearPage.resists.known
-            label: qsTr("Maximum resistance")
-            description: qsTr("75 unless your passive tree raises it. What your gear adds is counted for you.")
-            minimum: 1
-            maximum: 100
-            value: gearPage.resists.maximum
-            onEdited: value => gearPage.resists.maximum = value
+        MaximumField {
+            id: fireMaximum
+            objectName: "fireMaximum"
+            label: qsTr("Fire maximum")
+            description: qsTr("The most each resistance can be, 75 unless your passive tree raises it. What your gear adds is counted for you, and your build's are used until you change one.")
+            value: gearPage.resists.fireMaximum
+            onEdited: value => gearPage.resists.fireMaximum = value
+        }
+
+        MaximumField {
+            objectName: "coldMaximum"
+            label: qsTr("Cold maximum")
+            value: gearPage.resists.coldMaximum
+            onEdited: value => gearPage.resists.coldMaximum = value
+        }
+
+        MaximumField {
+            objectName: "lightningMaximum"
+            label: qsTr("Lightning maximum")
+            value: gearPage.resists.lightningMaximum
+            onEdited: value => gearPage.resists.lightningMaximum = value
+        }
+
+        MaximumField {
+            objectName: "chaosMaximum"
+            label: qsTr("Chaos maximum")
+            value: gearPage.resists.chaosMaximum
+            onEdited: value => gearPage.resists.chaosMaximum = value
         }
 
         NumberField {
