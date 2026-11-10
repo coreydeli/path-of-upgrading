@@ -48,7 +48,10 @@ struct Folders
     App::Paths paths{.settings = dir.filePath(u"settings.conf"_s),
                      .data = dir.filePath(u"data"_s),
                      .cache = dir.filePath(u"cache"_s),
-                     .autostart = dir.filePath(u"autostart/made-up.desktop"_s)};
+                     .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
+                     .colors = {},
+                     // which a release build leaves out, but most tests are of it
+                     .tradeOffered = true};
     CharacterStore characters{dir.filePath(u"data/characters"_s)};
     FakePob pob;
 
@@ -900,20 +903,67 @@ private Q_SLOTS:
 
     void tradeStartsByTheBuild()
     {
-        // with nothing chosen, a beta searches and a release waits to be asked
+        // with nothing chosen, a beta searches and a release has no trade
         Folders folders;
+        folders.paths.tradeOffered = isBetaBuild();
         QFile::remove(folders.paths.settings);
         QVERIFY(!QFile::exists(folders.paths.settings));
         Running r(folders);
+        QCOMPARE(r.app.tradeOffered(), isBetaBuild());
         QCOMPARE(r.app.trade().unavailable().isEmpty(), isBetaBuild());
         QCOMPARE(r.app.checker().popup().isTradeAvailable(), isBetaBuild());
-        QCOMPARE(r.app.checker().popup().tradeNote(), r.app.trade().unavailable());
         QCOMPARE(r.asked().isEmpty(), !isBetaBuild());
+        QVERIFY(r.app.checker().popup().tradeNote().isEmpty());
 
-        // and what you choose is what it keeps
-        r.app.tradeOptions()->setEnabled(!isBetaBuild());
-        QCOMPARE(r.app.checker().popup().isTradeAvailable(), !isBetaBuild());
-        QCOMPARE(SettingsStore(folders.paths.settings).settings().trade.enabled, !isBetaBuild());
+        // and what you choose in a beta is what it keeps
+        if (isBetaBuild()) {
+            r.app.tradeOptions()->setEnabled(false);
+            QVERIFY(!r.app.checker().popup().isTradeAvailable());
+            QVERIFY(!SettingsStore(folders.paths.settings).settings().trade.enabled);
+        }
+    }
+
+    void releaseHasNoTrade()
+    {
+        // whatever the file says, which it keeps for a beta
+        Folders folders;
+        folders.paths.tradeOffered = false;
+        Settings settings;
+        settings.trade.enabled = true;
+        settings.overlay.resultsHotkey = u"F7"_s;
+        folders.set(settings);
+        Running r(folders, desktop(), online(), keyringWith(fakeId));
+        QTest::qWait(100);
+        QVERIFY(!r.app.tradeOffered());
+        QVERIFY(!r.app.trade().unavailable().isEmpty());
+        QVERIFY(r.asked().isEmpty());
+        QCOMPARE(r.keyring->reads, 0);
+        QVERIFY(!r.app.ratesRefresher().isRunning());
+
+        // the popup has no buttons and no note
+        ItemPopup &popup = r.app.checker().popup();
+        QVERIFY(!popup.isTradeAvailable());
+        QVERIFY(popup.tradeNote().isEmpty());
+        QVERIFY(!r.app.recommendedUpgrades()->isTradeAvailable());
+        popup.findOnTrade(TradeFinder::Kind::Upgrades);
+        r.app.results().ask();
+        QVERIFY(r.asked().isEmpty());
+
+        // there is no results key to press, and the stat picker has nothing to say of the site
+        QVERIFY(!r.shortcuts->names.contains(u"trade-results"_s));
+        Q_EMIT r.shortcuts->activated(u"trade-results"_s);
+        QVERIFY(!r.app.resultsPanel().isVisible());
+        r.app.statPicker()->refresh();
+        QVERIFY(r.app.statPicker()->message().isEmpty());
+
+        // and the file is as it was, even after another setting changes
+        settings.overlay.scale = 1.5;
+        QVERIFY(r.app.settings().set(settings));
+        const Settings saved = SettingsStore(folders.paths.settings).settings();
+        QVERIFY(saved.trade.enabled);
+        QCOMPARE(saved.overlay.resultsHotkey, u"F7"_s);
+        QVERIFY(r.asked().isEmpty());
+        QCOMPARE(r.keyring->reads, 0);
     }
 
     void ratesAreKeptFresh()

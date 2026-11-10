@@ -170,8 +170,9 @@ struct Window
     // The app's colors are only on when there's a scheme file for them, as
     // they go on the whole program.
     // The settings are saved before it starts, or none for the first run.
+    // It has trade, which a release build of the app leaves out.
     explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {},
-                    const std::optional<Settings> &saved = used())
+                    const std::optional<Settings> &saved = used(), bool tradeOffered = true)
     {
         shortcuts->available = hotkeys;
         if (saved)
@@ -185,7 +186,8 @@ struct Window
                        .data = dir.filePath(u"data"_s),
                        .cache = dir.filePath(u"cache"_s),
                        .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
-                       .colors = colors});
+                       .colors = colors,
+                       .tradeOffered = tradeOffered});
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
         QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
@@ -2598,13 +2600,46 @@ private Q_SLOTS:
         QVERIFY(w.app->checker().popup().tradeNote().isEmpty());
     }
 
-    void stillTesting()
+    void releaseSidebarHasNoTrade()
     {
-        // a release says so under the switch, and a beta says nothing of it
+        Window release(true, false, {}, used(), false);
+        QVERIFY(release.window->findChild<QObject *>(u"tradeAction"_s));
+        QVERIFY(!isVisible(release.window->findChild<QObject *>(u"tradeAction"_s)));
+        QVERIFY(!release.app->tradeOffered());
+        QVERIFY(release.settings().trade.enabled);
+        QVERIFY(release.app->checker().popup().tradeNote().isEmpty());
+        QVERIFY(!release.app->checker().popup().isTradeAvailable());
+        QVERIFY(release.network->sent.isEmpty());
+    }
+
+    void sidebarHasTradeWhenOffered()
+    {
         Window w;
-        QVERIFY(w.show(u"tradeAction"_s));
-        const QString description = w.find(u"enabledSwitch"_s)->property("description").toString();
-        QCOMPARE(description.contains(u"still being tested"_s), !isBetaBuild());
+        QVERIFY(w.app->tradeOffered());
+        QVERIFY(isVisible(w.window->findChild<QObject *>(u"tradeAction"_s)));
+    }
+
+    void releaseSettingsHaveNoResultsKey()
+    {
+        Window release(true, false, {}, used(), false);
+        QVERIFY(release.show(u"overlayAction"_s));
+        QVERIFY(isVisible(release.find(u"checkKey"_s)));
+        QVERIFY(!isVisible(release.find(u"resultsKey"_s)));
+        QVERIFY(!release.shortcuts->names.contains(u"trade-results"_s));
+    }
+
+    void releaseSetupGuideHasNoTradeSteps()
+    {
+        Window w(true, false, {}, std::nullopt, false);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        QCOMPARE(guide->property("steps").toStringList(),
+                 (QStringList{u"welcome"_s, u"character"_s, u"done"_s}));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(guide->property("title").toString(), u"Your Character"_s);
+        QVERIFY(!isVisible(w.inGuide(u"leagueStep"_s)));
+        QVERIFY(!isVisible(w.inGuide(u"tradeStep"_s)));
+        QVERIFY(w.network->sent.isEmpty());
     }
 
     void cardsInColumns()
