@@ -37,6 +37,7 @@ endfunction()
 
 pou_add_test(tst_mapcheck maptexts.h)
 pou_add_test(tst_slots)
+pou_add_test(tst_slotmods)
 pou_add_test(tst_statnorm)
 pou_add_test(tst_numbers)
 pou_add_test(tst_statmap)
