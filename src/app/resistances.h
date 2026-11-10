@@ -40,9 +40,13 @@ class Resistances : public QObject
     Q_PROPERTY(double cold READ cold WRITE setCold NOTIFY changed)
     Q_PROPERTY(double lightning READ lightning WRITE setLightning NOTIFY changed)
     Q_PROPERTY(double chaos READ chaos WRITE setChaos NOTIFY changed)
-    // The most a resistance can be without what your gear adds to that, 75
-    // unless the passive tree raises it.
-    Q_PROPERTY(double maximum READ maximum WRITE setMaximum NOTIFY changed)
+    // The most each can be without what your gear adds to that, 75 unless the
+    // passive tree raises it. A build's are taken when it gives them, until
+    // you set one yourself.
+    Q_PROPERTY(double fireMaximum READ fireMaximum WRITE setFireMaximum NOTIFY changed)
+    Q_PROPERTY(double coldMaximum READ coldMaximum WRITE setColdMaximum NOTIFY changed)
+    Q_PROPERTY(double lightningMaximum READ lightningMaximum WRITE setLightningMaximum NOTIFY changed)
+    Q_PROPERTY(double chaosMaximum READ chaosMaximum WRITE setChaosMaximum NOTIFY changed)
     // How far over the maximum they should be, as some of what counts towards
     // them, like a charm, isn't always on.
     Q_PROPERTY(double margin READ margin WRITE setMargin NOTIFY changed)
@@ -70,8 +74,16 @@ public:
     double chaos() const { return value(Element::Chaos); }
     void setChaos(double v) { setValue(Element::Chaos, v); }
 
-    double maximum() const;
-    void setMaximum(double maximum);
+    double maximum(Element e) const;
+    void setMaximum(Element e, double maximum);
+    double fireMaximum() const { return maximum(Element::Fire); }
+    void setFireMaximum(double v) { setMaximum(Element::Fire, v); }
+    double coldMaximum() const { return maximum(Element::Cold); }
+    void setColdMaximum(double v) { setMaximum(Element::Cold, v); }
+    double lightningMaximum() const { return maximum(Element::Lightning); }
+    void setLightningMaximum(double v) { setMaximum(Element::Lightning, v); }
+    double chaosMaximum() const { return maximum(Element::Chaos); }
+    void setChaosMaximum(double v) { setMaximum(Element::Chaos, v); }
     double margin() const;
     void setMargin(double margin);
 

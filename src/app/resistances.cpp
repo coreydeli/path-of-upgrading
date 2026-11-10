@@ -78,18 +78,21 @@ void Resistances::setValue(Element e, double value)
     typeIn(values);
 }
 
-double Resistances::maximum() const
+double Resistances::maximum(Element e) const
 {
-    return m_live ? m_live->cap : 75;
+    const std::optional<ResistRecord> &resists = m_active->character().resists;
+    return resists ? resists->cap[e] : 75;
 }
 
-void Resistances::setMaximum(double maximum)
+void Resistances::setMaximum(Element e, double maximum)
 {
-    if (!m_live || !std::isfinite(maximum) || maximum <= 0 || maximum == this->maximum())
+    if (!m_live || !std::isfinite(maximum) || maximum <= 0 || maximum == this->maximum(e))
         return;
-    change([maximum](Character &c) {
-        if (c.resists)
-            c.resists->cap = maximum;
+    change([e, maximum](Character &c) {
+        if (c.resists) {
+            c.resists->cap[e] = maximum;
+            c.resists->capSet[e] = true;
+        }
     });
 }
 
