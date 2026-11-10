@@ -12,6 +12,8 @@ ColumnsPage {
     required property OverlayOptions options
     // the results key is for trade searches
     property bool tradeOffered: true
+    // the league, which has no page of its own without trade
+    property TradeOptions tradeOptions
     // whether the last key you chose was refused
     property bool refused: false
     readonly property var positions: [
@@ -198,6 +200,17 @@ ColumnsPage {
             value: overlayPage.options.autoHideSeconds
             onEdited: value => overlayPage.options.autoHideSeconds = value
         }
+    }
+
+    SectionHeader {
+        title: qsTr("League")
+        visible: !overlayPage.tradeOffered
+    }
+
+    LeagueCard {
+        visible: !overlayPage.tradeOffered
+        options: overlayPage.tradeOptions
+        tradeOffered: false
     }
 
     SectionHeader {
