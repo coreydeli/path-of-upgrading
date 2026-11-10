@@ -2,6 +2,7 @@
 #include "platform/xcb/xwindows.h"
 
 #include <QFile>
+#include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -37,6 +38,12 @@ WindowInfo describeWindow(XConnection &x, xcb_window_t window)
     if (!pid.isEmpty())
         info.program = processName(pid.first());
     return info;
+}
+
+bool anyGameWindow(XConnection &x, const QList<xcb_window_t> &windows)
+{
+    return std::ranges::any_of(windows,
+                               [&x](xcb_window_t window) { return isGameWindow(describeWindow(x, window)); });
 }
 
 XPointer queryPointer(XConnection &x)
