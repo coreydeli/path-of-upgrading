@@ -10,6 +10,8 @@ ColumnsPage {
     id: overlayPage
 
     required property OverlayOptions options
+    // the results key is for trade searches
+    property bool tradeOffered: true
     // whether the last key you chose was refused
     property bool refused: false
     readonly property var positions: [
@@ -47,10 +49,13 @@ ColumnsPage {
             onChosen: key => overlayPage.refused = !overlayPage.options.setCheckKey(key)
         }
 
-        FormCard.FormDelegateSeparator {}
+        FormCard.FormDelegateSeparator {
+            visible: overlayPage.tradeOffered
+        }
 
         KeyField {
             objectName: "resultsKey"
+            visible: overlayPage.tradeOffered
             label: qsTr("Show the trade results")
             description: qsTr("Opens the listings of your last trade search, and closes them again.")
             key: overlayPage.options.resultsKey
