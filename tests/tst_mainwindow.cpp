@@ -3329,6 +3329,163 @@ private Q_SLOTS:
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
     }
 
+    // Settings and Appearance are one level down, under Settings
+    void settingsPagesAreUnderSettings()
+    {
+        Window w;
+        QObject *group = w.window->findChild<QObject *>(u"settingsGroupAction"_s);
+        QVERIFY(group);
+        QCOMPARE(group->property("text").toString(), u"Settings"_s);
+        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s}) {
+            QObject *action = w.window->findChild<QObject *>(name);
+            QVERIFY2(action, qPrintable(name));
+            QCOMPARE(action->parent(), group);
+        }
+        QCOMPARE(group->parent(), w.window->findChild<QObject *>(u"gearGroupAction"_s)->parent());
+
+        QCOMPARE(group->property("checked").toBool(), false);
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"tradeAction"_s));
+        QCOMPARE(group->property("checked").toBool(), false);
+    }
+
+    void sidebarOpensSettings()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Settings"_s));
+        QVERIFY(!w.sidebarRow(u"Appearance"_s));
+
+        QVERIFY(w.clickRow(u"Settings"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        // opening it shows no page yet
+        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+
+        QVERIFY(w.clickRow(u"Appearance"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QTest::qWait(500);
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QCOMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), true);
+
+        // Back goes up a level without picking a page
+        QVERIFY(w.clickRow(u"Back"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Appearance"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QCOMPARE(w.sidebarRow(u"Settings"_s)->property("checked").toBool(), true);
+
+        // a page from outside the group takes the sidebar back to the top
+        QVERIFY(w.clickRow(u"Settings"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Back"_s));
+        QVERIFY(w.show(u"tradeAction"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Back"_s));
+        QCOMPARE(w.sidebarRow(u"Settings"_s)->property("checked").toBool(), false);
+    }
+
+    // a button elsewhere that shows a page in another group, or from the top
+    void sidebarFollowsPagesShownByCode()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Back"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_COMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), false);
+
+        // from a Gear page straight to a Settings page
+        QVERIFY(w.show(u"weightsAction"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Stat Weights"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Appearance"_s));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_COMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), true);
+
+        // and back to Gear
+        QVERIFY(w.show(u"ignoredAction"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Ignored Stats"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Appearance"_s));
+    }
+
+    void sidebarSettingsWorksWithTheKeyboard()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        w.sidebarRow(u"Settings"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Return);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Back"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Appearance"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Space);
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+
+        // still on Settings, so the other page is a key press away
+        QTest::qWait(500);
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        w.sidebarRow(u"Settings"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Return);
+        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+    }
+
+    void sidebarSettingsWorksInANarrowWindow()
+    {
+        Window w;
+        w.window->resize(500, 700);
+        w.window->show();
+        QVERIFY(QTest::qWaitForWindowExposed(w.window.get()));
+        QVERIFY(w.settled());
+        QTRY_COMPARE(w.window->property("wideScreen").toBool(), false);
+        QTRY_COMPARE(w.drawer()->property("modal").toBool(), true);
+
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Settings"_s));
+        QVERIFY(w.clickRow(u"Settings"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Appearance"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
+
+        // it opens on Settings again
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
+        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Back"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTest::qWait(500);
+        QVERIFY(w.clickRow(u"Your Gear"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
+        QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
+        QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
+        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+    }
+
     // the title and what the page is for, at the top of each page
     void pagesHaveHeaders()
     {
