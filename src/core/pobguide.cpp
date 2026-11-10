@@ -109,7 +109,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
         if (!runProblem.isEmpty()) {
             guide.headline = u"Path of Building was found, but it wouldn't start."_s;
             guide.details << runProblem;
-            guide.steps << u"Press Look Again to try once more."_s
+            guide.steps << u"Press Update to try once more."_s
                         << u"If it keeps failing, open %1 yourself to see whether it works."_s.arg(
                                onWindows(places) ? u"Path of Building"_s : u"Path of Building PoE 2"_s);
         }
@@ -121,7 +121,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
     if (lookup.install) {
         // it turned up since the app looked
         guide.headline = u"Path of Building is there now."_s;
-        guide.steps = numbered({u"Press Look Again."_s});
+        guide.steps = numbered({u"Press Update."_s});
         return guide;
     }
 
@@ -135,7 +135,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
             guide.steps << u"Install Flatpak on this computer, see https://flatpak.org/setup/"_s;
         guide.steps << u"Install \"Path of Building\" from Flathub, in Discover or with the buttons below."_s
                     << u"Open \"Path of Building PoE 2\" once, and wait while it downloads what it needs."_s
-                    << (noFlatpak ? u"Restart Path of Upgrading."_s : u"Press Look Again."_s);
+                    << (noFlatpak ? u"Restart Path of Upgrading."_s : u"Press Update."_s);
         guide.getFlatpak = true;
         break;
     case PobProblem::NotOpened:
@@ -143,7 +143,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
         guide.details << u"It downloads what it needs for Path of Exile 2 the first time you open it for "
                          u"that game."_s;
         guide.steps << u"Open \"Path of Building PoE 2\" from your application menu."_s
-                    << u"Wait until its window shows."_s << u"Press Look Again."_s;
+                    << u"Wait until its window shows."_s << u"Press Update."_s;
         break;
     case PobProblem::NoLuajit:
         guide.headline = u"Path of Building was found, but LuaJIT is missing."_s;
@@ -156,7 +156,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
         guide.headline = u"Path of Building wasn't found."_s;
         guide.details << u"Path of Upgrading uses Path of Building Community (PoE2) from its installer."_s;
         guide.steps << u"Download its installer from the releases page, with the button below."_s
-                    << u"Run the installer."_s << u"Press Look Again."_s;
+                    << u"Run the installer."_s << u"Press Update."_s;
         guide.getInstaller = true;
         break;
     case PobProblem::NoLuajitOnWindows:
