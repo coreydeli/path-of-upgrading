@@ -63,6 +63,18 @@ private Q_SLOTS:
         QCOMPARE(done.character.gear.value(u"Weapon"_s).baseType, u"Crude Bow"_s);
     }
 
+    void takesWhatItsHandsCanDo()
+    {
+        PobBuild build = buildWith({{u"Helmet"_s, {.text = helmet}}});
+        build.wielding = {.twoHandedInOne = true, .focusWithStaff = true};
+        const BuildImport done = importBuild(Character{.name = u"Tester"_s}, build);
+        QCOMPARE(done.character.wielding, build.wielding);
+
+        // another build can't do it
+        build.wielding = {};
+        QCOMPARE(importBuild(done.character, build).character.wielding, Wielding{});
+    }
+
     void keepsWhatYouCopied()
     {
         Character character;

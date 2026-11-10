@@ -405,6 +405,34 @@ private Q_SLOTS:
                  QStringList{u"Weapon"_s});
     }
 
+    void twoHanderKeepsTheOffhandWhenBothAreInUse()
+    {
+        const Item mace =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nDoom Knell\nTorment Club\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+30 to maximum Life"_s);
+        const Item shield = item(u"Item Class: Shields\nRarity: Rare\nWoe Guard\nPainted Tower Shield\n"
+                                 "--------\nArmour: 200\n--------\n+50 to maximum Life"_s);
+        const Item maul =
+            item(u"Item Class: Two Hand Maces\nRarity: Rare\nBrute Knell\nForge Maul\n--------\n"
+                 "Physical Damage: 100-160\nAttacks per Second: 1.10\n--------\n+40 to Strength"_s);
+        Character c = wearing({{u"Weapon"_s, mace}, {u"Offhand"_s, shield}});
+        c.wielding.twoHandedInOne = true;
+        QCOMPARE(evaluate(maul, c).change->targets, QStringList{u"Weapon"_s});
+    }
+
+    void noOffhandToWearBesideATwoHander()
+    {
+        const Item staff =
+            item(u"Item Class: Staves\nRarity: Rare\nDoom Pillar\nAshen Staff\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.20\n--------\n+30 to maximum Life"_s);
+        const Item focus =
+            item(u"Item Class: Foci\nRarity: Rare\nGlow Lens\nTwig Focus\n--------\n+30 to maximum Life"_s);
+        Character c = wearing({{u"Weapon"_s, staff}});
+        QCOMPARE(evaluate(focus, c).wearIn, QStringList{u"Offhand 2"_s});
+        c.wielding.focusWithStaff = true;
+        QCOMPARE(evaluate(focus, c).wearIn, (QStringList{u"Offhand"_s, u"Offhand 2"_s}));
+    }
+
     void losingSpiritIsARisk_data()
     {
         QTest::addColumn<int>("life");
