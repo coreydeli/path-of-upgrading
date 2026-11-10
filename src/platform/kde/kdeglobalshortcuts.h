@@ -22,9 +22,16 @@ public:
     void add(const QString &id, const QString &name, const QKeySequence &key) override;
     QKeySequence key(const QString &id) const override;
     bool setKey(const QString &id, const QKeySequence &key) override;
+    void setGrabbed(bool grabbed) override;
 
 private:
+    // Whether it didn't get the key it was to have.
+    bool grab(const QString &id);
+
     QHash<QString, QAction *> m_actions;
+    // what each should have while it's let go, which the desktop doesn't keep
+    QHash<QString, QKeySequence> m_keys;
+    bool m_grabbed = true;
 };
 
 } // namespace pou

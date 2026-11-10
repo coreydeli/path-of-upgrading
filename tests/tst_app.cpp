@@ -6,6 +6,7 @@
 #include "core/rates.h"
 #include "core/tradesite.h"
 #include "fakegameinput.h"
+#include "fakegamewatcher.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
 #include "fakeopener.h"
@@ -169,13 +170,15 @@ struct Running
     App app;
 
     explicit Running(const Folders &folders, FakeGlobalShortcuts *theirs = desktop(),
-                     FakeNetwork *sites = online(), FakeSecretStore *theirKeyring = keyringWith())
+                     FakeNetwork *sites = online(), FakeSecretStore *theirKeyring = keyringWith(),
+                     FakeGameWatcher *theGame = nullptr)
         : shortcuts(theirs)
         , keyring(theirKeyring)
         , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
               std::unique_ptr<SecretStore>(keyring), std::make_unique<FakeOpener>(),
-              std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths)
+              std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths,
+              std::unique_ptr<GameWatcher>(theGame))
     {}
 
     // once the keyring has said, which it does a moment after the app starts
@@ -498,6 +501,31 @@ private Q_SLOTS:
         r.app.checker().check();
         Q_EMIT r.input->copyFailed(GameInput::Failure::NothingCopied, {}, std::nullopt);
         QVERIFY(r.app.checker().popup().message().contains(u"press F5"_s));
+    }
+
+    void yourKeyThroughTheGameClosing()
+    {
+        // 2 is the owner's, who types it in other programs
+        Folders folders;
+        Settings settings;
+        settings.overlay.hotkey = u"2"_s;
+        folders.set(settings);
+        auto *game = new FakeGameWatcher;
+        Running r(folders, desktop(), online(), keyringWith(), game);
+        // not taken until the game runs, and still the key you chose
+        QVERIFY(!r.shortcuts->grabbed);
+        QCOMPARE(r.app.settings().settings().overlay.hotkey, u"2"_s);
+        game->setRunning(true);
+        QVERIFY(r.shortcuts->grabbed);
+        game->setRunning(false);
+        QVERIFY(!r.shortcuts->grabbed);
+        QCOMPARE(r.app.settings().settings().overlay.hotkey, u"2"_s);
+        QCOMPARE(SettingsStore(folders.paths.settings).settings().overlay.hotkey, u"2"_s);
+        // and it works when the game comes back
+        game->setRunning(true);
+        r.app.checker().check();
+        Q_EMIT r.shortcuts->activated(u"check-item"_s);
+        QCOMPARE(r.input->copies, 1);
     }
 
     void changedOnTheDesktop()

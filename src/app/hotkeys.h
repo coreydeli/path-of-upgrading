@@ -8,10 +8,13 @@
 
 namespace pou {
 
+class GameWatcher;
 class GlobalShortcuts;
 
 // The app's keys that work while the game has the keyboard. The desktop keeps
-// them, so on KDE they show in System Settings too.
+// them, so on KDE they show in System Settings too. With a game watcher they
+// are only taken from other programs while the game is running, so a key like
+// 2 can still be typed everywhere else.
 class Hotkeys : public QObject
 {
     Q_OBJECT
@@ -23,8 +26,9 @@ public:
     };
     Q_ENUM(Hotkey)
 
-    // The shortcuts have to outlive it.
-    explicit Hotkeys(GlobalShortcuts *shortcuts, QObject *parent = nullptr);
+    // The shortcuts and the watcher have to outlive it. Without a watcher the
+    // keys are always taken.
+    explicit Hotkeys(GlobalShortcuts *shortcuts, GameWatcher *game = nullptr, QObject *parent = nullptr);
 
     // Adds them with the keys in the settings, which the desktop only takes
     // the first time. After that each has the key it had there. Without
@@ -37,6 +41,8 @@ public:
     // hotkey has it, and it keeps the one it had. Empty takes its key away.
     bool setKey(Hotkey hotkey, const QString &key);
 
+    // Whether they're only taken while the game is running.
+    bool followsGame() const { return m_game != nullptr; }
     bool isAvailable() const;
     QString errorString() const;
 
@@ -47,6 +53,7 @@ Q_SIGNALS:
 
 private:
     GlobalShortcuts *m_shortcuts;
+    GameWatcher *m_game;
 };
 
 } // namespace pou
