@@ -184,6 +184,12 @@ void App::lookForPob()
         m_pob.setUnavailable(why);
 }
 
+void App::updatePob()
+{
+    lookForPob();
+    m_buildImporter.refreshBuilds();
+}
+
 void App::followSettings()
 {
     const Settings &settings = m_settings.settings();
