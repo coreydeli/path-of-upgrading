@@ -396,7 +396,7 @@ jobs:
   # once every stage has passed or been left out, as they are for the docs.
   ci:
     name: CI
-    needs: [changes, format, arch, debian, windows]
+    needs: [changes, format, arch, debian, fedora, fedora-install, windows]
     if: always()
     runs-on: ubuntu-latest
     steps:
