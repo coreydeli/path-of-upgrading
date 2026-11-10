@@ -196,31 +196,25 @@ private Q_SLOTS:
     {
         QTest::addColumn<bool>("enabled");
         QTest::addColumn<bool>("soloSelfFound");
-        QTest::addColumn<bool>("beta");
         QTest::addColumn<QString>("why");
         const QString how = u"Turn them on with Search the trade site, on the Trade page."_s;
         const QString off = u"Trade searches are turned off. "_s + how;
-        const QString testing =
-            u"Trade searches are off in this release while they're still being tested. "_s + how;
         const QString solo = u"There's no trading in solo self-found, so trade searches are off."_s;
-        QTest::newRow("on") << true << false << false << QString();
-        QTest::newRow("on in a beta") << true << false << true << QString();
-        QTest::newRow("turned off in a beta") << false << false << true << off;
-        QTest::newRow("off in a release") << false << false << false << testing;
-        QTest::newRow("solo self-found") << true << true << false << solo;
-        QTest::newRow("both") << false << true << true << off;
+        QTest::newRow("on") << true << false << QString();
+        QTest::newRow("off") << false << false << off;
+        QTest::newRow("solo self-found") << true << true << solo;
+        QTest::newRow("both") << false << true << off;
     }
 
     void tradeOff()
     {
         QFETCH(bool, enabled);
         QFETCH(bool, soloSelfFound);
-        QFETCH(bool, beta);
         QFETCH(QString, why);
         TradeSettings trade;
         trade.enabled = enabled;
         trade.league.soloSelfFound = soloSelfFound;
-        QCOMPARE(tradeUnavailable(trade, beta), why);
+        QCOMPARE(tradeUnavailable(trade), why);
     }
 
     void everySettingHasItsOwnKey()

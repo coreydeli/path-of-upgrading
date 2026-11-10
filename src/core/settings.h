@@ -20,7 +20,8 @@ constexpr int minRateMinutes = 1;
 constexpr int maxRateMinutes = 60;
 
 // Whether this is a beta, as the release builds of one say with POU_BETA.
-// Trade searches start on in a beta and off otherwise, until you choose.
+// Trade searches are only in a beta, where they start on until you choose. A
+// release leaves them out, whatever the settings say.
 bool isBetaBuild();
 
 struct TradeSettings
@@ -37,9 +38,8 @@ struct TradeSettings
 };
 
 // Why there are no trade searches with these settings, or empty when there
-// are. When they're off it says how to turn them on, and in a release that
-// they're still being tested.
-QString tradeUnavailable(const TradeSettings &settings, bool beta = isBetaBuild());
+// are. When they're off it says how to turn them on.
+QString tradeUnavailable(const TradeSettings &settings);
 
 struct PobSettings
 {
