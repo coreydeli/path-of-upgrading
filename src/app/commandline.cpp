@@ -53,13 +53,34 @@ QString CommandLine::helpText()
     return m_parser.helpText();
 }
 
+#ifndef Q_OS_WIN
+namespace {
+
+// A path for an Exec line, quoted as the desktop entry spec asks
+QString quoted(const QString &path)
+{
+    QString text = u"\""_s;
+    for (const QChar c : path) {
+        if (c == u'"' || c == u'`' || c == u'$' || c == u'\\')
+            text += u'\\';
+        text += c;
+    }
+    return text + u'"';
+}
+
+} // namespace
+#endif
+
 QString CommandLine::backgroundCommand()
 {
 #ifdef Q_OS_WIN
     // which Windows runs by its whole path
     const QString program = u'"' + QDir::toNativeSeparators(QCoreApplication::applicationFilePath()) + u'"';
 #else
-    const QString program = QCoreApplication::applicationName();
+    // An AppImage runs from a mount that's gone when it exits, so the entry
+    // has to start the file itself.
+    const QString image = qEnvironmentVariable("APPIMAGE");
+    const QString program = image.isEmpty() ? QCoreApplication::applicationName() : quoted(image);
 #endif
     return program + u" --"_s + backgroundOption;
 }
