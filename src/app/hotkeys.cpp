@@ -65,11 +65,12 @@ Hotkeys::Hotkeys(GlobalShortcuts *shortcuts, GameWatcher *game, QObject *parent)
     });
 }
 
-void Hotkeys::add(const OverlaySettings &settings)
+void Hotkeys::add(const OverlaySettings &settings, bool withResults)
 {
     m_shortcuts->add(idOf(Hotkey::Check), u"Check the item under the mouse"_s, sequenceOf(settings.hotkey));
-    m_shortcuts->add(idOf(Hotkey::Results), u"Show the trade results for it"_s,
-                     sequenceOf(settings.resultsHotkey));
+    if (withResults)
+        m_shortcuts->add(idOf(Hotkey::Results), u"Show the trade results for it"_s,
+                         sequenceOf(settings.resultsHotkey));
 }
 
 QString Hotkeys::key(Hotkey hotkey) const

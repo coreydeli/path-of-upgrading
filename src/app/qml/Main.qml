@@ -176,6 +176,7 @@ Kirigami.ApplicationWindow {
                 objectName: "tradeAction"
                 text: qsTr("Trade")
                 icon.name: "taxes-finances"
+                visible: root.app.tradeOffered
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(tradePage)
@@ -298,6 +299,7 @@ Kirigami.ApplicationWindow {
         OverlayPage {
             id: overlayPage
             options: root.app.overlayOptions
+            tradeOffered: root.app.tradeOffered
         }
 
         AppearancePage {

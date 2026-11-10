@@ -31,8 +31,9 @@ public:
     explicit Hotkeys(GlobalShortcuts *shortcuts, GameWatcher *game = nullptr, QObject *parent = nullptr);
 
     // Adds them with the keys in the settings, which the desktop only takes
-    // the first time. After that each has the key it had there.
-    void add(const OverlaySettings &settings);
+    // the first time. After that each has the key it had there. Without
+    // results it leaves that one out.
+    void add(const OverlaySettings &settings, bool withResults = true);
 
     // As you'd press it, "F2", or empty when it has none.
     QString key(Hotkey hotkey) const;
