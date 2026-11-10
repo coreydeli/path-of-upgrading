@@ -200,8 +200,8 @@ ColumnsPage {
         NumberField {
             objectName: "resistMargin"
             visible: gearPage.resists.known
-            label: qsTr("Margin over the maximum")
-            description: qsTr("How far over it a resistance has to be to count as capped, for what isn't always on, like a charm.")
+            label: qsTr("Safety buffer")
+            description: qsTr("How far over the maximum you want each resistance to stay. Some of what counts towards them, like a charm, isn't always on, so an item that leaves you closer than this gets a warning.")
             maximum: 100
             value: gearPage.resists.margin
             onEdited: value => gearPage.resists.margin = value
