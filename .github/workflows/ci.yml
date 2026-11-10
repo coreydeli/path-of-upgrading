@@ -206,6 +206,26 @@ jobs:
           name: dist-debian
           path: build/path-of-upgrading_*.deb
           if-no-files-found: error
+      # The AppImage is made from this build, as Debian 13 is the oldest
+      # system it can run on. The Wayland plugins, the SVG icon engine and
+      # LayerShellQt's plugin are only found when they're installed.
+      - name: Make the AppImage
+        if: inputs.package
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          apt-get install -y --no-install-recommends curl file binutils \
+              qt6-wayland qt6-svg-plugins layer-shell-qt
+          mkdir dist
+          cd dist
+          sh ../.github/scripts/package-appimage.sh ../build "${TAG#v}"
+          rm -rf AppDir
+      - uses: actions/upload-artifact@v7
+        if: inputs.package
+        with:
+          name: dist-appimage
+          path: dist/PathOfUpgrading-*-x86_64.AppImage
+          if-no-files-found: error
 
   # The package is made by rpmbuild, which builds it from the tarball of the
   # source, tests it and packs it in one go, as makepkg does on Arch. LTO is
@@ -297,6 +317,27 @@ jobs:
           status=0
           timeout 10 dbus-run-session -- path-of-upgrading || status=$?
           test "$status" -eq 124
+
+  # On other distributions with nothing else, to see that the AppImage has
+  # the QML modules and plugins it needs, and starts.
+  appimage-check:
+    name: Run the AppImage
+    if: inputs.package
+    needs: debian
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [fedora:latest, archlinux:latest]
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-appimage
+          path: dist
+      - name: Start it
+        run: sh .github/scripts/check-appimage.sh dist/PathOfUpgrading-*-x86_64.AppImage
 
   windows:
     name: Windows
@@ -396,7 +437,7 @@ jobs:
   # once every stage has passed or been left out, as they are for the docs.
   ci:
     name: CI
-    needs: [changes, format, arch, debian, windows]
+    needs: [changes, format, arch, debian, appimage-check, windows]
     if: always()
     runs-on: ubuntu-latest
     steps:
