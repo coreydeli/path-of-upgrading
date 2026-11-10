@@ -92,7 +92,8 @@ ProfileStat mana(double importance = 3)
 
 ProfileStat weaponDps()
 {
-    return stat(u"Weapon DPS"_s, uR"(^\[Weapon\] Total DPS$)"_s, PerSlot({{u"Weapon"_s, 10}}), 400);
+    return stat(u"Weapon damage per second"_s, uR"(^\[Weapon\] Total DPS$)"_s, PerSlot({{u"Weapon"_s, 10}}),
+                400);
 }
 
 ProfileStat spirit(double importance)
@@ -522,6 +523,7 @@ void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId)
         {u"Crit"_s, crit},
         {u"Base crit chance"_s, u"Base critical hit chance"_s},
         {u"Minion crit"_s, u"Minion critical hit chance and damage bonus"_s},
+        {u"Weapon DPS"_s, u"Weapon damage per second"_s},
     };
     for (const auto &[from, to] : renamed) {
         const auto old = tweaks.find(from);

@@ -18,6 +18,7 @@ struct WantedStat
 {
     QString label; // "Life"
     double minimum = 0;
+    double best = 0; // the most the slot's items roll of it, 0 when that's not known
 
     friend bool operator==(const WantedStat &, const WantedStat &) = default;
 };
@@ -30,7 +31,7 @@ struct WantedStat
 QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearScoreOptions &options,
                               int count = 3);
 
-// "Life 60 or more, Cold res 25 or more".
+// "Life 60 or more (up to 149), Cold res 25 or more".
 QString wantedText(const QList<WantedStat> &stats);
 
 struct Recommendation

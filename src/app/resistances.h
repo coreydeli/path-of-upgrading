@@ -15,8 +15,8 @@ class ActiveCharacter;
 struct Character;
 
 // The resistances of the character you play with what it wears now, as the
-// gear page shows them: from its build in Path of Building, or typed in off
-// the character sheet. Items are judged on whether they keep them capped.
+// gear page shows them: from its build in Path of Building, or typed in from
+// the game's character sheet. Items are judged on whether they keep them capped.
 class Resistances : public QObject
 {
     Q_OBJECT
@@ -25,10 +25,13 @@ class Resistances : public QObject
 
     // Some of them are known.
     Q_PROPERTY(bool known READ isKnown NOTIFY changed)
-    // They were typed in off the character sheet, so a build's don't replace
+    // They were typed in from the character sheet, so a build's don't replace
     // them. Turning it on starts from what's known, and off goes back to the
     // build's, or to none.
     Q_PROPERTY(bool fromSheet READ isFromSheet WRITE setFromSheet NOTIFY changed)
+    // Where they come from, as a plain line: the build, what you typed in, or
+    // that they aren't known yet.
+    Q_PROPERTY(QString sourceNote READ sourceNote NOTIFY changed)
     // "Fire 75%, Cold 60%, Lightning 75%, Chaos -20%", of those known.
     Q_PROPERTY(QString summary READ summary NOTIFY changed)
     // Each as the character sheet has it, over the maximum too, 0 when it
@@ -54,6 +57,7 @@ public:
     bool isFromSheet() const;
     void setFromSheet(bool fromSheet);
     QString summary() const;
+    QString sourceNote() const;
 
     double value(Element e) const;
     void setValue(Element e, double value);
