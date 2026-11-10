@@ -2861,7 +2861,9 @@ private Q_SLOTS:
                  u"Divine Orb turns your budget into one currency. Right now a Divine Orb is 400 Exalted "
                  u"Orbs in Runes of Aldur."_s);
         QCOMPARE(w.find(u"rateMinutes"_s)->property("label").toString(),
-                 u"Update poe.ninja's prices every"_s);
+                 u"Update poe.ninja's prices automatically"_s);
+        QCOMPARE(w.find(u"rateMinutes"_s)->property("unit").toString(), u"minutes"_s);
+        QVERIFY(w.settings().trade.rateMinutes > 1);
         QCOMPARE(w.find(u"divineRate"_s)->property("label").toString(), u"Exalted Orbs to a Divine Orb"_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("description").toString(),
                  u"Used when poe.ninja's prices are off, or it has no price yet."_s);
@@ -2909,10 +2911,14 @@ private Q_SLOTS:
         // and is asked for again every ten minutes, as it says
         QObject *minutes = w.find(u"rateMinutes"_s);
         QCOMPARE(minutes->property("description").toString(),
-                 u"How many minutes to wait between updates. Prices updated just now."_s);
+                 u"Asks poe.ninja again after this many minutes, from 1 to 60. Prices updated just now."_s);
         QCOMPARE(w.spinBox(u"rateMinutes"_s)->property("value").toInt(), 10);
         QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 20, "valueModified"));
         QCOMPARE(w.settings().trade.rateMinutes, 20);
+        QCOMPARE(minutes->property("unit").toString(), u"minutes"_s);
+        QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 1, "valueModified"));
+        QCOMPARE(minutes->property("unit").toString(), u"minute"_s);
+        QVERIFY(setValue(w.spinBox(u"rateMinutes"_s), 20, "valueModified"));
         QCOMPARE(w.app->ratesRefresher().waitMinutes(), 20);
         QVERIFY(minutes->property("enabled").toBool());
 
@@ -2920,7 +2926,8 @@ private Q_SLOTS:
         QCOMPARE(w.settings().trade.autoRate, false);
         // when it isn't, there's nothing to wait for
         QVERIFY(!minutes->property("enabled").toBool());
-        QCOMPARE(minutes->property("description").toString(), u"How many minutes to wait between updates."_s);
+        QCOMPARE(minutes->property("description").toString(),
+                 u"Asks poe.ninja again after this many minutes, from 1 to 60."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
         QVERIFY(setValue(w.spinBox(u"divineRate"_s), 3505, "valueModified"));
         QCOMPARE(w.settings().trade.budget.divineRate, 350.5);
@@ -2938,8 +2945,9 @@ private Q_SLOTS:
                     ->property("description")
                     .toString()
                     .endsWith(u" It has no price yet."_s));
-        QCOMPARE(w.find(u"rateMinutes"_s)->property("description").toString(),
-                 u"How many minutes to wait between updates. The prices haven't come in yet."_s);
+        QCOMPARE(
+            w.find(u"rateMinutes"_s)->property("description").toString(),
+            u"Asks poe.ninja again after this many minutes, from 1 to 60. The prices haven't come in yet."_s);
         QCOMPARE(w.find(u"divineRate"_s)->property("enabled").toBool(), true);
     }
 

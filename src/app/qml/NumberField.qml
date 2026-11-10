@@ -18,6 +18,8 @@ FormCard.AbstractFormDelegate {
     property int decimals: 0
     // what 0 shows as, when it means there's none
     property string noneText
+    // the unit, said after the number
+    property string unit
 
     signal edited(real value)
 
@@ -57,6 +59,12 @@ FormCard.AbstractFormDelegate {
             noneText: row.noneText
             onEdited: number => row.edited(number)
             Accessible.name: row.label
+        }
+
+        QQC2.Label {
+            objectName: "unitLabel"
+            visible: text !== ""
+            text: row.unit
         }
     }
 }
