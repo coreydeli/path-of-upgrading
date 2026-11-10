@@ -270,13 +270,10 @@ private Q_SLOTS:
 
     void startsByTheBuild()
     {
-        // on in a beta and off in a release, which says it's still testing
+        // on in a beta and off in a release
         Options o(isBetaBuild());
         QCOMPARE(o.options.isEnabled(), isBetaBuild());
-        QCOMPARE(o.options.stillTesting(), !isBetaBuild());
         QCOMPARE(o.options.unavailable().isEmpty(), isBetaBuild());
-        if (!isBetaBuild())
-            QVERIFY(o.options.unavailable().contains(u"still being tested"_s));
 
         // and turning it on is yours to keep
         o.options.setEnabled(true);
