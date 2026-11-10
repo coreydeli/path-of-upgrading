@@ -13,17 +13,43 @@ Kirigami.ApplicationWindow {
     // Starts with the window hidden, as when it starts with the desktop
     property bool startHidden: false
 
+    // The group in the sidebar that holds a page, if one does
+    function groupOf(page: Item): Kirigami.Action {
+        if (page === gearScorePage || page === weightsPage || page === ignoredPage)
+            return gearGroupAction;
+        if (page === overlayPage || page === appearancePage)
+            return settingsGroupAction;
+        return null;
+    }
+
+    // The drawer's row for an action, looking down from an item. Kirigami has no
+    // call that goes into a submenu, so we press the row as you would.
+    function rowOf(action: Kirigami.Action, from: var): var {
+        if (from.tAction === action && from.trigger)
+            return from;
+        for (const child of from.children) {
+            const found = rowOf(action, child);
+            if (found)
+                return found;
+        }
+        return null;
+    }
+
     // an Item, as Qt 6.8 warns that it can't check a Kirigami.Page argument
     function show(page: Item): void {
         pageStack.clear();
         pageStack.push(page);
-        // The sidebar stays on Gear while you move between its pages, and
-        // goes back to the top for any other. A drawer you pull out lets go
-        // either way.
-        if (page !== gearScorePage && page !== weightsPage && page !== ignoredPage)
+        // The sidebar stays on a group while you move between its pages, and
+        // goes to the group of any other page, or to the top. A drawer you
+        // pull out lets go either way.
+        const group = groupOf(page);
+        if (drawer.currentSubMenu !== group) {
             drawer.resetMenu();
-        else if (drawer.modal)
+            if (group)
+                rowOf(group, drawer.contentItem)?.trigger();
+        } else if (drawer.modal) {
             drawer.drawerOpen = false;
+        }
     }
 
     width: Kirigami.Units.gridUnit * 46
@@ -93,6 +119,7 @@ Kirigami.ApplicationWindow {
             },
             // the pages about how gear is judged, one level down
             Kirigami.Action {
+                id: gearGroupAction
                 objectName: "gearGroupAction"
                 text: qsTr("Gear")
                 icon.name: "rating"
@@ -153,21 +180,34 @@ Kirigami.ApplicationWindow {
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(tradePage)
             },
+            // popup and hotkeys, and how it looks, one level down
             Kirigami.Action {
-                objectName: "overlayAction"
+                id: settingsGroupAction
+                objectName: "settingsGroupAction"
                 text: qsTr("Settings")
                 icon.name: "settings-configure"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(overlayPage)
-            },
-            Kirigami.Action {
-                objectName: "appearanceAction"
-                text: qsTr("Appearance")
-                icon.name: "preferences-desktop-theme"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(appearancePage)
+                // lit while one of its pages is shown
+                checked: overlayAction.checked || appearanceAction.checked
+
+                Kirigami.Action {
+                    id: overlayAction
+                    objectName: "overlayAction"
+                    text: qsTr("Settings")
+                    icon.name: "settings-configure"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(overlayPage)
+                }
+
+                Kirigami.Action {
+                    id: appearanceAction
+                    objectName: "appearanceAction"
+                    text: qsTr("Appearance")
+                    icon.name: "preferences-desktop-theme"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(appearancePage)
+                }
             }
         ]
     }
