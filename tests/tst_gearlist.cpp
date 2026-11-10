@@ -127,6 +127,33 @@ private Q_SLOTS:
         QCOMPARE(g.in(u"Gloves"_s, GearList::GradeRole).toString(), QString());
     }
 
+    void noOffhandWithATwoHander()
+    {
+        const Item staff =
+            item(u"Staves"_s, u"Rare"_s, u"Doom Pillar"_s, u"Ashen Staff"_s, u"+20 to maximum Life"_s);
+        const Item focus =
+            item(u"Foci"_s, u"Rare"_s, u"Glow Lens"_s, u"Twig Focus"_s, u"+20 to maximum Life"_s);
+        Gear g;
+        Character c = wearing({{u"Weapon"_s, staff}});
+        g.play(c);
+        QVERIFY(!g.slotNames().contains(u"Offhand"_s));
+        QVERIFY(!g.list.hasExtras());
+
+        // an empty offhand counts when the character can use both
+        c.wielding.focusWithStaff = true;
+        const QString id = g.store.ids().first();
+        QVERIFY(g.store.save(id, c));
+        g.active.setId(id);
+        QVERIFY(g.slotNames().contains(u"Offhand"_s));
+
+        // and one that's worn is listed whatever the weapon is
+        c.wielding = {};
+        c.gear.insert(u"Offhand"_s, focus);
+        QVERIFY(g.store.save(id, c));
+        g.active.setId(id);
+        QVERIFY(g.slotNames().contains(u"Offhand"_s));
+    }
+
     void extras()
     {
         Gear g;

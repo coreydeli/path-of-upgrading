@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/hands.h"
 #include "core/item.h"
 #include "core/verdict.h"
 #include "core/weights.h"
@@ -64,9 +65,10 @@ void sortRows(QList<StatRow> &rows);
 // into an empty slot if there is one, else replace your weakest; two-handed
 // weapons replace a weapon set's weapon and offhand together. An item you
 // wear is compared with itself, where you wear it. Name a slot to compare it
-// with what's there instead.
+// with what's there instead. A two-handed weapon the character can use with an
+// offhand, see twoHandedWithOffhand(), replaces only the weapon.
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &weights,
-                   const StatFilter &ignore = {}, const QString &slot = {});
+                   const StatFilter &ignore = {}, const QString &slot = {}, const Wielding &wielding = {});
 
 // The note compare() adds when none of the stats that change have a weight.
 QString unweightedNote();

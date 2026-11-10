@@ -21,6 +21,12 @@ using namespace Qt::Literals::StringLiterals;
 namespace pou {
 namespace {
 
+// The passive tree's ids for them, the same in every tree version Path of
+// Building 2 has shipped: the Giant's Blood keystone, and Instruments of Power,
+// the Disciple of Varashta's notable.
+constexpr int giantsBloodNode = 32349;
+constexpr int instrumentsOfPowerNode = 20701;
+
 // A build is a few hundred kB of XML, so whatever inflates past this isn't one.
 constexpr qsizetype maxXmlSize = 32 * 1024 * 1024;
 
@@ -321,10 +327,16 @@ ItemSet readItemSet(QXmlStreamReader &reader)
     return set;
 }
 
-// The ids of the jewels in one of the build's passive trees, in the order
-// of their nodes. A jewel stays put when you take back the socket's point,
-// but then it doesn't count.
-QList<int> readSpec(QXmlStreamReader &reader)
+// One of the build's passive trees: the ids of its jewels in the order of
+// their nodes, and the nodes it has allocated. A jewel stays put when you take
+// back the socket's point, but then it doesn't count.
+struct Spec
+{
+    QList<int> jewels;
+    QSet<int> allocated;
+};
+
+Spec readSpec(QXmlStreamReader &reader)
 {
     const QXmlStreamAttributes attributes = reader.attributes();
     QSet<int> allocated;
@@ -345,7 +357,7 @@ QList<int> readSpec(QXmlStreamReader &reader)
             reader.skipCurrentElement();
         }
     }
-    return jewels.values();
+    return {.jewels = jewels.values(), .allocated = allocated};
 }
 
 // The numbers the build saved for its sidebar, by name: "Life", "FireResist"...
@@ -638,7 +650,7 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
     QHash<int, QString> items;
     QList<ItemSet> itemSets;
     int activeItemSet = 0;
-    QList<QList<int>> trees;
+    QList<Spec> trees;
     int activeTree = 0;
     while (reader.readNextStartElement()) {
         const QXmlStreamAttributes attributes = reader.attributes();
@@ -690,10 +702,13 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
         }
     }
     if (!trees.isEmpty()) {
-        for (const int id : trees.at(std::clamp<qsizetype>(activeTree, 1, trees.size()) - 1)) {
+        const Spec &tree = trees.at(std::clamp<qsizetype>(activeTree, 1, trees.size()) - 1);
+        for (const int id : tree.jewels) {
             if (const auto item = items.constFind(id); item != items.cend())
                 build.jewels << convertPobItem(*item, u"Jewel"_s);
         }
+        build.wielding.twoHandedInOne = tree.allocated.contains(giantsBloodNode);
+        build.wielding.focusWithStaff = tree.allocated.contains(instrumentsOfPowerNode);
     }
 
     for (Element e : allElements) {

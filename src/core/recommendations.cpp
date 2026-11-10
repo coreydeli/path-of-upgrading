@@ -2,6 +2,7 @@
 #include "core/recommendations.h"
 
 #include "core/evaluation.h"
+#include "core/hands.h"
 #include "core/numbers.h"
 #include "core/slots.h"
 #include "core/statsources.h"
@@ -71,9 +72,6 @@ QString wantedText(const QList<WantedStat> &stats)
 QList<Recommendation> recommendedUpgrades(const Character &character, const PobPriorities &priorities,
                                           int count)
 {
-    const auto weapon = character.gear.constFind(u"Weapon"_s);
-    const bool twoHanded = weapon != character.gear.cend() && weapon->twoHanded;
-
     QList<Recommendation> empty;
     QList<Recommendation> worn;
     for (const QString &slot : mainSlots()) {
@@ -81,7 +79,7 @@ QList<Recommendation> recommendedUpgrades(const Character &character, const PobP
         const GearScoreOptions options = gearScoreOptions(character, slot, priorities);
         Recommendation r{.slot = slot};
         if (item == character.gear.cend()) {
-            if (slot == u"Offhand" && twoHanded)
+            if (offhandOutOfUse(character.gear, character.wielding, slot))
                 continue;
             r.wants = wantedStats(slot, nullptr, options);
             if (!r.wants.isEmpty())

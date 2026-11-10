@@ -12,6 +12,7 @@ add_library(pou_core STATIC
     evaluation.cpp evaluation.h
     firstrun.cpp firstrun.h
     gearscore.cpp gearscore.h
+    hands.cpp hands.h
     ignore.cpp ignore.h
     item.h
     league.cpp league.h

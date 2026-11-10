@@ -74,6 +74,8 @@ BuildImport importBuild(const Character &character, const PobBuild &build)
             ++out.withoutDamage;
     }
 
+    c.wielding = build.wielding;
+
     if (!c.profilePicked) {
         const QString fitting = fittingProfile(build);
         const QString had = c.buildProfile.isEmpty() ? defaultBuildProfile.toString() : c.buildProfile;
