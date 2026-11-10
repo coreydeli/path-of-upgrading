@@ -29,6 +29,8 @@ public:
     ItemChecker(QQmlEngine *engine, GameInput *input, QObject *parent = nullptr);
 
     void setSettings(const Settings &settings);
+    // Rates waystones and tablets, or shows them as it did before.
+    void setMapsOffered(bool offered);
     // The character you play and its build, none when it has none. The item
     // the popup shows is judged again for it.
     void setCharacter(const Character &character, const std::optional<PobBuild> &build);

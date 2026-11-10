@@ -4,6 +4,7 @@
 #include "core/characterstore.h"
 #include "core/evaluation.h"
 #include "core/item.h"
+#include "core/mapcheck.h"
 #include "core/places.h"
 #include "core/pobbuild.h"
 #include "core/pobverdict.h"
@@ -38,6 +39,8 @@ struct ItemCheck
     // How it does in each place it could go, when there are several with
     // something worn in them. By Path of Building once it has judged it.
     QList<PlaceChange> places;
+    // For a waystone or a tablet, when maps are checked. It has no gear verdict.
+    std::optional<MapCheck> map;
 };
 
 // What items are judged by.
@@ -52,7 +55,13 @@ struct Judging
     // What matters to you, for the gear scores too. Chaos Inoculation goes
     // by the character.
     PobVerdictOptions options;
+    // Whether waystones and tablets are rated, see Paths::mapsOffered.
+    bool maps = false;
 };
+
+// What the map rating knows of the character: its resistances and the life and
+// energy shield of its build.
+MapBuild mapBuildOf(const Character &character, const std::optional<PobBuild> &build);
 
 // How the item does by its gear scores or your weights. It's Checking when
 // Path of Building is to be asked about it.
@@ -82,6 +91,8 @@ public:
     void setPriorities(const PobPriorities &priorities);
     // How much of Path of Building's score is damage, from 0 to 1.
     void setDamageWeight(double weight);
+    // Rate waystones and tablets. They're left alone otherwise.
+    void setMaps(bool on);
 
     // Judges the item in place of the one before. checked() has how it does
     // straight away, and again once Path of Building has answered.
