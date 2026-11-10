@@ -21,6 +21,10 @@ on, are pre-releases of this version.
   `PathOfUpgrading-<version>-x86_64.AppImage`, for most current distros. Make
   it executable and run it.
 
+- In a beta, a waystone or a precursor tablet is rated by its mods when you
+  check it, with what each one gives and what it costs. It is experimental, and
+  a release shows a waystone as before.
+
 ### Changed
 
 - The hotkeys are only taken while Path of Exile 2 is running. The rest of the
