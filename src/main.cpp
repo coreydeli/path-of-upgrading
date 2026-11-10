@@ -5,6 +5,7 @@
 #include "app/fonts.h"
 #include "core/pobinstall.h"
 #include "platform/gameinput.h"
+#include "platform/gamewatcher.h"
 #include "platform/globalshortcuts.h"
 #include "platform/notifier.h"
 #include "platform/opener.h"
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
     // made after the engine so it goes first, as its popup and results windows come from the engine
     pou::App root(&engine, pou::createGameInput(), pou::createGlobalShortcuts(), pou::createSecretStore(),
                   pou::createOpener(), std::make_unique<QNetworkAccessManager>(), pou::pobPlaces(),
-                  pou::App::defaultPaths());
+                  pou::App::defaultPaths(), pou::createGameWatcher());
     const std::unique_ptr<pou::Tray> tray = pou::createTray();
     const std::unique_ptr<pou::Notifier> notifier = pou::createNotifier(tray.get());
     pou::Desktop desktop(tray.get(), notifier.get(), root.overlayOptions(), &root.hotkeys());

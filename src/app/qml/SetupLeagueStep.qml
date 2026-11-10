@@ -8,6 +8,8 @@ ColumnLayout {
     id: step
 
     required property TradeOptions options
+    // Without trade searches there's nothing to turn off in solo self-found.
+    property bool tradeOffered: true
 
     spacing: 0
 
@@ -44,7 +46,7 @@ ColumnLayout {
         SwitchRow {
             objectName: "setupSoloSwitch"
             text: qsTr("Solo self-found")
-            description: qsTr("There's no trading in solo self-found, so this turns trade searches off.")
+            description: step.tradeOffered ? qsTr("There's no trading in solo self-found, so this turns trade searches off.") : qsTr("For characters that play without trading.")
             checked: step.options.soloSelfFound
             onToggled: step.options.soloSelfFound = checked
         }

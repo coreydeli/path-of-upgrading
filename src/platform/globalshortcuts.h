@@ -29,6 +29,12 @@ public:
     // Whether it has the key now. When another program has it, or another of
     // ours does, it keeps the one it had.
     virtual bool setKey(const QString &id, const QKeySequence &key) = 0;
+    // Whether the keys are taken from other programs. They start taken. Off,
+    // they keep their keys but let other programs have them, which is how
+    // they're kept from getting in the way while the game isn't running. It
+    // can be set before they're added. When another program has a key by the
+    // time they're taken again, it has none and keyChanged says so.
+    virtual void setGrabbed(bool grabbed) = 0;
 
 Q_SIGNALS:
     void activated(const QString &id);

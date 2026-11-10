@@ -69,6 +69,8 @@ BuildRequires:  xorg-x11-xauth
 Requires:       hicolor-icon-theme
 Requires:       qt6-qtdeclarative
 Requires:       qt6-qtwayland
+# the Wayland plugin the overlay sits over the game with
+Requires:       layer-shell-qt
 Requires:       kf6-kirigami
 Requires:       kf6-kirigami-addons
 Requires:       kf6-kdeclarative

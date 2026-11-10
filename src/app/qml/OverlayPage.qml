@@ -12,6 +12,8 @@ ColumnsPage {
     required property OverlayOptions options
     // the results key is for trade searches
     property bool tradeOffered: true
+    // the league, which has no page of its own without trade
+    property TradeOptions tradeOptions
     // whether the last key you chose was refused
     property bool refused: false
     readonly property var positions: [
@@ -60,6 +62,18 @@ ColumnsPage {
             description: qsTr("Opens the listings of your last trade search, and closes them again.")
             key: overlayPage.options.resultsKey
             onChosen: key => overlayPage.refused = !overlayPage.options.setResultsKey(key)
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: gameOnlyText.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: gameOnlyText
+            objectName: "gameOnlyNote"
+            visible: overlayPage.options.hotkeysFollowGame
+            text: qsTr("These keys only work while Path of Exile 2 is running. The rest of the time other programs get them, so you can type them as usual.")
+            textItem.wrapMode: Text.Wrap
         }
 
         FormCard.FormDelegateSeparator {
@@ -198,6 +212,17 @@ ColumnsPage {
             value: overlayPage.options.autoHideSeconds
             onEdited: value => overlayPage.options.autoHideSeconds = value
         }
+    }
+
+    SectionHeader {
+        title: qsTr("League")
+        visible: !overlayPage.tradeOffered
+    }
+
+    LeagueCard {
+        visible: !overlayPage.tradeOffered
+        options: overlayPage.tradeOptions
+        tradeOffered: false
     }
 
     SectionHeader {

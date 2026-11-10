@@ -300,6 +300,7 @@ Kirigami.ApplicationWindow {
             id: overlayPage
             options: root.app.overlayOptions
             tradeOffered: root.app.tradeOffered
+            tradeOptions: root.app.tradeOptions
         }
 
         AppearancePage {

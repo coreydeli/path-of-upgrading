@@ -55,6 +55,16 @@ private Q_SLOTS:
         QVERIFY(CommandLine::backgroundCommand().endsWith(u" --background"_s));
     }
 
+#ifndef Q_OS_WIN
+    void backgroundInAnAppImage()
+    {
+        qputenv("APPIMAGE", "/made up/Made-up $1.AppImage");
+        const QString command = CommandLine::backgroundCommand();
+        qunsetenv("APPIMAGE");
+        QCOMPARE(command, u"\"/made up/Made-up \\$1.AppImage\" --background"_s);
+    }
+#endif
+
     void help()
     {
         CommandLine line;

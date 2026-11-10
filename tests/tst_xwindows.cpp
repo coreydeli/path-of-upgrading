@@ -51,6 +51,24 @@ private Q_SLOTS:
         QVERIFY(info.program.isEmpty());
     }
 
+    void findsTheGame()
+    {
+        SKIP_WITHOUT_X();
+        const xcb_window_t other = createWindow();
+        const xcb_window_t game = createWindow();
+        const char otherClass[] = "notepad\0Notepad";
+        const char gameClass[] = "steam_app_2694490\0steam_app_2694490";
+        xcb_change_property(m_x.xcb(), XCB_PROP_MODE_REPLACE, other, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 8,
+                            sizeof(otherClass), otherClass);
+        xcb_change_property(m_x.xcb(), XCB_PROP_MODE_REPLACE, game, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 8,
+                            sizeof(gameClass), gameClass);
+        QVERIFY(!anyGameWindow(m_x, {}));
+        QVERIFY(!anyGameWindow(m_x, {other}));
+        QVERIFY(anyGameWindow(m_x, {other, game}));
+        xcb_destroy_window(m_x.xcb(), other);
+        xcb_destroy_window(m_x.xcb(), game);
+    }
+
     void pointer()
     {
         SKIP_WITHOUT_X();
