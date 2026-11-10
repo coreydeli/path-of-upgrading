@@ -42,6 +42,7 @@ private Q_SLOTS:
         entry.values[Element::Chaos] = -12;
         ember.resists = snapshotResists(entry, ember.gear, ResistSource::Pob);
         ember.chaosInoculation = true;
+        ember.wielding = {.twoHandedInOne = true, .focusWithStaff = true};
 
         const QJsonObject saved = toJson(ember);
         QCOMPARE(saved.value(u"version").toInt(), 1);
@@ -60,6 +61,7 @@ private Q_SLOTS:
         QCOMPARE(back.tweaks, ember.tweaks);
         QCOMPARE(back.resists, ember.resists);
         QVERIFY(back.chaosInoculation);
+        QCOMPARE(back.wielding, ember.wielding);
     }
 
     void nothingSaved()
@@ -69,6 +71,7 @@ private Q_SLOTS:
         QCOMPARE(fresh.weights, defaultWeights());
         QVERIFY(!fresh.resists);
         QVERIFY(!fresh.chaosInoculation);
+        QCOMPARE(fresh.wielding, Wielding{});
         QVERIFY(!fresh.profilePicked);
         QVERIFY(!toJson(fresh).contains(u"resists"));
     }
