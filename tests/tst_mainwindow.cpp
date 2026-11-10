@@ -856,7 +856,7 @@ private Q_SLOTS:
 
         // once it's there
         QVERIFY(makePob(folder));
-        QVERIFY(QMetaObject::invokeMethod(w.find(u"lookAgainButton"_s), "clicked"));
+        QVERIFY(QMetaObject::invokeMethod(w.find(u"updateButton"_s), "clicked"));
         QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
     }
 
