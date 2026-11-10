@@ -698,8 +698,16 @@ std::optional<PobBuild> parsePobBuild(const QString &xml)
 
     for (Element e : allElements) {
         const QString stat = elementName(e) + u"Resist"_s;
-        if (const auto value = stats.player.constFind(stat); value != stats.player.cend())
-            build.resists[e] = *value + stats.player.value(stat + u"OverCap"_s);
+        const auto value = stats.player.constFind(stat);
+        if (value == stats.player.cend())
+            continue;
+        build.resists[e] = *value + stats.player.value(stat + u"OverCap"_s);
+        // as it says, or by how far under it the resistance is
+        if (const auto max = stats.player.constFind(stat + u"Max"_s); max != stats.player.cend())
+            build.resistMax[e] = *max;
+        else if (const auto missing = stats.player.constFind(u"Missing"_s + stat);
+                 missing != stats.player.cend())
+            build.resistMax[e] = *value + *missing;
     }
     build.life = stats.player.value(u"Life"_s);
     build.energyShield = stats.player.value(u"EnergyShield"_s);

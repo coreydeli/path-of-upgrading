@@ -63,6 +63,9 @@ struct PobBuild
     // As Path of Building shows them plus however far over the maximum they
     // go. Unknown when the build doesn't say.
     PerElement<std::optional<double>> resists;
+    // The most each can be, with what the build's gear adds to that. Unknown
+    // when the build doesn't say.
+    PerElement<std::optional<double>> resistMax;
 
     // Also from the numbers it saved for its sidebar, and zero when it
     // doesn't say.

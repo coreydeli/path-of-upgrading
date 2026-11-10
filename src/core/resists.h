@@ -37,6 +37,12 @@ struct PerElement
 
     T &operator[](Element e) { return values[std::size_t(e)]; }
     const T &operator[](Element e) const { return values[std::size_t(e)]; }
+    static PerElement filled(const T &value)
+    {
+        PerElement all;
+        all.values.fill(value);
+        return all;
+    }
     friend bool operator==(const PerElement &, const PerElement &) = default;
 };
 
@@ -58,14 +64,17 @@ PerElement<double> gearMaxResists(const Equipped &equipped);
 struct ResistEntry
 {
     PerElement<std::optional<double>> values;
-    std::optional<double> cap;
+    // The most each can be, without what your gear adds to that.
+    PerElement<std::optional<double>> cap;
     std::optional<double> buffer;
 };
 
 struct ResistRecord
 {
     PerElement<std::optional<double>> entered;
-    double cap = 75;
+    // The most each can be, without what your gear adds to that.
+    PerElement<double> cap = PerElement<double>::filled(75);
+    PerElement<bool> capSet; // you chose that one, so a new snapshot keeps it
     double buffer = 10;
     bool bufferSet = false; // you chose the buffer, so a new snapshot keeps it
     ResistSource source = ResistSource::Manual;
@@ -87,8 +96,7 @@ ResistRecord rebaseResists(ResistRecord record, const Item &oldItem, const Item 
 struct LiveResists
 {
     PerElement<std::optional<double>> values;
-    PerElement<double> caps; // the cap plus maximum resistance from gear
-    double cap = 75;
+    PerElement<double> caps; // each cap plus maximum resistance from gear
     double buffer = 0;
     ResistSource source = ResistSource::Pob;
     QDateTime at;

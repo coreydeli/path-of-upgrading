@@ -36,7 +36,7 @@ Verdict gearVerdict(int delta)
 
 double capOf(const LiveResists &resists, Element e)
 {
-    return resists.caps[e] != 0 ? resists.caps[e] : resists.cap;
+    return resists.caps[e] != 0 ? resists.caps[e] : 75;
 }
 
 // Chaos resistance counts when you say so or you had it capped, and never

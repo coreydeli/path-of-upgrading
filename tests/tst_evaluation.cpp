@@ -78,6 +78,20 @@ private Q_SLOTS:
         QVERIFY(!options.resistNeed[Element::Fire]);
     }
 
+    void eachResistanceNeedsToReachItsOwnMaximum()
+    {
+        Character c;
+        c.gear = {{u"Amulet"_s, amulet(u"+20% to Fire Resistance"_s)}};
+        c.resists = resists(c.gear, 60, 90, std::nullopt, 0);
+        c.resists->cap[Element::Cold] = 85;
+        c.resists->cap[Element::Chaos] = 70;
+
+        const GearScoreOptions options = gearScoreOptions(c, u"Amulet"_s, {.resistsFirst = false});
+        QCOMPARE(options.resistNeed[Element::Fire], 45.0);
+        QCOMPARE(options.resistNeed[Element::Cold], 5.0);
+        QCOMPARE(options.resistNeed[Element::Chaos], 80.0);
+    }
+
     void resistancesYouStillNeed()
     {
         Character c;
