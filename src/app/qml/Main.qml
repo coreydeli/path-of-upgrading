@@ -24,7 +24,7 @@ Kirigami.ApplicationWindow {
 
     // The drawer's row for an action, looking down from an item. Kirigami has no
     // call that goes into a submenu, so we press the row as you would.
-    function rowOf(action: Kirigami.Action, from: Item): Item {
+    function rowOf(action: Kirigami.Action, from: var): var {
         if (from.tAction === action && from.trigger)
             return from;
         for (const child of from.children) {
