@@ -18,7 +18,7 @@ WinGlobalShortcuts::WinGlobalShortcuts(QObject *parent)
 WinGlobalShortcuts::~WinGlobalShortcuts()
 {
     for (const Shortcut &shortcut : std::as_const(m_shortcuts)) {
-        if (!shortcut.key.isEmpty())
+        if (shortcut.held)
             UnregisterHotKey(nullptr, shortcut.number);
     }
 }
@@ -26,9 +26,12 @@ WinGlobalShortcuts::~WinGlobalShortcuts()
 void WinGlobalShortcuts::add(const QString &id, const QString &, const QKeySequence &key)
 {
     Q_ASSERT(!m_shortcuts.contains(id));
-    Shortcut shortcut = {.number = ++m_lastNumber};
-    if (take(shortcut.number, key))
-        shortcut.key = key;
+    Shortcut shortcut = {.number = ++m_lastNumber, .key = key};
+    if (m_grabbed) {
+        shortcut.held = !key.isEmpty() && take(shortcut.number, key);
+        if (!shortcut.held)
+            shortcut.key = QKeySequence();
+    }
     m_shortcuts.insert(id, shortcut);
 }
 
@@ -44,16 +47,53 @@ bool WinGlobalShortcuts::setKey(const QString &id, const QKeySequence &key)
         return false;
     if (key == shortcut->key)
         return true;
+    if (!m_grabbed) {
+        // it can't be tried without taking it, and it mustn't be another of ours
+        for (auto other = m_shortcuts.cbegin(); !key.isEmpty() && other != m_shortcuts.cend(); ++other) {
+            if (other.key() != id && other->key == key)
+                return false;
+        }
+        const bool free = key.isEmpty() || take(shortcut->number, key);
+        if (free && !key.isEmpty())
+            UnregisterHotKey(nullptr, shortcut->number);
+        if (free)
+            shortcut->key = key;
+        return free;
+    }
     const QKeySequence old = shortcut->key;
-    if (!old.isEmpty())
+    if (shortcut->held)
         UnregisterHotKey(nullptr, shortcut->number);
     if (!take(shortcut->number, key)) {
         // which it had a moment ago
-        take(shortcut->number, old);
+        shortcut->held = take(shortcut->number, old) && !old.isEmpty();
         return false;
     }
     shortcut->key = key;
+    shortcut->held = !key.isEmpty();
     return true;
+}
+
+void WinGlobalShortcuts::setGrabbed(bool grabbed)
+{
+    if (grabbed == m_grabbed)
+        return;
+    m_grabbed = grabbed;
+    for (auto shortcut = m_shortcuts.begin(); shortcut != m_shortcuts.end(); ++shortcut) {
+        if (!grabbed) {
+            if (shortcut->held)
+                UnregisterHotKey(nullptr, shortcut->number);
+            shortcut->held = false;
+            continue;
+        }
+        if (shortcut->key.isEmpty())
+            continue;
+        shortcut->held = take(shortcut->number, shortcut->key);
+        if (!shortcut->held) {
+            // another program has it now
+            shortcut->key = QKeySequence();
+            Q_EMIT keyChanged(shortcut.key(), QKeySequence());
+        }
+    }
 }
 
 bool WinGlobalShortcuts::take(int number, const QKeySequence &key)

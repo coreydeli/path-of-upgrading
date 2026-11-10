@@ -6,6 +6,7 @@
 #include "core/sessionguide.h"
 #include "core/weights.h"
 #include "fakegameinput.h"
+#include "fakegamewatcher.h"
 #include "fakeglobalshortcuts.h"
 #include "fakenetwork.h"
 #include "fakeopener.h"
@@ -172,7 +173,8 @@ struct Window
     // The settings are saved before it starts, or none for the first run.
     // It has trade, which a release build of the app leaves out.
     explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {},
-                    const std::optional<Settings> &saved = used(), bool tradeOffered = true)
+                    const std::optional<Settings> &saved = used(), bool tradeOffered = true,
+                    FakeGameWatcher *game = nullptr)
     {
         shortcuts->available = hotkeys;
         if (saved)
@@ -187,7 +189,8 @@ struct Window
                        .cache = dir.filePath(u"cache"_s),
                        .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
                        .colors = colors,
-                       .tradeOffered = tradeOffered});
+                       .tradeOffered = tradeOffered},
+            std::unique_ptr<GameWatcher>(game));
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
         QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
@@ -3073,6 +3076,19 @@ private Q_SLOTS:
         QCOMPARE(recorder->property("keySequence").value<QKeySequence>(), QKeySequence(u"Ctrl+Shift+D"_s));
         QCOMPARE(w.settings().overlay.resultsHotkey, u"Ctrl+Shift+D"_s);
         QCOMPARE(w.shortcuts->keys.value(u"check-item"_s), QKeySequence(Qt::Key_F2));
+    }
+
+    void saysWhenTheKeysOnlyWorkInTheGame()
+    {
+        Window always;
+        QVERIFY(always.show(u"overlayAction"_s));
+        QCOMPARE(always.find(u"gameOnlyNote"_s)->property("visible").toBool(), false);
+
+        auto *game = new FakeGameWatcher;
+        Window w(true, false, {}, used(), true, game);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QCOMPARE(w.find(u"gameOnlyNote"_s)->property("visible").toBool(), true);
+        QVERIFY(text(w.find(u"gameOnlyNote"_s)).contains(u"only work while Path of Exile 2 is running"_s));
     }
 
     void noHotkeys()

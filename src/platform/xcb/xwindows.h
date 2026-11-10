@@ -18,6 +18,9 @@ xcb_window_t activeWindow(XConnection &x);
 // see it in /proc.
 WindowInfo describeWindow(XConnection &x, xcb_window_t window);
 
+// Whether any of these windows is the game's.
+bool anyGameWindow(XConnection &x, const QList<xcb_window_t> &windows);
+
 // Where the mouse is on the X screen, and the program's window it's over.
 // The position is the X server's own, which KWin's Xwayland keeps up with over
 // Wayland windows too. The window is only there when the mouse is over one of
