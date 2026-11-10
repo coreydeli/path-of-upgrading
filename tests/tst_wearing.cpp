@@ -94,16 +94,33 @@ private Q_SLOTS:
         QVERIFY(worn->gear.contains(u"Offhand 2"_s));
     }
 
-    void offhandTakesTwoHands()
+    void offhandWontGoBesideTwoHands()
     {
-        Character c = wearing({{u"Weapon 2"_s, staff}, {u"Weapon"_s, staff}});
-        c.fromPob = {u"Weapon 2"_s};
-        const std::optional<Character> worn = wear(c, u"Offhand 2"_s, focus);
-        QVERIFY(worn);
-        QVERIFY(!worn->gear.contains(u"Weapon 2"_s));
-        QVERIFY(worn->fromPob.isEmpty());
-        QVERIFY(worn->gear.contains(u"Weapon"_s));
-        QVERIFY(worn->gear.contains(u"Offhand 2"_s));
+        Character c = wearing({{u"Weapon 2"_s, staff}, {u"Weapon"_s, wand}});
+        QVERIFY(!wear(c, u"Offhand 2"_s, focus));
+        QCOMPARE(slotsFor(focus, c), QStringList{u"Offhand"_s});
+        QCOMPARE(slotsFor(wand, c), (QStringList{u"Weapon"_s, u"Weapon 2"_s}));
+    }
+
+    void twoHandsKeepTheOffhandWhenTheyCan()
+    {
+        Character c = wearing({{u"Weapon"_s, wand}, {u"Offhand"_s, focus}});
+        QVERIFY(!wear(c, u"Weapon"_s, staff)->gear.contains(u"Offhand"_s));
+
+        c.wielding.focusWithStaff = true;
+        QVERIFY(wear(c, u"Weapon"_s, staff)->gear.contains(u"Offhand"_s));
+        // a staff needs a focus, though
+        c.gear.insert(u"Offhand"_s, quiver);
+        QVERIFY(!wear(c, u"Weapon"_s, staff)->gear.contains(u"Offhand"_s));
+
+        // and the offhand goes in beside the one it can be used with
+        Character staffed = wearing({{u"Weapon"_s, staff}});
+        QVERIFY(!wear(staffed, u"Offhand"_s, focus));
+        staffed.wielding.focusWithStaff = true;
+        const std::optional<Character> both = wear(staffed, u"Offhand"_s, focus);
+        QVERIFY(both);
+        QVERIFY(both->gear.contains(u"Weapon"_s));
+        QCOMPARE(slotsFor(focus, staffed), (QStringList{u"Offhand"_s, u"Offhand 2"_s}));
     }
 
     void oneHandKeepsTheOther()

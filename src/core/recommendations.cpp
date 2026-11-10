@@ -2,6 +2,7 @@
 #include "core/recommendations.h"
 
 #include "core/evaluation.h"
+#include "core/hands.h"
 #include "core/numbers.h"
 #include "core/slots.h"
 #include "core/statsources.h"
@@ -42,6 +43,8 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
     }
     std::ranges::stable_sort(weights, std::greater<>(), &SearchWeight::importance);
 
+    const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
+    const QString itemClass = worn && !worn->itemClass.isEmpty() ? worn->itemClass : classOfSlot(slot);
     QList<WantedStat> out;
     for (const SearchWeight &w : std::as_const(weights)) {
         double minimum = searchMinimum(w.cap);
@@ -49,7 +52,8 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
             minimum = std::min(minimum, std::ceil(*w.need));
         if (worn && rolledOn(*worn, w.pattern) >= minimum)
             continue;
-        out << WantedStat{.label = w.label, .minimum = minimum};
+        const auto top = mods.best(itemClass, w.key);
+        out << WantedStat{.label = w.label, .minimum = minimum, .best = top ? top->high : 0};
         if (out.size() == count)
             break;
     }
@@ -60,16 +64,14 @@ QString wantedText(const QList<WantedStat> &stats)
 {
     QStringList parts;
     for (const WantedStat &s : stats)
-        parts << s.label + u' ' + formatNumber(s.minimum) + u" or more"_s;
+        parts << s.label + u' ' + formatNumber(s.minimum) + u" or more"_s +
+                     (s.best > 0 ? u" (up to "_s + rollText(s.best) + u')' : QString());
     return parts.join(u", "_s);
 }
 
 QList<Recommendation> recommendedUpgrades(const Character &character, const PobPriorities &priorities,
                                           int count)
 {
-    const auto weapon = character.gear.constFind(u"Weapon"_s);
-    const bool twoHanded = weapon != character.gear.cend() && weapon->twoHanded;
-
     QList<Recommendation> empty;
     QList<Recommendation> worn;
     for (const QString &slot : mainSlots()) {
@@ -77,7 +79,7 @@ QList<Recommendation> recommendedUpgrades(const Character &character, const PobP
         const GearScoreOptions options = gearScoreOptions(character, slot, priorities);
         Recommendation r{.slot = slot};
         if (item == character.gear.cend()) {
-            if (slot == u"Offhand" && twoHanded)
+            if (offhandOutOfUse(character.gear, character.wielding, slot))
                 continue;
             r.wants = wantedStats(slot, nullptr, options);
             if (!r.wants.isEmpty())

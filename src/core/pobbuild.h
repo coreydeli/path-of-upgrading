@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/hands.h"
 #include "core/item.h"
 #include "core/resists.h"
 
@@ -59,10 +60,15 @@ struct PobBuild
     bool swapInUse = false;
     // In the order of the nodes they're socketed in.
     QList<PobItemText> jewels;
+    // What its passive tree lets it do with its hands.
+    Wielding wielding;
 
     // As Path of Building shows them plus however far over the maximum they
     // go. Unknown when the build doesn't say.
     PerElement<std::optional<double>> resists;
+    // The most each can be, with what the build's gear adds to that. Unknown
+    // when the build doesn't say.
+    PerElement<std::optional<double>> resistMax;
 
     // Also from the numbers it saved for its sidebar, and zero when it
     // doesn't say.

@@ -298,7 +298,8 @@ private Q_SLOTS:
         s.play(tester(u"es-attacker"_s));
         QCOMPARE(s.scoring.profile(), 2);
         QCOMPARE(s.scoring.profiles().at(2), u"Energy Shield attacker"_s);
-        QCOMPARE(s.of(u"Weapon DPS"_s, GearScoring::WhereRole).toString(), u"Counts on Weapon"_s);
+        QCOMPARE(s.of(u"Weapon damage per second"_s, GearScoring::WhereRole).toString(),
+                 u"Counts on Weapon"_s);
         QCOMPARE(s.of(u"Attack speed"_s, GearScoring::WhereRole).toString(),
                  u"Counts in every slot but Helmet, Body Armour, Boots, and Belt"_s);
         QCOMPARE(s.of(u"Movement speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);

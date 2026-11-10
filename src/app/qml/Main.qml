@@ -121,7 +121,7 @@ Kirigami.ApplicationWindow {
             Kirigami.Action {
                 id: gearGroupAction
                 objectName: "gearGroupAction"
-                text: qsTr("Gear")
+                text: qsTr("Gear Settings")
                 icon.name: "rating"
                 // lit while one of its pages is shown
                 checked: gearScoreAction.checked || weightsAction.checked || ignoredAction.checked

@@ -127,6 +127,33 @@ private Q_SLOTS:
         QCOMPARE(g.in(u"Gloves"_s, GearList::GradeRole).toString(), QString());
     }
 
+    void noOffhandWithATwoHander()
+    {
+        const Item staff =
+            item(u"Staves"_s, u"Rare"_s, u"Doom Pillar"_s, u"Ashen Staff"_s, u"+20 to maximum Life"_s);
+        const Item focus =
+            item(u"Foci"_s, u"Rare"_s, u"Glow Lens"_s, u"Twig Focus"_s, u"+20 to maximum Life"_s);
+        Gear g;
+        Character c = wearing({{u"Weapon"_s, staff}});
+        g.play(c);
+        QVERIFY(!g.slotNames().contains(u"Offhand"_s));
+        QVERIFY(!g.list.hasExtras());
+
+        // an empty offhand counts when the character can use both
+        c.wielding.focusWithStaff = true;
+        const QString id = g.store.ids().first();
+        QVERIFY(g.store.save(id, c));
+        g.active.setId(id);
+        QVERIFY(g.slotNames().contains(u"Offhand"_s));
+
+        // and one that's worn is listed whatever the weapon is
+        c.wielding = {};
+        c.gear.insert(u"Offhand"_s, focus);
+        QVERIFY(g.store.save(id, c));
+        g.active.setId(id);
+        QVERIFY(g.slotNames().contains(u"Offhand"_s));
+    }
+
     void extras()
     {
         Gear g;
@@ -200,7 +227,7 @@ private Q_SLOTS:
         const GearScore score = *gearScore(helmet, gearScoreOptions(c, u"Helmet"_s));
         QVERIFY(!score.missing.isEmpty());
         const QList<QStringList> notes = notesOf(g.in(u"Helmet"_s, GearList::NotesRole));
-        QCOMPARE(notes.first(), (QStringList{u"Missing"_s, score.missing.join(u", "_s)}));
+        QCOMPARE(notes.first(), (QStringList{u"Missing"_s, missingStats(score).join(u", "_s)}));
         QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.notScored.isEmpty()) +
                                    int(!weakRolls(score).isEmpty()));
 
@@ -221,10 +248,9 @@ private Q_SLOTS:
         QVERIFY(!score.notScored.isEmpty());
         QVERIFY(!weakRolls(score).isEmpty());
         QCOMPARE(notesOf(g.in(u"Body Armour"_s, GearList::NotesRole)),
-                 (QList<QStringList>{
-                     {u"Missing"_s, score.missing.join(u", "_s)},
-                     {u"Not scored"_s, notScoredStats(score).join(u", "_s)},
-                     {u"Weak rolls"_s, weakRolls(score).join(u", "_s) + u" of an excellent roll"_s}}));
+                 (QList<QStringList>{{u"Missing"_s, missingStats(score).join(u", "_s)},
+                                     {u"Not scored"_s, notScoredStats(score).join(u", "_s)},
+                                     {u"Weak rolls"_s, weakRolls(score).join(u", "_s)}}));
     }
 
     void whatTheBuildWantsInAnEmptySlot()
@@ -237,8 +263,10 @@ private Q_SLOTS:
         QStringList labels;
         for (const KeyStat &stat : top)
             labels << stat.label;
+        QCOMPARE(labels, QStringList{u"Life"_s});
+        // with the most gloves roll of it
         QCOMPARE(notesOf(g.in(u"Gloves"_s, GearList::NotesRole)),
-                 (QList<QStringList>{{u"Wants most"_s, labels.join(u", "_s)}}));
+                 (QList<QStringList>{{u"Wants most"_s, u"Life up to 149"_s}}));
 
         // before there's a character too, and not by your weights alone
         Gear nobody;

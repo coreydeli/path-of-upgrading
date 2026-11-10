@@ -58,6 +58,8 @@ QJsonObject toJson(const Character &character)
         {u"profilePicked"_s, character.profilePicked},
         {u"tweaks"_s, numbersToJson(character.tweaks)},
         {u"chaosInoculation"_s, character.chaosInoculation},
+        {u"twoHandedInOne"_s, character.wielding.twoHandedInOne},
+        {u"focusWithStaff"_s, character.wielding.focusWithStaff},
     };
     if (character.resists)
         o.insert(u"resists"_s, toJson(*character.resists));
@@ -94,6 +96,8 @@ std::optional<Character> characterFromJson(const QJsonObject &o)
     if (o.value(u"resists").isObject())
         c.resists = resistRecordFromJson(o.value(u"resists").toObject());
     c.chaosInoculation = o.value(u"chaosInoculation").toBool();
+    c.wielding = {.twoHandedInOne = o.value(u"twoHandedInOne").toBool(),
+                  .focusWithStaff = o.value(u"focusWithStaff").toBool()};
     return c;
 }
 

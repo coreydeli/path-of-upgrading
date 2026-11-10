@@ -108,6 +108,9 @@ public:
 
     // Looks for Path of Building again, as once you've installed it.
     Q_INVOKABLE void lookForPob();
+    // The Update button: looks again, and reads the builds saved in Path of
+    // Building's folder again too.
+    Q_INVOKABLE void updatePob();
 
     SettingsStore &settings() { return m_settings; }
     CharacterStore &characters() { return m_characters; }

@@ -514,7 +514,7 @@ ItemReport reportOf(const ItemCheck &check)
     report.rarity = item.rarity;
     report.gear = !item.slot.isEmpty();
     if (!r.isEquipped)
-        report.wearIn = slotsFor(item);
+        report.wearIn = e.wearIn;
     for (const PlaceChange &place : check.places)
         report.placements << placementOf(place);
     if (!item.baseType.isEmpty() && item.baseType != item.name)
