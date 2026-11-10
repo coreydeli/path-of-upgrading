@@ -31,6 +31,11 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   damage, Effective HP, Life or Energy Shield counts against it, and "Never
   lose damage" and "Never lose defences" make either one mean an item is never
   an upgrade.
+- Rates the mods on a waystone or a precursor tablet when you check it, in a
+  beta only and still experimental. For each mod the popup says what it gives
+  you and how dangerous it is to run, and it suggests what to do with the bad
+  ones, such as an Orb of Annulment with its odds. It counts your character's
+  resistances and life when it knows them. A release shows a waystone as before.
 - The gear score uses a build profile: life and resistances, Energy Shield
   spellcaster, Energy Shield attacker, or minion summoner. You can change how
   much each stat adds under Affix Impact, from Not at all (0x) to Three times
