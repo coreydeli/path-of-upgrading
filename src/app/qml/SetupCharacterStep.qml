@@ -8,7 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // The setup guide's character: add one, or import a build for one. The
-// same things as the Characters page does.
+// same things as Import Character does.
 ColumnLayout {
     id: step
 
