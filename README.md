@@ -13,6 +13,7 @@ Get it from the [releases](https://github.com/coreydeli/path-of-upgrading/releas
 or build it from source, as [Installing](#installing) says. Betas come out
 first, as pre-releases, for anyone who wants the newest changes before they're
 released.
+The [changelog](docs/CHANGELOG.md) says what changed in each version.
 
 ## Features
 
