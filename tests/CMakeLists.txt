@@ -36,6 +36,7 @@ function(pou_use_fakepob name)
 endfunction()
 
 pou_add_test(tst_slots)
+pou_add_test(tst_slotmods)
 pou_add_test(tst_statnorm)
 pou_add_test(tst_numbers)
 pou_add_test(tst_statmap)
