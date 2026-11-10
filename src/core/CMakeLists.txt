@@ -16,6 +16,7 @@ add_library(pou_core STATIC
     ignore.cpp ignore.h
     item.h
     league.cpp league.h
+    links.cpp links.h
     listing.cpp listing.h
     mapcheck.cpp mapcheck.h
     numbers.cpp numbers.h
