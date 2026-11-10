@@ -49,6 +49,21 @@ QString Resistances::summary() const
     return parts.join(u", ");
 }
 
+QString Resistances::sourceNote() const
+{
+    if (!m_live)
+        return u"Not known yet. Import a build, or type them in from your character sheet."_s;
+    switch (m_live->source) {
+    case ResistSource::Pob:
+        return u"From your build in Path of Building, with what you wear now."_s;
+    case ResistSource::Game:
+        return u"Typed in from your character sheet, with what you wear now."_s;
+    case ResistSource::Manual:
+        break;
+    }
+    return u"Typed in by hand, with what you wear now."_s;
+}
+
 double Resistances::value(Element e) const
 {
     return m_live ? m_live->values[e].value_or(0) : 0;
