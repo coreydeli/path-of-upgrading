@@ -57,7 +57,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Search the trade site")
-            description: tradePage.options.stillTesting ? qsTr("From the popup, for upgrades and for items like the one you checked. They're still being tested in this release, so a search can fail on an item with a lot of stats.") : qsTr("From the popup, for upgrades and for items like the one you checked.")
+            description: qsTr("From the popup, for upgrades and for items like the one you checked.")
             checked: tradePage.options.enabled
             onToggled: tradePage.options.enabled = checked
         }

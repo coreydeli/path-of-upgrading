@@ -19,7 +19,7 @@ ColumnLayout {
         SwitchRow {
             objectName: "setupTradeSwitch"
             text: qsTr("Search the trade site")
-            description: step.options.stillTesting ? qsTr("From the popup, for upgrades and for items like the one you checked. They're still being tested in this release, so a search can fail on an item with a lot of stats.") : qsTr("From the popup, for upgrades and for items like the one you checked.")
+            description: qsTr("From the popup, for upgrades and for items like the one you checked.")
             checked: step.options.enabled
             onToggled: step.options.enabled = checked
         }

@@ -54,6 +54,9 @@ public:
     // Whether it may ask the trade site for its stats, which is only while
     // there are trade searches. Otherwise it has the ones kept from before.
     void setSiteAllowed(bool allowed);
+    // Without trade in the app at all it has nothing to say of the site's
+    // stats. It starts offered.
+    void setTradeOffered(bool offered);
 
     // Gathers the stats again, as when the picker opens. The trade site's
     // come later when they have to be asked for.
@@ -82,6 +85,7 @@ private:
     TradeDataStore *m_data;
     ItemHistory *m_history;
     bool m_siteAllowed = false;
+    bool m_tradeOffered = true;
     bool m_waiting = false; // for the trade site's stats
     QString m_query;
     QStringList m_words; // of the query

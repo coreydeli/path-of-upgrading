@@ -67,14 +67,10 @@ bool isBetaBuild()
     return POU_BETA_BUILD != 0;
 }
 
-QString tradeUnavailable(const TradeSettings &settings, bool beta)
+QString tradeUnavailable(const TradeSettings &settings)
 {
-    if (!settings.enabled) {
-        const QString how = u"Turn them on with Search the trade site, on the Trade page."_s;
-        if (beta)
-            return u"Trade searches are turned off. "_s + how;
-        return u"Trade searches are off in this release while they're still being tested. "_s + how;
-    }
+    if (!settings.enabled)
+        return u"Trade searches are turned off. Turn them on with Search the trade site, on the Trade page."_s;
     if (!settings.league.canTrade())
         return u"There's no trading in solo self-found, so trade searches are off."_s;
     return {};
