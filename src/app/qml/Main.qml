@@ -165,14 +165,6 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(checkedPage)
             },
             Kirigami.Action {
-                objectName: "pobAction"
-                text: qsTr("Build Analysis")
-                icon.name: "office-chart-line"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(pobPage)
-            },
-            Kirigami.Action {
                 objectName: "tradeAction"
                 text: qsTr("Trade")
                 icon.name: "taxes-finances"
@@ -180,6 +172,14 @@ Kirigami.ApplicationWindow {
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(tradePage)
+            },
+            Kirigami.Action {
+                objectName: "pobAction"
+                text: qsTr("Build Review")
+                icon.name: "office-chart-line"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(pobPage)
             },
             // popup and hotkeys, and how it looks, one level down
             Kirigami.Action {

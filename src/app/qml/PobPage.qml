@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Build Analysis: which Path of Building the app runs and what matters when
+// Build Review: which Path of Building the app runs and what matters when
 // it judges items with your build.
 ColumnsPage {
     id: pobPage
@@ -16,12 +16,12 @@ ColumnsPage {
 
     property bool showPlaces: false
 
-    title: qsTr("Build Analysis")
+    title: qsTr("Build Review")
     description: qsTr("Which Path of Building is used to judge items, and what matters when it does.")
 
     SectionText {
         objectName: "analysisIntro"
-        text: qsTr("Path of Building checks each item with your build, for the damage and defences it would give.")
+        text: qsTr("Path of Building works out what an item would do to your build's damage and defences.")
     }
 
     FormCard.FormCard {
