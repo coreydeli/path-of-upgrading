@@ -1767,6 +1767,9 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"maximumResist"_s)));
         QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 75);
         QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 15);
+        QObject *buffer = w.find(u"resistMargin"_s);
+        QCOMPARE(buffer->property("label").toString(), u"Safety buffer"_s);
+        QVERIFY(buffer->property("description").toString().startsWith(u"How far over the maximum"_s));
     }
 
     void typeInResistances()
