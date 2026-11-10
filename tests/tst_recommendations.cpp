@@ -184,6 +184,19 @@ private Q_SLOTS:
         QVERIFY(!slotsOf(recommendedUpgrades(c, {}, 20)).contains(u"Offhand"_s));
     }
 
+    void offhandCountsWhenTheCharacterCanUseBoth()
+    {
+        Character c;
+        c.gear[u"Weapon"_s] = item(u"Two Hand Swords"_s, u"+25 to maximum Life"_s);
+        c.wielding.twoHandedInOne = true;
+        QVERIFY(slotsOf(recommendedUpgrades(c, {}, 20)).contains(u"Offhand"_s));
+        // a staff isn't one Giant's Blood covers
+        c.gear[u"Weapon"_s] = item(u"Staves"_s, u"+25 to maximum Life"_s);
+        QVERIFY(!slotsOf(recommendedUpgrades(c, {}, 20)).contains(u"Offhand"_s));
+        c.wielding = {.focusWithStaff = true};
+        QVERIFY(slotsOf(recommendedUpgrades(c, {}, 20)).contains(u"Offhand"_s));
+    }
+
     void aPlayerWithNothingWornStillHasSomethingToLookFor()
     {
         const QList<Recommendation> picked = recommendedUpgrades(Character{});

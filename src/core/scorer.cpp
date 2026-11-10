@@ -115,7 +115,7 @@ QString unweightedNote()
 }
 
 Comparison compare(const Item &item, const Equipped &equipped, const Weights &allWeights,
-                   const StatFilter &ignore, const QString &slot)
+                   const StatFilter &ignore, const QString &slot, const Wielding &wielding)
 {
     if (item.slot.isEmpty()) {
         Comparison r;
@@ -142,7 +142,9 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
     Comparison r;
     if (slot.isEmpty() && worn != slotNames.cend()) {
         r = compareWith(item, {itemIn(equipped, *worn)}, weights, *worn, ignore);
-    } else if (item.slot == u"Weapon" && item.twoHanded && (slot.isEmpty() || groupOf(slot) == u"Weapon")) {
+    } else if (item.slot == u"Weapon" && item.twoHanded && (slot.isEmpty() || groupOf(slot) == u"Weapon") &&
+               !twoHandedWithOffhand(item, itemIn(equipped, otherHand(slot.isEmpty() ? u"Weapon"_s : slot)),
+                                     equipped, wielding)) {
         const QString weaponSlot = slot.isEmpty() ? u"Weapon"_s : slot;
         const QString offhandSlot = otherHand(weaponSlot);
         r = compareWith(item, {itemIn(equipped, weaponSlot), itemIn(equipped, offhandSlot)}, weights,
@@ -169,7 +171,7 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
     }
     if (item.slot == u"Offhand" && !item.itemClass.contains(u"quiver", Qt::CaseInsensitive)) {
         const Item *weapon = itemIn(equipped, otherHand(r.targetSlot));
-        if (weapon && weapon->twoHanded)
+        if (weapon && !twoHandedWithOffhand(*weapon, &item, equipped, wielding))
             notes << u"Your weapon is two-handed, so you can't use this with it."_s;
     }
 

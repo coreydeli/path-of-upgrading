@@ -5,6 +5,7 @@
 #include "app/settingsstore.h"
 #include "core/character.h"
 #include "core/evaluation.h"
+#include "core/hands.h"
 #include "core/slots.h"
 
 #include <algorithm>
@@ -111,7 +112,7 @@ QString GearList::character() const
 
 bool GearList::hasExtras() const
 {
-    return m_rows.size() > mainSlots().size();
+    return std::ranges::any_of(m_rows, [](const Row &row) { return !mainSlots().contains(row.slot); });
 }
 
 bool GearList::takeOff(const QString &slot)
@@ -136,7 +137,8 @@ void GearList::refresh()
         const auto item = character.gear.constFind(slot);
         const GearScoreOptions options = gearScoreOptions(character, slot, m_priorities);
         if (item == character.gear.cend()) {
-            if (mainSlots().contains(slot))
+            // a two-handed weapon leaves the offhand out of use
+            if (mainSlots().contains(slot) && !offhandOutOfUse(character.gear, character.wielding, slot))
                 m_rows << Row{
                     .slot = slot, .score = std::nullopt, .grade = {}, .notes = wantedIn(slot, options)};
             continue;

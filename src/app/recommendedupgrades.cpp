@@ -5,6 +5,7 @@
 #include "app/settingsstore.h"
 #include "app/traderesults.h"
 #include "core/evaluation.h"
+#include "core/hands.h"
 #include "core/slots.h"
 #include "services/tradesearcher.h"
 
@@ -108,8 +109,7 @@ QString RecommendedUpgrades::chosenLookFor() const
     const auto worn = character.gear.constFind(m_chosen);
     if (worn == character.gear.cend()) {
         // a two-handed weapon leaves the offhand empty
-        const auto weapon = character.gear.constFind(u"Weapon"_s);
-        if (m_chosen == u"Offhand" && weapon != character.gear.cend() && weapon->twoHanded)
+        if (offhandOutOfUse(character.gear, character.wielding, m_chosen))
             return {};
         return wantedText(wantedStats(m_chosen, nullptr, options));
     }
