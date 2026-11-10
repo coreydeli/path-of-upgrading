@@ -955,7 +955,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Build Review"_s);
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"gearScoreAction"_s));
@@ -2381,22 +2381,37 @@ private Q_SLOTS:
         // the sidebar entry and the page both say Settings, and the others stay their own pages
         QCOMPARE(text(w.window->findChild<QObject *>(u"overlayAction"_s)), u"Settings"_s);
         QCOMPARE(text(w.window->findChild<QObject *>(u"tradeAction"_s)), u"Trade"_s);
-        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Review"_s);
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
     }
 
-    void buildAnalysisName()
+    void buildReviewName()
     {
         Window w;
-        // the sidebar entry and the page say Build Analysis, and the program keeps its own name inside
-        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Analysis"_s);
+        // the sidebar entry and the page say Build Review, and the program keeps its own name inside
+        QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Review"_s);
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Build Analysis"_s);
-        QCOMPARE(
-            text(w.find(u"analysisIntro"_s)),
-            u"Path of Building checks each item with your build, for the damage and defences it would give."_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Build Review"_s);
+        QCOMPARE(text(w.find(u"analysisIntro"_s)),
+                 u"Path of Building works out what an item would do to your build's damage and defences."_s);
         QCOMPARE(text(w.find(u"enabledSwitch"_s)), u"Judge items with Path of Building"_s);
+    }
+
+    void buildReviewSitsApart()
+    {
+        Window w;
+        QVERIFY(w.shown());
+        // a top level row, below Trade and well away from the gear entries
+        QTRY_VERIFY(w.sidebarRow(u"Build Review"_s));
+        const auto top = [&](const QString &text) {
+            QQuickItem *row = w.sidebarRow(text);
+            return row ? row->mapToScene(QPointF(0, 0)).y() : -1.0;
+        };
+        QVERIFY(top(u"Build Review"_s) > top(u"Trade"_s));
+        QVERIFY(top(u"Build Review"_s) > top(u"Item History"_s));
+        QVERIFY(top(u"Your Gear"_s) < top(u"Gear"_s));
+        QVERIFY(top(u"Build Review"_s) - top(u"Gear"_s) > 2 * (top(u"Gear"_s) - top(u"Your Gear"_s)));
     }
 
     void itemHistoryName()
