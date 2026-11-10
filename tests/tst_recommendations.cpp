@@ -50,7 +50,8 @@ private Q_SLOTS:
         // the same minimums a craft base search asks for
         QCOMPARE(boots.at(0).minimum, searchMinimum(35));
         QCOMPARE(boots.at(1).minimum, searchMinimum(100));
-        QCOMPARE(wantedText(boots), u"Movement speed 19 or more, Life 55 or more, Fire res 24 or more"_s);
+        QCOMPARE(wantedText(boots), u"Movement speed 19 or more (up to 35), Life 55 or more (up to 149), "
+                                    u"Fire res 24 or more (up to 45)"_s);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 5).size(), 5);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 1).size(), 1);
     }
@@ -67,7 +68,8 @@ private Q_SLOTS:
     {
         const Item boots = item(u"Boots"_s, lifeAndSpeed);
         QCOMPARE(wantedText(wantedStats(u"Boots"_s, &boots, {})),
-                 u"Fire res 24 or more, Cold res 24 or more, Lightning res 24 or more"_s);
+                 u"Fire res 24 or more (up to 45), Cold res 24 or more (up to 45), "
+                 u"Lightning res 24 or more (up to 45)"_s);
 
         // exactly the minimum is enough
         const Item exact = item(u"Boots"_s, u"+55 to maximum Life\n19% increased Movement Speed"_s);
@@ -112,7 +114,8 @@ private Q_SLOTS:
         options.resistNeed[Element::Lightning] = 80;
         const QList<WantedStat> wants = wantedStats(u"Helmet"_s, nullptr, options, 5);
         // cold is capped, fire needs 11 at most, and lightning the usual
-        QCOMPARE(wantedText(wants), u"Life 55 or more, Fire res 11 or more, Lightning res 24 or more"_s);
+        QCOMPARE(wantedText(wants), u"Life 55 or more (up to 174), Fire res 11 or more (up to 45), "
+                                    u"Lightning res 24 or more (up to 45)"_s);
     }
 
     void thePickedSlotsGoByTheirScores()

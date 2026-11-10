@@ -128,6 +128,9 @@ private Q_SLOTS:
                  (ProfileTweaks{{u"Minion critical hit chance and damage bonus"_s, 1.5}}));
         // already under the new label, so that one stays
         QCOMPARE(load(u"es-caster"_s, {{u"Crit"_s, 2}, {spells, 0}}), (ProfileTweaks{{spells, 0}}));
+        // the weapon one was spelled out too
+        QCOMPARE(load(u"life-res"_s, {{u"Weapon DPS"_s, 2}}),
+                 (ProfileTweaks{{u"Weapon damage per second"_s, 2}}));
     }
 
     void noWeightsAtAll()
