@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: MIT
 #
-# Each push to main or beta makes a release on GitHub, with the source, an Arch
-# Linux package, a Debian 13 package, a Fedora package, an AppImage, a Windows
-# installer and zip, and the changes since the last one.
-# Main releases the version in CMakeLists.txt as the latest release, once. Beta
-# releases it as a pre-release, v0.1.0-beta.1 and on, until that version is
-# out. The source comes first, then CI's build of each platform, which tests
+# Makes a release on GitHub, with the source, an Arch Linux package, a Debian 13
+# package, a Fedora package, an AppImage, a Windows installer and zip, and the
+# changes since the last one.
+# Each push to main releases the version in CMakeLists.txt as the latest
+# release, once. A beta is only made when it's asked for: by hand (Run workflow
+# on beta), or each night when beta has code the last release or beta lacked.
+# It releases the version as a pre-release, v0.1.0-beta.1 and on, until that
+# version is out. Merges into beta are checked on their pull requests, so they
+# don't build again. The source comes first, then CI's build of each platform, which tests
 # it and makes its package, then the release, each once the stages before it
 # have passed. Pull requests that change how they're made build the packages
 # too, without releasing anything.
@@ -13,7 +16,12 @@ name: Release
 
 on:
   push:
-    branches: [main, beta]
+    branches: [main]
+  # GitHub runs these from the default branch, so the nightly asks for a run
+  # on beta rather than building where it runs.
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
   pull_request:
     paths:
       - .github/workflows/release.yml
@@ -31,8 +39,31 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  nightly:
+    name: Nightly
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: beta
+          # for the tags
+          fetch-depth: 0
+      - name: Ask for a beta if there's new code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if sh .github/scripts/nightly-beta.sh; then
+              gh workflow run release.yml --ref beta
+          fi
+
   source:
     name: Source
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -50,7 +81,7 @@ jobs:
       - name: Check the version
         id: version
         run: |
-          if [ "$GITHUB_EVENT_NAME" = push ]; then
+          if [ "$GITHUB_EVENT_NAME" = push ] || [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
               sh .github/scripts/release-tag.sh "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
           else
               sh .github/scripts/release-tag.sh >> "$GITHUB_OUTPUT"
@@ -84,7 +115,7 @@ jobs:
 
   release:
     name: Release
-    if: needs.source.outputs.release == 'true' && github.event_name == 'push'
+    if: needs.source.outputs.release == 'true' && github.event_name != 'pull_request'
     needs: [source, build]
     runs-on: ubuntu-latest
     permissions:
