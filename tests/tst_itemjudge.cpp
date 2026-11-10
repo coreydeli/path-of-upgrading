@@ -3,6 +3,7 @@
 #include "core/parser.h"
 #include "fakepob.h"
 #include "itemtexts.h"
+#include "maptexts.h"
 #include "services/pobengine.h"
 
 #include <QJsonArray>
@@ -448,6 +449,44 @@ private Q_SLOTS:
             QCOMPARE(engine.findChildren<PobReply *>().size(), 1);
         }
         QVERIFY(engine.findChildren<PobReply *>().isEmpty());
+    }
+
+    void waystonesOnlyWhenMapsAreOn()
+    {
+        const Item waystone = item(maptexts::bad);
+        ItemJudge off;
+        QSignalSpy checked(&off, &ItemJudge::checked);
+        off.check(waystone);
+        QVERIFY(!off.current().map);
+        QVERIFY(!off.current().evaluation.comparison.ok);
+
+        ItemJudge on;
+        on.setMaps(true);
+        on.check(waystone);
+        QVERIFY(on.current().map);
+        QCOMPARE(on.current().map->grade, MapGrade::Bad);
+        // gear is judged as before
+        on.check(helmetNew);
+        QVERIFY(!on.current().map);
+        QVERIFY(on.current().evaluation.comparison.ok);
+    }
+
+    void mapsKnowYourCharacter()
+    {
+        Character c;
+        c.resists = ResistRecord{};
+        c.resists->entered[Element::Fire] = 40;
+        PobBuild b;
+        b.life = 1500;
+        b.energyShield = 500;
+        const MapBuild built = mapBuildOf(c, b);
+        QVERIFY(built.imported);
+        QCOMPARE(built.health, 2000);
+        QVERIFY(built.resists);
+        QCOMPARE(*built.resists->values[Element::Fire], 40.0);
+        const MapBuild none = mapBuildOf({}, std::nullopt);
+        QVERIFY(!none.imported && !none.resists);
+        QCOMPARE(none.health, 0);
     }
 };
 
