@@ -151,7 +151,7 @@ private Q_SLOTS:
         QCOMPARE(guide.steps.size(), 3);
         QVERIFY(guide.steps[0].startsWith(u"1. Install \"Path of Building\" from Flathub, in Discover"));
         QVERIFY(guide.steps[1].startsWith(u"2. Open \"Path of Building PoE 2\" once"));
-        QCOMPARE(guide.steps[2], u"3. Press Look Again."_s);
+        QCOMPARE(guide.steps[2], u"3. Press Update."_s);
         QVERIFY(guide.getFlatpak);
         QVERIFY(!guide.getInstaller);
     }
@@ -175,7 +175,7 @@ private Q_SLOTS:
         const PobGuide guide = guideFor(computer.places);
         QVERIFY(guide.headline.contains(u"not set up for Path of Exile 2"));
         QVERIFY(guide.steps[0].contains(u"Open \"Path of Building PoE 2\""));
-        QVERIFY(guide.steps.last().contains(u"Look Again"));
+        QVERIFY(guide.steps.last().contains(u"Update"));
         // it's installed already
         QVERIFY(!guide.getFlatpak);
     }
@@ -255,7 +255,7 @@ private Q_SLOTS:
         QVERIFY(addPob(computer.flatpakFolder()));
         const PobGuide guide = guideToPob(computer.places, {}, std::nullopt, {});
         QCOMPARE(guide.headline, u"Path of Building is there now."_s);
-        QCOMPARE(guide.steps, QStringList{u"1. Press Look Again."_s});
+        QCOMPARE(guide.steps, QStringList{u"1. Press Update."_s});
     }
 
     void placesItLooks()

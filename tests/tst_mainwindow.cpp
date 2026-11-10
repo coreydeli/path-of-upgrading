@@ -898,7 +898,7 @@ private Q_SLOTS:
 
         // once it's there
         QVERIFY(makePob(folder));
-        QVERIFY(QMetaObject::invokeMethod(w.find(u"lookAgainButton"_s), "clicked"));
+        QVERIFY(QMetaObject::invokeMethod(w.find(u"updateButton"_s), "clicked"));
         QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
     }
 
@@ -1779,14 +1779,13 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         w.play({});
         QVERIFY(isVisible(w.find(u"resistances"_s)));
-        QObject *summary = w.find(u"resistSummary"_s);
-        QVERIFY(isVisible(summary));
-        QCOMPARE(text(summary), u"Not known yet"_s);
-        QCOMPARE(summary->property("description").toString(),
-                 u"Import a build, or type them in off your character sheet."_s);
+        QCOMPARE(w.find(u"resistancesHeader"_s)->property("title").toString(), u"Resistances"_s);
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
+        QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QVERIFY(!isVisible(w.find(u"maximumResist"_s)));
+        QVERIFY(!isVisible(w.find(u"fireMaximum"_s)));
         QVERIFY(!isVisible(w.find(u"resistMargin"_s)));
         QVERIFY(!isVisible(w.find(u"resistError"_s)));
     }
@@ -1804,12 +1803,18 @@ private Q_SLOTS:
         }));
         QObject *summary = w.find(u"resistSummary"_s);
         QCOMPARE(text(summary), u"Fire 80%, Cold 60%"_s);
-        QCOMPARE(summary->property("description").toString(),
+        QCOMPARE(text(w.find(u"resistSource"_s)),
                  u"From your build in Path of Building, with what you wear now."_s);
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QVERIFY(isVisible(w.find(u"maximumResist"_s)));
-        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 75);
+        for (const QString &field :
+             {u"fireMaximum"_s, u"coldMaximum"_s, u"lightningMaximum"_s, u"chaosMaximum"_s}) {
+            QVERIFY(isVisible(w.find(field)));
+            QCOMPARE(w.spinBox(field)->property("value").toInt(), 75);
+        }
         QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 15);
+        QObject *buffer = w.find(u"resistMargin"_s);
+        QCOMPARE(buffer->property("label").toString(), u"Safety buffer"_s);
+        QVERIFY(buffer->property("description").toString().startsWith(u"How far over the maximum"_s));
     }
 
     void typeInResistances()
@@ -1821,6 +1826,8 @@ private Q_SLOTS:
         QVERIFY(toggle(w.find(u"fromSheetSwitch"_s)));
         QVERIFY(resists->isFromSheet());
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Typed in from your character sheet, with what you wear now."_s);
         for (const QString &field :
              {u"fireResist"_s, u"coldResist"_s, u"lightningResist"_s, u"chaosResist"_s})
             QVERIFY(isVisible(w.find(field)));
@@ -1830,9 +1837,12 @@ private Q_SLOTS:
         QVERIFY(setValue(w.spinBox(u"lightningResist"_s), 30, "valueModified"));
         QVERIFY(setValue(w.spinBox(u"chaosResist"_s), -20, "valueModified"));
         QCOMPARE(resists->summary(), u"Fire 76%, Cold 120%, Lightning 30%, Chaos -20%"_s);
-        QVERIFY(setValue(w.spinBox(u"maximumResist"_s), 78, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"fireMaximum"_s), 78, "valueModified"));
+        QVERIFY(setValue(w.spinBox(u"chaosMaximum"_s), 70, "valueModified"));
         QVERIFY(setValue(w.spinBox(u"resistMargin"_s), 2, "valueModified"));
-        QCOMPARE(resists->maximum(), 78.0);
+        QCOMPARE(resists->fireMaximum(), 78.0);
+        QCOMPARE(resists->coldMaximum(), 75.0);
+        QCOMPARE(resists->chaosMaximum(), 70.0);
         QCOMPARE(resists->margin(), 2.0);
         // no sheet goes that high
         QVERIFY(setValue(w.spinBox(u"fireResist"_s), 900, "valueModified"));
@@ -1843,19 +1853,21 @@ private Q_SLOTS:
         resists->setCold(40);
         resists->setLightning(45);
         resists->setChaos(-5);
-        resists->setMaximum(77);
+        resists->setLightningMaximum(77);
         resists->setMargin(4);
         QCOMPARE(w.spinBox(u"fireResist"_s)->property("value").toInt(), 50);
         QCOMPARE(w.spinBox(u"coldResist"_s)->property("value").toInt(), 40);
         QCOMPARE(w.spinBox(u"lightningResist"_s)->property("value").toInt(), 45);
         QCOMPARE(w.spinBox(u"chaosResist"_s)->property("value").toInt(), -5);
-        QCOMPARE(w.spinBox(u"maximumResist"_s)->property("value").toInt(), 77);
+        QCOMPARE(w.spinBox(u"lightningMaximum"_s)->property("value").toInt(), 77);
         QCOMPARE(w.spinBox(u"resistMargin"_s)->property("value").toInt(), 4);
 
         resists->setFromSheet(false);
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QCOMPARE(text(w.find(u"resistSummary"_s)), u"Not known yet"_s);
+        QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
     }
 
     void cantSaveResistances()
