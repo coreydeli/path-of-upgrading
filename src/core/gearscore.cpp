@@ -104,6 +104,9 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
     if (ideal == 0)
         ideal = 1;
 
+    const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
+    const QString itemClass = item.itemClass.isEmpty() ? classOfSlot(slot) : item.itemClass;
+
     QHash<const ProfileStat *, double> qualitySoFar;
     QSet<const ProfileStat *> used;
     QStringList notes;
@@ -152,9 +155,11 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
         const double factor =
             (x.origin == StatOrigin::Socket ? 0.5 : 1.0) * (isConditionalStat(x.key) ? 0.6 : 1.0);
         used.insert(s);
+        // runes and enchants aren't rolls of the item's class
+        const auto top = x.origin == StatOrigin::Socket ? std::nullopt : mods.best(itemClass, x.key);
         result.contributions.append({x.key, s->label, x.value, int(roundHalfUp(quality * 100)),
                                      roundTo(importanceOf(*s, slot, options) * quality * factor, 1),
-                                     x.origin});
+                                     top ? top->high : 0, x.origin});
     }
 
     std::stable_sort(
@@ -174,9 +179,18 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
     std::stable_sort(unused.begin(), unused.end(), [&](const ProfileStat *a, const ProfileStat *b) {
         return importanceOf(*a, slot, options) > importanceOf(*b, slot, options);
     });
-    for (qsizetype i = 0; i < std::min<qsizetype>(3, unused.size()); ++i) {
-        if (importanceOf(*unused[i], slot, options) >= 5)
-            result.missing << unused[i]->label;
+    for (const ProfileStat *s : std::as_const(unused)) {
+        if (result.missing.size() == 3)
+            break;
+        // a weapon's damage is its own, not something to look for. Weapons
+        // from Path of Building come without it.
+        if (s->pattern.pattern().startsWith(u"^\\[Weapon\\]"_s))
+            continue;
+        if (importanceOf(*s, slot, options) < 5)
+            continue;
+        result.missing << s->label;
+        if (const auto top = s->key.isEmpty() ? std::nullopt : mods.best(itemClass, s->key))
+            result.missingBest.insert(s->label, top->high);
     }
 
     result.ideal = roundTo(ideal, 1);
@@ -197,11 +211,21 @@ QString gearGrade(int score)
     return u"D"_s;
 }
 
+QStringList missingStats(const GearScore &gear)
+{
+    QStringList out;
+    for (const QString &label : gear.missing) {
+        const auto best = gear.missingBest.constFind(label);
+        out << (best == gear.missingBest.cend() ? label : label + u" (up to "_s + rollText(*best) + u')');
+    }
+    return out;
+}
+
 QString missingNote(const GearScore &gear)
 {
     if (gear.missing.isEmpty())
         return {};
-    return u"Missing what your build wants: "_s + gear.missing.join(u", "_s) + u'.';
+    return u"Missing what your build wants: "_s + missingStats(gear).join(u", "_s) + u'.';
 }
 
 QStringList notScoredStats(const GearScore &gear)
@@ -222,22 +246,38 @@ QString notScoredNote(const GearScore &gear)
 QStringList weakRolls(const GearScore &gear, int underPercent)
 {
     // one stat can come from several mods
-    QList<std::pair<QString, int>> byLabel;
+    struct Part
+    {
+        QString label;
+        int quality = 0;
+        double value = 0;
+        double best = 0;
+        int mods = 0;
+    };
+    QList<Part> parts;
     for (const GearContribution &c : gear.contributions) {
         if (c.origin == StatOrigin::Socket)
             continue;
-        const auto it = std::ranges::find(byLabel, c.label, &std::pair<QString, int>::first);
-        if (it != byLabel.end())
-            it->second += c.quality;
-        else
-            byLabel.append({c.label, c.quality});
+        auto it = std::ranges::find(parts, c.label, &Part::label);
+        if (it == parts.end())
+            it = parts.insert(parts.end(), Part{.label = c.label});
+        it->quality += c.quality;
+        it->value += c.value;
+        it->best = c.best;
+        ++it->mods;
     }
-    byLabel.removeIf([underPercent](const auto &part) { return part.second >= underPercent; });
-    std::ranges::stable_sort(byLabel, {}, &std::pair<QString, int>::second);
-    QStringList parts;
-    for (qsizetype i = 0; i < std::min<qsizetype>(3, byLabel.size()); ++i)
-        parts << u"%1 %2%"_s.arg(byLabel.at(i).first).arg(byLabel.at(i).second);
-    return parts;
+    parts.removeIf([underPercent](const Part &p) { return p.quality >= underPercent; });
+    std::ranges::stable_sort(parts, {}, &Part::quality);
+    QStringList out;
+    for (qsizetype i = 0; i < std::min<qsizetype>(3, parts.size()); ++i) {
+        const Part &p = parts.at(i);
+        // the most one mod rolls says little of two
+        if (p.best > 0 && p.mods == 1)
+            out << u"%1 %2 of up to %3"_s.arg(p.label, rollText(p.value), rollText(p.best));
+        else
+            out << u"%1 %2% of an excellent roll"_s.arg(p.label).arg(p.quality);
+    }
+    return out;
 }
 
 QString weakRollsNote(const GearScore &gear, int underPercent)
@@ -245,7 +285,7 @@ QString weakRollsNote(const GearScore &gear, int underPercent)
     const QStringList parts = weakRolls(gear, underPercent);
     if (parts.isEmpty())
         return {};
-    return u"Weak rolls: "_s + parts.join(u", "_s) + u" of an excellent roll."_s;
+    return u"Weak rolls: "_s + parts.join(u", "_s) + u'.';
 }
 
 double usefulness(const QString &slot, const QString &key, const GearScoreOptions &options)

@@ -117,7 +117,8 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: qsTr("Your Resistances")
+        objectName: "resistancesHeader"
+        title: qsTr("Resistances")
     }
 
     FormCard.FormCard {
@@ -125,11 +126,18 @@ ColumnsPage {
         objectName: "resistances"
 
         FormCard.FormTextDelegate {
+            objectName: "resistSource"
+            text: gearPage.resists.sourceNote
+            textItem.wrapMode: Text.Wrap
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormTextDelegate {
             id: resistSummary
             objectName: "resistSummary"
-            visible: !gearPage.resists.fromSheet
-            text: gearPage.resists.known ? gearPage.resists.summary : qsTr("Not known yet")
-            description: gearPage.resists.known ? qsTr("From your build in Path of Building, with what you wear now.") : qsTr("Import a build, or type them in off your character sheet.")
+            visible: !gearPage.resists.fromSheet && gearPage.resists.known
+            text: gearPage.resists.summary
             textItem.wrapMode: Text.Wrap
         }
 
@@ -139,8 +147,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "fromSheetSwitch"
-            text: qsTr("Typed in off your character sheet")
-            description: qsTr("As the sheet shows them, over the maximum too. They follow your gear from then on.")
+            text: qsTr("Type them in from your character sheet")
+            description: qsTr("Use the numbers on the game's character sheet in place of your build's, as it shows them, over the maximum too. They follow your gear from then on.")
             checked: gearPage.resists.fromSheet
             onToggled: gearPage.resists.fromSheet = checked
         }
@@ -192,8 +200,8 @@ ColumnsPage {
         NumberField {
             objectName: "resistMargin"
             visible: gearPage.resists.known
-            label: qsTr("Margin over the maximum")
-            description: qsTr("How far over it a resistance has to be to count as capped, for what isn't always on, like a charm.")
+            label: qsTr("Safety buffer")
+            description: qsTr("How far over the maximum you want each resistance to stay. Some of what counts towards them, like a charm, isn't always on, so an item that leaves you closer than this gets a warning.")
             maximum: 100
             value: gearPage.resists.margin
             onEdited: value => gearPage.resists.margin = value

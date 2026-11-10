@@ -168,6 +168,30 @@ private Q_SLOTS:
         QCOMPARE(swap.replacing, QStringList({u"A"_s, u"F"_s}));
     }
 
+    void twoHanderWithBothHandsInUse()
+    {
+        const Item oneHand =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nA\nB\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+30 to maximum Life"_s);
+        const Item shield = item(
+            u"Item Class: Shields\nRarity: Rare\nS\nT\n--------\nArmour: 200\n--------\n+50 to maximum Life"_s);
+        const Item maul = item(itemtexts::twoHandMace);
+        const Equipped worn = {{u"Weapon"_s, oneHand}, {u"Offhand"_s, shield}};
+
+        // with Giant's Blood it only replaces the weapon
+        const Comparison r = compare(maul, worn, defaultWeights(), {}, {}, {.twoHandedInOne = true});
+        QCOMPARE(r.replacing, QStringList{u"A"_s});
+        QVERIFY(
+            !r.notes.contains(u"Two-handed, so it's compared against your weapon and offhand together."_s));
+
+        // and the shield is no longer in the way of the weapon
+        const QString cantUse = u"Your weapon is two-handed, so you can't use this with it."_s;
+        const Equipped holdingMaul = {{u"Weapon"_s, maul}};
+        QVERIFY(compare(shield, holdingMaul, defaultWeights()).notes.contains(cantUse));
+        QVERIFY(!compare(shield, holdingMaul, defaultWeights(), {}, {}, {.twoHandedInOne = true})
+                     .notes.contains(cantUse));
+    }
+
     void weaponInTheOffhand()
     {
         // a one-handed weapon held in the other hand

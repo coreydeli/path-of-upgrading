@@ -542,6 +542,24 @@ private Q_SLOTS:
         QVERIFY(build->jewels.first().text.startsWith(u"Item Class: Jewels\n"_s));
     }
 
+    void whatItsHandsCanDo()
+    {
+        const auto wielding = [](const QString &nodes) {
+            const QString xml =
+                QString(pobfixtures::build)
+                    .replace(u"nodes=\"100,4242,61834,21984\""_s, u"nodes=\"%1\""_s.arg(nodes));
+            return parsePobBuild(xml).value().wielding;
+        };
+        QCOMPARE(wielding(u"100,4242,61834,21984"_s), Wielding{});
+        QCOMPARE(wielding(u"100,32349,61834"_s), (Wielding{.twoHandedInOne = true}));
+        QCOMPARE(wielding(u"20701,100"_s), (Wielding{.focusWithStaff = true}));
+        QCOMPARE(wielding(u"20701,32349"_s), (Wielding{.twoHandedInOne = true, .focusWithStaff = true}));
+        // the tree the build uses, not another of its trees
+        const QString other =
+            QString(pobfixtures::build).replace(u"nodes=\"100,61834\""_s, u"nodes=\"100,32349\""_s);
+        QCOMPARE(parsePobBuild(other).value().wielding, Wielding{});
+    }
+
     void firstWeaponSet()
     {
         const QString xml = QString(pobfixtures::build)
