@@ -117,7 +117,8 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: qsTr("Your Resistances")
+        objectName: "resistancesHeader"
+        title: qsTr("Resistances")
     }
 
     FormCard.FormCard {
