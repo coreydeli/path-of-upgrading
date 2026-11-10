@@ -356,6 +356,108 @@ Rectangle {
             }
         }
 
+        // a waystone or a tablet: its mods and what to do about the bad ones
+        ColumnLayout {
+            id: mapSection
+
+            Layout.fillWidth: true
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            visible: card.report.map
+            spacing: Kirigami.Units.smallSpacing
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                opacity: 0.7
+                font: Kirigami.Theme.smallFont
+                text: card.report.mapExperimental
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: card.report.mapSummary
+            }
+
+            Repeater {
+                model: card.report.mapMods
+
+                ColumnLayout {
+                    id: mapMod
+
+                    required property reportMapMod modelData
+
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    ToneLabel {
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                        text: mapMod.modelData.text
+                        tone: mapMod.modelData.tone
+                        colorblind: card.popup.colorblind
+                    }
+
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        visible: text !== ""
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: mapMod.modelData.gives !== "" ? qsTr("Gives %1").arg(mapMod.modelData.gives) : ""
+                    }
+
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        visible: text !== ""
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                        font: Kirigami.Theme.smallFont
+                        text: mapMod.modelData.costs !== ""
+                              ? (mapMod.modelData.danger !== "" ? mapMod.modelData.danger + ": " : "") + mapMod.modelData.costs
+                              : ""
+                    }
+
+                    QQC2.Label {
+                        Layout.fillWidth: true
+                        visible: text !== ""
+                        wrapMode: Text.Wrap
+                        font: Kirigami.Theme.smallFont
+                        text: mapMod.modelData.buildNote
+                    }
+                }
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                Layout.topMargin: Kirigami.Units.smallSpacing
+                visible: card.report.mapSuggestions.length > 0
+                font.bold: true
+                text: qsTr("What to do")
+            }
+
+            Repeater {
+                model: card.report.mapSuggestions
+
+                QQC2.Label {
+                    required property string modelData
+
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    text: modelData
+                }
+            }
+
+            QQC2.Label {
+                Layout.fillWidth: true
+                visible: text !== ""
+                wrapMode: Text.Wrap
+                opacity: 0.7
+                font: Kirigami.Theme.smallFont
+                text: card.report.mapBuild
+            }
+        }
+
         // each place it could go, when you wear something in more than one
         PlacementsTable {
             Layout.fillWidth: true

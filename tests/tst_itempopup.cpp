@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 #include "app/itempopup.h"
+#include "core/parser.h"
 #include "core/placement.h"
 #include "fakegameinput.h"
+#include "maptexts.h"
 
 #include <QColor>
 #include <QDesktopServices>
@@ -1405,6 +1407,31 @@ private Q_SLOTS:
         const int looks = input.mouseLooks;
         QTest::qWait(300);
         QCOMPARE(input.mouseLooks, looks);
+    }
+
+    void waystoneSection()
+    {
+        QQmlEngine engine;
+        FakeGameInput input;
+        ItemPopup popup(&engine, &input);
+        // gear has none of it
+        popup.showReport(aReport(), mouseAt(200, 300));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        QVERIFY(!shown(popup, u"What to do"_s));
+
+        const Item waystone = parseItem(maptexts::bad).value();
+        ItemCheck check{.item = waystone};
+        MapBuild build;
+        build.imported = true;
+        check.map = checkMap(waystone, MapKind::Waystone, build);
+        popup.updateReport(reportOf(check));
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+        QVERIFY(shown(popup, u"What to do"_s));
+        QVERIFY(shown(popup, u"Bad waystone"_s));
+        QVERIFY(shown(popup, popup.report().mapExperimental));
+        QVERIFY(shown(popup, popup.report().mapBuild));
+        QVERIFY(shown(popup, popup.report().mapSuggestions.first()));
+        QVERIFY(shown(popup, popup.report().mapMods.at(2).text));
     }
 
     void notByTheMouse()
