@@ -9,6 +9,7 @@
 #include "app/checkeditems.h"
 #include "app/gearlist.h"
 #include "app/gearscoring.h"
+#include "app/help.h"
 #include "app/hotkeys.h"
 #include "app/ignoredstats.h"
 #include "app/itemchecker.h"
@@ -81,6 +82,7 @@ class App : public QObject
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
     Q_PROPERTY(pou::About *about READ about CONSTANT)
+    Q_PROPERTY(pou::Help *help READ help CONSTANT)
 
 public:
     // Where it keeps what it has between runs.
@@ -154,6 +156,7 @@ public:
     Appearance *appearance() { return &m_appearance; }
     Onboarding *onboarding() { return &m_onboarding; }
     About *about() { return &m_about; }
+    Help *help() { return &m_help; }
 
 private:
     void followSettings();
@@ -202,6 +205,7 @@ private:
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
     About m_about;
+    Help m_help;
     Appearance m_appearance;
     Onboarding m_onboarding;
 };

@@ -13,6 +13,7 @@ qt_add_library(pou_app STATIC
     fonts.cpp fonts.h
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
+    help.cpp help.h
     hotkeys.cpp hotkeys.h
     ignoredstats.cpp ignoredstats.h
     itemchecker.cpp itemchecker.h
@@ -56,6 +57,7 @@ qt_add_qml_module(pou_app
         qml/EquipmentTile.qml
         qml/FontPickerDialog.qml
     qml/FormRow.qml
+        qml/HelpPage.qml
         qml/GearPage.qml
         qml/GearScorePage.qml
         qml/IgnoredStatsPage.qml
