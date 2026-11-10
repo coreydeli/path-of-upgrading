@@ -1737,11 +1737,10 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         w.play({});
         QVERIFY(isVisible(w.find(u"resistances"_s)));
-        QObject *summary = w.find(u"resistSummary"_s);
-        QVERIFY(isVisible(summary));
-        QCOMPARE(text(summary), u"Not known yet"_s);
-        QCOMPARE(summary->property("description").toString(),
-                 u"Import a build, or type them in off your character sheet."_s);
+        QCOMPARE(w.find(u"resistancesHeader"_s)->property("title").toString(), u"Resistances"_s);
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
+        QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
         QVERIFY(!isVisible(w.find(u"maximumResist"_s)));
@@ -1762,7 +1761,7 @@ private Q_SLOTS:
         }));
         QObject *summary = w.find(u"resistSummary"_s);
         QCOMPARE(text(summary), u"Fire 80%, Cold 60%"_s);
-        QCOMPARE(summary->property("description").toString(),
+        QCOMPARE(text(w.find(u"resistSource"_s)),
                  u"From your build in Path of Building, with what you wear now."_s);
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
         QVERIFY(isVisible(w.find(u"maximumResist"_s)));
@@ -1779,6 +1778,8 @@ private Q_SLOTS:
         QVERIFY(toggle(w.find(u"fromSheetSwitch"_s)));
         QVERIFY(resists->isFromSheet());
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Typed in from your character sheet, with what you wear now."_s);
         for (const QString &field :
              {u"fireResist"_s, u"coldResist"_s, u"lightningResist"_s, u"chaosResist"_s})
             QVERIFY(isVisible(w.find(field)));
@@ -1813,7 +1814,9 @@ private Q_SLOTS:
         resists->setFromSheet(false);
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
-        QCOMPARE(text(w.find(u"resistSummary"_s)), u"Not known yet"_s);
+        QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
+        QCOMPARE(text(w.find(u"resistSource"_s)),
+                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
     }
 
     void cantSaveResistances()
