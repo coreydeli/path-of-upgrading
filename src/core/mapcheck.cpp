@@ -62,7 +62,7 @@ const QList<CostRule> &costRules()
          u"You recover much less life and energy shield, so healing and regeneration fall short"_s,
          Danger::Risky, 20, 30},
         {rx(uR"((-?\d+)% maximum Player Resistances)"_s),
-         u"Your resistances can't reach their usual cap, so every hit does more"_s, Danger::Deadly},
+         u"Your resistances can't reach their usual cap, so every hit does more"_s, Danger::Mild, 6, 9},
         {rx(uR"(Monster Damage Penetrates (\d+)% Elemental Resistances)"_s),
          u"Monster hits ignore part of your elemental resistances"_s, Danger::Risky, 10, 14,
          Need::AnyElementRes},

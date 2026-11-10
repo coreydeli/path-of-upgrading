@@ -114,7 +114,12 @@ private Q_SLOTS:
             << u"Players have 25% less Recovery Rate of Life and Energy Shield"_s << int(Danger::Risky);
         QTest::newRow("recovery high")
             << u"Players have 40% less Recovery Rate of Life and Energy Shield"_s << int(Danger::Deadly);
-        QTest::newRow("max res") << u"-6% maximum Player Resistances"_s << int(Danger::Deadly);
+        QTest::newRow("max res small") << u"-3% maximum Player Resistances"_s << int(Danger::Mild);
+        QTest::newRow("max res 5") << u"-5% maximum Player Resistances"_s << int(Danger::Mild);
+        QTest::newRow("max res 6") << u"-6% maximum Player Resistances"_s << int(Danger::Risky);
+        QTest::newRow("max res 8") << u"-8% maximum Player Resistances"_s << int(Danger::Risky);
+        QTest::newRow("max res 9") << u"-9% maximum Player Resistances"_s << int(Danger::Deadly);
+        QTest::newRow("max res 10") << u"-10(-10--8)% maximum Player Resistances"_s << int(Danger::Deadly);
         QTest::newRow("no damage")
             << u"Players and their Minions deal no damage for 3 out of every 10 seconds"_s
             << int(Danger::Deadly);
@@ -197,7 +202,7 @@ private Q_SLOTS:
 
     void everyModBad()
     {
-        const MapCheck c = check(maptexts::header + u"-6% maximum Player Resistances\n"_s);
+        const MapCheck c = check(maptexts::header + u"-9% maximum Player Resistances\n"_s);
         QVERIFY(c.suggestions.first().contains(u"whichever it picks"_s));
     }
 
