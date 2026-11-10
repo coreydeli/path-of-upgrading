@@ -2,6 +2,7 @@
 #include "app/hotkeys.h"
 #include "app/overlayoptions.h"
 #include "app/settingsstore.h"
+#include "fakegamewatcher.h"
 #include "fakeglobalshortcuts.h"
 #include "platform/autostart.h"
 
@@ -209,6 +210,19 @@ private Q_SLOTS:
         o.shortcuts.change(u"trade-results"_s, QKeySequence(u"Meta+D"_s));
         QCOMPARE(changed.size(), 1);
         QCOMPARE(o.options.resultsKey(), QKeySequence(u"Meta+D"_s));
+    }
+
+    void followsTheGame()
+    {
+        Options o;
+        QVERIFY(!o.options.hotkeysFollowGame());
+        FakeGlobalShortcuts shortcuts;
+        FakeGameWatcher game;
+        Hotkeys hotkeys(&shortcuts, &game);
+        Autostart autostart{o.dir.filePath(u"autostart/other.desktop"_s),
+                            {.name = u"Made-up"_s, .exec = u"x"_s}};
+        OverlayOptions options(&o.settings, &hotkeys, &autostart);
+        QVERIFY(options.hotkeysFollowGame());
     }
 
     void noHotkeys()

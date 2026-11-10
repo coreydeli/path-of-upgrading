@@ -28,6 +28,7 @@
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
+#include "platform/gamewatcher.h"
 #include "services/pobengine.h"
 #include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
@@ -95,11 +96,12 @@ public:
     static Paths defaultPaths();
 
     // The engine has to outlive it. Path of Building is looked for in the
-    // places, see findPob().
+    // places, see findPob(). The hotkeys are taken only while the game watcher
+    // says it's running, or always without one.
     App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<GlobalShortcuts> shortcuts,
         std::unique_ptr<SecretStore> secrets, std::unique_ptr<Opener> opener,
         std::unique_ptr<QNetworkAccessManager> network, const PobPlaces &places, const Paths &paths,
-        QObject *parent = nullptr);
+        std::unique_ptr<GameWatcher> game = nullptr, QObject *parent = nullptr);
     ~App() override;
 
     // Looks for Path of Building again, as once you've installed it.
@@ -159,6 +161,7 @@ private:
     std::unique_ptr<GameInput> m_input;
     ItemChecker m_checker;
     std::unique_ptr<GlobalShortcuts> m_shortcuts;
+    std::unique_ptr<GameWatcher> m_game;
     Hotkeys m_hotkeys;
     ItemHistory m_history;
     QString m_pobLocation; // where it was last looked for

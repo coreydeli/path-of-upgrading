@@ -27,8 +27,11 @@ KdeGlobalShortcuts::KdeGlobalShortcuts(QObject *parent)
 {
     connect(KGlobalAccel::self(), &KGlobalAccel::globalShortcutChanged, this,
             [this](QAction *action, const QKeySequence &key) {
-                if (m_actions.value(action->objectName()) == action)
-                    Q_EMIT keyChanged(action->objectName(), key);
+                const QString id = action->objectName();
+                if (m_actions.value(id) != action)
+                    return;
+                m_keys.insert(id, key);
+                Q_EMIT keyChanged(id, key);
             });
 }
 
@@ -54,13 +57,48 @@ void KdeGlobalShortcuts::add(const QString &id, const QString &name, const QKeyS
     action->setProperty("componentDisplayName", QGuiApplication::applicationDisplayName());
     connect(action, &QAction::triggered, this, [this, id] { Q_EMIT activated(id); });
     m_actions.insert(id, action);
-    KGlobalAccel::setGlobalShortcut(action, key);
+    m_keys.insert(id, key);
+    if (m_grabbed)
+        grab(id);
+}
+
+bool KdeGlobalShortcuts::grab(const QString &id)
+{
+    QAction *action = m_actions.value(id);
+    const QKeySequence wanted = m_keys.value(id);
+    KGlobalAccel::setGlobalShortcut(action, wanted);
+    // the desktop may have had another, or someone else may have this one
+    const QKeySequence given = KGlobalAccel::self()->shortcut(action).value(0);
+    m_keys.insert(id, given);
+    return given != wanted;
+}
+
+void KdeGlobalShortcuts::setGrabbed(bool grabbed)
+{
+    if (grabbed == m_grabbed)
+        return;
+    const QStringList ids = m_actions.keys();
+    // what the desktop has, which it's about to forget
+    if (!grabbed) {
+        for (const QString &id : ids)
+            m_keys.insert(id, key(id));
+    }
+    m_grabbed = grabbed;
+    for (const QString &id : ids) {
+        if (!grabbed)
+            // which forgets the key too, so the next start has the app's
+            KGlobalAccel::self()->removeAllShortcuts(m_actions.value(id));
+        else if (grab(id))
+            Q_EMIT keyChanged(id, m_keys.value(id));
+    }
 }
 
 QKeySequence KdeGlobalShortcuts::key(const QString &id) const
 {
     const QAction *action = m_actions.value(id);
-    return action ? KGlobalAccel::self()->shortcut(action).value(0) : QKeySequence();
+    if (!action)
+        return QKeySequence();
+    return m_grabbed ? KGlobalAccel::self()->shortcut(action).value(0) : m_keys.value(id);
 }
 
 bool KdeGlobalShortcuts::setKey(const QString &id, const QKeySequence &key)
@@ -74,7 +112,12 @@ bool KdeGlobalShortcuts::setKey(const QString &id, const QKeySequence &key)
     // all. The service counts our other shortcuts in this as well.
     if (!key.isEmpty() && !KGlobalAccel::isGlobalShortcutAvailable(key, component()))
         return false;
+    if (!m_grabbed) {
+        m_keys.insert(id, key);
+        return true;
+    }
     KGlobalAccel::self()->setShortcut(action, {key}, KGlobalAccel::NoAutoloading);
+    m_keys.insert(id, this->key(id));
     return this->key(id) == key;
 }
 
