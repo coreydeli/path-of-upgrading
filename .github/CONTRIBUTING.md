@@ -58,7 +58,9 @@ It passes once every other job has passed or been skipped.
 
 A change to nothing but Markdown files, the `docs` folder or the issue forms
 skips those builds, and they show as skipped, which counts as a pass. Pushes
-to `main` and `beta` always build.
+to `main` always build. A merge into `beta` doesn't build again, as its pull
+request was checked. A beta release is made by hand, or each night when `beta`
+has new code.
 
 ## Branches and pull requests
 

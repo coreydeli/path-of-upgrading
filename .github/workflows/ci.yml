@@ -6,8 +6,9 @@
 # supports, on Fedora, and on Windows in MSYS2. Each is built once, as it's released, and
 # the packages come from that build when release.yml asks for them. A branch
 # is built as a beta on Debian and as a release on the others, as the tests
-# have to pass in both. Main and beta are checked by the release builds, which
-# run it. A change to nothing but the docs isn't built, except on those.
+# have to pass in both. Main and the betas are checked by the release builds,
+# which run it, and a merge into beta was checked on its pull request. A change
+# to nothing but the docs isn't built, except for a release.
 name: CI
 
 on:
