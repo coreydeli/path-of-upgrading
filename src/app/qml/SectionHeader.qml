@@ -39,7 +39,7 @@ Item {
 
         QQC2.Label {
             Layout.fillWidth: true
-            color: Style.gold(Kirigami.Theme)
+            color: Style.accent(Kirigami.Theme)
             font: Style.sectionFont(Kirigami.Theme.defaultFont)
             text: header.title
             wrapMode: Text.WordWrap

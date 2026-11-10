@@ -3,18 +3,30 @@ pragma Singleton
 
 import QtQuick
 import org.kde.kirigami as Kirigami
+import PouStyle
 
 // What a color scheme can't say: the game's item colors, the grades, the
-// frames and the heading font. The functions that follow the desktop's colors
-// when the app's own are off take the Kirigami.Theme of what they color.
+// rules and the faces the text is set in. The functions that follow the
+// desktop's colors when the app's own are off take the Kirigami.Theme of what
+// they color.
 QtObject {
+    id: style
+
     // set by the main window, from the Appearance settings
     property bool appColors: false
-    // the family the headings are set in, which is Cinzel unless it's changed
-    property string headingFamily: "Cinzel"
-    // Whether the extras are left out: the corner pieces, the gauges' rings
-    // and the popup's fade.
+    // the family the page titles are set in
+    property string headingFamily: "Big Shoulders Display"
+    // Whether the plates are square, which is when the decorations are plain.
     property bool plain: false
+
+    // how much is cut off the corners of a plate
+    readonly property real cut: plain ? 0 : 12
+
+    // the paper the slabs and the fields are, and the ink on it
+    readonly property color paper: Look.paper
+    readonly property color ink: Look.ink
+
+    onHeadingFamilyChanged: Look.headingFamily = headingFamily
 
     // the item colors the game's players read at a glance
     function rarity(rarity: string, theme): color {
@@ -38,24 +50,9 @@ QtObject {
 
     // gear score grades, best first
     function grade(grade: string, theme): color {
-        if (appColors) {
-            switch (grade) {
-            case "S":
-                return "#d4b06a";
-            case "A":
-                return "#7fb069";
-            case "B":
-                return "#8fb3c9";
-            case "C":
-                return "#c9b48f";
-            case "D":
-                return "#948776";
-            }
-            return theme.textColor;
-        }
         switch (grade) {
         case "S":
-            return theme.highlightColor;
+            return accent(theme);
         case "A":
             return theme.positiveTextColor;
         case "C":
@@ -64,6 +61,11 @@ QtObject {
             return theme.disabledTextColor;
         }
         return theme.textColor;
+    }
+
+    // how far up the grades it is, out of five, for the pips
+    function gradeStep(grade: string): int {
+        return grade ? "DCBAS".indexOf(grade) + 1 : 0;
     }
 
     // better, worse and better with a catch. Blue and orange for those who
@@ -81,27 +83,23 @@ QtObject {
         }
     }
 
-    // the line round a frame, and the finer one inside it
+    // the line round a plate, and the finer one inside it
     function frame(theme): color {
-        if (appColors)
-            return "#5c4a32";
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.2);
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.28);
     }
 
     function inner(theme): color {
-        if (appColors)
-            return "#2b241c";
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.1);
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.14);
     }
 
-    // what the frames' diamonds and the lit edges are in
-    function gold(theme): color {
-        return appColors ? "#d4b06a" : theme.highlightColor;
+    // the one color besides the text, which is teal in the app's scheme
+    function accent(theme): color {
+        return theme.highlightColor;
     }
 
     // a color with part of another laid over it
     function tint(base: color, over: color, part: real): color {
-        return Kirigami.ColorUtils.tintWithAlpha(base, over, part);
+        return Look.tint(base, over, part);
     }
 
     // the same color, but see through
@@ -109,26 +107,23 @@ QtObject {
         return Qt.rgba(from.r, from.g, from.b, 0);
     }
 
-    // The heading font, the size of the one it's given times scale. Cinzel
-    // only has capitals, its lower case are small ones, so it's used as it is.
+    // titles, in capitals: the page's, the popup's item and the like
     function titleFont(base: font, scale = 1): font {
-        return Qt.font({
-            family: headingFamily,
-            pointSize: base.pointSize * scale,
-            weight: Font.Bold,
-            letterSpacing: 0.5
-        });
+        return Look.titleFont(base, scale);
     }
 
-    // For the title over a card: the heading font a little smaller, and in
-    // small capitals unless the font is Cinzel, whose lower case are those.
+    // small capitals for labels, column heads and buttons
+    function labelFont(base: font, scale = 1): font {
+        return Look.labelFont(base, scale);
+    }
+
+    // what sits over a card
     function sectionFont(base: font): font {
-        return Qt.font({
-            family: headingFamily,
-            pointSize: base.pointSize * 0.95,
-            weight: Font.Bold,
-            letterSpacing: 0.5,
-            capitalization: headingFamily === "Cinzel" ? Font.MixedCase : Font.SmallCaps
-        });
+        return Look.labelFont(base, 1.15);
+    }
+
+    // big numbers: the score, a change
+    function figureFont(base: font, scale = 1): font {
+        return Look.figureFont(base, scale);
     }
 }

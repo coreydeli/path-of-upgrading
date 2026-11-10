@@ -24,7 +24,7 @@ Item {
         color: "transparent"
         border {
             width: 1
-            color: frame.lit ? Style.gold(Kirigami.Theme) : Style.frame(Kirigami.Theme)
+            color: frame.lit ? Style.accent(Kirigami.Theme) : Style.frame(Kirigami.Theme)
         }
     }
 
@@ -74,7 +74,7 @@ Item {
                 width: 5
                 height: 5
                 rotation: 45
-                color: Style.gold(Kirigami.Theme)
+                color: Style.accent(Kirigami.Theme)
             }
         }
     }

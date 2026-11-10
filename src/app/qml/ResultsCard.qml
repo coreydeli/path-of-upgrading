@@ -57,7 +57,7 @@ Rectangle {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     font: Style.titleFont(Kirigami.Theme.defaultFont, 1.35)
-                    color: Style.gold(Kirigami.Theme)
+                    color: Style.accent(Kirigami.Theme)
                     text: card.results.searched ? card.results.title : qsTr("Trade Results")
                 }
 

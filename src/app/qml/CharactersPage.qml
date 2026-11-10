@@ -263,7 +263,7 @@ ColumnsPage {
             id: importButton
             objectName: "importButton"
             // the main thing on the page
-            icon.color: Style.gold(charactersPage.Kirigami.Theme)
+            icon.color: Style.accent(charactersPage.Kirigami.Theme)
             font.weight: Font.DemiBold
             text: charactersPage.importer.busy ? qsTr("Downloading the Build") : qsTr("Import")
             description: qsTr("Its gear goes on the character you play, or on a new one when you have none. Items you copied in the game stay, as they say more.")

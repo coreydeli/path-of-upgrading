@@ -6,8 +6,9 @@
 
 namespace pou {
 
-// The heading font the app carries.
+// The heading font the app carries, and the one for text.
 QString headingFontFamily();
+QString textFontFamily();
 
 // The installed font families that scale to any size. Bitmap fonts are left
 // out, as they only look right at the sizes they were made for.
