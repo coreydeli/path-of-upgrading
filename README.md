@@ -31,6 +31,11 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   damage, Effective HP, Life or Energy Shield counts against it, and "Never
   lose damage" and "Never lose defences" make either one mean an item is never
   an upgrade.
+- Rates the mods on a waystone or a precursor tablet when you check it, in a
+  beta only and still experimental. For each mod the popup says what it gives
+  you and how dangerous it is to run, and it suggests what to do with the bad
+  ones, such as an Orb of Annulment with its odds. It counts your character's
+  resistances and life when it knows them. A release shows a waystone as before.
 - The gear score uses a build profile: life and resistances, Energy Shield
   spellcaster, Energy Shield attacker, or minion summoner. You can change how
   much each stat adds under Affix Impact, from Not at all (0x) to Three times
@@ -125,9 +130,9 @@ these files:
 | Any other Linux, to build yourself | `path-of-upgrading-<version>.tar.gz` |
 
 The newest release is at the top of the list. A beta's version is like
-`0.6.0beta2` in the Arch package and `0.6.0.beta.2` in the Debian and Fedora
+`0.7.0beta2` in the Arch package and `0.7.0.beta.2` in the Debian and Fedora
 ones. In the Fedora file name, `<N>` is the Fedora release it was built on.
-The AppImage and the Windows files say `0.6.0-beta.2`.
+The AppImage and the Windows files say `0.7.0-beta.2`.
 
 ### Arch Linux
 
@@ -333,9 +338,10 @@ it has no trade at all.
 
 ## Releases
 
-Work is done on short branches off `beta` and merged back into it. Each merge
-into `beta` makes a pre-release, like `v0.6.0-beta.2`, with the packages and
-the changes since the last one. Merging `beta` into `main` releases the version
+Work is done on short branches off `beta` and merged back into it. A
+pre-release, like `v0.7.0-beta.2`, with the packages and the changes since the
+last one, is made from `beta` by hand (Run workflow on the Release workflow) or
+each night when `beta` has new code. Merging `beta` into `main` releases the version
 in `CMakeLists.txt` as the latest release, and the next beta needs a new
 version. The version is also in the metainfo's newest release, the PKGBUILD and
 the RPM spec, and CI checks they all say the same.

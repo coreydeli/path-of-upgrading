@@ -9,9 +9,11 @@ version that comes out.
 
 ## [Unreleased]
 
-These changes are in the beta. The 0.6.0 betas, from
-[0.6.0-beta.1](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0-beta.1)
-on, are pre-releases of this version.
+Nothing yet.
+
+## [0.6.0] - 2026-11-10
+
+[Release notes](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0)
 
 ### Added
 
@@ -20,6 +22,9 @@ on, are pre-releases of this version.
 - Each release includes an AppImage,
   `PathOfUpgrading-<version>-x86_64.AppImage`, for most current distros. Make
   it executable and run it.
+- In a beta, a waystone or a precursor tablet is rated by its mods when you
+  check it, with what each one gives and what it costs. It is experimental, and
+  a release shows a waystone as before.
 
 ### Changed
 
@@ -131,4 +136,5 @@ The 0.1.0 betas (v0.1.0-beta.1 to v0.1.0-beta.33, from 2026-11-03 to
   checks do.
 
 [Unreleased]: https://github.com/coreydeli/path-of-upgrading/commits/beta
+[0.6.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0
 [0.5.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.5.0

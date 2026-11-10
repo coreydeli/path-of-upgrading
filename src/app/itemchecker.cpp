@@ -41,6 +41,11 @@ void ItemChecker::setSettings(const Settings &settings)
     judgeWithPob();
 }
 
+void ItemChecker::setMapsOffered(bool offered)
+{
+    m_judge.setMaps(offered);
+}
+
 void ItemChecker::setCharacter(const Character &character, const std::optional<PobBuild> &build)
 {
     m_judge.setCharacter(character);

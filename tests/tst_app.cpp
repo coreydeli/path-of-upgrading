@@ -13,6 +13,7 @@
 #include "fakepob.h"
 #include "fakesecretstore.h"
 #include "itemtexts.h"
+#include "maptexts.h"
 #include "tradefixtures.h"
 
 #include <QDir>
@@ -207,6 +208,14 @@ struct Running
     {
         app.checker().check();
         Q_EMIT input->itemCopied(itemtexts::helmetNew, std::nullopt);
+        return app.checker().popup().report();
+    }
+
+    // and of a waystone
+    ItemReport checkedWaystone()
+    {
+        app.checker().check();
+        Q_EMIT input->itemCopied(maptexts::bad, std::nullopt);
         return app.checker().popup().report();
     }
 };
@@ -949,6 +958,26 @@ private Q_SLOTS:
             QVERIFY(!r.app.checker().popup().isTradeAvailable());
             QVERIFY(!SettingsStore(folders.paths.settings).settings().trade.enabled);
         }
+    }
+
+    void mapsStartByTheBuild()
+    {
+        Folders folders;
+        Running r(folders);
+        QCOMPARE(r.app.mapsOffered(), isBetaBuild());
+        // and a test can say either
+        Folders off;
+        off.paths.mapsOffered = false;
+        Running offApp(off);
+        QVERIFY(!offApp.app.mapsOffered());
+        Folders on;
+        on.paths.mapsOffered = true;
+        Running onApp(on);
+        QVERIFY(onApp.app.mapsOffered());
+        // where a waystone is rated, or is as it was
+        QVERIFY(onApp.checkedWaystone().map);
+        QVERIFY(!offApp.checkedWaystone().map);
+        QCOMPARE(offApp.app.checker().popup().report().notes.size(), 1);
     }
 
     void releaseHasNoTrade()
