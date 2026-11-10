@@ -2628,18 +2628,70 @@ private Q_SLOTS:
         QVERIFY(!release.shortcuts->names.contains(u"trade-results"_s));
     }
 
-    void releaseSetupGuideHasNoTradeSteps()
+    void releaseSetupGuideHasTheLeagueButNoTradeStep()
     {
         Window w(true, false, {}, std::nullopt, false);
         QObject *guide = w.guide();
         QTRY_VERIFY(guide->property("opened").toBool());
         QCOMPARE(guide->property("steps").toStringList(),
-                 (QStringList{u"welcome"_s, u"character"_s, u"done"_s}));
+                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
+        // solo self-found, with or without hardcore, has nothing to turn off here
+        QObject *solo = w.inGuide(u"setupSoloSwitch"_s);
+        QCOMPARE(solo->property("description").toString(), u"For characters that play without trading."_s);
+        QVERIFY(toggle(w.inGuide(u"setupHardcoreSwitch"_s)));
+        QVERIFY(toggle(solo));
+        QVERIFY(w.settings().trade.league.hardcore);
+        QVERIFY(w.settings().trade.league.soloSelfFound);
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QCOMPARE(guide->property("title").toString(), u"Your Character"_s);
-        QVERIFY(!isVisible(w.inGuide(u"leagueStep"_s)));
         QVERIFY(!isVisible(w.inGuide(u"tradeStep"_s)));
         QVERIFY(w.network->sent.isEmpty());
+    }
+
+    void setupGuideSoloSelfFoundTurnsTradeOff()
+    {
+        Window w(true, false, {}, std::nullopt);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        // trade is on, which a first start only has in a beta build
+        Settings on = w.settings();
+        on.trade.enabled = true;
+        QVERIFY(w.app->settings().set(on));
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(w.app->trade().unavailable().isEmpty());
+        QVERIFY(toggle(w.inGuide(u"setupHardcoreSwitch"_s)));
+        QVERIFY(toggle(w.inGuide(u"setupSoloSwitch"_s)));
+        QVERIFY(!w.app->trade().unavailable().isEmpty());
+        QVERIFY(!w.app->checker().popup().isTradeAvailable());
+        QCOMPARE(guide->property("steps").toStringList(),
+                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
+        QVERIFY(w.inGuide(u"setupSoloSwitch"_s)
+                    ->property("description")
+                    .toString()
+                    .contains(u"turns trade searches off"_s));
+    }
+
+    void releaseSettingsHaveTheLeague()
+    {
+        Window w(true, false, {}, used(), false);
+        QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(isVisible(w.find(u"leagueBox"_s)));
+        QVERIFY(toggle(w.find(u"hardcoreSwitch"_s)));
+        QVERIFY(toggle(w.find(u"soloSwitch"_s)));
+        QVERIFY(w.settings().trade.league.hardcore);
+        QVERIFY(w.settings().trade.league.soloSelfFound);
+        // as the setup guide has them
+        QVERIFY(w.network->sent.isEmpty());
+    }
+
+    void settingsLeagueIsOnTheTradePageWhenOffered()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(!isVisible(w.find(u"leagueBox"_s)));
     }
 
     void cardsInColumns()
