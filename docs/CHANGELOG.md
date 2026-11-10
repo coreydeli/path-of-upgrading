@@ -9,18 +9,29 @@ version that comes out.
 
 ## [Unreleased]
 
-These changes are in the beta. The 0.6.0 betas,
+These changes are in the beta. The 0.6.0 betas, from
 [0.6.0-beta.1](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0-beta.1)
-and [0.6.0-beta.2](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0-beta.2),
-are pre-releases of this version.
+on, are pre-releases of this version.
 
 ### Added
 
 - Each release now includes a package for Fedora (an RPM file), next to the
   Arch and Debian packages.
+- Each release includes an AppImage,
+  `PathOfUpgrading-<version>-x86_64.AppImage`, for most current distros. Make
+  it executable and run it.
 
 ### Changed
 
+- The hotkeys are only taken while Path of Exile 2 is running. The rest of the
+  time other programs get them, so you can type them as usual.
+- The sidebar has a Settings group, with Settings and Appearance in it, which
+  works like the Gear group.
+- A release has no trade at all: no Trade page, no results window and no
+  search buttons on the popup. Trade searches are only in the betas. A release
+  still has the league, with the Hardcore and Solo self-found switches, in the
+  setup guide and on the Settings page.
+- The Build Analysis page is now called Build Review.
 - The sidebar stays on Gear while you move between Gear Grade, Stat Weights and
   Ignored Stats. Back still takes you up one level.
 
@@ -29,6 +40,9 @@ are pre-releases of this version.
 - When the game runs under Wine or Proton, the popup opens beside the mouse
   pointer. Before, it could jump to the top of the screen. It opens 20 pixels to
   the left of the pointer, or to the right when there is no room on the left.
+- The Debian package now installs `layer-shell-qt`, the Wayland plugin the
+  popup needs to show over the game. Without it, the popup couldn't be placed
+  over the game on Wayland.
 
 ## [0.5.0] - 2026-11-05
 

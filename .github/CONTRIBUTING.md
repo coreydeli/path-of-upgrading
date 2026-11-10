@@ -35,8 +35,9 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
-The beta releases add `-DPOU_BETA=ON` to the configure step, which starts trade
-searches on. Add it when you're testing that.
+The beta releases add `-DPOU_BETA=ON` to the configure step, which turns trade
+searches on. Without it, a build has no trade at all. Add it when you're
+testing that.
 
 Run the tests on the private bus the README describes:
 
@@ -47,8 +48,10 @@ cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 CI builds on Arch Linux, on Debian 13, on Fedora and on Windows in MSYS2,
 checks the formatting, treats warnings as errors and runs every test. The
 Fedora job also builds the RPM and checks it with rpmlint, and for a release
-another job installs it in a clean Fedora container to see that it starts. A
-change has to pass all of it. The steps are in `.github/workflows/ci.yml`.
+another job installs it in a clean Fedora container to see that it starts.
+The Debian job makes the AppImage, and for a release another job starts it in
+clean Fedora and Arch Linux containers. A change has to pass all of it. The
+steps are in `.github/workflows/ci.yml`.
 
 The check named CI is the one `beta` requires before a pull request can merge.
 It passes once every other job has passed or been skipped.
