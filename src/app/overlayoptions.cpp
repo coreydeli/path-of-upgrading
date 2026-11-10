@@ -73,6 +73,11 @@ QString OverlayOptions::hotkeysError() const
     return m_hotkeys->errorString();
 }
 
+bool OverlayOptions::hotkeysFollowGame() const
+{
+    return m_hotkeys->followsGame();
+}
+
 void OverlayOptions::setAdvancedCopy(bool advanced)
 {
     change([&](OverlaySettings &overlay) { overlay.advancedCopy = advanced; });

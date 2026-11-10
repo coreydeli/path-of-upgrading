@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/hotkeys.h"
+#include "fakegamewatcher.h"
 #include "fakeglobalshortcuts.h"
 
 #include <QSignalSpy>
@@ -124,6 +125,68 @@ private Q_SLOTS:
         QVERIFY(!hotkeys.setKey(Hotkey::Check, key));
         QCOMPARE(hotkeys.key(Hotkey::Check), u"F2"_s);
         QCOMPARE(changed.size(), 0);
+    }
+
+    void alwaysTakenWithoutTheGame()
+    {
+        FakeGlobalShortcuts shortcuts;
+        Hotkeys hotkeys(&shortcuts);
+        hotkeys.add({});
+        QVERIFY(!hotkeys.followsGame());
+        QVERIFY(shortcuts.grabbed);
+        QCOMPARE(shortcuts.grabChanges, 0);
+    }
+
+    void takenWhileTheGameRuns()
+    {
+        FakeGlobalShortcuts shortcuts;
+        FakeGameWatcher game;
+        Hotkeys hotkeys(&shortcuts, &game);
+        hotkeys.add({});
+        QVERIFY(hotkeys.followsGame());
+        // not taken at all while it's closed, even for a moment
+        QVERIFY(!shortcuts.grabbed);
+        game.setRunning(true);
+        QVERIFY(shortcuts.grabbed);
+        game.setRunning(false);
+        QVERIFY(!shortcuts.grabbed);
+    }
+
+    void takenWhenTheGameWasRunningAlready()
+    {
+        FakeGlobalShortcuts shortcuts;
+        FakeGameWatcher game;
+        game.running = true;
+        Hotkeys hotkeys(&shortcuts, &game);
+        QVERIFY(shortcuts.grabbed);
+        QCOMPARE(shortcuts.grabChanges, 1);
+    }
+
+    void keepsYourKeysWhileTheGameIsClosed()
+    {
+        FakeGlobalShortcuts shortcuts;
+        FakeGameWatcher game;
+        Hotkeys hotkeys(&shortcuts, &game);
+        OverlaySettings settings;
+        settings.hotkey = u"2"_s;
+        hotkeys.add(settings);
+        QSignalSpy changed(&hotkeys, &Hotkeys::keyChanged);
+        game.setRunning(true);
+        game.setRunning(false);
+        game.setRunning(true);
+        QCOMPARE(hotkeys.key(Hotkey::Check), u"2"_s);
+        QCOMPARE(changed.size(), 0);
+    }
+
+    void pressedOnlyThroughTheShortcuts()
+    {
+        FakeGlobalShortcuts shortcuts;
+        FakeGameWatcher game;
+        Hotkeys hotkeys(&shortcuts, &game);
+        hotkeys.add({});
+        QSignalSpy pressed(&hotkeys, &Hotkeys::pressed);
+        Q_EMIT shortcuts.activated(u"check-item"_s);
+        QCOMPARE(pressed.size(), 1);
     }
 
     void changedOnTheDesktop()

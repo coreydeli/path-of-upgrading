@@ -4,6 +4,7 @@
 #include "platform/gamewindow.h"
 #include "platform/logging.h"
 #include "platform/win/winkeysender.h"
+#include "platform/win/winwindows.h"
 
 #include <QClipboard>
 #include <QCursor>
@@ -33,33 +34,6 @@ HWND windowUnderMouse()
     // the window itself, not the part of it under the mouse
     const HWND window = WindowFromPoint(point);
     return window ? GetAncestor(window, GA_ROOT) : nullptr;
-}
-
-DWORD processOf(HWND window)
-{
-    DWORD process = 0;
-    GetWindowThreadProcessId(window, &process);
-    return process;
-}
-
-WindowInfo describeWindow(HWND window)
-{
-    WindowInfo info;
-    if (!window)
-        return info;
-    wchar_t className[256];
-    if (const int length = GetClassNameW(window, className, std::size(className)); length > 0)
-        info.classes << QString::fromWCharArray(className, length);
-
-    const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processOf(window));
-    if (!process)
-        return info;
-    wchar_t path[MAX_PATH];
-    DWORD length = std::size(path);
-    if (QueryFullProcessImageNameW(process, 0, path, &length))
-        info.program = QFileInfo(QString::fromWCharArray(path, int(length))).fileName();
-    CloseHandle(process);
-    return info;
 }
 
 // What to call a window that isn't the game: its program, without the .exe.
