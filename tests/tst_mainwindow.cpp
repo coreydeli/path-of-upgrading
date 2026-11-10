@@ -1737,6 +1737,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         w.play({});
         QVERIFY(isVisible(w.find(u"resistances"_s)));
+        QCOMPARE(w.find(u"resistancesHeader"_s)->property("title").toString(), u"Resistances"_s);
         QObject *summary = w.find(u"resistSummary"_s);
         QVERIFY(isVisible(summary));
         QCOMPARE(text(summary), u"Not known yet"_s);
