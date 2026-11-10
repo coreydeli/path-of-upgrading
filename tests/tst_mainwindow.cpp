@@ -2415,8 +2415,9 @@ private Q_SLOTS:
         };
         QVERIFY(top(u"Build Review"_s) > top(u"Trade"_s));
         QVERIFY(top(u"Build Review"_s) > top(u"Item History"_s));
-        QVERIFY(top(u"Your Gear"_s) < top(u"Gear"_s));
-        QVERIFY(top(u"Build Review"_s) - top(u"Gear"_s) > 2 * (top(u"Gear"_s) - top(u"Your Gear"_s)));
+        QVERIFY(top(u"Your Gear"_s) < top(u"Gear Settings"_s));
+        QVERIFY(top(u"Build Review"_s) - top(u"Gear Settings"_s) >
+                2 * (top(u"Gear Settings"_s) - top(u"Your Gear"_s)));
     }
 
     void itemHistoryName()
@@ -3263,7 +3264,7 @@ private Q_SLOTS:
         Window w;
         QObject *group = w.window->findChild<QObject *>(u"gearGroupAction"_s);
         QVERIFY(group);
-        QCOMPARE(group->property("text").toString(), u"Gear"_s);
+        QCOMPARE(group->property("text").toString(), u"Gear Settings"_s);
         for (const QString &name : {u"gearScoreAction"_s, u"weightsAction"_s, u"ignoredAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
@@ -3292,14 +3293,14 @@ private Q_SLOTS:
         QVERIFY(w.shown());
         QCOMPARE(w.window->property("wideScreen").toBool(), true);
         // the pages aren't in the sidebar until Gear is opened
-        QTRY_VERIFY(w.sidebarRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Your Gear"_s));
         QVERIFY(!w.sidebarRow(u"Gear Grade"_s));
         QVERIFY(!w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(!w.sidebarRow(u"Ignored Stats"_s));
         QVERIFY(!w.sidebarRow(u"Gear Score"_s));
 
-        QVERIFY(w.clickRow(u"Gear"_s));
+        QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
         QVERIFY(w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(w.sidebarRow(u"Ignored Stats"_s));
@@ -3329,11 +3330,11 @@ private Q_SLOTS:
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+        QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), true);
         QCOMPARE(w.sidebarRow(u"Characters"_s)->property("checked").toBool(), false);
 
         // a page from outside the group takes the sidebar back to the top
-        QVERIFY(w.clickRow(u"Gear"_s));
+        QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
         QVERIFY(w.show(u"gearAction"_s));
@@ -3344,7 +3345,7 @@ private Q_SLOTS:
         // the other pages stay one click away
         QVERIFY(w.clickRow(u"Your Gear"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), false);
+        QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), false);
     }
 
     void sidebarGearWorksWithTheKeyboard()
@@ -3357,7 +3358,7 @@ private Q_SLOTS:
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Your Gear"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
-        QCOMPARE(w.focusedRow(), u"Gear"_s);
+        QCOMPARE(w.focusedRow(), u"Gear Settings"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
@@ -3396,8 +3397,8 @@ private Q_SLOTS:
 
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
-        QTRY_VERIFY(w.sidebarRow(u"Gear"_s));
-        QVERIFY(w.clickRow(u"Gear"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Settings"_s));
+        QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
         // once it has slid in
         QTest::qWait(500);
@@ -3423,7 +3424,7 @@ private Q_SLOTS:
         QVERIFY(w.clickRow(u"Back"_s));
         QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
-        QCOMPARE(w.sidebarRow(u"Gear"_s)->property("checked").toBool(), true);
+        QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), true);
         QVERIFY(w.clickRow(u"Your Gear"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
