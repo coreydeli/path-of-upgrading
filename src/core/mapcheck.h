@@ -13,8 +13,9 @@ namespace pou {
 
 // Rating a waystone or a precursor tablet: what each of its mods gives, how
 // dangerous it is to run, and what to do about the bad ones. It works from the
-// item's text alone. The mods are the ones poe2db.tw lists for waystones and
-// for the Precursor Tower mods tablets roll, and the danger of each is ours.
+// item's text alone. The mods are the ones poe2db.tw lists for waystones (the
+// Waystones Mods and Desecrated Waystone Mods tabs) and for the Precursor Tower mods tablets roll, and the
+// danger of each is ours.
 
 enum class MapKind { Waystone, Tablet };
 
@@ -62,6 +63,10 @@ struct MapCheck
     QList<MapMod> mods;
     QStringList suggestions;
     bool corrupted = false;
+    // from the tier or the area level on the item, zero when it doesn't say
+    int areaLevel = 0;
+    // how much the area level takes off elemental resistances
+    int resistPenalty = 0;
     // the build was there to count, and whether it changed anything
     bool usedBuild = false;
     bool buildChanged = false;
@@ -73,6 +78,12 @@ struct MapCheck
 std::optional<MapKind> mapKindOf(const Item &item);
 
 MapCheck checkMap(const Item &item, MapKind kind, const MapBuild &build = {});
+
+// The area level of a waystone: its Area Level line, else 64 plus its tier.
+int areaLevelOf(const Item &item);
+
+// What the area level takes off your elemental resistances, in percent.
+int resistPenaltyAt(int areaLevel);
 
 // "1 in 3"
 QString oddsText(int bad, int total);

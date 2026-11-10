@@ -46,9 +46,11 @@ QRegularExpression rx(const QString &pattern)
     return QRegularExpression(pattern, QRegularExpression::CaseInsensitiveOption);
 }
 
-// The mods are from poe2db.tw: the Waystones Mods list on its Waystones page
-// and the Precursor Towers Mods list on its Tablet page, as of November 2026.
-// The danger of each is ours, read from what the mod does.
+// The mods are from poe2db.tw, as of November 2026. Waystones: the Waystones
+// Mods and Desecrated Waystone Mods tabs of its Waystones page (the wording of
+// each line, with the rewards that come with it). Tablets: the Precursor Towers
+// Mods list on its Tablet page. The danger of each is ours, read from what the
+// mod does.
 const QList<CostRule> &costRules()
 {
     static const QList<CostRule> rules = {
@@ -70,6 +72,8 @@ const QList<CostRule> &costRules()
          u"Monsters attack, cast and move faster"_s, Danger::Risky, 0, never, Need::Health},
         {rx(uR"(Monsters have (\d+)% increased Critical Hit Chance)"_s), u"Monsters crit far more often"_s,
          Danger::Mild, 200, never, Need::Health},
+        {rx(uR"(Monsters have \+(\d+)% Critical Damage Bonus)"_s), u"Monster crits hit harder"_s,
+         Danger::Mild, 26, never, Need::Health},
         {rx(uR"((\d+)% more Monster Life)"_s), u"Monsters take longer to kill"_s, Danger::Mild, 20},
         {rx(uR"(\+(\d+)% Monster Elemental Resistances)"_s),
          u"Monsters resist elemental damage, so you kill them slower"_s, Danger::Mild, 35},
@@ -111,6 +115,33 @@ const QList<CostRule> &costRules()
          u"You get slower the more skills you use"_s, Danger::Risky},
         {rx(uR"(Monsters inflict (\d+) Grasping Vines on Hit)"_s), u"Monsters root and slow you"_s},
         {rx(uR"(Mana Siphoning Ground)"_s), u"Ground that drains your mana"_s},
+        // desecrated waystone mods
+        {rx(uR"(Natural Rare Monsters in Area Eat the Souls)"_s),
+         u"Rare monsters grow stronger by eating the monsters around them"_s},
+        {rx(uR"(Players steal the Eaten Souls)"_s), u"You take back the souls they ate"_s, Danger::Harmless},
+        {rx(uR"(after killing a Rare or Unique monster)"_s), u"Only after you kill a rare or unique"_s,
+         Danger::Harmless},
+        {rx(uR"(Abyssal Monsters grant (\d+)% increased Experience)"_s), u"More abyssal monsters"_s,
+         Danger::Harmless},
+        {rx(uR"(Area contains (\d+) additional Abysses)"_s), u"More abysses, so more abyssal monsters"_s,
+         Danger::Harmless},
+        {rx(uR"(Abysses spawn (\d+)% increased Monsters)"_s), u"More monsters from the abysses"_s,
+         Danger::Mild},
+        {rx(uR"(Area is overrun by the Abyssal)"_s), u"The area is flooded with abyssal monsters"_s,
+         Danger::Mild},
+        {rx(uR"(additional Rare Monsters are spawned from Abysses)"_s), u"More rare abyssal monsters"_s,
+         Danger::Harmless},
+        {rx(uR"(Abysses lead to an Abyssal (?:Boss|Depths))"_s), u"The abysses lead to a boss fight"_s,
+         Danger::Mild},
+        {rx(uR"(Area contains (\d+) additional Incubator Queens)"_s), u"Extra incubator queens to fight"_s,
+         Danger::Mild},
+        {rx(uR"(Abyss (?:Pits|Cracks) have (\d+)% chance to spawn all Monsters as at least Magic)"_s),
+         u"Abyss monsters are magic or better"_s, Danger::Harmless},
+        {rx(uR"(Abyssal Monsters have increased Difficulty and Reward)"_s),
+         u"Abyssal monsters get tougher with each pit you close"_s, Danger::Mild},
+        {rx(uR"(Abyss Pits in Area always have Rewards)"_s), u"Every pit has a reward"_s, Danger::Harmless},
+        {rx(uR"(Natural Rare Monsters in Area have (\d+) extra Abyssal Modifiers)"_s),
+         u"Rare monsters get an abyssal mod"_s, Danger::Mild},
         // tablets
         {rx(uR"((\d+)% reduced Pack Size in Map)"_s), u"Fewer monsters in the map"_s},
         {rx(uR"(Map has (\d+) additional random Modifiers)"_s), u"The map gets extra random mods"_s,
@@ -150,7 +181,7 @@ const QList<GainRule> &gainRules()
 // the game's own lines, as the rules read them
 QString cleanLine(QString line)
 {
-    static const QRegularExpression range(uR"(\((-?\d+(?:\.\d+)?)[-–](-?\d+(?:\.\d+)?)\))"_s);
+    static const QRegularExpression range(uR"(\((-?\d+(?:\.\d+)?)[-–—](-?\d+(?:\.\d+)?)\))"_s);
     static const QRegularExpression unscalable(uR"(\s+[—–-]+\s*Unscalable Value\s*$)"_s);
     static const QRegularExpression tag(uR"(\s*\((?:augmented|desecrated|fractured)\)\s*$)"_s);
     line.replace(range, QString()).replace(unscalable, QString()).replace(tag, QString());
@@ -167,6 +198,17 @@ bool isGain(const QString &line)
 {
     return std::ranges::any_of(gainRules(),
                                [&](const GainRule &r) { return r.pattern.match(line).hasMatch(); });
+}
+
+// Lines that belong to the mod above them in a plain copy: the second stat of
+// a mod that has two, as poe2db lists them.
+bool continuesMod(const QString &line)
+{
+    static const QRegularExpression more(
+        uR"(^(?:Monsters have \d+% more Effectiveness|Monsters have \+\d+% Critical Damage Bonus|)"_s
+        uR"(Monsters have \d+% increased Stun Threshold|after killing a Rare or Unique monster|)"_s
+        uR"(Players steal the Eaten Souls|Abyss Cracks have|.*are spawned from Abysses))"_s);
+    return more.match(line).hasMatch();
 }
 
 // The mods are the blocks after the item level. Advanced copies put a header
@@ -208,7 +250,7 @@ QList<RawMod> rawModsOf(const Item &item, MapKind kind)
             if (headers) {
                 if (!mods.isEmpty())
                     mods.last().lines << line;
-            } else if (kind == MapKind::Waystone && !mods.isEmpty() && isGain(line)) {
+            } else if (kind == MapKind::Waystone && !mods.isEmpty() && (isGain(line) || continuesMod(line))) {
                 // a waystone mod's rewards come on the lines after it
                 mods.last().lines << line;
             } else {
@@ -230,8 +272,18 @@ QString percentOf(double v)
     return formatNumber(roundTo(v, 1)) + u'%';
 }
 
+// What the area level takes off your resistances (poe2db's Level Resist
+// Penalty tab), as a sentence to add on, or nothing.
+QString penaltyNote(double have, int penalty)
+{
+    if (penalty <= 0)
+        return {};
+    return u" The area level takes %1% off it there, leaving %2."_s.arg(penalty).arg(
+        percentOf(have - penalty));
+}
+
 // What your build says about a mod, empty when it makes no difference.
-QString buildNoteFor(Need need, const QString &line, const MapBuild &build)
+QString buildNoteFor(Need need, const QString &line, const MapBuild &build, int penalty)
 {
     static const QRegularExpression element(uR"((Fire|Cold|Lightning))"_s);
     const auto under = [&](Element e) -> std::optional<double> {
@@ -253,7 +305,8 @@ QString buildNoteFor(Need need, const QString &line, const MapBuild &build)
                           : m.captured(1).toLower() == u"cold"_s ? Element::Cold
                                                                  : Element::Lightning;
         if (const auto have = under(e))
-            return u"Your %1 resistance is %2, under the cap."_s.arg(elementId(e), percentOf(*have));
+            return u"Your %1 resistance is %2, under the cap.%3"_s.arg(elementId(e), percentOf(*have),
+                                                                       penaltyNote(*have, penalty));
         return {};
     }
     case Need::AnyElementRes: {
@@ -281,7 +334,7 @@ QString buildNoteFor(Need need, const QString &line, const MapBuild &build)
     return {};
 }
 
-MapMod rate(const RawMod &raw, const MapBuild &build)
+MapMod rate(const RawMod &raw, const MapBuild &build, int penalty)
 {
     MapMod mod;
     mod.lines = raw.lines;
@@ -308,7 +361,7 @@ MapMod rate(const RawMod &raw, const MapBuild &build)
             if (!costs.contains(rule.costs))
                 costs << rule.costs;
             mod.baseDanger = std::max(mod.baseDanger, d);
-            if (const QString note = buildNoteFor(rule.need, line, build); !note.isEmpty()) {
+            if (const QString note = buildNoteFor(rule.need, line, build, penalty); !note.isEmpty()) {
                 if (mod.buildNote.isEmpty())
                     mod.buildNote = note;
             }
@@ -368,6 +421,34 @@ QString dangerName(Danger danger)
 QString oddsText(int bad, int total)
 {
     return u"%1 in %2"_s.arg(bad).arg(total);
+}
+
+int resistPenaltyAt(int areaLevel)
+{
+    // poe2db's Level Resist Penalty tab: from this area level, this much off
+    static constexpr struct
+    {
+        int level;
+        int penalty;
+    } steps[] = {{65, 60}, {60, 50}, {54, 40}, {45, 30}, {33, 20}, {16, 10}};
+    for (const auto &step : steps) {
+        if (areaLevel >= step.level)
+            return step.penalty;
+    }
+    return 0;
+}
+
+int areaLevelOf(const Item &item)
+{
+    // poe2db's Waystones Item tab: tier 1 is area level 65, up to tier 16 at 80
+    static const QRegularExpression area(uR"(^Area Level:\s*(\d+))"_s, QRegularExpression::MultilineOption);
+    static const QRegularExpression tier(uR"(^Waystone Tier:\s*(\d+))"_s,
+                                         QRegularExpression::MultilineOption);
+    if (const auto m = area.match(item.raw); m.hasMatch())
+        return m.captured(1).toInt();
+    if (const auto m = tier.match(item.raw); m.hasMatch())
+        return 64 + m.captured(1).toInt();
+    return 0;
 }
 
 std::optional<MapKind> mapKindOf(const Item &item)
@@ -445,9 +526,11 @@ MapCheck checkMap(const Item &item, MapKind kind, const MapBuild &build)
     MapCheck check;
     check.kind = kind;
     check.corrupted = item.corrupted;
+    check.areaLevel = areaLevelOf(item);
+    check.resistPenalty = resistPenaltyAt(check.areaLevel);
     check.usedBuild = build.imported || build.resists || build.health > 0;
     for (const RawMod &raw : rawModsOf(item, kind))
-        check.mods << rate(raw, build);
+        check.mods << rate(raw, build, check.resistPenalty);
     check.buildChanged =
         std::ranges::any_of(check.mods, [](const MapMod &m) { return !m.buildNote.isEmpty(); });
 

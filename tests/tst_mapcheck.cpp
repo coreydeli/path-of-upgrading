@@ -287,6 +287,83 @@ private Q_SLOTS:
         QCOMPARE(fat.mods.first().danger, Danger::Mild);
     }
 
+    void modsWithTwoStatsStayTogether()
+    {
+        const MapCheck c = check(maptexts::pairs);
+        QCOMPARE(c.mods.size(), 2);
+        QCOMPARE(c.mods.at(0).lines.size(), 4);
+        QCOMPARE(c.mods.at(1).lines.size(), 4);
+        QVERIFY(c.mods.at(1).costs.contains(u"Monster crits hit harder"_s));
+        QVERIFY(c.mods.at(0).known && c.mods.at(1).known);
+    }
+
+    void desecratedMods()
+    {
+        const MapCheck c = check(maptexts::desecrated);
+        QCOMPARE(c.mods.size(), 5);
+        for (const MapMod &m : c.mods)
+            QVERIFY(m.known);
+        QCOMPARE(c.mods.at(0).danger, Danger::Harmless);
+        QCOMPARE(c.mods.at(1).danger, Danger::Mild);
+        QCOMPARE(c.mods.at(2).danger, Danger::Deadly);
+        QCOMPARE(c.mods.at(3).lines.size(), 2);
+        QCOMPARE(c.mods.at(3).danger, Danger::Risky);
+        QCOMPARE(c.mods.at(4).lines.size(), 2);
+        QCOMPARE(c.mods.at(4).danger, Danger::Mild);
+        QCOMPARE(c.grade, MapGrade::Bad);
+    }
+
+    void pageRangesAreRolledAway()
+    {
+        const MapCheck c =
+            check(maptexts::good + u"\nMonsters deal (10\u201414)% of Damage as Extra Cold\n"_s);
+        QCOMPARE(c.mods.last().lines.first(), u"Monsters deal % of Damage as Extra Cold"_s);
+    }
+
+    void areaLevelFromTheTier()
+    {
+        QCOMPARE(areaLevelOf(item(maptexts::good)), 79);
+        QCOMPARE(areaLevelOf(item(u"Item Class: Waystones\nRarity: Rare\nA\nWaystone (Tier 1)\n"
+                                  u"--------\nWaystone Tier: 1\n--------\nItem Level: 65\n"_s)),
+                 65);
+        QCOMPARE(areaLevelOf(item(u"Item Class: Waystones\nRarity: Rare\nA\nWaystone\n--------\n"
+                                  u"Area Level: 72\n--------\nItem Level: 72\n"_s)),
+                 72);
+        QCOMPARE(check(maptexts::good).areaLevel, 79);
+    }
+
+    void resistancePenaltyByAreaLevel()
+    {
+        QCOMPARE(resistPenaltyAt(0), 0);
+        QCOMPARE(resistPenaltyAt(15), 0);
+        QCOMPARE(resistPenaltyAt(16), 10);
+        QCOMPARE(resistPenaltyAt(32), 10);
+        QCOMPARE(resistPenaltyAt(33), 20);
+        QCOMPARE(resistPenaltyAt(45), 30);
+        QCOMPARE(resistPenaltyAt(54), 40);
+        QCOMPARE(resistPenaltyAt(60), 50);
+        QCOMPARE(resistPenaltyAt(64), 50);
+        QCOMPARE(resistPenaltyAt(65), 60);
+        QCOMPARE(resistPenaltyAt(80), 60);
+        QCOMPARE(check(maptexts::good).resistPenalty, 60);
+    }
+
+    void thePenaltyIsInTheResistanceNote()
+    {
+        const MapCheck c = check(maptexts::bad, withResists(70));
+        const QString note = c.mods.at(3).buildNote;
+        QVERIFY(note.contains(u"under the cap"_s));
+        QVERIFY(note.contains(u"takes 60% off"_s));
+        QVERIFY(note.contains(u"leaving 10%"_s));
+        // an item that doesn't say its level has no penalty to count
+        const MapCheck none =
+            check(u"Item Class: Waystones\nRarity: Rare\nA\nWaystone\n--------\n"
+                  u"Item Level: 79\n--------\nMonsters deal 12% of Damage as Extra Fire\n"
+                  u"Monsters have 16% more Effectiveness\n15% more Waystones found in Area"_s,
+                  withResists(70));
+        QVERIFY(!none.mods.first().buildNote.contains(u"area level"_s));
+    }
+
     void odds()
     {
         QCOMPARE(oddsText(1, 3), u"1 in 3"_s);
