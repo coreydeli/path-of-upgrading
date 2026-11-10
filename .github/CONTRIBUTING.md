@@ -140,6 +140,10 @@ touch.
 If your change alters what the app does, update the README in the same pull
 request.
 
+A change players would notice also gets a line under Unreleased in
+[the changelog](../docs/CHANGELOG.md), in plain words: what it does for them,
+not how it's built.
+
 ## License
 
 By contributing, you agree that your work is released under the MIT license
