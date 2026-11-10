@@ -2,6 +2,7 @@
 #include "app/itemreport.h"
 #include "core/parser.h"
 #include "itemtexts.h"
+#include "maptexts.h"
 
 #include <QTest>
 #include <algorithm>
@@ -291,19 +292,19 @@ private Q_SLOTS:
         Evaluation &e = check.evaluation;
         e.gear = GearScore{
             .score = 70,
-            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 20, 3.0, StatOrigin::Implicit},
-                              {u"# to maximum Life"_s, u"Life"_s, 90, 80, 7.0, StatOrigin::Mod},
-                              {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, StatOrigin::Mod},
-                              {u"speed"_s, u"Movement speed"_s, 8, 50, 2.0, StatOrigin::Socket},
-                              {u"speed"_s, u"Movement speed"_s, 4, 25, 1.0, StatOrigin::Mod},
+            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 20, 3.0, 0, StatOrigin::Implicit},
+                              {u"# to maximum Life"_s, u"Life"_s, 90, 80, 7.0, 0, StatOrigin::Mod},
+                              {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, 0, StatOrigin::Mod},
+                              {u"speed"_s, u"Movement speed"_s, 8, 50, 2.0, 0, StatOrigin::Socket},
+                              {u"speed"_s, u"Movement speed"_s, 4, 25, 1.0, 0, StatOrigin::Mod},
                               // too little to show
-                              {u"light"_s, u"Light radius"_s, 5, 10, 0.02, StatOrigin::Mod}},
+                              {u"light"_s, u"Light radius"_s, 5, 10, 0.02, 0, StatOrigin::Mod}},
             .ideal = 50};
         e.gearEquipped =
             GearScore{.score = 62,
-                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 80, 90, 8.0, StatOrigin::Mod},
-                                        {u"cold"_s, u"Cold resistance"_s, 20, 100, 2.5, StatOrigin::Mod},
-                                        {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, StatOrigin::Mod}},
+                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 80, 90, 8.0, 0, StatOrigin::Mod},
+                                        {u"cold"_s, u"Cold resistance"_s, 20, 100, 2.5, 0, StatOrigin::Mod},
+                                        {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, 0, StatOrigin::Mod}},
                       .ideal = 50};
         const QString excellent = u"100% of an excellent roll"_s;
         // those that change most first, then those that are worth most
@@ -349,9 +350,9 @@ private Q_SLOTS:
     void gearScoreWithoutAnIdeal()
     {
         ItemCheck check = judged(Verdict::Upgrade);
-        check.evaluation.gear =
-            GearScore{.score = 70,
-                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}}};
+        check.evaluation.gear = GearScore{
+            .score = 70,
+            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, 0, StatOrigin::Mod}}};
         QCOMPARE(reportOf(check).gearParts, QList<ReportFigure>());
     }
 
@@ -361,14 +362,14 @@ private Q_SLOTS:
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
         e.gear = GearScore{.score = 1,
-                           .contributions = {{u"b"_s, u"Mana"_s, 4, 100, 0.4, StatOrigin::Mod},
-                                             {u"a"_s, u"Life"_s, 5, 100, 0.5, StatOrigin::Mod}},
+                           .contributions = {{u"b"_s, u"Mana"_s, 4, 100, 0.4, 0, StatOrigin::Mod},
+                                             {u"a"_s, u"Life"_s, 5, 100, 0.5, 0, StatOrigin::Mod}},
                            .ideal = 100};
         e.gearEquipped = GearScore{.score = 0,
-                                   .contributions = {{u"a"_s, u"Life"_s, 2, 100, 0.2, StatOrigin::Mod},
-                                                     {u"b"_s, u"Mana"_s, 1, 100, 0.1, StatOrigin::Mod},
+                                   .contributions = {{u"a"_s, u"Life"_s, 2, 100, 0.2, 0, StatOrigin::Mod},
+                                                     {u"b"_s, u"Mana"_s, 1, 100, 0.1, 0, StatOrigin::Mod},
                                                      // too little to show
-                                                     {u"c"_s, u"Rarity"_s, 1, 100, 0.04, StatOrigin::Mod}},
+                                                     {u"c"_s, u"Rarity"_s, 1, 100, 0.04, 0, StatOrigin::Mod}},
                                    .ideal = 100};
         const QList<ReportFigure> parts = reportOf(check).gearParts;
         QCOMPARE(parts.size(), 2);
@@ -431,11 +432,11 @@ private Q_SLOTS:
     {
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
-        e.gear =
-            GearScore{.score = 70,
-                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}},
-                      .notScored = {u"#% increased Light Radius"_s},
-                      .ideal = 50};
+        e.gear = GearScore{
+            .score = 70,
+            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, 0, StatOrigin::Mod}},
+            .notScored = {u"#% increased Light Radius"_s},
+            .ideal = 50};
         QVERIFY(!reportOf(check).gearParts.isEmpty());
         QVERIFY(!reportOf(check).gearNotes.isEmpty());
 
@@ -1102,6 +1103,74 @@ private Q_SLOTS:
         const Item corrupted = item(itemtexts::helmetNew + u"\n--------\nCorrupted"_s);
         const ItemReport report = reportOn(corrupted, wearing({{u"Helmet"_s, helmetOld}}));
         QVERIFY(report.notes.contains(u"Corrupted, so it can't be modified any further."_s));
+    }
+
+    void aWaystone()
+    {
+        const Item waystone = item(maptexts::bad);
+        ItemCheck check{.item = waystone};
+        check.map = checkMap(waystone, MapKind::Waystone);
+        const ItemReport report = reportOf(check);
+        QVERIFY(report.map);
+        QCOMPARE(report.verdict, u"Bad waystone"_s);
+        QCOMPARE(report.verdictTone, Tone::Bad);
+        QCOMPARE(report.name, u"Grim Haven"_s);
+        QCOMPARE(report.mapMods.size(), 4);
+        QCOMPARE(report.mapMods.at(2).danger, u"Can end the run"_s);
+        QCOMPARE(report.mapMods.at(2).tone, Tone::Bad);
+        QCOMPARE(report.mapMods.at(0).tone, Tone::Warning);
+        QVERIFY(report.mapMods.at(0).gives.contains(u"7% more pack size, 10% more Waystones found"_s));
+        QVERIFY(!report.mapSuggestions.isEmpty());
+        QVERIFY(report.mapExperimental.startsWith(u"Experimental"_s));
+        // nothing about gear, and no build was there
+        QVERIFY(report.notes.isEmpty());
+        QVERIFY(report.wearIn.isEmpty());
+        QVERIFY(report.mapBuild.isEmpty());
+    }
+
+    void waystoneVerdicts()
+    {
+        const struct
+        {
+            QString text;
+            QString verdict;
+            Tone::Tone tone;
+        } rows[] = {{maptexts::good, u"Good waystone"_s, Tone::Good},
+                    {maptexts::fine, u"Fine waystone"_s, Tone::Warning},
+                    {maptexts::tablet, u"Fine tablet"_s, Tone::Warning}};
+        for (const auto &row : rows) {
+            const Item i = item(row.text);
+            ItemCheck check{.item = i};
+            check.map = checkMap(i, *mapKindOf(i));
+            const ItemReport report = reportOf(check);
+            QCOMPARE(report.verdict, row.verdict);
+            QCOMPARE(report.verdictTone, row.tone);
+        }
+    }
+
+    void saysWhenItUsedTheBuild()
+    {
+        const Item waystone = item(maptexts::bad);
+        MapBuild build;
+        build.imported = true;
+        build.health = 9000;
+        ItemCheck check{.item = waystone};
+        check.map = checkMap(waystone, MapKind::Waystone, build);
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"Checked against your character"_s));
+
+        build.health = 2000;
+        const Item thin = item(maptexts::header + u"12% increased Monster Damage\n"_s);
+        check.map = checkMap(thin, MapKind::Waystone, build);
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"Counted against your character"_s));
+        QVERIFY(!reportOf(check).mapMods.first().buildNote.isEmpty());
+    }
+
+    void corruptedWaystone()
+    {
+        const Item waystone = item(maptexts::bad + u"\n--------\nCorrupted"_s);
+        ItemCheck check{.item = waystone};
+        check.map = checkMap(waystone, MapKind::Waystone);
+        QVERIFY(reportOf(check).notes.contains(u"It's corrupted."_s));
     }
 };
 

@@ -19,20 +19,24 @@ QList<GearNote> notesOf(const GearScore &gear)
 {
     QList<GearNote> notes;
     if (!gear.missing.isEmpty())
-        notes << GearNote{.label = u"Missing"_s, .text = gear.missing.join(u", "_s)};
+        notes << GearNote{.label = u"Missing"_s, .text = missingStats(gear).join(u", "_s)};
     if (!gear.notScored.isEmpty())
         notes << GearNote{.label = u"Not scored"_s, .text = notScoredStats(gear).join(u", "_s)};
     if (const QStringList weak = weakRolls(gear); !weak.isEmpty())
-        notes << GearNote{.label = u"Weak rolls"_s, .text = weak.join(u", "_s) + u" of an excellent roll"_s};
+        notes << GearNote{.label = u"Weak rolls"_s, .text = weak.join(u", "_s)};
     return notes;
 }
 
 // What the build wants most in a slot with nothing in it.
 QList<GearNote> wantedIn(const QString &slot, const GearScoreOptions &options)
 {
+    const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
+    const QString itemClass = classOfSlot(slot);
     QStringList labels;
-    for (const KeyStat &stat : topStats(slot, 3, options))
-        labels << stat.label;
+    for (const KeyStat &stat : topStats(slot, 3, options)) {
+        const auto best = mods.best(itemClass, stat.key);
+        labels << (best ? stat.label + u" up to "_s + rollText(best->high) : stat.label);
+    }
     if (labels.isEmpty())
         return {};
     return {GearNote{.label = u"Wants most"_s, .text = labels.join(u", "_s)}};

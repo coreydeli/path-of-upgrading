@@ -16,6 +16,7 @@ add_library(pou_core STATIC
     item.h
     league.cpp league.h
     listing.cpp listing.h
+    mapcheck.cpp mapcheck.h
     numbers.cpp numbers.h
     parser.cpp parser.h
     placement.cpp placement.h
@@ -34,6 +35,7 @@ add_library(pou_core STATIC
     sessionguide.cpp sessionguide.h
     seenstats.cpp seenstats.h
     settings.cpp settings.h
+    slotmods.cpp slotmods.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
@@ -49,3 +51,10 @@ add_library(pou_core STATIC
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_compile_definitions(pou_core PRIVATE POU_BETA_BUILD=$<BOOL:${POU_BETA}>)
 target_link_libraries(pou_core PUBLIC Qt6::Core PRIVATE ZLIB::ZLIB)
+
+# what each kind of item can roll, from tools/slot-mods.py
+qt_add_resources(pou_core slotmods
+    PREFIX /pou
+    BASE ${PROJECT_SOURCE_DIR}/data
+    FILES ${PROJECT_SOURCE_DIR}/data/slotmods.json
+)
