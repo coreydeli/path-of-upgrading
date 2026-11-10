@@ -1,6 +1,7 @@
 add_subdirectory(core)
 add_subdirectory(services)
 add_subdirectory(platform)
+add_subdirectory(style)
 add_subdirectory(app)
 
 qt_add_executable(path-of-upgrading
