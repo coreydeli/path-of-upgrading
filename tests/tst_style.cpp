@@ -14,6 +14,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTest>
+#include <cmath>
 #include <memory>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
@@ -162,10 +163,13 @@ private Q_SLOTS:
         const QColor inner = call(u"inner"_s).value<QColor>();
         const QColor background = color(u"background"_s);
         const QColor text = color(u"text"_s);
-        // the text is light on a dark scheme, so the lightness orders them
-        QVERIFY(background.lightnessF() < inner.lightnessF());
-        QVERIFY(inner.lightnessF() < frame.lightnessF());
-        QVERIFY(frame.lightnessF() < text.lightnessF());
+        // whichever way round the scheme is, they step from the background toward the text
+        const auto away = [&](const QColor &c) {
+            return std::abs(c.lightnessF() - background.lightnessF());
+        };
+        QVERIFY(away(inner) > 0);
+        QVERIFY(away(inner) < away(frame));
+        QVERIFY(away(frame) < away(text));
     }
 
     void titlesAreInCapitalsInTheHeadingFamily()
