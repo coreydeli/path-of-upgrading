@@ -112,12 +112,14 @@ these files:
 | --- | --- |
 | Arch Linux, and distros built from it | `path-of-upgrading-<version>-1-x86_64.pkg.tar.zst` |
 | Debian 13 | `path-of-upgrading_<version>-1_amd64.deb` |
+| Fedora, with KDE Frameworks 6 | `path-of-upgrading-<version>-1.fc<N>.x86_64.rpm` |
 | Windows 10 and 11, installed | `path-of-upgrading-<version>-setup.exe` |
 | Windows 10 and 11, from any folder | `path-of-upgrading-<version>-windows.zip` |
 | Any other Linux, to build yourself | `path-of-upgrading-<version>.tar.gz` |
 
 The newest release is at the top of the list. A beta's version is like
-`0.6.0beta2` in the Arch package and `0.6.0.beta.2` in the Debian one.
+`0.6.0beta2` in the Arch package and `0.6.0.beta.2` in the Debian and Fedora
+ones. In the Fedora file name, `<N>` is the Fedora release it was built on.
 
 ### Arch Linux
 
@@ -144,13 +146,28 @@ It is made on Debian 13. Distros based on Debian or Ubuntu with Qt 6.8 and KDE
 Frameworks 6.13 or newer may take it too, but only Debian 13 is tested. If apt
 can't find what it depends on, build it from source instead.
 
+### Fedora
+
+The package is built on the newest Fedora, so update first, then install the
+file you downloaded:
+
+```bash
+sudo dnf upgrade
+sudo dnf install ./path-of-upgrading-*.rpm
+```
+
+dnf installs what it needs with it. It needs Fedora with KDE Frameworks 6.
+CentOS Stream and RHEL don't have those, so they aren't covered. There is no
+package repository yet, so download each new file by hand.
+
 ### Other Linux distros
 
 Build it from the source in the release, or from a clone of the repository.
 Install the libraries in [Requirements](#requirements) with your distro's
 package manager first. `.github/scripts/install-arch.sh` and
 `.github/scripts/install-debian.sh` list the package names on Arch and Debian,
-which are close to the names on most distros.
+which are close to the names on most distros. On Fedora,
+`.github/scripts/install-fedora.sh` installs what the RPM spec needs.
 
 ```bash
 tar -xf path-of-upgrading-<version>.tar.gz
@@ -211,6 +228,7 @@ by the gear score or your stat weights.
 
 - Arch Linux: `sudo pacman -R path-of-upgrading`
 - Debian: `sudo apt remove path-of-upgrading`
+- Fedora: `sudo dnf remove path-of-upgrading`
 - Built from source: `xargs rm < build/install_manifest.txt` in the source
   folder, with `sudo` if you installed it for everyone
 - Windows, installed: Settings, then Apps, then Path of Upgrading
@@ -267,9 +285,12 @@ Run it from the build folder with `build/src/path-of-upgrading`, or install it
 with `cmake --install build --prefix ~/.local`. That also installs the desktop
 file, the icon and the AppStream metainfo.
 
-Each release on GitHub has an Arch Linux package and a Debian 13 package. To
-make them yourself, run `makepkg` in `packaging/arch`, or `cpack` in the build
-folder on Debian.
+Each release on GitHub has an Arch Linux package, a Debian 13 package and a
+Fedora package. To make them yourself, run `makepkg` in `packaging/arch`, or
+`cpack` in the build folder on Debian. On Fedora,
+`.github/scripts/install-fedora.sh` installs what the RPM needs, and `rpmbuild`
+builds it from `packaging/rpm/path-of-upgrading.spec`, with the source tarball
+in `~/rpmbuild/SOURCES` as CI does.
 
 Add `-DPOU_BETA=ON` to the configure step to build a beta, as the beta releases
 are. Trade searches start on in a beta and off without it.
@@ -280,8 +301,8 @@ Work is done on short branches off `beta` and merged back into it. Each merge
 into `beta` makes a pre-release, like `v0.6.0-beta.2`, with the packages and
 the changes since the last one. Merging `beta` into `main` releases the version
 in `CMakeLists.txt` as the latest release, and the next beta needs a new
-version. The version is also in the metainfo's newest release and the PKGBUILD,
-and CI checks they say the same.
+version. The version is also in the metainfo's newest release, the PKGBUILD and
+the RPM spec, and CI checks they all say the same.
 
 ## Tests
 
