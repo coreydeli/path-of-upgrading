@@ -19,12 +19,8 @@ FormCard.FormCardDialog {
 
     property string step: "welcome"
     // There's no trading in solo self-found, so the trade step is left out,
-    // and a release has no trade at all, so the league goes too.
-    readonly property var steps: {
-        if (!app.tradeOffered)
-            return ["welcome", "character", "done"];
-        return app.tradeOptions.soloSelfFound ? ["welcome", "league", "character", "done"] : ["welcome", "league", "trade", "character", "done"];
-    }
+    // and a release has no trade at all.
+    readonly property var steps: app.tradeOffered && !app.tradeOptions.soloSelfFound ? ["welcome", "league", "trade", "character", "done"] : ["welcome", "league", "character", "done"]
     readonly property bool wanted: windowShown && app.onboarding.pending
 
     function begin(): void {
@@ -122,6 +118,7 @@ FormCard.FormCardDialog {
                 visible: guide.step === "league"
                 Layout.fillWidth: true
                 options: guide.app.tradeOptions
+                tradeOffered: guide.app.tradeOffered
             }
 
             SetupTradeStep {
