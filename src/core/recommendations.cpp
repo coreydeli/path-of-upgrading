@@ -42,6 +42,8 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
     }
     std::ranges::stable_sort(weights, std::greater<>(), &SearchWeight::importance);
 
+    const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
+    const QString itemClass = worn && !worn->itemClass.isEmpty() ? worn->itemClass : classOfSlot(slot);
     QList<WantedStat> out;
     for (const SearchWeight &w : std::as_const(weights)) {
         double minimum = searchMinimum(w.cap);
@@ -49,7 +51,8 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
             minimum = std::min(minimum, std::ceil(*w.need));
         if (worn && rolledOn(*worn, w.pattern) >= minimum)
             continue;
-        out << WantedStat{.label = w.label, .minimum = minimum};
+        const auto top = mods.best(itemClass, w.key);
+        out << WantedStat{.label = w.label, .minimum = minimum, .best = top ? top->high : 0};
         if (out.size() == count)
             break;
     }
@@ -60,7 +63,8 @@ QString wantedText(const QList<WantedStat> &stats)
 {
     QStringList parts;
     for (const WantedStat &s : stats)
-        parts << s.label + u' ' + formatNumber(s.minimum) + u" or more"_s;
+        parts << s.label + u' ' + formatNumber(s.minimum) + u" or more"_s +
+                     (s.best > 0 ? u" (up to "_s + rollText(s.best) + u')' : QString());
     return parts.join(u", "_s);
 }
 
