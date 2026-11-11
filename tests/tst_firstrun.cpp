@@ -17,6 +17,7 @@ Settings firstStart(bool beta)
 {
     Settings s;
     s.trade.enabled = beta;
+    s.updates.includeBetas = beta;
     return s;
 }
 
