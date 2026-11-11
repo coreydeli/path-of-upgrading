@@ -196,6 +196,8 @@ struct Window
                        .colors = colors,
                        .tradeOffered = tradeOffered},
             std::unique_ptr<GameWatcher>(game));
+        // whatever the build was configured for, a test says what it needs
+        app->updates()->setInstallKind(InstallKind::Source);
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
         QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
