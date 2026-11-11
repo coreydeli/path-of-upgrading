@@ -102,7 +102,7 @@ struct AppearanceSettings
     // Empty is the app's own heading font, "text" is the text font, and else
     // a font family.
     QString headingFont;
-    QString textFont;    // a font family, empty is the desktop's
+    QString textFont;    // a font family, empty is the app's own
     double textSize = 0; // in points, 0 is the desktop's
 
     friend bool operator==(const AppearanceSettings &, const AppearanceSettings &) = default;
