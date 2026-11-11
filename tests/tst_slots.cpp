@@ -109,6 +109,14 @@ private Q_SLOTS:
         QCOMPARE(otherHand(u"Offhand 2"_s), u"Weapon 2"_s);
         QCOMPARE(otherHand(u"Ring 1"_s), QString());
     }
+
+    void labels()
+    {
+        QCOMPARE(slotLabel(u"Offhand"_s), u"Off Hand"_s);
+        QCOMPARE(slotLabel(u"Offhand 2"_s), u"Off Hand 2"_s);
+        QCOMPARE(slotLabel(u"Weapon 2"_s), u"Weapon 2"_s);
+        QCOMPARE(slotLabel(u"Body Armour"_s), u"Body Armour"_s);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestSlots)

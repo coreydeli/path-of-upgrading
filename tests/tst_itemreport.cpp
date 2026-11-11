@@ -201,7 +201,7 @@ private Q_SLOTS:
         QCOMPARE(report.score, QString());
         QCOMPARE(report.versus, QString());
         QVERIFY(report.notes.contains(
-            u"Nothing saved for Helmet yet. Check the item you wear there and click Wear as Helmet."_s));
+            u"Nothing saved for Helmet yet. Check the item you have equipped there and press Equip as Helmet."_s));
 
         report = reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}}));
         QCOMPARE(report.verdict, u"Equipped"_s);

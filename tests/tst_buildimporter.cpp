@@ -124,8 +124,9 @@ private Q_SLOTS:
         i.importer.importText(u"  "_s + codeFor(pobfixtures::build) + u"\n"_s);
         QCOMPARE(message.size(), 1);
         QVERIFY(!i.importer.hasFailed());
-        QCOMPARE(i.importer.message(),
-                 u"Imported the level 92 Stormweaver build for Wren. Wren now wears 8 items from it."_s);
+        QCOMPARE(
+            i.importer.message(),
+            u"Imported the level 92 Stormweaver build for Wren. Wren now has 8 items equipped from it."_s);
         QCOMPARE(i.store.pobBuild(wren).value_or(QString()), pobfixtures::build);
         QCOMPARE(i.store.find(wren)->gear.size(), 8);
         QCOMPARE(i.list.rowCount(), 1);
@@ -147,13 +148,15 @@ private Q_SLOTS:
         const QString wren = i.play(u"Wren"_s);
         i.importer.importText(witch());
         QVERIFY(!i.importer.hasFailed());
-        QCOMPARE(i.importer.message(), u"Imported the level 70 Witch build for Wren. It has no items on. "
-                                       u"Chose the Energy Shield spellcaster gear score profile for it."_s);
+        QCOMPARE(i.importer.message(),
+                 u"Imported the level 70 Witch build for Wren. It has no items equipped. "
+                 u"Chose the Energy Shield spellcaster gear score profile for it."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-caster"_s);
 
         // nothing more to say when it's the one it has
         i.importer.importText(witch());
-        QCOMPARE(i.importer.message(), u"Imported the level 70 Witch build for Wren. It has no items on."_s);
+        QCOMPARE(i.importer.message(),
+                 u"Imported the level 70 Witch build for Wren. It has no items equipped."_s);
 
         i.importer.importText(witch(true));
         QVERIFY(i.importer.message().endsWith(
@@ -167,8 +170,9 @@ private Q_SLOTS:
         const QString wren = i.play(u"Wren"_s);
         i.importer.importText(monk());
         QVERIFY(!i.importer.hasFailed());
-        QCOMPARE(i.importer.message(), u"Imported the level 60 Monk build for Wren. It has no items on. "
-                                       u"Chose the Energy Shield attacker gear score profile for it."_s);
+        QCOMPARE(i.importer.message(),
+                 u"Imported the level 60 Monk build for Wren. It has no items equipped. "
+                 u"Chose the Energy Shield attacker gear score profile for it."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-attacker"_s);
     }
 
@@ -182,7 +186,8 @@ private Q_SLOTS:
         QVERIFY(i.store.save(wren, picked));
 
         i.importer.importText(witch());
-        QCOMPARE(i.importer.message(), u"Imported the level 70 Witch build for Wren. It has no items on."_s);
+        QCOMPARE(i.importer.message(),
+                 u"Imported the level 70 Witch build for Wren. It has no items equipped."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"life-res"_s);
     }
 
@@ -251,12 +256,12 @@ private Q_SLOTS:
         QTest::addColumn<QString>("message");
         QTest::newRow("one")
             << ranger({u"Weapon 1"_s}) << false
-            << u"Imported the level 40 Ranger build for Wren. Wren now wears 1 item from it. "
-               u"Copy your weapon in the game once, as the build doesn't say its damage."_s;
+            << u"Imported the level 40 Ranger build for Wren. Wren now has 1 item equipped from it. "
+               u"Copy your weapon in the game once, as the build doesn't include its damage."_s;
         QTest::newRow("two")
             << ranger({u"Weapon 1"_s, u"Weapon 2"_s}) << false
-            << u"Imported the level 40 Ranger build for Wren. Wren now wears 2 items from it. "
-               u"Copy your weapons in the game once, as the build doesn't say their "
+            << u"Imported the level 40 Ranger build for Wren. Wren now has 2 items equipped from it. "
+               u"Copy your weapons in the game once, as the build doesn't include their "
                u"damage."_s;
         QTest::newRow("kept one") << ranger({u"Weapon 1"_s}) << true
                                   << u"Imported the level 40 Ranger build for Wren. Kept 1 item you copied "
@@ -264,12 +269,13 @@ private Q_SLOTS:
         QTest::newRow("kept two") << ranger({u"Weapon 1"_s, u"Weapon 2"_s}) << true
                                   << u"Imported the level 40 Ranger build for Wren. Kept 2 items you copied "
                                      u"in the game, which say more."_s;
-        QTest::newRow("kept one of two") << ranger({u"Weapon 1"_s, u"Ring 1"_s}) << true
-                                         << u"Imported the level 40 Ranger build for Wren. Wren now wears 1 "
-                                            u"item from it. Kept 1 item you copied in the game, which says "
-                                            u"more."_s;
+        QTest::newRow("kept one of two")
+            << ranger({u"Weapon 1"_s, u"Ring 1"_s}) << true
+            << u"Imported the level 40 Ranger build for Wren. Wren now has 1 "
+               u"item equipped from it. Kept 1 item you copied in the game, which says "
+               u"more."_s;
         QTest::newRow("empty") << u"<PathOfBuilding2/>"_s << false
-                               << u"Imported the build for Wren. It has no items on."_s;
+                               << u"Imported the build for Wren. It has no items equipped."_s;
     }
 
     void says()
@@ -307,7 +313,8 @@ private Q_SLOTS:
         QVERIFY(message.wait());
         QVERIFY(!i.importer.isBusy());
         QCOMPARE(busy.size(), 2);
-        QCOMPARE(i.importer.message(), u"Imported the level 40 Ranger build for Wren. It has no items on."_s);
+        QCOMPARE(i.importer.message(),
+                 u"Imported the level 40 Ranger build for Wren. It has no items equipped."_s);
         QCOMPARE(i.network.sent.first().request.url(), QUrl(u"https://pobb.in/pob/AbC123"_s));
         QCOMPARE(i.store.pobBuild(wren).value_or(QString()), ranger({}));
     }
@@ -391,7 +398,7 @@ private Q_SLOTS:
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.list.rowCount(), 1);
         QCOMPARE(i.importer.message(),
-                 u"Imported the level 40 Ranger build for Witch. It has no items on."_s);
+                 u"Imported the level 40 Ranger build for Witch. It has no items equipped."_s);
 
         // and nothing for one that's not on this computer
         QSignalSpy message(&i.importer, &BuildImporter::messageChanged);
