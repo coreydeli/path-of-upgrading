@@ -17,9 +17,9 @@ class SettingsStore;
 // How the app looks, as the settings window shows it, saved as soon as it's
 // changed: whose colors it has, how much is drawn besides them, and the
 // fonts. The colors are a KDE color scheme that comes with the app, which goes
-// on the whole app, or the desktop's own. The theme is followed by Kirigami
-// and the controls with it, in the Plasma style and without. The text font and
-// size are the app's font, so the controls and the spacing follow them.
+// on the whole app, or the desktop's own. The app's own controls and Kirigami
+// follow it, whatever the desktop's style is. The text font and size are the
+// app's font, so the controls and the spacing follow them.
 class Appearance : public QObject
 {
     Q_OBJECT
@@ -39,7 +39,7 @@ class Appearance : public QObject
     // Empty is the app's own heading font, "text" is the same as the text, or
     // a font family.
     Q_PROPERTY(QString headingFont READ headingFont WRITE setHeadingFont NOTIFY changed)
-    // A font family, or empty for the desktop's.
+    // A font family, or empty for the app's own.
     Q_PROPERTY(QString textFont READ textFont WRITE setTextFont NOTIFY changed)
     // In points, or 0 for the desktop's.
     Q_PROPERTY(double textSize READ textSize WRITE setTextSize NOTIFY changed)

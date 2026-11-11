@@ -34,10 +34,10 @@ ColumnsPage {
     readonly property string headingName: {
         const font = appearance.headingFont;
         if (font === "")
-            return appearance.headingFamily === "Cinzel" ? qsTr("Cinzel") : appearance.headingFamily;
+            return appearance.headingFamily;
         return font === "text" ? qsTr("The same as the text") : font;
     }
-    readonly property string textName: appearance.textFont === "" ? qsTr("Your desktop's") : appearance.textFont
+    readonly property string textName: appearance.textFont === "" ? appearance.textFamily : appearance.textFont
 
     title: qsTr("Appearance")
     description: qsTr("The colors, the extras that are drawn and the fonts.")
@@ -184,8 +184,8 @@ ColumnsPage {
         specials: [
             {
                 value: "",
-                text: qsTr("Cinzel"),
-                family: "Cinzel"
+                text: qsTr("Big Shoulders Display"),
+                family: "Big Shoulders Display"
             },
             {
                 value: "text",
@@ -205,7 +205,8 @@ ColumnsPage {
         specials: [
             {
                 value: "",
-                text: qsTr("Your desktop's")
+                text: qsTr("Spectral"),
+                family: "Spectral"
             }
         ]
         onPicked: value => appearancePage.appearance.textFont = value

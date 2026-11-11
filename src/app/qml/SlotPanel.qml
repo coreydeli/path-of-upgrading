@@ -87,7 +87,7 @@ Item {
                         objectName: "panelSlot"
                         Layout.fillWidth: true
                         text: content.slot
-                        color: Style.gold(Kirigami.Theme)
+                        color: Style.accent(Kirigami.Theme)
                         font: Style.sectionFont(Kirigami.Theme.defaultFont)
                         elide: Text.ElideRight
                         Accessible.role: Accessible.Heading

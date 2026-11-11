@@ -24,6 +24,7 @@ qt_add_library(pou_app STATIC
     itemreport.cpp itemreport.h
     listingjudge.cpp listingjudge.h
     onboarding.cpp onboarding.h
+    ownstyle.cpp ownstyle.h
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
@@ -103,17 +104,35 @@ qt_add_qml_module(pou_app
         qml/WindowGlow.qml
 )
 
-# the heading font, which the program carries
+# the fonts the program carries
+set(POU_FONTS
+    BigShouldersDisplay-Black.ttf
+    BigShouldersDisplay-Bold.ttf
+    BigShouldersDisplay-ExtraBold.ttf
+    BigShouldersText-Bold.ttf
+    BigShouldersText-ExtraBold.ttf
+    BigShouldersText-Medium.ttf
+    BigShouldersText-Regular.ttf
+    BigShouldersText-SemiBold.ttf
+    Spectral-Bold.ttf
+    Spectral-Italic.ttf
+    Spectral-Medium.ttf
+    Spectral-Regular.ttf
+    Spectral-SemiBold.ttf
+)
+list(TRANSFORM POU_FONTS PREPEND ${PROJECT_SOURCE_DIR}/data/fonts/ OUTPUT_VARIABLE POU_FONT_FILES)
 qt_add_resources(pou_app fonts
     PREFIX /fonts
     BASE ${PROJECT_SOURCE_DIR}/data/fonts
-    FILES ${PROJECT_SOURCE_DIR}/data/fonts/Cinzel.ttf
+    FILES ${POU_FONT_FILES}
 )
 
 target_link_libraries(pou_app PUBLIC
     pou_core
     pou_platform
     pou_services
+    pou_style
+    pou_styleplugin
     Qt6::Qml
     Qt6::Quick
     KF6::ColorScheme

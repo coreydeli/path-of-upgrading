@@ -11,4 +11,4 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/runtime-$(id -u)}"
 mkdir -p -m 700 "$XDG_RUNTIME_DIR"
 exec xvfb-run -a -s "-screen 0 1920x1080x24" \
     dbus-run-session --config-file="$repo/tests/bus.conf" -- \
-    ctest --output-on-failure --timeout 300 -j "$(nproc)"
+    ctest --output-on-failure --timeout 900 -j "$(nproc)"

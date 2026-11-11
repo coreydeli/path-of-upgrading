@@ -13,6 +13,7 @@
 #include "fakepob.h"
 #include "fakesecretstore.h"
 #include "itemtexts.h"
+#include "stylefortests.h"
 #include "tradefixtures.h"
 
 #include <KLocalizedQmlContext>
@@ -440,12 +441,9 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
-        // Fusion, as on Linux, as Windows' own style can't draw offscreen
-        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
+        // the app's own controls, as the program has
+        useStyleInTests();
         qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1");
-        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
-        // platform plugin of its own
-        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
     }
 
 private Q_SLOTS:
@@ -3836,20 +3834,21 @@ private Q_SLOTS:
         Window w(true, false, QStringLiteral(COLORS));
         auto *style = w.qml.singletonInstance<QObject *>("PathOfUpgrading", "Style");
         QVERIFY(style);
-        QCOMPARE(style->property("headingFamily").toString(), u"Cinzel"_s);
+        QCOMPARE(style->property("headingFamily").toString(), u"Big Shoulders Display"_s);
         const QString family = scalableFamilies().value(0);
         w.app->appearance()->setHeadingFont(family);
         QCOMPARE(style->property("headingFamily").toString(), family);
         w.app->appearance()->setHeadingFont(QString());
-        QCOMPARE(style->property("headingFamily").toString(), u"Cinzel"_s);
+        QCOMPARE(style->property("headingFamily").toString(), u"Big Shoulders Display"_s);
     }
 
     void fontsDefaults()
     {
         Window w;
         QVERIFY(w.show(u"appearanceAction"_s));
-        QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(), u"Cinzel"_s);
-        QCOMPARE(w.find(u"textFontButton"_s)->property("description").toString(), u"Your desktop's"_s);
+        QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(),
+                 u"Big Shoulders Display"_s);
+        QCOMPARE(w.find(u"textFontButton"_s)->property("description").toString(), u"Spectral"_s);
         QCOMPARE(w.find(u"desktopSizeSwitch"_s)->property("checked").toBool(), true);
         QVERIFY(!isVisible(w.find(u"textSize"_s)));
         QVERIFY(!isVisible(w.find(u"fontsError"_s)));
@@ -3882,7 +3881,7 @@ private Q_SLOTS:
         QObject *dialog = w.find(u"headingFontPicker"_s);
         QVERIFY(click(w.find(u"headingFontButton"_s)));
         QVERIFY(isVisible(dialog));
-        // Cinzel and the same as the text come first
+        // the default heading font and the same as the text come first
         QVERIFY(w.in(u"headingFontPicker"_s, u"font:"_s));
         QVERIFY(w.settled());
         QVERIFY(click(w.in(u"headingFontPicker"_s, u"font:text"_s)));
@@ -3912,7 +3911,7 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.textFont.toLower(), family.toLower());
         QCOMPARE(QGuiApplication::font().family().toLower(), family.toLower());
 
-        // and back to the desktop's, which is first when there are no words
+        // and back to the default, which is first when there are no words
         QVERIFY(click(w.find(u"textFontButton"_s)));
         QCOMPARE(text(w.in(u"textFontPicker"_s, u"fontSearch"_s)), QString());
         QVERIFY(press(w.in(u"textFontPicker"_s, u"fontSearch"_s), Qt::Key_Return));
@@ -3927,7 +3926,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"textFontButton"_s)));
         QObject *search = w.in(u"textFontPicker"_s, u"fontSearch"_s);
         QVERIFY(w.settled());
-        // the desktop's is first, so the next one is the first font
+        // the default is first, so the next one is the first font
         QVERIFY(press(search, Qt::Key_Down));
         QVERIFY(press(search, Qt::Key_Return));
         QCOMPARE(w.settings().appearance.textFont, scalableFamilies().value(0));

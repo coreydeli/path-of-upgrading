@@ -19,6 +19,8 @@ endfunction()
 function(pou_add_app_test name)
     pou_add_test(${name} ${ARGN})
     target_link_libraries(${name} PRIVATE pou_app)
+    # where the app's Kirigami plugin is built
+    target_compile_definitions(${name} PRIVATE POU_STYLE_PLUGINS="${CMAKE_BINARY_DIR}/src")
 endfunction()
 
 # for tests that load the app's QML, offscreen
