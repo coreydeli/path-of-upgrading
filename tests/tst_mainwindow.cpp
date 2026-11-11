@@ -3744,6 +3744,42 @@ private Q_SLOTS:
         }
     }
 
+    // The header laid itself out in a loop with some lengths of description, and the layout
+    // warns when it does. So it tries lengths from none to a few lines, each in a window of its
+    // own, at widths either side of every point the columns change at.
+    void headerSettlesWithAnyDescription()
+    {
+        QString words;
+        for (int i = 0; i < 40; ++i)
+            words += u"some words that fill a line "_s;
+        // the page's own first
+        const QStringList descriptions = {QString(),
+                                          u"Short."_s,
+                                          u"Stats you don't want counted."_s,
+                                          u"Stats your character does not want counted."_s,
+                                          u"A line that is long enough to take most of a narrow window."_s,
+                                          words.trimmed(),
+                                          u""_s};
+        for (const QString &description : descriptions) {
+            Window w;
+            QVERIFY(w.show(u"ignoredAction"_s));
+            if (!description.isNull())
+                QVERIFY(w.page()->setProperty("description", description));
+            QVERIFY(w.shown());
+            for (int width : {450, 700, 1000, 1040, 1100, 1500, 1560, 1900, 2200, 800}) {
+                w.window->resize(width, 900);
+                QVERIFY2(w.settled(), qPrintable(u"%1 wide"_s.arg(width)));
+                const auto *header = qobject_cast<QQuickItem *>(w.find(u"pageHeader"_s));
+                QVERIFY(header);
+                QVERIFY(header->width() > 0);
+                QVERIFY(header->width() <= w.page()->width());
+                QObject *line = header->findChild<QObject *>(u"pageDescription"_s);
+                QVERIFY(line);
+                QCOMPARE(isVisible(line), !w.page()->property("description").toString().isEmpty());
+            }
+        }
+    }
+
     void sidebarSaysWhoYouPlay()
     {
         Window w;

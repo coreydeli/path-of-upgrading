@@ -20,7 +20,7 @@ ColumnsPage {
     readonly property real modeWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Ignored Stats")
-    description: qsTr("Stats your character does not want counted.")
+    description: qsTr("Stats you don't want counted.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
