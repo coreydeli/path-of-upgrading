@@ -15,9 +15,9 @@ Kirigami.ApplicationWindow {
 
     // The group in the sidebar that holds a page, if one does
     function groupOf(page: Item): Kirigami.Action {
-        if (page === gearScorePage || page === weightsPage || page === ignoredPage)
+        if (page === charactersPage || page === gearScorePage || page === weightsPage || page === ignoredPage)
             return gearGroupAction;
-        if (page === overlayPage || page === appearancePage)
+        if (page === overlayPage || page === appearancePage || page === aboutPage)
             return settingsGroupAction;
         return null;
     }
@@ -100,31 +100,33 @@ Kirigami.ApplicationWindow {
 
         actions: [
             Kirigami.Action {
-                objectName: "charactersAction"
-                text: qsTr("Characters")
-                icon.name: "user-identity"
-                checkable: true
-                checked: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(charactersPage)
-            },
-            Kirigami.Action {
                 id: gearAction
                 objectName: "gearAction"
                 text: qsTr("Your Gear")
                 icon.name: "view-list-details"
                 checkable: true
+                checked: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(gearPage)
             },
-            // the pages about how gear is judged, one level down
+            // the pages about how gear is judged and who wears it, one level down
             Kirigami.Action {
                 id: gearGroupAction
                 objectName: "gearGroupAction"
                 text: qsTr("Gear Settings")
                 icon.name: "rating"
                 // lit while one of its pages is shown
-                checked: gearScoreAction.checked || weightsAction.checked || ignoredAction.checked
+                checked: charactersAction.checked || gearScoreAction.checked || weightsAction.checked || ignoredAction.checked
+
+                Kirigami.Action {
+                    id: charactersAction
+                    objectName: "charactersAction"
+                    text: qsTr("Import Character")
+                    icon.name: "document-import"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(charactersPage)
+                }
 
                 Kirigami.Action {
                     id: gearScoreAction
@@ -188,7 +190,7 @@ Kirigami.ApplicationWindow {
                 text: qsTr("Settings")
                 icon.name: "settings-configure"
                 // lit while one of its pages is shown
-                checked: overlayAction.checked || appearanceAction.checked
+                checked: overlayAction.checked || appearanceAction.checked || aboutAction.checked
 
                 Kirigami.Action {
                     id: overlayAction
@@ -209,11 +211,21 @@ Kirigami.ApplicationWindow {
                     QQC2.ActionGroup.group: pages
                     onTriggered: root.show(appearancePage)
                 }
+
+                Kirigami.Action {
+                    id: aboutAction
+                    objectName: "aboutAction"
+                    text: qsTr("About")
+                    icon.name: "help-about"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(aboutPage)
+                }
             }
         ]
     }
 
-    pageStack.initialPage: charactersPage
+    pageStack.initialPage: gearPage
     // each page has its own title
     pageStack.globalToolBar.style: Kirigami.ApplicationHeaderStyle.None
 
@@ -306,6 +318,11 @@ Kirigami.ApplicationWindow {
         AppearancePage {
             id: appearancePage
             appearance: root.app.appearance
+        }
+
+        AboutPage {
+            id: aboutPage
+            about: root.app.about
         }
     }
 }
