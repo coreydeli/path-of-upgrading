@@ -8,8 +8,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Your characters, the one you play, and the Path of Building builds you
-// import for them.
+// Adding, renaming and removing your characters, picking the one you play,
+// and the Path of Building builds you import for them.
 ColumnsPage {
     id: charactersPage
 
@@ -20,8 +20,8 @@ ColumnsPage {
     // for the window to show the gear page
     signal gearAsked
 
-    title: qsTr("Characters")
-    description: qsTr("The characters you play, and the builds that give them gear.")
+    title: qsTr("Import Character")
+    description: qsTr("Add a character and import a build that gives it gear. Rename or remove the ones you have here too.")
     // On a wide window the list is on the left, with the one you play beside
     // it and the builds you can import for it. Narrower, it's one column.
     maxColumns: wide ? 2 : 3
