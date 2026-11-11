@@ -47,6 +47,7 @@ add_library(pou_core STATIC
     tradesite.cpp tradesite.h
     updates.cpp updates.h
     verdict.h
+    weighedprofile.cpp weighedprofile.h
     weights.cpp weights.h
     wearing.cpp wearing.h
 )

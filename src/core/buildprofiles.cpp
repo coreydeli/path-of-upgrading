@@ -60,7 +60,8 @@ ProfileStat percentEnergyShield(double factor = 1)
 
 ProfileStat extraEnergyShield()
 {
-    return stat(u"Extra Energy Shield"_s, uR"(^Gain #% of maximum (Life|Mana) as Extra maximum Energy Shield$)"_s,
+    return stat(u"Extra Energy Shield"_s,
+                uR"(^Gain #% of maximum (Life|Mana) as Extra maximum Energy Shield$)"_s,
                 PerSlot({{u"Body Armour"_s, 5}}), 15);
 }
 
@@ -420,8 +421,9 @@ BuildProfile minionSummoner()
                  "^Minions gain #% of their maximum Life as Extra maximum Energy Shield$"_s,
                  PerSlot({{u"Weapon"_s, 2}, {u"Offhand"_s, 2}, {u"Jewel"_s, 2}}),
                  PerSlot({{u"Jewel"_s, 10}}, 30)),
-            stat(u"Spirit Reservation Efficiency"_s, uR"(^#% increased Spirit Reservation Efficiency of Skills$)"_s,
-                 PerSlot({{u"Amulet"_s, 5}}), 15),
+            stat(u"Spirit Reservation Efficiency"_s,
+                 uR"(^#% increased Spirit Reservation Efficiency of Skills$)"_s, PerSlot({{u"Amulet"_s, 5}}),
+                 15),
             baseEnergyShield(),
             stat(u"Armour"_s, uR"(^\[Base\] Armour$)"_s, PerSlot({{u"Body Armour"_s, 2}}), 800),
             flatEnergyShield(),
@@ -435,7 +437,8 @@ BuildProfile minionSummoner()
             resistance(Element::Chaos, 4, 30),
             exact(u"Intelligence"_s, u"# to Intelligence"_s, PerSlot({{u"Jewel"_s, 1}}, 3),
                   PerSlot({{u"Jewel"_s, 12}}, 35)),
-            stat(u"Strength and Dexterity"_s, uR"(^# to (Strength|Dexterity)$)"_s, PerSlot({{u"Jewel"_s, 0}}, 1.5), 35),
+            stat(u"Strength and Dexterity"_s, uR"(^# to (Strength|Dexterity)$)"_s,
+                 PerSlot({{u"Jewel"_s, 0}}, 1.5), 35),
             movementSpeed(),
             exact(u"Cast Speed"_s, u"#% increased Cast Speed"_s,
                   PerSlot({{u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Offhand"_s, 3}, {u"Jewel"_s, 2}}),
@@ -466,6 +469,11 @@ double PerSlot::at(const QString &slotGroup) const
             return value;
     }
     return m_elsewhere;
+}
+
+bool isPropertyStat(const ProfileStat &stat)
+{
+    return stat.pattern.pattern().startsWith(u"^\\["_s);
 }
 
 const QList<BuildProfile> &buildProfiles()
