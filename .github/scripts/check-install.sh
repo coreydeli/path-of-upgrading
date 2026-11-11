@@ -8,14 +8,23 @@
 #
 # check-install.sh <arch, debian or fedora> <the package file>
 set -eu
+# Arch's mirrors drop a download now and then, so pacman gets three tries
+pacman_retry() {
+    for try in 1 2 3; do
+        pacman "$@" && return 0
+        [ "$try" = 3 ] || sleep 15
+    done
+    return 1
+}
+
 distro=$1
 package=$(realpath "$2")
 
 case "$distro" in
 arch)
-    pacman -Syu --noconfirm
-    pacman -U --noconfirm "$package"
-    pacman -S --noconfirm --needed dbus
+    pacman_retry -Syu --noconfirm
+    pacman_retry -U --noconfirm "$package"
+    pacman_retry -S --noconfirm --needed dbus
     plugin=/usr/lib/qt6/plugins/wayland-shell-integration/liblayer-shell.so
     ;;
 debian)
