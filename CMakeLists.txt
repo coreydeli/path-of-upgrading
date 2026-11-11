@@ -61,6 +61,14 @@ option(BUILD_TESTING "Build the unit tests" ON)
 # and off in a release until they've been tested more, see isBetaBuild().
 option(POU_BETA "Build a beta, which has trade searches on until you turn them off" OFF)
 
+# The version this build says it is, as the release tag does: 0.7.0 or
+# 0.7.0-beta.4. The updater compares it with the releases on GitHub, and a
+# beta's number isn't in the project version. The release builds set it.
+set(POU_BUILD_VERSION "" CACHE STRING "The version, with a beta's number")
+if(NOT POU_BUILD_VERSION)
+    set(POU_BUILD_VERSION "${PROJECT_VERSION}")
+endif()
+
 add_subdirectory(src)
 add_subdirectory(data)
 
