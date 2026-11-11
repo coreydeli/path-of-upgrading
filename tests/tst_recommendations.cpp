@@ -85,6 +85,54 @@ private Q_SLOTS:
         QVERIFY(wantedStats(u"Boots"_s, &rolled, {}).isEmpty());
     }
 
+    void whatASlotCanRollIsItsTopTiers()
+    {
+        const QList<RollRange> boots = canRoll(u"Boots"_s, nullptr, {});
+        QCOMPARE(boots.size(), 5);
+        QCOMPARE(boots.first().label, u"Movement speed"_s);
+        const auto top = SlotMods::builtIn().best(u"Boots"_s, u"#% increased Movement Speed"_s);
+        QVERIFY(top);
+        QCOMPARE(boots.first().top, *top);
+        QCOMPARE(rollRangeText(boots.first()),
+                 u"Movement speed %1, item level %2"_s.arg(rollText(top->high)).arg(top->level));
+        QCOMPARE(canRoll(u"Boots"_s, nullptr, {}, 2).size(), 2);
+
+        // what's worn doesn't matter, only its class
+        const Item worn = item(u"Boots"_s, lifeAndSpeed + u"\n"_s + threeResists);
+        QCOMPARE(canRoll(u"Boots"_s, &worn, {}), boots);
+        const Item gloves = item(u"Gloves"_s, lifeAndSpeed);
+        QVERIFY(canRoll(u"Boots"_s, &gloves, {}) != boots);
+
+        // your tweaks and ignored stats decide which stats are wanted
+        const auto life = [](const QList<RollRange> &list) {
+            for (const RollRange &r : list) {
+                if (r.label == u"Life"_s)
+                    return true;
+            }
+            return false;
+        };
+        QVERIFY(life(boots));
+        QVERIFY(!life(canRoll(u"Boots"_s, nullptr, {.tweaks = {{u"Life"_s, 0}}})));
+    }
+
+    void aRangeWithOneEndIsOneNumber()
+    {
+        QCOMPARE(rollRangeText({.label = u"Life"_s, .top = {.level = 5, .low = 20, .high = 20}}),
+                 u"Life 20, item level 5"_s);
+        QCOMPARE(rollRangeText({.label = u"Life"_s, .top = {.level = 82, .low = 10.5, .high = 12}}),
+                 u"Life 10.5 to 12, item level 82"_s);
+    }
+
+    void nothingToRollWithoutAClassOrATable()
+    {
+        QVERIFY(canRoll(u"Weapon"_s, nullptr, {}).isEmpty());
+        QVERIFY(canRoll(u"Offhand"_s, nullptr, {}).isEmpty());
+        QVERIFY(canRoll(u"Jewel"_s, nullptr, {}).isEmpty());
+        QVERIFY(canRoll(u"Boots"_s, nullptr, {.build = u"nothing like it"_s}).isEmpty());
+        const SlotMods none;
+        QVERIFY(canRoll(u"Boots"_s, nullptr, {.mods = &none}).isEmpty());
+    }
+
     void yourTweaksDecideWhatCounts()
     {
         const QList<WantedStat> noLife = wantedStats(u"Boots"_s, nullptr, {.tweaks = {{u"Life"_s, 0}}});

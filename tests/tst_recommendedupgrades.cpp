@@ -404,6 +404,34 @@ private Q_SLOTS:
         QCOMPARE(asked.size(), 2);
     }
 
+    void aChosenSlotSaysWhatItCanRoll()
+    {
+        Site site;
+        site.play(wearingOldHelmet());
+        QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::chosenChanged);
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
+
+        // a worn slot, even one with nothing left to look for
+        site.upgrades.choose(u"Boots"_s);
+        QVERIFY(site.upgrades.chosenLookFor().isEmpty());
+        const QStringList boots = site.upgrades.chosenCanRoll();
+        QVERIFY(!boots.isEmpty());
+        QVERIFY(boots.first().contains(u", item level "_s));
+
+        // an empty slot with a class
+        site.upgrades.choose(u"Belt"_s);
+        QVERIFY(!site.upgrades.chosenCanRoll().isEmpty());
+        QVERIFY(site.upgrades.chosenCanRoll() != boots);
+
+        // the weapon and the offhand have no class to go by, and nor does nothing
+        site.upgrades.choose(u"Weapon"_s);
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
+        site.upgrades.choose(u"Offhand"_s);
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
+        site.upgrades.choose(QString());
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
+    }
+
     void aChosenSlotSaysWhatToLookFor()
     {
         Site site;
