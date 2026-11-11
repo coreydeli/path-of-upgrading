@@ -48,21 +48,27 @@ Item {
             anchors.right: parent.right
             spacing: gauge.size === "small" ? 2 : 4
 
+            // the facts go in through the model, as the diamonds can outlive
+            // the gauge while it's torn down
             Repeater {
-                model: 5
+                model: Array.from({length: 5}, (_, index) => ({
+                    lit: index < gauge.lit,
+                    tint: gauge.tint,
+                    side: gauge.side
+                }))
 
                 Rectangle {
-                    required property int index
+                    required property var modelData
 
-                    width: gauge.side
-                    height: gauge.side
-                    y: gauge.side * 0.2
+                    width: modelData.side
+                    height: modelData.side
+                    y: modelData.side * 0.2
                     rotation: 45
                     antialiasing: true
-                    color: index < gauge.lit ? gauge.tint : "transparent"
+                    color: modelData.lit ? modelData.tint : "transparent"
                     border.width: 1
-                    border.color: index < gauge.lit ? gauge.tint : Style.tint(Kirigami.Theme.backgroundColor,
-                                                                              Kirigami.Theme.textColor, 0.35)
+                    border.color: modelData.lit ? modelData.tint
+                                                : Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.35)
                 }
             }
 
