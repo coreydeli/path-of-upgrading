@@ -86,7 +86,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: weightsPage.weights.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, under Import Character in Gear Settings.")
         }
 
         TableHeader {
