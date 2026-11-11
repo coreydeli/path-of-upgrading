@@ -167,6 +167,24 @@ QList<ProfileStat> itemPropertyStats(const BuildProfile &start)
     return out;
 }
 
+BuildProfile ratedProfile(const BuildProfile &start, const std::optional<WeighedProfile> &weighed)
+{
+    if (!weighed)
+        return start;
+    BuildProfile out = start;
+    out.stats = weighed->profile.stats;
+    for (ProfileStat stat : start.stats) {
+        if (!isPropertyStat(stat)) {
+            QList<std::pair<QString, double>> kept;
+            for (const QString &group : ratedGroups())
+                kept.append({group, weighed->covers(group) ? 0 : stat.importance.at(group)});
+            stat.importance = PerSlot::of(kept);
+        }
+        out.stats << stat;
+    }
+    return out;
+}
+
 QString buildFingerprint(const QString &pobXml)
 {
     return pobXml.isEmpty()

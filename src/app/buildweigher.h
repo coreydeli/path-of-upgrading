@@ -39,6 +39,9 @@ public:
     // when you ask. False when it can't, say with Path of Building off.
     bool weighAgain();
     bool isWeighing() const { return m_running; }
+    // Whether weighAgain() would, which it wouldn't with Path of Building off,
+    // no build to weigh, or the character judged by its weights alone.
+    bool canWeigh() const;
 
 Q_SIGNALS:
     void weighingChanged();
