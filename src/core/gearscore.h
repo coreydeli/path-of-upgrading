@@ -7,6 +7,7 @@
 #include "core/scorer.h"
 #include "core/slotmods.h"
 #include "core/statsources.h"
+#include "core/weighedprofile.h"
 
 #include <QHash>
 #include <QList>
@@ -31,6 +32,9 @@ using ProfileTweaks = QHash<QString, double>;
 struct GearScoreOptions
 {
     QString build; // profile id, empty for the default profile
+    // What Path of Building weighed for the build. It rates the slot groups it
+    // covers, and the profile above the others.
+    std::optional<WeighedProfile> weighed;
     ProfileTweaks tweaks;
     StatFilter ignore;
     // How much more of each resistance you need to be capped, where known.

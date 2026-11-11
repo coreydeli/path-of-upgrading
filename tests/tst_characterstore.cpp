@@ -64,6 +64,38 @@ private Q_SLOTS:
         QCOMPARE(back.wielding, ember.wielding);
     }
 
+    void weighedProfileKept()
+    {
+        Character c;
+        QVERIFY(!characterFromJson(toJson(c))->weighed);
+        QVERIFY(!toJson(c).contains(u"weighed"));
+
+        WeighedProfile w;
+        w.pobVersion = u"0.3.3"_s;
+        w.date = u"2026-11-11"_s;
+        w.damageWeight = 0.7;
+        w.slots = {u"Boots"_s};
+        w.profile.stats.append({.label = u"Life"_s,
+                                .pattern = QRegularExpression(u"^# to maximum Life$"_s),
+                                .importance = PerSlot::of({{u"Boots"_s, 9}}),
+                                .cap = PerSlot::of({{u"Boots"_s, 100}}),
+                                .key = u"# to maximum Life"_s,
+                                .resist = std::nullopt});
+        c.weighed = w;
+        const Character back = characterFromJson(toJson(c)).value();
+        QVERIFY(back.weighed);
+        QCOMPARE(back.weighed->pobVersion, u"0.3.3"_s);
+        QCOMPARE(back.weighed->slots, w.slots);
+        QCOMPARE(back.weighed->profile.stats.size(), 1);
+        QCOMPARE(back.weighed->profile.stats.first().importance.at(u"Boots"_s), 9);
+    }
+
+    void aWeighedProfileItCantReadIsNone()
+    {
+        const Character c = characterFromJson({{u"weighed"_s, QJsonObject{{u"slots"_s, 3}}}}).value();
+        QVERIFY(!c.weighed);
+    }
+
     void nothingSaved()
     {
         const Character fresh = characterFromJson({}).value();
