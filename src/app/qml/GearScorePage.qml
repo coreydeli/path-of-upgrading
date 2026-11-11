@@ -17,7 +17,7 @@ ColumnsPage {
     readonly property real whereWidth: Kirigami.Units.gridUnit * 20
     readonly property real levelWidth: Kirigami.Units.gridUnit * 12
 
-    title: qsTr("Gear Grade")
+    title: qsTr("Gear Score")
     description: qsTr("What the gear score goes by, and how much each stat counts.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
@@ -55,8 +55,8 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: scorePage.scoring.character === ""
-            text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, under Import Character in Gear Settings.")
+            text: qsTr("You haven't picked a character yet.")
+            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
         FormCard.FormComboBoxDelegate {
@@ -129,7 +129,7 @@ ColumnsPage {
 
         FormCard.FormButtonDelegate {
             objectName: "resetButton"
-            text: qsTr("Back to the Profile's Own")
+            text: qsTr("Reset to the Profile")
             icon.name: "edit-reset"
             enabled: scorePage.scoring.tweaked
             onClicked: scorePage.scoring.reset()

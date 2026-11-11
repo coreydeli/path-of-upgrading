@@ -39,6 +39,7 @@ qt_add_library(pou_app STATIC
     tradereport.cpp tradereport.h
     traderesults.cpp traderesults.h
     tradesession.cpp tradesession.h
+    words.h
 )
 
 # a singleton, so the windows share its colors

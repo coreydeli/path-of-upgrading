@@ -4,6 +4,7 @@
 #include "core/datafiles.h"
 #include "core/parser.h"
 #include "core/sessionguide.h"
+#include "core/slots.h"
 #include "core/weights.h"
 #include "fakegameinput.h"
 #include "fakegamewatcher.h"
@@ -1016,7 +1017,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QVERIFY(w.show(u"gearScoreAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
         QVERIFY(w.show(u"weightsAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
         QVERIFY(w.show(u"ignoredAction"_s));
@@ -1040,7 +1041,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"resistances"_s)));
         QObject *helmet = w.find(u"slot:Helmet"_s);
         QVERIFY(isVisible(helmet));
-        QCOMPARE(helmet->property("description").toString(), u"Nothing saved"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Not saved yet"_s);
 
         // and wearing something makes a character
         QVERIFY(w.app->character().wear(u"Helmet"_s, item(itemtexts::helmetOld)));
@@ -1096,8 +1097,8 @@ private Q_SLOTS:
         }
 
         QObject *gloves = w.find(u"slot:Gloves"_s);
-        QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
-        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Nothing saved"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Not saved yet"_s);
+        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Not saved yet"_s);
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"itemBase"_s)));
         QObject *wantsLabel = findAll(gloves, u"noteLabel"_s).value(0);
         QVERIFY(isVisible(wantsLabel));
@@ -1128,8 +1129,8 @@ private Q_SLOTS:
             const QString slot = upgrades->index(i).data(RecommendedUpgrades::SlotRole).toString();
             QObject *row = w.find(u"recommendation:"_s + slot);
             QVERIFY(isVisible(row));
-            QCOMPARE(text(row->findChild<QObject *>(u"slotName"_s)), slot);
-            QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)), u"Nothing saved"_s);
+            QCOMPARE(text(row->findChild<QObject *>(u"slotName"_s)), slotLabel(slot));
+            QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)), u"Not saved yet"_s);
             const QString lookFor = upgrades->index(i).data(RecommendedUpgrades::LookForRole).toString();
             QVERIFY(lookFor.contains(u" or more"_s));
             QCOMPARE(text(row->findChild<QObject *>(u"lookFor"_s)), lookFor);
@@ -1178,11 +1179,11 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearAction"_s));
         QObject *heading = search(w.page(), [](QObject *o) {
-            return o->inherits("QQuickItem") && o->property("title").toString().startsWith(u"Worn"_s);
+            return o->inherits("QQuickItem") && o->property("title").toString().startsWith(u"Equipped"_s);
         });
-        QCOMPARE(heading->property("title").toString(), u"Worn"_s);
+        QCOMPARE(heading->property("title").toString(), u"Equipped"_s);
         w.play({});
-        QCOMPARE(heading->property("title").toString(), u"Worn by Wren"_s);
+        QCOMPARE(heading->property("title").toString(), u"Equipped by Wren"_s);
     }
 
     void gearExtras()
@@ -1648,7 +1649,7 @@ private Q_SLOTS:
         QObject *gloves = w.find(u"tile:Gloves"_s);
         QVERIFY(gloves->property("empty").toBool());
         QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Empty"_s);
-        QCOMPARE(gloves->property("description").toString(), u"Nothing saved"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Not saved yet"_s);
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"tileGauge"_s)));
         QVERIFY(!helmet->property("empty").toBool());
 
@@ -1740,7 +1741,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"tile:Gloves"_s)));
         QVERIFY(w.settled());
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Gloves"_s);
-        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Not saved yet"_s);
         QVERIFY(!isVisible(w.find(u"panelBase"_s)));
         QVERIFY(!isVisible(w.find(u"panelGauge"_s)));
         QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Wants most"_s);
@@ -1764,7 +1765,7 @@ private Q_SLOTS:
         QVERIFY(w.settled());
         QVERIFY(w.app->character().character().gear.isEmpty());
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
-        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Not saved yet"_s);
         QVERIFY(w.find(u"tile:Helmet"_s)->property("empty").toBool());
     }
 
@@ -1774,10 +1775,10 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearAction"_s));
         w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
         QObject *takeOff = w.find(u"slot:Helmet"_s)->findChild<QObject *>(u"takeOffButton"_s);
-        QCOMPARE(spoken(takeOff), u"Take Off Helmet"_s);
+        QCOMPARE(spoken(takeOff), u"Unequip Helmet"_s);
         QVERIFY(click(takeOff));
         QVERIFY(w.app->character().character().gear.isEmpty());
-        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Nothing saved"_s);
+        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Not saved yet"_s);
     }
 
     void cantTakeOff()
@@ -2434,7 +2435,8 @@ private Q_SLOTS:
         QObject *none = w.find(u"noItemsText"_s);
         QVERIFY(isVisible(none));
         QCOMPARE(text(none), u"You haven't checked any items yet."_s);
-        QCOMPARE(none->property("description").toString(), u"Hover over an item in the game and press F2."_s);
+        QCOMPARE(none->property("description").toString(),
+                 u"Hover over an item in Path of Exile 2 and press F2."_s);
         QCOMPARE(w.find(u"checkedHeader"_s)->property("title").toString(), u"Newest First"_s);
         QVERIFY(!isVisible(w.find(u"forgetSeparator"_s)));
         QVERIFY(!isVisible(w.find(u"forgetButton"_s)));
@@ -2443,16 +2445,18 @@ private Q_SLOTS:
 
         // with the key it has now
         QVERIFY(w.app->overlayOptions()->setCheckKey(QKeySequence(Qt::Key_F6)));
-        QCOMPARE(none->property("description").toString(), u"Hover over an item in the game and press F6."_s);
+        QCOMPARE(none->property("description").toString(),
+                 u"Hover over an item in Path of Exile 2 and press F6."_s);
     }
 
     void nothingCheckedWithoutHotkeys()
     {
         Window w(false);
         QVERIFY(w.show(u"checkedAction"_s));
-        QCOMPARE(w.find(u"noItemsText"_s)->property("description").toString(),
-                 u"Hover over an item in the game and press the hotkey for checking one. You can set it on "
-                 "the Settings page."_s);
+        QCOMPARE(
+            w.find(u"noItemsText"_s)->property("description").toString(),
+            u"Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on "
+            "the Settings page."_s);
     }
 
     void settingsName()
@@ -3341,7 +3345,7 @@ private Q_SLOTS:
         QCOMPARE(style->property("plain").toBool(), false);
     }
 
-    // Gear Grade, Stat Weights and Ignored Stats are one level down, under Gear
+    // Gear Score, Stat Weights and Ignored Stats are one level down, under Gear
     void gearPagesAreUnderGear()
     {
         Window w;
@@ -3381,13 +3385,13 @@ private Q_SLOTS:
         // the pages aren't in the sidebar until Gear is opened
         QTRY_VERIFY(w.sidebarRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Your Gear"_s));
-        QVERIFY(!w.sidebarRow(u"Gear Grade"_s));
+        QVERIFY(!w.sidebarRow(u"Gear Score"_s));
         QVERIFY(!w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(!w.sidebarRow(u"Ignored Stats"_s));
         QVERIFY(!w.sidebarRow(u"Gear Score"_s));
 
         QVERIFY(w.clickRow(u"Gear Settings"_s));
-        QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Score"_s));
         QVERIFY(w.sidebarRow(u"Import Character"_s));
         QVERIFY(w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(w.sidebarRow(u"Ignored Stats"_s));
@@ -3409,14 +3413,14 @@ private Q_SLOTS:
         QVERIFY(!w.sidebarRow(u"Item History"_s));
         QCOMPARE(w.sidebarRow(u"Ignored Stats"_s)->property("checked").toBool(), true);
         QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), false);
-        QVERIFY(w.clickRow(u"Gear Grade"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
+        QVERIFY(w.clickRow(u"Gear Score"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
 
         // Back goes up a level without picking a page
         QVERIFY(w.clickRow(u"Back"_s));
         QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
+        QTRY_VERIFY(!w.sidebarRow(u"Gear Score"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
         QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), true);
         QCOMPARE(w.sidebarRow(u"Item History"_s)->property("checked").toBool(), false);
 
@@ -3445,7 +3449,7 @@ private Q_SLOTS:
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Gear Settings"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
-        QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Score"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
 
         // Back, then the four pages
@@ -3454,7 +3458,7 @@ private Q_SLOTS:
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Import Character"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
-        QCOMPARE(w.focusedRow(), u"Gear Grade"_s);
+        QCOMPARE(w.focusedRow(), u"Gear Score"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Stat Weights"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
@@ -3486,11 +3490,11 @@ private Q_SLOTS:
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
         QTRY_VERIFY(w.sidebarRow(u"Gear Settings"_s));
         QVERIFY(w.clickRow(u"Gear Settings"_s));
-        QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Gear Score"_s));
         // once it has slid in
         QTest::qWait(500);
-        QVERIFY(w.clickRow(u"Gear Grade"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
+        QVERIFY(w.clickRow(u"Gear Score"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Gear Score"_s);
         // the drawer lets go once a page is picked
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
 
@@ -4073,7 +4077,7 @@ private Q_SLOTS:
         QCOMPARE(text(next), u"Finish"_s);
         QVERIFY(!isVisible(w.inGuide(u"skipButton"_s)));
         QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
-                 u"Hold the mouse over an item in the game and press %1."_s.arg(
+                 u"Hover over an item in Path of Exile 2 and press %1."_s.arg(
                      QKeySequence(u"F2"_s).toString(QKeySequence::NativeText)));
         QVERIFY(!w.settings().setupDone);
 
@@ -4319,7 +4323,7 @@ private Q_SLOTS:
         for (int i = 0; i < 4; ++i)
             QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
-                 u"Hold the mouse over an item in the game and press %1."_s.arg(
+                 u"Hover over an item in Path of Exile 2 and press %1."_s.arg(
                      QKeySequence(u"F7"_s).toString(QKeySequence::NativeText)));
     }
 

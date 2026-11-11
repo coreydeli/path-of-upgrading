@@ -85,8 +85,8 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: weightsPage.weights.character === ""
-            text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, under Import Character in Gear Settings.")
+            text: qsTr("You haven't picked a character yet.")
+            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
         TableHeader {
@@ -114,7 +114,7 @@ ColumnsPage {
             objectName: "noWeightsText"
             visible: weightRows.count === 0
             text: qsTr("You have no weights.")
-            description: qsTr("Every item comes to 0 by them. Add some, suggest some from your gear, or go back to the defaults.")
+            description: qsTr("Every item scores 0 by them. Add some, suggest some from your gear, or go back to the defaults.")
             textItem.wrapMode: Text.Wrap
         }
 
@@ -164,7 +164,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "weightsHelp"
-        text: qsTr("A weight is what one of a stat is worth to you, in points. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 life. The popup judges items by them when the gear score has no build profile, and so does searching the trade site by your weights.")
+        text: qsTr("A weight is what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges items by them when the gear score has no build profile, and so does searching the trade site by your weights.")
     }
 
     StatPickerDialog {
