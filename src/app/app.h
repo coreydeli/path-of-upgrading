@@ -39,6 +39,7 @@
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
 #include "services/updatechecker.h"
+#include "services/updatedownloader.h"
 
 #include <QObject>
 #include <QString>
@@ -142,6 +143,12 @@ public:
     // Looks for a newer release on GitHub, which main() starts once the
     // program is up.
     UpdateChecker &updateChecker() { return m_updates; }
+    // What installs an update by itself, for the kinds of install that can,
+    // and what to do once it has: restart or quit.
+    void setUpdateInstaller(std::unique_ptr<PackageInstaller> installer, const Updates::Finish &finish)
+    {
+        m_updatesModel.setInstaller(std::move(installer), finish);
+    }
     Updates *updates() { return &m_updatesModel; }
 
     CharacterList *characterList() { return &m_characterList; }
@@ -198,6 +205,7 @@ private:
     TradeResults m_results;
     ResultsPanel m_resultsPanel;
     UpdateChecker m_updates;
+    UpdateDownloader m_downloader;
     Updates m_updatesModel;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
