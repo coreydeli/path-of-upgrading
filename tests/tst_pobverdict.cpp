@@ -169,7 +169,7 @@ private Q_SLOTS:
         QCOMPARE(v.resistRank, -1);
         QCOMPARE(v.resistGain, -37);
         QVERIFY(v.score < 0); // losing 37 points outweighs 10% more damage
-        QCOMPARE(v.breaks, QStringList{u"Lightning res drops below the cap (38% of 75%)"_s});
+        QCOMPARE(v.breaks, QStringList{u"Lightning Resistance drops below the cap (38% of 75%)"_s});
         QCOMPARE(v.losses, v.breaks);
 
         QCOMPARE(v.resists.size(), 1);
@@ -198,7 +198,7 @@ private Q_SLOTS:
                                                                       {u"MinionDPS"_s, 110000},
                                                                   }));
         QCOMPARE(v.verdict, Verdict::ResistLoss);
-        QCOMPARE(v.breaks, QStringList{u"Lightning res goes further under the cap (from 38% to 30%)"_s});
+        QCOMPARE(v.breaks, QStringList{u"Lightning Resistance goes further under the cap (from 38% to 30%)"_s});
     }
 
     void cappingRanksFirst()
@@ -496,14 +496,14 @@ private Q_SLOTS:
         QVERIFY(damage.losesDamage);
         QCOMPARE(damage.resistRank, -1);
         QCOMPARE(damage.losses, (QStringList{u"Minion DPS drops 50%"_s,
-                                             u"Lightning res drops below the cap (38% of 75%)"_s}));
+                                             u"Lightning Resistance drops below the cap (38% of 75%)"_s}));
         QCOMPARE(damage.breaks, damage.losses);
 
         // 6% of the damage costs less than that much resistance
         const PobVerdict resist = judgeWithPob(base, with(shortOfLightning, {{u"MinionDPS"_s, 94000}}));
         QCOMPARE(resist.verdict, Verdict::ResistLoss);
         QVERIFY(resist.losesDamage);
-        QCOMPARE(resist.losses, (QStringList{u"Lightning res drops below the cap (38% of 75%)"_s,
+        QCOMPARE(resist.losses, (QStringList{u"Lightning Resistance drops below the cap (38% of 75%)"_s,
                                              u"Minion DPS drops 6%"_s}));
     }
 
@@ -530,7 +530,7 @@ private Q_SLOTS:
         const PobVerdict v = judgeWithPob(base, after);
         QCOMPARE(v.verdict, Verdict::ResistLoss);
         QCOMPARE(v.losses.size(), 2);
-        QVERIFY(v.losses.first().startsWith(u"Lightning res"_s));
+        QVERIFY(v.losses.first().startsWith(u"Lightning Resistance"_s));
     }
 
     void effectiveHpLoss()
@@ -560,7 +560,7 @@ private Q_SLOTS:
         const PobVerdict v = judgeWithPob(base, with(shortOfLightning, {{u"TotalEHP"_s, 37500}}));
         QCOMPARE(v.verdict, Verdict::DefenceLoss);
         QCOMPARE(v.losses, (QStringList{u"Effective HP drops 25%"_s,
-                                        u"Lightning res drops below the cap (38% of 75%)"_s}));
+                                        u"Lightning Resistance drops below the cap (38% of 75%)"_s}));
         // and a smaller one isn't
         QCOMPARE(judgeWithPob(base, with(shortOfLightning, {{u"TotalEHP"_s, 46000}})).verdict,
                  Verdict::ResistLoss);
@@ -629,7 +629,7 @@ private Q_SLOTS:
     {
         const PobStats after = with(shortOfLightning, {{u"Str"_s, 60}, {u"ReqStr"_s, 75}});
         const PobVerdict v = judgeWithPob(geared, after);
-        QCOMPARE(v.breaks, (QStringList{u"Lightning res drops below the cap (38% of 75%)"_s,
+        QCOMPARE(v.breaks, (QStringList{u"Lightning Resistance drops below the cap (38% of 75%)"_s,
                                         u"Not enough Strength to use your gear (60 of 75)"_s}));
         QCOMPARE(v.losses, QStringList{v.breaks.first()});
     }

@@ -2,6 +2,7 @@
 #include "core/buildprofiles.h"
 
 #include <algorithm>
+#include <span>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -52,14 +53,14 @@ ProfileStat flatEnergyShield(double factor = 1)
 
 ProfileStat percentEnergyShield(double factor = 1)
 {
-    return exact(u"% Energy Shield"_s, u"#% increased maximum Energy Shield"_s,
+    return exact(u"Increased Energy Shield"_s, u"#% increased maximum Energy Shield"_s,
                  PerSlot({{u"Amulet"_s, 7 * factor}, {u"Jewel"_s, 7 * factor}}),
                  PerSlot({{u"Jewel"_s, 12}}, 25));
 }
 
 ProfileStat extraEnergyShield()
 {
-    return stat(u"Extra ES"_s, uR"(^Gain #% of maximum (Life|Mana) as Extra maximum Energy Shield$)"_s,
+    return stat(u"Extra Energy Shield"_s, uR"(^Gain #% of maximum (Life|Mana) as Extra maximum Energy Shield$)"_s,
                 PerSlot({{u"Body Armour"_s, 5}}), 15);
 }
 
@@ -76,7 +77,7 @@ ProfileStat rarity()
 
 ProfileStat movementSpeed()
 {
-    return exact(u"Movement speed"_s, u"#% increased Movement Speed"_s, PerSlot({{u"Boots"_s, 10}}), 35);
+    return exact(u"Movement Speed"_s, u"#% increased Movement Speed"_s, PerSlot({{u"Boots"_s, 10}}), 35);
 }
 
 ProfileStat life(double importance)
@@ -109,21 +110,21 @@ ProfileStat spirit(double importance)
 // Flat on boots, body armour, belts and shields. Jewels roll a percentage.
 ProfileStat stunThreshold()
 {
-    return exact(u"Stun threshold"_s, u"# to Stun Threshold"_s,
+    return exact(u"Stun Threshold"_s, u"# to Stun Threshold"_s,
                  PerSlot({{u"Boots"_s, 1.5}, {u"Body Armour"_s, 1.5}, {u"Belt"_s, 1.5}, {u"Offhand"_s, 1.5}}),
                  PerSlot({{u"Boots"_s, 352}}, 304));
 }
 
 ProfileStat percentStunThreshold()
 {
-    return exact(u"Stun threshold"_s, u"#% increased Stun Threshold"_s, PerSlot({{u"Jewel"_s, 1}}), 16);
+    return exact(u"Stun Threshold"_s, u"#% increased Stun Threshold"_s, PerSlot({{u"Jewel"_s, 1}}), 16);
 }
 
 // On armour with Energy Shield, shields and foci. Jewels roll how soon it
 // starts instead.
 ProfileStat energyShieldRecharge(double importance)
 {
-    return exact(u"ES recharge"_s, u"#% increased Energy Shield Recharge Rate"_s,
+    return exact(u"Energy Shield Recharge"_s, u"#% increased Energy Shield Recharge Rate"_s,
                  PerSlot({{u"Helmet"_s, importance},
                           {u"Body Armour"_s, importance},
                           {u"Gloves"_s, importance},
@@ -134,13 +135,13 @@ ProfileStat energyShieldRecharge(double importance)
 
 ProfileStat energyShieldRechargeStart(double importance)
 {
-    return exact(u"ES recharge"_s, u"#% faster start of Energy Shield Recharge"_s,
+    return exact(u"Energy Shield Recharge"_s, u"#% faster start of Energy Shield Recharge"_s,
                  PerSlot({{u"Jewel"_s, importance}}), 15);
 }
 
 ProfileStat manaRegeneration(double importance)
 {
-    return exact(u"Mana regen"_s, u"#% increased Mana Regeneration Rate"_s,
+    return exact(u"Mana Regeneration"_s, u"#% increased Mana Regeneration Rate"_s,
                  PerSlot({{u"Ring"_s, importance},
                           {u"Amulet"_s, importance},
                           {u"Belt"_s, importance},
@@ -151,7 +152,7 @@ ProfileStat manaRegeneration(double importance)
 
 ProfileStat lifeRegeneration(double importance)
 {
-    return exact(u"Life regen"_s, u"# Life Regeneration per second"_s,
+    return exact(u"Life Regeneration"_s, u"# Life Regeneration per second"_s,
                  PerSlot({{u"Body Armour"_s, importance},
                           {u"Helmet"_s, importance},
                           {u"Boots"_s, importance},
@@ -168,7 +169,7 @@ ProfileStat lifeRegeneration(double importance)
 
 ProfileStat percentLifeRegeneration(double importance)
 {
-    return exact(u"Life regen"_s, u"#% increased Life Regeneration rate"_s,
+    return exact(u"Life Regeneration"_s, u"#% increased Life Regeneration rate"_s,
                  PerSlot({{u"Jewel"_s, importance}}), 10);
 }
 
@@ -216,7 +217,7 @@ BuildProfile lifeAndResistances()
         "Weapons are rated by damage per second."_s,
         {
             weaponDps(),
-            stat(u"Armour / Evasion"_s, uR"(^\[Base\] (Armour|Evasion Rating)$)"_s,
+            stat(u"Armour or Evasion Rating"_s, uR"(^\[Base\] (Armour|Evasion Rating)$)"_s,
                  PerSlot({{u"Body Armour"_s, 10},
                           {u"Helmet"_s, 8},
                           {u"Gloves"_s, 7},
@@ -244,7 +245,7 @@ BuildProfile lifeAndResistances()
         damagePattern(u"Physical|Elemental|Fire|Cold|Lightning|Chaos|Attack|Melee|Projectile|Spell"_s),
         PerSlot({{u"Jewel"_s, 4}, {u"Ring"_s, 2}, {u"Amulet"_s, 2}}),
         PerSlot({{u"Jewel"_s, 15}, {u"Ring"_s, 30}}, 100));
-    p.stats << exact(u"% Life"_s, u"#% increased maximum Life"_s,
+    p.stats << exact(u"Increased Life"_s, u"#% increased maximum Life"_s,
                      PerSlot({{u"Jewel"_s, 6}, {u"Amulet"_s, 3}}), PerSlot({{u"Jewel"_s, 8}}, 15));
     p.stats << flatEnergyShield(0.5) << percentEnergyShield(0.5);
     p.stats << lifeRegeneration(2) << percentLifeRegeneration(2) << flaskLifeRecovery(1.5);
@@ -269,7 +270,7 @@ BuildProfile energyShieldCaster()
                 PerSlot(
                     {{u"Weapon"_s, 9}, {u"Offhand"_s, 8}, {u"Amulet"_s, 5}, {u"Ring"_s, 4}, {u"Jewel"_s, 7}}),
                 PerSlot({{u"Jewel"_s, 15}, {u"Ring"_s, 30}}, 100), u"#% increased Spell Damage"_s),
-            stat(u"Cast speed"_s, uR"(^#% increased (Cast|Skill) Speed$)"_s,
+            stat(u"Cast Speed"_s, uR"(^#% increased (Cast|Skill) Speed$)"_s,
                  PerSlot({{u"Weapon"_s, 7}, {u"Ring"_s, 5}, {u"Amulet"_s, 5}, {u"Jewel"_s, 4}}),
                  PerSlot({{u"Jewel"_s, 6}}, 25), u"#% increased Cast Speed"_s),
             stat(u"Spell critical hit chance and damage bonus"_s,
@@ -307,7 +308,7 @@ BuildProfile energyShieldAttacker()
             stat(u"Attack skill levels"_s, uR"(^# to Level of all (Attack|Melee|Projectile) Skills$)"_s,
                  PerSlot({{u"Amulet"_s, 8}, {u"Weapon"_s, 6}, {u"Offhand"_s, 4}}),
                  PerSlot({{u"Weapon"_s, 5}}, 3)),
-            stat(u"Attack speed"_s, uR"(^#% increased (Attack|Skill) Speed$)"_s,
+            stat(u"Attack Speed"_s, uR"(^#% increased (Attack|Skill) Speed$)"_s,
                  PerSlot({{u"Weapon"_s, 7},
                           {u"Gloves"_s, 6},
                           {u"Ring"_s, 5},
@@ -350,7 +351,7 @@ BuildProfile energyShieldAttacker()
                 PerSlot(
                     {{u"Helmet"_s, 3}, {u"Gloves"_s, 3}, {u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Weapon"_s, 2}}),
                 400),
-            exact(u"% Accuracy"_s, u"#% increased Accuracy Rating"_s,
+            exact(u"Increased Accuracy Rating"_s, u"#% increased Accuracy Rating"_s,
                   PerSlot({{u"Jewel"_s, 4}, {u"Amulet"_s, 3}, {u"Gloves"_s, 2}}),
                   PerSlot({{u"Jewel"_s, 15}}, 30)),
             baseEnergyShield(),
@@ -358,7 +359,7 @@ BuildProfile energyShieldAttacker()
             flatEnergyShield(),
             extraEnergyShield(),
             // a lesser defence, for bases that have both
-            stat(u"Evasion"_s, uR"(^\[Base\] Evasion Rating$)"_s,
+            stat(u"Evasion Rating"_s, uR"(^\[Base\] Evasion Rating$)"_s,
                  PerSlot({{u"Body Armour"_s, 4},
                           {u"Helmet"_s, 3},
                           {u"Gloves"_s, 3},
@@ -412,14 +413,14 @@ BuildProfile minionSummoner()
                  "(Attack Speed|Cast Speed|Attack and Cast Speed)$"_s,
                  PerSlot({{u"Weapon"_s, 5}, {u"Ring"_s, 4}, {u"Amulet"_s, 4}, {u"Jewel"_s, 5}}),
                  PerSlot({{u"Jewel"_s, 8}}, 20)),
-            stat(u"Minion res"_s, u'^' + allies + u" have #% to all Elemental Resistances$"_s,
+            stat(u"Minion Resistances"_s, u'^' + allies + u" have #% to all Elemental Resistances$"_s,
                  PerSlot({{u"Weapon"_s, 2}}), 16),
             stat(u"Minion defence"_s,
                  uR"(^Minions have #% increased maximum Life$|)"
                  "^Minions gain #% of their maximum Life as Extra maximum Energy Shield$"_s,
                  PerSlot({{u"Weapon"_s, 2}, {u"Offhand"_s, 2}, {u"Jewel"_s, 2}}),
                  PerSlot({{u"Jewel"_s, 10}}, 30)),
-            stat(u"Spirit efficiency"_s, uR"(^#% increased Spirit Reservation Efficiency of Skills$)"_s,
+            stat(u"Spirit Reservation Efficiency"_s, uR"(^#% increased Spirit Reservation Efficiency of Skills$)"_s,
                  PerSlot({{u"Amulet"_s, 5}}), 15),
             baseEnergyShield(),
             stat(u"Armour"_s, uR"(^\[Base\] Armour$)"_s, PerSlot({{u"Body Armour"_s, 2}}), 800),
@@ -434,9 +435,9 @@ BuildProfile minionSummoner()
             resistance(Element::Chaos, 4, 30),
             exact(u"Intelligence"_s, u"# to Intelligence"_s, PerSlot({{u"Jewel"_s, 1}}, 3),
                   PerSlot({{u"Jewel"_s, 12}}, 35)),
-            stat(u"Str/Dex"_s, uR"(^# to (Strength|Dexterity)$)"_s, PerSlot({{u"Jewel"_s, 0}}, 1.5), 35),
+            stat(u"Strength and Dexterity"_s, uR"(^# to (Strength|Dexterity)$)"_s, PerSlot({{u"Jewel"_s, 0}}, 1.5), 35),
             movementSpeed(),
-            exact(u"Cast speed"_s, u"#% increased Cast Speed"_s,
+            exact(u"Cast Speed"_s, u"#% increased Cast Speed"_s,
                   PerSlot({{u"Ring"_s, 3}, {u"Amulet"_s, 3}, {u"Offhand"_s, 3}, {u"Jewel"_s, 2}}),
                   PerSlot({{u"Jewel"_s, 6}}, 25)),
             energyShieldRecharge(2),
@@ -455,7 +456,7 @@ BuildProfile minionSummoner()
 
 QString resistLabel(Element e)
 {
-    return elementName(e) + u" res"_s;
+    return elementName(e) + u" Resistance"_s;
 }
 
 double PerSlot::at(const QString &slotGroup) const
@@ -514,6 +515,24 @@ QList<TweakableStat> tweakableStats(const BuildProfile &profile)
     return out;
 }
 
+namespace {
+
+// Moves each tweak saved under an old label to its new one, unless the new one has a value already.
+void moveTweaks(QHash<QString, double> &tweaks, std::span<const std::pair<QString, QString>> renamed)
+{
+    for (const auto &[from, to] : renamed) {
+        const auto old = tweaks.find(from);
+        if (old == tweaks.end())
+            continue;
+        const double value = old.value();
+        tweaks.erase(old);
+        if (!tweaks.contains(to))
+            tweaks.insert(to, value);
+    }
+}
+
+} // namespace
+
 void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId)
 {
     const QString crit = profileId == energyShieldAttackerProfile
@@ -525,15 +544,34 @@ void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId)
         {u"Minion crit"_s, u"Minion critical hit chance and damage bonus"_s},
         {u"Weapon DPS"_s, u"Weapon damage per second"_s},
     };
-    for (const auto &[from, to] : renamed) {
-        const auto old = tweaks.find(from);
-        if (old == tweaks.end())
-            continue;
-        const double value = old.value();
-        tweaks.erase(old);
-        if (!tweaks.contains(to))
-            tweaks.insert(to, value);
-    }
+    moveTweaks(tweaks, renamed);
+}
+
+void renameShortTweaks(QHash<QString, double> &tweaks)
+{
+    const std::pair<QString, QString> renamed[] = {
+        {u"Fire res"_s, resistLabel(Element::Fire)},
+        {u"Cold res"_s, resistLabel(Element::Cold)},
+        {u"Lightning res"_s, resistLabel(Element::Lightning)},
+        {u"Chaos res"_s, resistLabel(Element::Chaos)},
+        {u"Armour / Evasion"_s, u"Armour or Evasion Rating"_s},
+        {u"ES recharge"_s, u"Energy Shield Recharge"_s},
+        {u"Mana regen"_s, u"Mana Regeneration"_s},
+        {u"Life regen"_s, u"Life Regeneration"_s},
+        {u"Stun threshold"_s, u"Stun Threshold"_s},
+        {u"Movement speed"_s, u"Movement Speed"_s},
+        {u"Evasion"_s, u"Evasion Rating"_s},
+        {u"Minion res"_s, u"Minion Resistances"_s},
+        {u"% Life"_s, u"Increased Life"_s},
+        {u"% Energy Shield"_s, u"Increased Energy Shield"_s},
+        {u"% Accuracy"_s, u"Increased Accuracy Rating"_s},
+        {u"Extra ES"_s, u"Extra Energy Shield"_s},
+        {u"Str/Dex"_s, u"Strength and Dexterity"_s},
+        {u"Cast speed"_s, u"Cast Speed"_s},
+        {u"Attack speed"_s, u"Attack Speed"_s},
+        {u"Spirit efficiency"_s, u"Spirit Reservation Efficiency"_s},
+    };
+    moveTweaks(tweaks, renamed);
 }
 
 } // namespace pou

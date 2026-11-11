@@ -1248,7 +1248,7 @@ private Q_SLOTS:
         QVERIFY(r.asked().contains(fetch));
         QCOMPARE(results.rowCount(), 2);
         QCOMPARE(results.data(results.index(0), TradeResults::PriceRole).toString(), u"3 div"_s);
-        QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(), u"about 1200 ex"_s);
+        QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(), u"about 1200 Exalted Orbs"_s);
     }
 
     void tradeResultsJudged()
@@ -1316,7 +1316,7 @@ private Q_SLOTS:
         QVERIFY(finished.wait());
         QCOMPARE(r.app.results().total(), 2);
         r.network->answers = {{.status = 400, .body = R"({"error":{"message":"Nope."}})"}};
-        QTest::ignoreMessage(QtWarningMsg, "Couldn't search the trade site: The trade site says: Nope.");
+        QTest::ignoreMessage(QtWarningMsg, "Couldn't search the trade site: The trade site refused the search: Nope.");
         r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
         QVERIFY(finished.wait());
         QVERIFY(!r.app.finder().found());

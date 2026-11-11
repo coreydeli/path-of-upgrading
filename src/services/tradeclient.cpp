@@ -207,7 +207,7 @@ void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply
     } else if (message.contains(u"too complex", Qt::CaseInsensitive)) {
         trade->fail(Error::TooComplex, u"The trade site says the search has too many filters."_s);
     } else if (!message.isEmpty()) {
-        trade->fail(Error::Rejected, u"The trade site says: %1"_s.arg(message));
+        trade->fail(Error::Rejected, u"The trade site refused the search: %1"_s.arg(message));
     } else if (status != 200 || !json.isObject()) {
         trade->fail(Error::BadAnswer, u"The trade site's answer couldn't be read (HTTP %1)."_s.arg(status));
     } else {

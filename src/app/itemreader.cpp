@@ -28,7 +28,7 @@ QString whyNothing(GameInput::Failure why, const QString &detail, const QString 
         return u"A key was still down after %1, so the game wasn't asked to copy. Let go of the other "
                "keys, then press %1 again."_s.arg(hotkey);
     case GameInput::Failure::NotOverGame:
-        return u"Your mouse wasn't over the game. Hover the item in game, then press %1."_s.arg(hotkey);
+        return u"Your mouse wasn't over the game. Hover over the item in the game, then press %1."_s.arg(hotkey);
     case GameInput::Failure::NothingCopied:
         return u"No item under the mouse. Hover an item until its tooltip shows, then press %1."_s.arg(
             hotkey);

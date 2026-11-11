@@ -278,7 +278,7 @@ private Q_SLOTS:
     {
         Scoring s;
         s.play(tester(u"es-caster"_s));
-        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
         QCOMPARE(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString(),
                  u"Counts on Weapon, Offhand, and Amulet"_s);
         QCOMPARE(s.of(u"Life"_s, GearScoring::WhereRole).toString(),
@@ -300,9 +300,9 @@ private Q_SLOTS:
         QCOMPARE(s.scoring.profiles().at(2), u"Energy Shield attacker"_s);
         QCOMPARE(s.of(u"Weapon damage per second"_s, GearScoring::WhereRole).toString(),
                  u"Counts on Weapon"_s);
-        QCOMPARE(s.of(u"Attack speed"_s, GearScoring::WhereRole).toString(),
+        QCOMPARE(s.of(u"Attack Speed"_s, GearScoring::WhereRole).toString(),
                  u"Counts in every slot but Helmet, Body Armour, Boots, and Belt"_s);
-        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
         QVERIFY(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString().isEmpty());
     }
 
@@ -349,16 +349,16 @@ private Q_SLOTS:
         // tweaks are saved as factors, whatever the levels are called
         Scoring s;
         Character c = tester(u"es-caster"_s);
-        c.tweaks = {{u"Life"_s, 0}, {u"Movement speed"_s, 0.5}, {u"Rarity"_s, 1.5}, {u"Mana"_s, 2}};
+        c.tweaks = {{u"Life"_s, 0}, {u"Movement Speed"_s, 0.5}, {u"Rarity"_s, 1.5}, {u"Mana"_s, 2}};
         const QString id = s.play(c);
         QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), 0);
-        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::LevelRole).toInt(), 1);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::LevelRole).toInt(), 1);
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::LevelRole).toInt(), 3);
         QCOMPARE(s.of(u"Mana"_s, GearScoring::LevelRole).toInt(), 4);
 
         // and picking a level saves the factor
-        s.scoring.setLevel(u"Movement speed"_s, 5);
-        QCOMPARE(s.store.find(id)->tweaks.value(u"Movement speed"_s), 3.0);
+        s.scoring.setLevel(u"Movement Speed"_s, 5);
+        QCOMPARE(s.store.find(id)->tweaks.value(u"Movement Speed"_s), 3.0);
     }
 
     void chaosInoculation()

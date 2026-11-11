@@ -209,7 +209,7 @@ QList<ReportFigure> pobChanges(const PobVerdict &v)
         // past the cap only the cap counts
         if (r.capped && r.wasCapped && change == 0)
             continue;
-        ReportFigure f{.label = elementName(r.element) + u" res"_s,
+        ReportFigure f{.label = elementName(r.element) + u" Resistance"_s,
                        .change = (change > 0 ? u"+"_s : QString()) + percent(change),
                        .from = percent(r.from),
                        .to = percent(r.to)};
@@ -498,7 +498,7 @@ void putMap(ItemReport &report, const MapCheck &map)
                               : u"Checked against your character. Nothing here is worse for it."_s;
     }
     report.mapExperimental =
-        u"Experimental: checking maps is still being tested, and is only in beta versions."_s;
+        u"Experimental: checking waystones and tablets is still being tested, and is only in beta versions."_s;
 }
 
 } // namespace

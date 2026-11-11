@@ -831,7 +831,7 @@ private Q_SLOTS:
         // the conditional version doesn't count as the key stat
         QCOMPARE(filterIds(count), QStringList({u"explicit.minion_dmg"_s, u"explicit.es_pct"_s}));
         QCOMPARE(valueOf(count, u"explicit.minion_dmg"_s), minimum(6));
-        QCOMPARE(q.keyStats, QStringList({u"Minion damage"_s, u"% Energy Shield"_s}));
+        QCOMPARE(q.keyStats, QStringList({u"Minion damage"_s, u"Increased Energy Shield"_s}));
         // but it weighs less
         const QJsonObject weighted = statGroups(q).at(0).toObject();
         QVERIFY(valueOf(weighted, u"explicit.minion_dmg_hit"_s).value(u"weight").toDouble() <

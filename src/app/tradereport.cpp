@@ -17,7 +17,7 @@ TradeReport searchingReport(std::chrono::milliseconds wait)
     }
     report.status = seconds == 1 ? u"Waiting a second for the trade site"_s
                                  : u"Waiting %1 seconds for the trade site"_s.arg(seconds);
-    report.note = u"It takes only a few searches at a time."_s;
+    report.note = u"The trade site only allows a few searches at a time."_s;
     return report;
 }
 

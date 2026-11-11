@@ -119,7 +119,7 @@ private Q_SLOTS:
         QCOMPARE(r.resists.fire(), 70.0);
         QCOMPARE(r.resists.cold(), 0.0);
         QCOMPARE(r.resists.summary(), u"Fire 70%, Cold 0%, Lightning 0%, Chaos 0%"_s);
-        QCOMPARE(r.resists.sourceNote(), u"Typed in from your character sheet, with what you wear now."_s);
+        QCOMPARE(r.resists.sourceNote(), u"Typed in from your character sheet, with what you have equipped now."_s);
         // read off the sheet, so it needs less to spare
         QCOMPARE(r.resists.margin(), 5.0);
 
@@ -166,7 +166,7 @@ private Q_SLOTS:
         QVERIFY(r.resists.isKnown());
         QVERIFY(!r.resists.isFromSheet());
         QCOMPARE(r.resists.summary(), u"Fire 80%, Cold 60%"_s);
-        QCOMPARE(r.resists.sourceNote(), u"From your build in Path of Building, with what you wear now."_s);
+        QCOMPARE(r.resists.sourceNote(), u"From your build in Path of Building, with what you have equipped now."_s);
         QCOMPARE(r.resists.lightning(), 0.0);
         QCOMPARE(r.resists.margin(), 15.0);
 

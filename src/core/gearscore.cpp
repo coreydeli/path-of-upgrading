@@ -50,7 +50,7 @@ qsizetype idealStatCount(const QString &slot)
 
 QString resistNote(Element e, double need, bool partly)
 {
-    const QString name = elementName(e) + u" res: "_s;
+    const QString name = elementName(e) + u" Resistance: "_s;
     if (need <= 0)
         return name + u"you're already capped, so it doesn't count."_s;
     const QString more = formatNumber(roundHalfUp(need));

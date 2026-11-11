@@ -95,6 +95,12 @@ QString groupOf(const QString &slot)
     return slot;
 }
 
+QString slotLabel(const QString &slot)
+{
+    QString label = slot;
+    return label.replace(u"Offhand"_s, u"Off Hand"_s);
+}
+
 QString otherHand(const QString &slot)
 {
     static const QHash<QString, QString> hands = {

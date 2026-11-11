@@ -46,12 +46,12 @@ private Q_SLOTS:
     void anEmptySlotWantsItsTopStats()
     {
         const QList<WantedStat> boots = wantedStats(u"Boots"_s, nullptr, {});
-        QCOMPARE(labelsOf(boots), (QStringList{u"Movement speed"_s, u"Life"_s, u"Fire res"_s}));
+        QCOMPARE(labelsOf(boots), (QStringList{u"Movement Speed"_s, u"Life"_s, u"Fire Resistance"_s}));
         // the same minimums a craft base search asks for
         QCOMPARE(boots.at(0).minimum, searchMinimum(35));
         QCOMPARE(boots.at(1).minimum, searchMinimum(100));
-        QCOMPARE(wantedText(boots), u"Movement speed 19 or more (up to 35), Life 55 or more (up to 149), "
-                                    u"Fire res 24 or more (up to 45)"_s);
+        QCOMPARE(wantedText(boots), u"Movement Speed 19 or more (up to 35), Life 55 or more (up to 149), "
+                                    u"Fire Resistance 24 or more (up to 45)"_s);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 5).size(), 5);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 1).size(), 1);
     }
@@ -68,18 +68,18 @@ private Q_SLOTS:
     {
         const Item boots = item(u"Boots"_s, lifeAndSpeed);
         QCOMPARE(wantedText(wantedStats(u"Boots"_s, &boots, {})),
-                 u"Fire res 24 or more (up to 45), Cold res 24 or more (up to 45), "
-                 u"Lightning res 24 or more (up to 45)"_s);
+                 u"Fire Resistance 24 or more (up to 45), Cold Resistance 24 or more (up to 45), "
+                 u"Lightning Resistance 24 or more (up to 45)"_s);
 
         // exactly the minimum is enough
         const Item exact = item(u"Boots"_s, u"+55 to maximum Life\n19% increased Movement Speed"_s);
         QCOMPARE(labelsOf(wantedStats(u"Boots"_s, &exact, {})),
-                 (QStringList{u"Fire res"_s, u"Cold res"_s, u"Lightning res"_s}));
+                 (QStringList{u"Fire Resistance"_s, u"Cold Resistance"_s, u"Lightning Resistance"_s}));
 
         // under the minimum is still wanted
         const Item weak = item(u"Boots"_s, u"+40 to maximum Life\n12% increased Movement Speed"_s);
         QCOMPARE(labelsOf(wantedStats(u"Boots"_s, &weak, {})),
-                 (QStringList{u"Movement speed"_s, u"Life"_s, u"Fire res"_s}));
+                 (QStringList{u"Movement Speed"_s, u"Life"_s, u"Fire Resistance"_s}));
 
         const Item rolled = item(u"Boots"_s, lifeAndSpeed + u"\n"_s + threeResists);
         QVERIFY(wantedStats(u"Boots"_s, &rolled, {}).isEmpty());
@@ -89,12 +89,12 @@ private Q_SLOTS:
     {
         const QList<RollRange> boots = canRoll(u"Boots"_s, nullptr, {});
         QCOMPARE(boots.size(), 5);
-        QCOMPARE(boots.first().label, u"Movement speed"_s);
+        QCOMPARE(boots.first().label, u"Movement Speed"_s);
         const auto top = SlotMods::builtIn().best(u"Boots"_s, u"#% increased Movement Speed"_s);
         QVERIFY(top);
         QCOMPARE(boots.first().top, *top);
         QCOMPARE(rollRangeText(boots.first()),
-                 u"Movement speed %1, item level %2"_s.arg(rollText(top->high)).arg(top->level));
+                 u"Movement Speed %1, item level %2"_s.arg(rollText(top->high)).arg(top->level));
         QCOMPARE(canRoll(u"Boots"_s, nullptr, {}, 2).size(), 2);
 
         // what's worn doesn't matter, only its class
@@ -139,19 +139,19 @@ private Q_SLOTS:
         QVERIFY(!labelsOf(noLife).contains(u"Life"_s));
         // a stat worth under 4 isn't searched for
         const QList<WantedStat> minor =
-            wantedStats(u"Boots"_s, nullptr, {.tweaks = {{u"Movement speed"_s, 0.2}}});
-        QVERIFY(!labelsOf(minor).contains(u"Movement speed"_s));
+            wantedStats(u"Boots"_s, nullptr, {.tweaks = {{u"Movement Speed"_s, 0.2}}});
+        QVERIFY(!labelsOf(minor).contains(u"Movement Speed"_s));
         // and a stat made to count more comes first
         const QList<WantedStat> first =
-            wantedStats(u"Boots"_s, nullptr, {.tweaks = {{u"Lightning res"_s, 3}}});
-        QCOMPARE(first.first().label, u"Lightning res"_s);
+            wantedStats(u"Boots"_s, nullptr, {.tweaks = {{u"Lightning Resistance"_s, 3}}});
+        QCOMPARE(first.first().label, u"Lightning Resistance"_s);
     }
 
     void ignoredStatsAreNotWanted()
     {
         const GearScoreOptions options{
             .ignore = [](const QString &key) { return key.contains(u"Movement Speed"); }};
-        QVERIFY(!labelsOf(wantedStats(u"Boots"_s, nullptr, options)).contains(u"Movement speed"_s));
+        QVERIFY(!labelsOf(wantedStats(u"Boots"_s, nullptr, options)).contains(u"Movement Speed"_s));
     }
 
     void resistancesAreWantedUntilCapped()
@@ -162,8 +162,8 @@ private Q_SLOTS:
         options.resistNeed[Element::Lightning] = 80;
         const QList<WantedStat> wants = wantedStats(u"Helmet"_s, nullptr, options, 5);
         // cold is capped, fire needs 11 at most, and lightning the usual
-        QCOMPARE(wantedText(wants), u"Life 55 or more (up to 174), Fire res 11 or more (up to 45), "
-                                    u"Lightning res 24 or more (up to 45)"_s);
+        QCOMPARE(wantedText(wants), u"Life 55 or more (up to 174), Fire Resistance 11 or more (up to 45), "
+                                    u"Lightning Resistance 24 or more (up to 45)"_s);
     }
 
     void thePickedSlotsGoByTheirScores()

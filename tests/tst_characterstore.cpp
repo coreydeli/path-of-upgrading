@@ -133,6 +133,26 @@ private Q_SLOTS:
                  (ProfileTweaks{{u"Weapon damage per second"_s, 2}}));
     }
 
+    void oldShortLabelsKeepTheirLevel()
+    {
+        // the profile labels were spelled out later, and tweaks go by label
+        const auto load = [](const QJsonObject &tweaks) {
+            return characterFromJson({{u"tweaks"_s, tweaks}}).value().tweaks;
+        };
+        QCOMPARE(load({{u"Fire res"_s, 2}, {u"ES recharge"_s, 0.5}, {u"Str/Dex"_s, 3}, {u"Spirit"_s, 1.5}}),
+                 (ProfileTweaks{{u"Fire Resistance"_s, 2},
+                                {u"Energy Shield Recharge"_s, 0.5},
+                                {u"Strength and Dexterity"_s, 3},
+                                {u"Spirit"_s, 1.5}}));
+        QCOMPARE(load({{u"% Life"_s, 2}, {u"Movement speed"_s, 0}, {u"Spirit efficiency"_s, 3}}),
+                 (ProfileTweaks{{u"Increased Life"_s, 2},
+                                {u"Movement Speed"_s, 0},
+                                {u"Spirit Reservation Efficiency"_s, 3}}));
+        // already under the new label, so that one stays
+        QCOMPARE(load({{u"Cold res"_s, 2}, {u"Cold Resistance"_s, 0}}),
+                 (ProfileTweaks{{u"Cold Resistance"_s, 0}}));
+    }
+
     void noWeightsAtAll()
     {
         const Character bare = characterFromJson({{u"weights"_s, QJsonObject()}}).value();

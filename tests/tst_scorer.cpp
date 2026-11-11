@@ -138,17 +138,17 @@ private Q_SLOTS:
         QCOMPARE(r.replacing, QStringList({u"A"_s, u"S"_s}));
         QCOMPARE(rowFor(r, u"# to maximum Life").oldValue, 80.0);
         QVERIFY(
-            r.notes.contains(u"Two-handed, so it's compared against your weapon and offhand together."_s));
+            r.notes.contains(u"Two-handed, so it's compared against your weapon and off hand together."_s));
 
         const Comparison offhand =
             compare(shield, {{u"Weapon"_s, item(itemtexts::twoHandMace)}}, defaultWeights());
         QVERIFY(offhand.notes.first().contains(u"two-handed"));
         // a one-handed weapon leaves it free
         const Comparison withOneHand = compare(shield, {{u"Weapon"_s, oneHand}}, defaultWeights());
-        QVERIFY(!withOneHand.notes.contains(u"Your weapon is two-handed, so you can't use this with it."_s));
+        QVERIFY(!withOneHand.notes.contains(u"Your weapon is two-handed, so you can't equip this with it."_s));
         // the weapon of its own set
         const Equipped swapMace = {{u"Weapon 2"_s, item(itemtexts::twoHandMace)}};
-        const QString cantUse = u"Your weapon is two-handed, so you can't use this with it."_s;
+        const QString cantUse = u"Your weapon is two-handed, so you can't equip this with it."_s;
         QVERIFY(compare(shield, swapMace, defaultWeights(), {}, u"Offhand 2"_s).notes.contains(cantUse));
         QVERIFY(!compare(shield, swapMace, defaultWeights()).notes.contains(cantUse));
 
@@ -182,10 +182,10 @@ private Q_SLOTS:
         const Comparison r = compare(maul, worn, defaultWeights(), {}, {}, {.twoHandedInOne = true});
         QCOMPARE(r.replacing, QStringList{u"A"_s});
         QVERIFY(
-            !r.notes.contains(u"Two-handed, so it's compared against your weapon and offhand together."_s));
+            !r.notes.contains(u"Two-handed, so it's compared against your weapon and off hand together."_s));
 
         // and the shield is no longer in the way of the weapon
-        const QString cantUse = u"Your weapon is two-handed, so you can't use this with it."_s;
+        const QString cantUse = u"Your weapon is two-handed, so you can't equip this with it."_s;
         const Equipped holdingMaul = {{u"Weapon"_s, maul}};
         QVERIFY(compare(shield, holdingMaul, defaultWeights()).notes.contains(cantUse));
         QVERIFY(!compare(shield, holdingMaul, defaultWeights(), {}, {}, {.twoHandedInOne = true})
