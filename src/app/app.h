@@ -37,6 +37,7 @@
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
+#include "services/updatechecker.h"
 
 #include <QObject>
 #include <QString>
@@ -136,6 +137,9 @@ public:
     // The listings of the last search, and the window that shows them.
     TradeResults &results() { return m_results; }
     ResultsPanel &resultsPanel() { return m_resultsPanel; }
+    // Looks for a newer release on GitHub, which main() starts once the
+    // program is up.
+    UpdateChecker &updates() { return m_updates; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -190,6 +194,7 @@ private:
     TradeFinder m_finder;
     TradeResults m_results;
     ResultsPanel m_resultsPanel;
+    UpdateChecker m_updates;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;

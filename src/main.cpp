@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
     engine.loadFromModule("PathOfUpgrading", "Main");
     desktop.setWindow(qobject_cast<QWindow *>(engine.rootObjects().value(0)));
     desktop.reportProblems();
+    root.updates().start();
 
     const int exitCode = app.exec();
     // The main window reads from the app, so it goes before the app does.
