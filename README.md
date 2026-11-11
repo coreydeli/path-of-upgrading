@@ -36,15 +36,20 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   you and how dangerous it is to run, and it suggests what to do with the bad
   ones, such as an Orb of Annulment with its odds. It counts your character's
   resistances and life when it knows them. A release shows a waystone as before.
-- The gear score uses a build profile: life and resistances, Energy Shield
-  spellcaster, Energy Shield attacker, or minion summoner. You can change how
-  much each stat adds under Affix Impact, from Not at all (0x) to Three times
-  (3x). Stat weights can be edited or suggested from the gear you have equipped, and
-  stats you don't care about can be ignored or left out of searches.
+- The gear score comes from your build. With Path of Building on, it weighs
+  what each mod is worth to your build in each slot, and keeps the result with
+  your character, so the score works without Path of Building running. Until
+  then, and for jewels, a start profile picked from the build is used: life and
+  resistances, Energy Shield spellcaster, Energy Shield attacker, or minion
+  summoner. You can change how much each stat adds under Affix Impact, from Not
+  at all (0x) to Three times (3x). Stat weights can be edited or suggested from
+  the gear you have equipped, and "Judge by my stat weights alone" judges items
+  by them with no gear score. Stats you don't care about can be ignored or left
+  out of searches.
 - Imports builds from Path of Building: from a code, a link, a file, or one
   you saved in Path of Building's own folder. It runs Path of Building without
   its window, so your build's own numbers judge the item. The import picks the
-  profile that fits the build.
+  start profile that fits the build, until Path of Building has weighed it.
 - Finds Path of Building as the Flatpak from Flathub
   (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
   installer on Windows, or in a folder you choose. When it can't be found or

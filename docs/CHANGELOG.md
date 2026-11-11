@@ -60,6 +60,12 @@ version that comes out.
   opens on Your Gear rather than on the Characters page.
 - Build Review's "Look Again" is now "Update", and it also reads the builds
   you've saved in Path of Building since.
+- The gear score is now weighed by Path of Building for your build, and kept with
+  the character. The Gear Score page has no build profile list. "Judge by my stat
+  weights alone" is a switch in place of the None profile, and Weigh Again weighs
+  the build again.
+  The popup, the Characters page, the import message and the upgrade search no
+  longer name a build profile.
 
 ### Fixed
 
