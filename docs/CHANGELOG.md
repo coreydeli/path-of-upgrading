@@ -29,6 +29,10 @@ version that comes out.
 
 ### Changed
 
+- The app has a new look, drawn by the app itself, so it looks the same on
+  every desktop: its own controls, colors and fonts, with cut-corner cards. The
+  text is in Spectral and the headings in Big Shoulders Display. The popup, the
+  results window, the pages and the sidebar all have it.
 - The app uses the game's words. It says equip, Unequip, Equipped by and Equip as in place
   of wear, Take Off and Worn, and Off Hand for the off hand. The gear score's stats are spelled
   out, such as Fire Resistance, Energy Shield Recharge and Movement Speed, and the tweaks you
@@ -59,6 +63,7 @@ version that comes out.
 
 ### Fixed
 
+- The About page credits the fonts the app carries, Spectral and Big Shoulders.
 - A weapon's damage is no longer listed as missing in a slot's gear notes.
 - With a two-handed weapon in the main hand, the off hand no longer counts
   toward the gear score, and the popup no longer offers to wear an off-hand
