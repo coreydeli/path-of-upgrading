@@ -562,7 +562,7 @@ Item {
                 Layout.preferredHeight: wearButtons.count > 0 ? wearButtons.itemAt(0).height : implicitHeight
                 verticalAlignment: Text.AlignVCenter
                 opacity: 0.7
-                text: qsTr("Wear as")
+                text: qsTr("Equip as")
             }
 
             Flow {
@@ -577,7 +577,7 @@ Item {
                     QQC2.ToolButton {
                         required property string modelData
 
-                        text: modelData
+                        text: Words.slot(modelData)
                         onClicked: card.popup.wear(modelData)
                     }
                 }

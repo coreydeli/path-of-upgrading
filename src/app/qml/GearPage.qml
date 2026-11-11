@@ -20,7 +20,7 @@ ColumnsPage {
     readonly property bool equipment: wide
 
     title: qsTr("Your Gear")
-    description: qsTr("What your character wears, and where an upgrade would help most.")
+    description: qsTr("What your character has equipped, and where to upgrade first.")
     // the slots need room to put their notes beside them
     minColumnWidth: Kirigami.Units.gridUnit * 44
     maxColumnWidth: Kirigami.Units.gridUnit * (equipment ? 66 : 60)
@@ -61,7 +61,7 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
+        title: gearPage.gear.character !== "" ? qsTr("Equipped by %1").arg(gearPage.gear.character) : qsTr("Equipped")
     }
 
     Sheet {
@@ -96,8 +96,8 @@ ColumnsPage {
             id: nobody
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
-            text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, under Import Character in Gear Settings.")
+            text: qsTr("You haven't picked a character yet.")
+            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
         RowRule {
@@ -138,7 +138,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "gearHelp"
-        text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
+        text: qsTr("To save what you have equipped, hover each item you have on in the game and press the hotkey, then pick its slot under Equip as in the popup. What you save takes the place of what came with the build.")
     }
 
     SectionHeader {
@@ -213,29 +213,29 @@ ColumnsPage {
         MaximumField {
             id: fireMaximum
             objectName: "fireMaximum"
-            label: qsTr("Fire maximum")
-            description: qsTr("The most each resistance can be, 75 unless your passive tree raises it. What your gear adds is counted for you, and your build's are used until you change one.")
+            label: qsTr("Maximum Fire Resistance")
+            description: qsTr("The most each resistance can be: 75% unless your passive skill tree raises it. What your gear adds is counted for you, and your build's maximums are used until you change one.")
             value: gearPage.resists.fireMaximum
             onEdited: value => gearPage.resists.fireMaximum = value
         }
 
         MaximumField {
             objectName: "coldMaximum"
-            label: qsTr("Cold maximum")
+            label: qsTr("Maximum Cold Resistance")
             value: gearPage.resists.coldMaximum
             onEdited: value => gearPage.resists.coldMaximum = value
         }
 
         MaximumField {
             objectName: "lightningMaximum"
-            label: qsTr("Lightning maximum")
+            label: qsTr("Maximum Lightning Resistance")
             value: gearPage.resists.lightningMaximum
             onEdited: value => gearPage.resists.lightningMaximum = value
         }
 
         MaximumField {
             objectName: "chaosMaximum"
-            label: qsTr("Chaos maximum")
+            label: qsTr("Maximum Chaos Resistance")
             value: gearPage.resists.chaosMaximum
             onEdited: value => gearPage.resists.chaosMaximum = value
         }
