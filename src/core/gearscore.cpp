@@ -33,7 +33,6 @@ double capOf(const ProfileStat &s, const QString &slot)
 struct Rating
 {
     QString id;
-    QString name;
     QList<const ProfileStat *> stats;
 };
 
@@ -42,10 +41,9 @@ std::optional<Rating> ratingFor(const GearScoreOptions &options, const QString &
     const BuildProfile *profile = buildProfile(options.build);
     if (!profile)
         return std::nullopt;
-    Rating rating{.id = profile->id, .name = profile->name, .stats = {}};
+    Rating rating{.id = profile->id, .stats = {}};
     if (options.weighed && options.weighed->covers(group)) {
         rating.id = options.weighed->profile.id;
-        rating.name = options.weighed->profile.name;
         for (const ProfileStat &s : options.weighed->profile.stats)
             rating.stats << &s;
         for (const ProfileStat &s : profile->stats) {
@@ -102,7 +100,6 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
 
     GearScore result;
     result.build = rating->id;
-    result.buildName = rating->name;
     result.slot = groupOf(item.slot);
     const QString &slot = result.slot;
     if (slot == u"Charm" || slot == u"Life Flask" || slot == u"Mana Flask")

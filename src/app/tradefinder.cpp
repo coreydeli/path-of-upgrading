@@ -237,7 +237,7 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
     const QList<SearchWeight> weights =
         searchWeights(m_item.slot, gearScoreOptions(m_character, slot, priorities));
     if (weights.isEmpty())
-        return {.error = u"Your build profile wants none of the stats this slot can have."_s};
+        return {.error = u"Your build wants none of the stats this slot can have."_s};
 
     const GearLevel &level = gearLevels.at(m_level);
     const GearSize &size = gearSizes.at(m_size);
@@ -407,7 +407,7 @@ TradeFinder::Plan TradeFinder::craftPlan() const
     // which leave resistances out, so what you need of them doesn't matter
     const QList<KeyStat> keyStats = topStats(m_item.slot, 2, gearScoreOptions(m_character, m_item.slot));
     if (keyStats.isEmpty())
-        return {.error = u"Your build profile has no key stats for this slot to look for."_s};
+        return {.error = u"Your build has no key stats for this slot to look for."_s};
     SearchOptions options;
     options.status = m_settings.trade.status;
     options.ignoreRules = m_character.ignored;

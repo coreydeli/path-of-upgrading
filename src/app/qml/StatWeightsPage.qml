@@ -7,8 +7,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// What each stat is worth to the character you play, for judging items
-// without a build profile and searching the trade site by your weights.
+// What each stat is worth to the character you play, for judging items by
+// them alone and searching the trade site by your weights.
 ColumnsPage {
     id: weightsPage
 
@@ -164,7 +164,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "weightsHelp"
-        text: qsTr("A weight is what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges items by them when the gear score has no build profile, and so does searching the trade site by your weights.")
+        text: qsTr("A weight is what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges items by them when you turn on Judge by my stat weights alone on the Gear Score page, and so does searching the trade site by your weights.")
     }
 
     StatPickerDialog {

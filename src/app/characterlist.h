@@ -45,10 +45,10 @@ public:
     enum Role {
         IdRole = Qt::UserRole + 1, // "characterId", as QML has its own id
         NameRole,
-        BuildRole,   // "Level 92 Stormweaver", empty without a build
-        ProfileRole, // what the gear score goes by, "Life and resistances"
-        ScoreRole,   // the overall gear score as text, empty when no gear is rated
-        GradeRole,   // its letter
+        BuildRole,  // "Level 92 Stormweaver", empty without a build
+        SourceRole, // where the gear score comes from, as a sentence
+        ScoreRole,  // the overall gear score as text, empty when no gear is rated
+        GradeRole,  // its letter
     };
 
     // They have to outlive it. It's empty until it's loaded.
