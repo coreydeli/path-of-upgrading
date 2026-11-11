@@ -216,7 +216,7 @@ ColumnsPage {
             id: addButton
             objectName: "addButton"
             text: qsTr("Add")
-            description: qsTr("You then play it.")
+            description: qsTr("It becomes the character you play.")
             icon.name: "list-add"
             enabled: nameField.text.trim() !== ""
             onClicked: {
@@ -267,7 +267,7 @@ ColumnsPage {
             icon.color: Style.accent(charactersPage.Kirigami.Theme)
             font.weight: Font.DemiBold
             text: charactersPage.importer.busy ? qsTr("Downloading the Build") : qsTr("Import")
-            description: qsTr("Its gear goes on the character you play, or on a new one when you have none. Items you copied in the game stay, as they say more.")
+            description: qsTr("Its gear goes on the character you play, or on a new one when you have none. Items you copied in the game are kept, as they show more than a build does.")
             icon.name: "document-import"
             enabled: !charactersPage.importer.busy
             onClicked: charactersPage.importer.importText(codeField.text)

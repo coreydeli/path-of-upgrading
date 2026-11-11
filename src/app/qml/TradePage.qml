@@ -49,7 +49,7 @@ ColumnsPage {
     ]
 
     title: qsTr("Trade")
-    description: qsTr("Searching the trade site from the popup, the league and what you will pay.")
+    description: qsTr("Trade searches from the popup, the league, and what you'll pay.")
 
     Sheet {
         Layout.topMargin: Kirigami.Units.largeSpacing
@@ -299,6 +299,6 @@ ColumnsPage {
 
     SectionText {
         objectName: "sessionHelp"
-        text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. Signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
+        text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. When you're signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
     }
 }

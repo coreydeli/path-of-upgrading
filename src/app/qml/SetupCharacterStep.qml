@@ -96,7 +96,7 @@ ColumnLayout {
             id: codeField
             objectName: "setupCodeField"
             label: qsTr("Code or link")
-            placeholderText: qsTr("From Path of Building or pobb.in")
+            placeholderText: qsTr("From Path of Building, pobb.in or poe.ninja")
             onAccepted: importButton.clicked()
         }
 
