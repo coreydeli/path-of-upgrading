@@ -26,6 +26,10 @@ namespace pou {
 enum class ListingStatus { Available, Securable, Online, Any };
 
 QString listingStatusId(ListingStatus status);
+
+// A trade stat's text as one of our stat keys: "+# to maximum Life" is
+// "# to maximum Life", and "(local)" is dropped.
+QString statKeyOf(const QString &tradeText);
 // Available for anything unknown.
 ListingStatus listingStatusFromId(QStringView id);
 
