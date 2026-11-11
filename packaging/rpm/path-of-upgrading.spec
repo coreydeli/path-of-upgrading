@@ -99,7 +99,8 @@ version_tag=$(echo '%{version}' | tr '~' '-')
     -DCMAKE_COMPILE_WARNING_AS_ERROR=%{?with_werror:ON}%{!?with_werror:OFF} \
     -DBUILD_TESTING=%{?with_check:ON}%{!?with_check:OFF} \
     -DPOU_BETA=%[ "%{version}" != "%{srcver}" ? "ON" : "OFF" ] \
-    -DPOU_BUILD_VERSION="$version_tag"
+    -DPOU_BUILD_VERSION="$version_tag" \
+    -DPOU_INSTALL_KIND=rpm
 %cmake_build
 
 %install

@@ -92,6 +92,15 @@ QString plainNotes(const QString &markdown, int limit = 4000);
 // The file to download for how it was installed, by the names the release
 // workflow gives them, if the release has one.
 std::optional<ReleaseAsset> assetFor(const Release &release, InstallKind kind);
+// How this program was installed: what the package it was built for says
+// (POU_INSTALL_KIND), Windows for a Windows build, and the AppImage when it's
+// running from one, which the AppImage runtime says with its path.
+InstallKind installedKind(const QString &appImagePath = {});
+
+// The command that installs a package you've downloaded, for the kinds that
+// need a terminal, or empty. The file name is quoted for the shell.
+QString manualCommand(InstallKind kind, const QString &file);
+
 // The release's list of checksums.
 std::optional<ReleaseAsset> checksumsOf(const Release &release);
 

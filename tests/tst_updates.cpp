@@ -222,6 +222,30 @@ private Q_SLOTS:
         QVERIFY(parseChecksums("").isEmpty());
     }
 
+    void commandsForThePackageKinds()
+    {
+        const QString file = u"/home/me/it's here/path-of-upgrading.pkg.tar.zst"_s;
+        QCOMPARE(manualCommand(InstallKind::Arch, file),
+                 u"sudo pacman -U '/home/me/it'\\''s here/path-of-upgrading.pkg.tar.zst'"_s);
+        QCOMPARE(manualCommand(InstallKind::Debian, u"/tmp/a.deb"_s), u"sudo apt install '/tmp/a.deb'"_s);
+        QCOMPARE(manualCommand(InstallKind::Fedora, u"/tmp/a.rpm"_s), u"sudo dnf install '/tmp/a.rpm'"_s);
+        // the others install themselves, or aren't packages
+        QVERIFY(manualCommand(InstallKind::AppImage, u"/tmp/a"_s).isEmpty());
+        QVERIFY(manualCommand(InstallKind::Windows, u"/tmp/a"_s).isEmpty());
+        QVERIFY(manualCommand(InstallKind::Source, u"/tmp/a"_s).isEmpty());
+    }
+
+    void anAppImageKnowsItself()
+    {
+#ifdef Q_OS_WIN
+        QCOMPARE(installedKind(), InstallKind::Windows);
+#else
+        QCOMPARE(installedKind(u"/home/me/App.AppImage"_s), InstallKind::AppImage);
+        // otherwise what the build says
+        QCOMPARE(installedKind(), installKindFromId(QString::fromLatin1(POU_EXPECT_KIND)));
+#endif
+    }
+
     void notesAreReadableText()
     {
         const QString markdown =

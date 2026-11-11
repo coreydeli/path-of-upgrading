@@ -181,6 +181,40 @@ QString plainNotes(const QString &markdown, int limit)
     return text;
 }
 
+InstallKind installedKind(const QString &appImagePath)
+{
+#ifdef Q_OS_WIN
+    Q_UNUSED(appImagePath)
+    return InstallKind::Windows;
+#else
+    if (!appImagePath.isEmpty())
+        return InstallKind::AppImage;
+    return installKindFromId(QString::fromLatin1(POU_INSTALL_KIND));
+#endif
+}
+
+QString manualCommand(InstallKind kind, const QString &file)
+{
+    QString tool;
+    switch (kind) {
+    case InstallKind::Arch:
+        tool = u"sudo pacman -U "_s;
+        break;
+    case InstallKind::Debian:
+        tool = u"sudo apt install "_s;
+        break;
+    case InstallKind::Fedora:
+        tool = u"sudo dnf install "_s;
+        break;
+    default:
+        return {};
+    }
+    // in single quotes, where only another quote needs care
+    QString quoted = file;
+    quoted.replace(u'\'', u"'\\''"_s);
+    return tool + u'\'' + quoted + u'\'';
+}
+
 std::optional<ReleaseAsset> assetFor(const Release &release, InstallKind kind)
 {
     QString ending;
