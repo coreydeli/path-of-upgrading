@@ -634,12 +634,12 @@ private Q_SLOTS:
         QTest::newRow("equipped") << equipped << QStringList{u"Equipped"_s, u"in your Helmet slot"_s};
 
         ItemReport costly = aReport();
-        costly.losses = {u"Fire res drops below the cap"_s, u"Cold res drops below the cap"_s};
+        costly.losses = {u"Fire Resistance drops below the cap"_s, u"Cold Resistance drops below the cap"_s};
         costly.risks = {u"Minion skills lose a level"_s};
         costly.caps = u"Caps your lightning resistance"_s;
         QTest::newRow("losses, risks and caps")
             << costly
-            << QStringList{u"Fire res drops below the cap\nCold res drops below the cap"_s,
+            << QStringList{u"Fire Resistance drops below the cap\nCold Resistance drops below the cap"_s,
                            u"Minion skills lose a level"_s, u"Caps your lightning resistance"_s};
 
         ItemReport judged = aReport();
@@ -659,14 +659,14 @@ private Q_SLOTS:
 
         ItemReport changes = aReport();
         changes.changes = {
-            ReportFigure{.label = u"Fire res"_s,
+            ReportFigure{.label = u"Fire Resistance"_s,
                          .change = u"-8%"_s,
                          .from = u"75%"_s,
                          .to = u"67%"_s,
                          .note = u"off the cap"_s,
                          .tone = Tone::Bad},
             // when only the change is known
-            ReportFigure{.label = u"Cold res"_s, .change = u"+12%"_s, .tone = Tone::Good},
+            ReportFigure{.label = u"Cold Resistance"_s, .change = u"+12%"_s, .tone = Tone::Good},
         };
         ItemReport allStats = aReport();
         allStats.statChanges = {
@@ -698,7 +698,7 @@ private Q_SLOTS:
                          .tone = Tone::Good},
         };
         whyRated.gearNotes = {u"Not used by your build: #% increased Light Radius."_s,
-                              u"Missing what your build wants: Movement speed."_s};
+                              u"Missing what your build wants: Movement Speed."_s};
         QTest::newRow("what the gear score is made of") << whyRated
                                                         << QStringList{u"Gear score points"_s,
                                                                        u"Life"_s,
@@ -736,8 +736,9 @@ private Q_SLOTS:
         QTest::newRow("notes") << noted << noted.notes;
 
         QTest::newRow("changes") << changes
-                                 << QStringList{u"Now"_s, u"With it"_s,     u"Fire res"_s, u"75%"_s, u"67%"_s,
-                                                u"-8%"_s, u"off the cap"_s, u"Cold res"_s, u"+12%"_s};
+                                 << QStringList{
+                                        u"Now"_s, u"With it"_s,     u"Fire Resistance"_s, u"75%"_s, u"67%"_s,
+                                        u"-8%"_s, u"off the cap"_s, u"Cold Resistance"_s, u"+12%"_s};
     }
 
     void sections()
@@ -767,21 +768,21 @@ private Q_SLOTS:
         ItemPopup popup(&engine, &input);
         ItemReport report = aReport();
         report.changes = {
-            ReportFigure{.label = u"Fire res"_s, .change = u"+8%"_s, .tone = Tone::Good},
+            ReportFigure{.label = u"Fire Resistance"_s, .change = u"+8%"_s, .tone = Tone::Good},
             // over the cap either way
-            ReportFigure{.label = u"Cold res"_s, .change = u"+2%"_s, .minor = true},
+            ReportFigure{.label = u"Cold Resistance"_s, .change = u"+2%"_s, .minor = true},
         };
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
-        QVERIFY(shown(popup, u"Fire res"_s));
-        QVERIFY(!shown(popup, u"Cold res"_s));
+        QVERIFY(shown(popup, u"Fire Resistance"_s));
+        QVERIFY(!shown(popup, u"Cold Resistance"_s));
 
         QVERIFY(click(popup, u"Show More"_s));
         QVERIFY(popup.isExpanded());
-        QVERIFY(shown(popup, u"Cold res"_s));
+        QVERIFY(shown(popup, u"Cold Resistance"_s));
         QVERIFY(click(popup, u"Show Less"_s));
         QVERIFY(!popup.isExpanded());
-        QVERIFY(!shown(popup, u"Cold res"_s));
+        QVERIFY(!shown(popup, u"Cold Resistance"_s));
     }
 
     void foldedStats()
@@ -820,7 +821,7 @@ private Q_SLOTS:
         report.gearScore = u"78"_s;
         report.gearGrade = u"A"_s;
         report.gearParts = {ReportFigure{.label = u"Life"_s, .to = u"20"_s}};
-        report.gearNotes = {u"Missing what your build wants: Movement speed."_s};
+        report.gearNotes = {u"Missing what your build wants: Movement Speed."_s};
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
         QVERIFY(shown(popup, u"78 A"_s));
@@ -841,7 +842,7 @@ private Q_SLOTS:
         FakeGameInput input;
         ItemPopup popup(&engine, &input);
         ItemReport report = aReport();
-        report.gearNotes = {u"Fire res: you're already capped, so it doesn't count."_s};
+        report.gearNotes = {u"Fire Resistance: you're already capped, so it doesn't count."_s};
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
         QVERIFY(!shown(popup, u"Gear score points"_s));
@@ -916,7 +917,7 @@ private Q_SLOTS:
         FakeGameInput input;
         ItemPopup popup(&engine, &input);
         ItemReport report = aReport();
-        report.changes = {ReportFigure{.label = u"Cold res"_s, .change = u"+2%"_s, .minor = true}};
+        report.changes = {ReportFigure{.label = u"Cold Resistance"_s, .change = u"+2%"_s, .minor = true}};
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(!shown(popup, u"With it"_s));
         QVERIFY(button(popup, u"Show More"_s));
@@ -932,9 +933,9 @@ private Q_SLOTS:
         settings.compact = false;
         popup.setSettings(settings);
         ItemReport report = aReport();
-        report.changes = {ReportFigure{.label = u"Cold res"_s, .change = u"+2%"_s, .minor = true}};
+        report.changes = {ReportFigure{.label = u"Cold Resistance"_s, .change = u"+2%"_s, .minor = true}};
         popup.showReport(report, mouseAt(200, 300));
-        QVERIFY(shown(popup, u"Cold res"_s));
+        QVERIFY(shown(popup, u"Cold Resistance"_s));
         QVERIFY(!button(popup, u"Show More"_s));
         QVERIFY(!button(popup, u"Show Less"_s));
     }
@@ -992,7 +993,8 @@ private Q_SLOTS:
         FakeGameInput input;
         ItemPopup popup(&engine, &input);
         ItemReport report = aReport();
-        report.changes = {ReportFigure{.label = u"Fire res"_s, .change = u"+8%"_s, .tone = Tone::Good}};
+        report.changes = {
+            ReportFigure{.label = u"Fire Resistance"_s, .change = u"+8%"_s, .tone = Tone::Good}};
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(!button(popup, u"Show More"_s));
     }
@@ -1238,7 +1240,7 @@ private Q_SLOTS:
         QTest::newRow("stats") << stats << u"-30 to Spirit"_s << worse;
 
         ItemReport changes = aReport();
-        changes.changes = {ReportFigure{.label = u"Cold res"_s,
+        changes.changes = {ReportFigure{.label = u"Cold Resistance"_s,
                                         .change = u"+12%"_s,
                                         .from = u"63%"_s,
                                         .to = u"75%"_s,

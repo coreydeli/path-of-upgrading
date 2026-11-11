@@ -250,7 +250,7 @@ private Q_SLOTS:
         QVERIFY(shown(p.window(), u"Iron Hat"_s));
         QVERIFY(shown(p.window(), u"Item level 80"_s));
         QVERIFY(shown(p.window(), u"3 div"_s));
-        QVERIFY(shown(p.window(), u"about 2100 ex"_s));
+        QVERIFY(shown(p.window(), u"about 2100 Exalted Orbs"_s));
         QVERIFY(shown(p.window(), u"+80 to maximum Life"_s));
         QVERIFY(shown(p.window(), u"Cannot be Frozen"_s));
         QVERIFY(shown(p.window(), u"Sellerx1#1234"_s));
@@ -383,7 +383,7 @@ private Q_SLOTS:
         // there are more rows than fit
         QVERIFY(bar != items.end());
         const qreal barLeft = (*bar)->mapToScene(QPointF(0, 0)).x();
-        for (const QString &text : {u"3 div"_s, u"about 2100 ex"_s, u"5 minutes ago"_s}) {
+        for (const QString &text : {u"3 div"_s, u"about 2100 Exalted Orbs"_s, u"5 minutes ago"_s}) {
             const QQuickItem *label = shown(p.window(), text);
             QVERIFY2(label, qPrintable(text));
             const qreal right = label->mapToScene(QPointF(label->width(), 0)).x();
@@ -403,9 +403,9 @@ private Q_SLOTS:
         QTRY_COMPARE(rows(p.window()), 1);
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
         QVERIFY(shown(p.window(), u"3 div"_s));
-        QVERIFY(!shown(p.window(), u"about 2100 ex"_s));
+        QVERIFY(!shown(p.window(), u"about 2100 Exalted Orbs"_s));
         QVERIFY(p.site.hasRates(700));
-        QTRY_VERIFY(shown(p.window(), u"about 2100 ex"_s));
+        QTRY_VERIFY(shown(p.window(), u"about 2100 Exalted Orbs"_s));
     }
 
     void loadsMore()
@@ -771,12 +771,12 @@ private Q_SLOTS:
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
 
         QCOMPARE(toneOf(shown(p.window(), u"Loses resistance"_s)), int(Tone::Bad));
-        const QQuickItem *loss = shown(p.window(), u"Cold res drops below the cap (40% of 75%)"_s);
+        const QQuickItem *loss = shown(p.window(), u"Cold Resistance drops below the cap (40% of 75%)"_s);
         QVERIFY(loss);
         QCOMPARE(toneOf(loss), int(Tone::Bad));
         const auto verdict = p.site.results.data(p.site.results.index(0), TradeResults::VerdictRole);
         const QString risk = verdict.value<ResultVerdict>().risks.value(0);
-        QVERIFY(risk.startsWith(u"Fire res would be only 5% over the cap"));
+        QVERIFY(risk.startsWith(u"Fire Resistance would be only 5% over the cap"));
         const QQuickItem *risky = shown(p.window(), risk);
         QVERIFY(risky);
         QCOMPARE(toneOf(risky), int(Tone::Warning));

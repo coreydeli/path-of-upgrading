@@ -407,7 +407,7 @@ private Q_SLOTS:
     {
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
-        const QString capped = u"Fire res: you're already capped, so it doesn't count."_s;
+        const QString capped = u"Fire Resistance: you're already capped, so it doesn't count."_s;
         e.gear = GearScore{.score = 50,
                            .notScored = {u"#% increased Light Radius"_s, u"[Base] Evasion Rating"_s},
                            .missing = {u"Life"_s, u"Movement speed"_s},
@@ -454,7 +454,7 @@ private Q_SLOTS:
     void lossesAndRisks()
     {
         ItemCheck check = judged(Verdict::ResistLoss);
-        const QString fire = u"Fire res drops below the cap (60% of 75%)"_s;
+        const QString fire = u"Fire Resistance drops below the cap (60% of 75%)"_s;
         const QString spirit = u"Spirit drops by 10, so check your minions and auras still fit"_s;
         check.evaluation.risks = {fire, spirit};
         check.evaluation.losses = {fire};
@@ -556,19 +556,19 @@ private Q_SLOTS:
         QCOMPARE(
             reportOf(check).changes,
             (QList<ReportFigure>{
-                {.label = u"Fire res"_s,
+                {.label = u"Fire Resistance"_s,
                  .change = u"-15%"_s,
                  .from = u"75%"_s,
                  .to = u"60%"_s,
                  .note = u"off the cap"_s,
                  .tone = Tone::Bad},
-                {.label = u"Cold res"_s,
+                {.label = u"Cold Resistance"_s,
                  .change = u"+25%"_s,
                  .from = u"50%"_s,
                  .to = u"75%"_s,
                  .note = u"capped"_s,
                  .tone = Tone::Good},
-                {.label = u"Lightning res"_s,
+                {.label = u"Lightning Resistance"_s,
                  .change = u"+5%"_s,
                  .from = u"40%"_s,
                  .to = u"45%"_s,
@@ -614,7 +614,7 @@ private Q_SLOTS:
                                                  .from = u"40,000"_s,
                                                  .to = u"39,000"_s,
                                                  .tone = Tone::Bad}));
-        QCOMPARE(changes.value(2).label, u"Fire res"_s);
+        QCOMPARE(changes.value(2).label, u"Fire Resistance"_s);
         QCOMPARE(changes.value(3).label, u"Life"_s);
     }
 
@@ -678,12 +678,12 @@ private Q_SLOTS:
             {.element = Element::Cold, .from = 74, .to = 74, .max = 74, .capped = true},
         };
         QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{
-                                                       {.label = u"Fire res"_s,
+                                                       {.label = u"Fire Resistance"_s,
                                                         .change = u"0%"_s,
                                                         .from = u"75%"_s,
                                                         .to = u"75%"_s,
                                                         .note = u"under the cap"_s},
-                                                       {.label = u"Cold res"_s,
+                                                       {.label = u"Cold Resistance"_s,
                                                         .change = u"0%"_s,
                                                         .from = u"74%"_s,
                                                         .to = u"74%"_s,
@@ -699,50 +699,50 @@ private Q_SLOTS:
         using enum Element;
         change.resists = {
             {.element = Fire,
-             .label = u"Fire res"_s,
+             .label = u"Fire Resistance"_s,
              .delta = -20,
              .from = 80,
              .to = 60,
              .safe = 85,
              .under = true},
             {.element = Cold,
-             .label = u"Cold res"_s,
+             .label = u"Cold Resistance"_s,
              .delta = -5,
              .from = 85,
              .to = 80,
              .safe = 85,
              .thin = true},
             {.element = Lightning,
-             .label = u"Lightning res"_s,
+             .label = u"Lightning Resistance"_s,
              .delta = 10,
              .from = 70,
              .to = 80,
              .safe = 85,
              .wasUnder = true},
-            {.element = Chaos, .label = u"Chaos res"_s, .delta = 7, .from = 90, .to = 97, .safe = 85},
+            {.element = Chaos, .label = u"Chaos Resistance"_s, .delta = 7, .from = 90, .to = 97, .safe = 85},
         };
         change.totals = {{u"Life"_s, 1200, 1350, 150}, {u"Spirit"_s, 100, 70, -30}};
         change.overall = TotalChange{u"Gear score"_s, 56, 60, 4};
         QCOMPARE(reportOf(check).changes, (QList<ReportFigure>{
-                                              {.label = u"Fire res"_s,
+                                              {.label = u"Fire Resistance"_s,
                                                .change = u"-20%"_s,
                                                .from = u"80%"_s,
                                                .to = u"60%"_s,
                                                .note = u"under the cap"_s,
                                                .tone = Tone::Bad},
-                                              {.label = u"Cold res"_s,
+                                              {.label = u"Cold Resistance"_s,
                                                .change = u"-5%"_s,
                                                .from = u"85%"_s,
                                                .to = u"80%"_s,
                                                .note = u"barely capped, 5 over the cap"_s,
                                                .tone = Tone::Bad},
-                                              {.label = u"Lightning res"_s,
+                                              {.label = u"Lightning Resistance"_s,
                                                .change = u"+10%"_s,
                                                .from = u"70%"_s,
                                                .to = u"80%"_s,
                                                .note = u"5 over the cap"_s,
                                                .tone = Tone::Good},
-                                              {.label = u"Chaos res"_s,
+                                              {.label = u"Chaos Resistance"_s,
                                                .change = u"+7%"_s,
                                                .from = u"90%"_s,
                                                .to = u"97%"_s,
@@ -768,14 +768,14 @@ private Q_SLOTS:
         change = {};
         change.resists = {
             // without your resistances, only the change to them is known
-            {.element = Fire, .label = u"Fire res"_s, .delta = 12},
-            {.element = Cold, .label = u"Cold res"_s, .delta = -7, .from = 97, .to = 90, .safe = 85},
+            {.element = Fire, .label = u"Fire Resistance"_s, .delta = 12},
+            {.element = Cold, .label = u"Cold Resistance"_s, .delta = -7, .from = 97, .to = 90, .safe = 85},
         };
         change.overall = TotalChange{u"Gear score"_s, 56, 56, 0};
         QCOMPARE(reportOf(check).changes,
                  (QList<ReportFigure>{
-                     {.label = u"Fire res"_s, .change = u"+12%"_s, .tone = Tone::Good},
-                     {.label = u"Cold res"_s,
+                     {.label = u"Fire Resistance"_s, .change = u"+12%"_s, .tone = Tone::Good},
+                     {.label = u"Cold Resistance"_s,
                       .change = u"-7%"_s,
                       .from = u"97%"_s,
                       .to = u"90%"_s,
@@ -813,7 +813,7 @@ private Q_SLOTS:
 
         ItemCheck check = judged(Verdict::Upgrade);
         check.evaluation.change = CharacterChange{.resists = {{.element = Element::Fire,
-                                                               .label = u"Fire res"_s,
+                                                               .label = u"Fire Resistance"_s,
                                                                .delta = to - from,
                                                                .cap = cap,
                                                                .from = from,

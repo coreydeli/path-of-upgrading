@@ -123,11 +123,11 @@ double judgeResists(const PobStats &before, const PobStats &after, const PobVerd
             r.lost = true;
             losses << Loss{
                 Verdict::ResistLoss, size,
-                u"%1 res drops below the cap (%2% of %3%)"_s.arg(elementName(e), whole(r.to), whole(r.max))};
+                u"%1 Resistance drops below the cap (%2% of %3%)"_s.arg(elementName(e), whole(r.to), whole(r.max))};
         } else if (!r.wasCapped && drops && counts) {
             r.lost = true;
             losses << Loss{Verdict::ResistLoss, size,
-                           u"%1 res goes further under the cap (from %2% to %3%)"_s.arg(
+                           u"%1 Resistance goes further under the cap (from %2% to %3%)"_s.arg(
                                elementName(e), whole(r.from), whole(r.to))};
         }
         r.reachesCap = !r.wasCapped && r.capped && counts;
