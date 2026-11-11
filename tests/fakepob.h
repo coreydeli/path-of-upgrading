@@ -25,6 +25,8 @@ struct FakePob
     int runs() const { return count(u"runs"_s); }
     // and has stopped on its own
     int stops() const { return count(u"stops"_s); }
+    // and how many times it has been asked to weigh mods
+    int weighings() const { return count(u"weighs"_s); }
 
     // What its answers to evals have from now on, the way the bridge would
     // work them out, see eval in pobbridge.lua.

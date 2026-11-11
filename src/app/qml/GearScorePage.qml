@@ -6,8 +6,8 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// What the gear score of the character you play goes by: a build profile,
-// and how much each of its stats counts.
+// What the gear score of the character you play goes by: your build, as Path
+// of Building weighs it, and how much each of its stats counts.
 ColumnsPage {
     id: scorePage
 
@@ -48,7 +48,7 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: scorePage.scoring.character !== "" ? qsTr("For %1").arg(scorePage.scoring.character) : qsTr("Build Profile")
+        title: scorePage.scoring.character !== "" ? qsTr("For %1").arg(scorePage.scoring.character) : qsTr("Gear Score")
     }
 
     Sheet {
@@ -59,13 +59,31 @@ ColumnsPage {
             description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
-        FormCard.FormComboBoxDelegate {
-            objectName: "profileBox"
-            text: qsTr("Build profile")
+        FormCard.FormTextDelegate {
+            objectName: "scoreState"
+            text: scorePage.scoring.state
             description: scorePage.scoring.summary
-            model: scorePage.scoring.profiles
-            currentIndex: scorePage.scoring.profile
-            onActivated: chosen => scorePage.scoring.profile = chosen
+        }
+
+        RowRule {}
+
+        FormCard.FormButtonDelegate {
+            objectName: "weighAgainButton"
+            text: scorePage.scoring.weighing ? qsTr("Weighing Your Build") : qsTr("Weigh Again")
+            description: qsTr("Has Path of Building weigh your build again.")
+            icon.name: "view-refresh"
+            enabled: scorePage.scoring.canWeigh && !scorePage.scoring.weighing
+            onClicked: scorePage.scoring.weighAgain()
+        }
+
+        RowRule {}
+
+        SwitchRow {
+            objectName: "weightsOnlySwitch"
+            text: qsTr("Judge by my stat weights alone")
+            description: qsTr("Skips the gear score. Items are judged by the weights on the Stat Weights page.")
+            checked: scorePage.scoring.weightsOnly
+            onToggled: scorePage.scoring.weightsOnly = checked
         }
 
         RowRule {
@@ -85,7 +103,7 @@ ColumnsPage {
     SectionText {
         objectName: "scoreHelp"
         visible: stats.visible
-        text: qsTr("The gear score rates an item from 0 to 100 by how much it has of what the profile wants in its slot. You can change how much a stat adds under Affix Impact below, for this character only.")
+        text: qsTr("The gear score rates an item from 0 to 100 by how much it has of what your build wants in its slot. You can change how much a stat adds under Affix Impact below, for this character only.")
     }
 
     SectionHeader {
@@ -96,7 +114,7 @@ ColumnsPage {
     SectionText {
         objectName: "impactHelp"
         visible: stats.visible
-        text: qsTr("Changes how much each stat adds to the gear score. The number is what the stat's points are multiplied by, so Normal (1x) is how the profile has it, Not at all (0x) leaves the stat out and Three times (3x) triples it.")
+        text: qsTr("Changes how much each stat adds to the gear score. The number is what the stat's points are multiplied by, so Normal (1x) is how your build has it, Not at all (0x) leaves the stat out and Three times (3x) triples it.")
     }
 
     Sheet {
@@ -129,7 +147,7 @@ ColumnsPage {
 
         FormCard.FormButtonDelegate {
             objectName: "resetButton"
-            text: qsTr("Reset to the Profile")
+            text: qsTr("Reset to Normal")
             icon.name: "edit-reset"
             enabled: scorePage.scoring.tweaked
             onClicked: scorePage.scoring.reset()

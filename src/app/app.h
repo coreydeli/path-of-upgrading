@@ -5,6 +5,7 @@
 #include "app/activecharacter.h"
 #include "app/appearance.h"
 #include "app/buildimporter.h"
+#include "app/buildweigher.h"
 #include "app/characterlist.h"
 #include "app/checkeditems.h"
 #include "app/gearlist.h"
@@ -177,6 +178,7 @@ private:
     ActiveCharacter m_character;
     std::unique_ptr<GameInput> m_input;
     ItemChecker m_checker;
+    BuildWeigher m_weigher;
     std::unique_ptr<GlobalShortcuts> m_shortcuts;
     std::unique_ptr<GameWatcher> m_game;
     Hotkeys m_hotkeys;

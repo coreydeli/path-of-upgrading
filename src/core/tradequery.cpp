@@ -177,6 +177,11 @@ bool isDamageMod(const QString &key)
 
 } // namespace
 
+QString statKeyOf(const QString &tradeText)
+{
+    return keyForm(tradeText);
+}
+
 QString listingStatusId(ListingStatus status)
 {
     switch (status) {

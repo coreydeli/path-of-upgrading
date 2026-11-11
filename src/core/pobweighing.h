@@ -3,7 +3,9 @@
 
 #include "core/pobverdict.h"
 #include "core/tradequery.h"
+#include "core/weighedprofile.h"
 
+#include <QHash>
 #include <QJsonObject>
 #include <QList>
 #include <QString>
@@ -27,13 +29,26 @@ struct PobStatWeight
 // rest, though never for nothing.
 QList<PobStatWeight> pobSearchStats(const PobStats &build, double damageWeight);
 
+// What the answer says of a mod besides its weight.
+struct PobModAbout
+{
+    QString text;   // as the trade site words it, "+# to maximum Life"
+    double top = 0; // the most the slot rolls of it, 0 when it doesn't say
+};
+
 struct PobWeighing
 {
     QString category; // the trade site's for the slot, "armour.gloves"
     // The least a listing's sum should come to, from what you wear there.
     double min = 0;
-    QList<ModWeight> mods; // those whose usual roll adds the most first
+    QList<ModWeight> mods;             // those whose usual roll adds the most first
+    QHash<QString, PobModAbout> about; // by mod id, for those that say
 };
+
+// What the weighing says of the slot group, for making a gear score profile.
+// Mods that don't say what they are, or that no stat key can be made of, are
+// left out.
+SlotWeighing slotWeighing(const QString &group, const PobWeighing &weighing);
 
 // Mods without an id or a weight above nothing are left out.
 PobWeighing readPobWeighing(const QJsonObject &answer);
