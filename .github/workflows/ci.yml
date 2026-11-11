@@ -183,6 +183,7 @@ jobs:
           -DPOU_BETA=${{ (inputs.beta || github.workflow == 'CI') && 'ON' || 'OFF' }}
           ${DEBIAN_VERSION:+"-DPOU_PACKAGE_VERSION=$DEBIAN_VERSION"}
           ${TAG:+"-DPOU_BUILD_VERSION=${TAG#v}"}
+          -DPOU_INSTALL_KIND=deb
       - name: Build
         run: |
           ccache --zero-stats

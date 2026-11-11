@@ -43,7 +43,8 @@ build() {
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DPOU_BETA=$beta \
-    -DPOU_BUILD_VERSION=${pkgver/beta/-beta.}
+    -DPOU_BUILD_VERSION=${pkgver/beta/-beta.} \
+    -DPOU_INSTALL_KIND=arch
   cmake --build build
 }
 

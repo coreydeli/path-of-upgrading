@@ -4,8 +4,11 @@
 #include "fakenetwork.h"
 #include "fakeopener.h"
 #include "services/updatechecker.h"
+#include "services/updatedownloader.h"
 #include "updatetexts.h"
 
+#include <QCryptographicHash>
+#include <QFile>
 #include <QLoggingCategory>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -38,10 +41,13 @@ struct Setup
     FakeNetwork network;
     UpdateChecker checker{&network, v(u"0.6.0"_s)};
     FakeOpener opener;
-    Updates updates{&checker, &settings, &opener};
+    UpdateDownloader downloader{&network, dir.filePath(u"updates"_s)};
+    Updates updates{&checker, &settings, &opener, &downloader};
 
     Setup()
     {
+        // whatever this test machine is
+        updates.setInstallKind(InstallKind::Source);
         QObject::connect(&settings, &SettingsStore::changed, &settings,
                          [this] { checker.follow(settings.settings().updates); });
         checker.follow(settings.settings().updates);
@@ -53,6 +59,32 @@ struct Setup
         updates.checkNow();
         QVERIFY(QTest::qWaitFor([&] { return !updates.isChecking(); }, 5000));
     }
+};
+
+const QByteArray package = "pretend this is a package";
+
+// SHA256SUMS for the release's file of this kind.
+FakeAnswer sumsFor(const QString &version, InstallKind kind)
+{
+    const Release release = readReleases(fakeReleases({fakeRelease(version)})).first();
+    const QByteArray sum = QCryptographicHash::hash(package, QCryptographicHash::Sha256).toHex();
+    return {.body = sum + "  " + assetFor(release, kind)->name.toUtf8() + "\n"};
+}
+
+// Keeps what it's asked to install, and says how it went.
+class FakeInstaller : public PackageInstaller
+{
+public:
+    After after() const override { return m_after; }
+    void install(const QString &file, const Done &done) override
+    {
+        installed << file;
+        done(error);
+    }
+
+    QStringList installed;
+    QString error;
+    After m_after = After::Restart;
 };
 
 } // namespace
@@ -190,6 +222,111 @@ private Q_SLOTS:
         s.updates.updateNow();
         QCOMPARE(s.opener.opened, QList<QUrl>{QUrl(releaseBase + u"/tag/v0.7.0"_s)});
         QVERIFY(!s.updates.isPending());
+    }
+
+    void downloadsAndShowsTheCommandForAPackage()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = package}};
+        s.updates.updateNow();
+        QCOMPARE(s.updates.stage(), UpdateStage::Downloading);
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() != UpdateStage::Downloading; }, 5000));
+        QCOMPARE(s.updates.stage(), UpdateStage::Manual);
+        QVERIFY(s.updates.command().startsWith(u"sudo apt install '"_s));
+        QVERIFY(s.updates.command().contains(u"/updates/0.7.0/"_s));
+        // it never opens the page, and doesn't offer it again
+        QVERIFY(s.opener.opened.isEmpty());
+        QVERIFY(!s.updates.isPending());
+
+        s.updates.copyCommand();
+        QCOMPARE(s.opener.copied, QStringList{s.updates.command()});
+        s.updates.openFolder();
+        QCOMPARE(s.opener.opened.size(), 1);
+        QVERIFY(s.opener.opened.at(0).isLocalFile());
+        QVERIFY(s.opener.opened.at(0).toLocalFile().endsWith(u"/updates/0.7.0"_s));
+
+        s.updates.dismiss();
+        QCOMPARE(s.updates.stage(), UpdateStage::Idle);
+        QVERIFY(s.updates.command().isEmpty());
+    }
+
+    void installsByItselfWhenItCan()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        auto installer = std::make_unique<FakeInstaller>();
+        FakeInstaller *fake = installer.get();
+        QList<PackageInstaller::After> finished;
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) { finished << a; });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return !finished.isEmpty(); }, 5000));
+        QCOMPARE(fake->installed.size(), 1);
+        QVERIFY(fake->installed.at(0).endsWith(u"x86_64.AppImage"_s));
+        QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+        QVERIFY(s.updates.command().isEmpty());
+    }
+
+    void anInstallThatFailsSaysSoAndKeepsRunning()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->error = u"Couldn't replace it."_s;
+        bool finished = false;
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After) { finished = true; });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
+        QCOMPARE(s.updates.installError(), u"Couldn't replace it."_s);
+        QVERIFY(!finished);
+        s.updates.dismiss();
+        QCOMPARE(s.updates.stage(), UpdateStage::Idle);
+    }
+
+    void aBadDownloadFails()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = "something else"}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
+        QCOMPARE(s.updates.installError(),
+                 u"The download didn't match its checksum, so it was thrown away."_s);
+        QVERIFY(s.updates.command().isEmpty());
+    }
+
+    void cancellingStopsTheDownload()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), FakeAnswer{.never = true}};
+        s.updates.updateNow();
+        QTRY_VERIFY(s.network.sent.size() >= 3);
+        s.updates.dismiss();
+        QCOMPARE(s.updates.stage(), UpdateStage::Idle);
+        QVERIFY(!s.downloader.isRunning());
+    }
+
+    void aKindWithNoFileOpensThePage()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        // a release with no files at all
+        QJsonObject bare = fakeRelease(u"0.7.0"_s);
+        bare[u"assets"_s] = QJsonArray();
+        s.network.answers = {FakeAnswer{.body = fakeReleases({bare})}};
+        s.updates.checkNow();
+        QVERIFY(QTest::qWaitFor([&] { return !s.updates.isChecking(); }, 5000));
+        s.updates.updateNow();
+        QCOMPARE(s.updates.stage(), UpdateStage::Idle);
+        QCOMPARE(s.opener.opened, QList<QUrl>{QUrl(releaseBase + u"/tag/v0.7.0"_s)});
     }
 
     void nothingToDoWithoutARelease()

@@ -69,6 +69,11 @@ if(NOT POU_BUILD_VERSION)
     set(POU_BUILD_VERSION "${PROJECT_VERSION}")
 endif()
 
+# How this build is installed, so the updater knows what it can do:
+# source (the default), arch, deb or rpm. The AppImage and Windows are known
+# when it runs. The package builds set it.
+set(POU_INSTALL_KIND "source" CACHE STRING "How the build is installed")
+
 add_subdirectory(src)
 add_subdirectory(data)
 

@@ -5,23 +5,52 @@
 #include "core/updates.h"
 #include "platform/opener.h"
 #include "services/updatechecker.h"
+#include "services/updatedownloader.h"
+
+#include <QCoreApplication>
+#include <QFileInfo>
+#include <QUrl>
 
 using namespace Qt::Literals::StringLiterals;
 
 namespace pou {
 
-Updates::Updates(UpdateChecker *checker, SettingsStore *settings, Opener *opener, QObject *parent)
+Updates::Updates(UpdateChecker *checker, SettingsStore *settings, Opener *opener,
+                 UpdateDownloader *downloader, QObject *parent)
     : QObject(parent)
     , m_checker(checker)
     , m_settings(settings)
     , m_opener(opener)
+    , m_downloader(downloader)
+    , m_kind(installedKind(qEnvironmentVariable("APPIMAGE")))
 {
+    if (downloader) {
+        connect(downloader, &UpdateDownloader::progress, this, [this](qint64 received, qint64 total) {
+            m_progress = total > 0 ? double(received) / double(total) : -1;
+            Q_EMIT changed();
+        });
+        connect(downloader, &UpdateDownloader::done, this, &Updates::downloaded);
+        connect(downloader, &UpdateDownloader::failed, this, &Updates::fail);
+    }
     connect(checker, &UpdateChecker::changed, this, &Updates::changed);
     connect(settings, &SettingsStore::changed, this, &Updates::changed);
     connect(checker, &UpdateChecker::found, this, [this] {
         if (isPending())
             Q_EMIT offered();
     });
+}
+
+Updates::~Updates() = default;
+
+void Updates::setInstallKind(InstallKind kind)
+{
+    m_kind = kind;
+}
+
+void Updates::setInstaller(std::unique_ptr<PackageInstaller> installer, const Finish &finish)
+{
+    m_installer = std::move(installer);
+    m_finish = finish;
 }
 
 void Updates::change(const std::function<void(UpdateSettings &)> &edit)
@@ -102,12 +131,77 @@ void Updates::checkNow()
 
 void Updates::updateNow()
 {
-    if (!m_checker->newest())
+    if (!m_checker->newest() || m_stage == UpdateStage::Downloading || m_stage == UpdateStage::Installing)
         return;
-    m_putOff = m_checker->newest()->version.text();
-    if (m_opener)
-        m_opener->open(m_checker->newest()->page);
+    const Release release = *m_checker->newest();
+    m_putOff = release.version.text();
+    if (!m_downloader || !assetFor(release, m_kind) || !checksumsOf(release)) {
+        // nothing it can fetch and check, so GitHub has it
+        if (m_opener)
+            m_opener->open(release.page);
+        Q_EMIT changed();
+        return;
+    }
+    m_error.clear();
+    m_command.clear();
+    m_progress = -1;
+    m_stage = UpdateStage::Downloading;
+    m_downloader->start(release, m_kind);
     Q_EMIT changed();
+}
+
+void Updates::downloaded(const QString &file)
+{
+    m_file = file;
+    if (!m_installer) {
+        // PackageKit or a terminal does these, which the app doesn't ask for
+        m_command = manualCommand(m_kind, file);
+        m_stage = UpdateStage::Manual;
+        Q_EMIT changed();
+        return;
+    }
+    m_stage = UpdateStage::Installing;
+    Q_EMIT changed();
+    m_installer->install(file, [this](const QString &error) {
+        if (!error.isEmpty()) {
+            fail(error);
+            return;
+        }
+        if (m_finish)
+            m_finish(m_installer->after());
+    });
+}
+
+void Updates::fail(const QString &why)
+{
+    m_error = why;
+    m_stage = UpdateStage::Failed;
+    Q_EMIT changed();
+}
+
+void Updates::dismiss()
+{
+    if (m_stage == UpdateStage::Downloading && m_downloader)
+        m_downloader->cancel();
+    // the installer is already at it, and can't be stopped
+    if (m_stage == UpdateStage::Installing)
+        return;
+    m_stage = UpdateStage::Idle;
+    m_error.clear();
+    m_command.clear();
+    Q_EMIT changed();
+}
+
+void Updates::copyCommand()
+{
+    if (m_opener && !m_command.isEmpty())
+        m_opener->copy(m_command);
+}
+
+void Updates::openFolder()
+{
+    if (m_opener && !m_file.isEmpty())
+        m_opener->open(QUrl::fromLocalFile(QFileInfo(m_file).absolutePath()));
 }
 
 void Updates::later()

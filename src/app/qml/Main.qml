@@ -274,6 +274,11 @@ Kirigami.ApplicationWindow {
         windowShown: root.visible
     }
 
+    InstallDialog {
+        objectName: "installDialog"
+        app: root.app
+    }
+
     // The pages wait here while they aren't shown, so they keep where you
     // were on them.
     Item {

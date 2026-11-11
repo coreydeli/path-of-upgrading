@@ -7,6 +7,7 @@
 
 Unicode true
 !include "MUI2.nsh"
+!include "FileFunc.nsh"
 
 !define NAME "Path of Upgrading"
 !define PROGRAM "path-of-upgrading.exe"
@@ -39,6 +40,25 @@ VIAddVersionKey "LegalCopyright" "Corey Deli, MIT license"
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
+
+; The app updates itself by running this with /S /START: no pages, and it
+; starts the new version at the end.
+Function .onInit
+    ${GetParameters} $0
+    ${GetOptions} $0 "/START" $1
+    IfErrors done
+    ; the old version is quitting as this starts, and has its files open until it has
+    Sleep 1500
+    done:
+FunctionEnd
+
+Function .onInstSuccess
+    ${GetParameters} $0
+    ${GetOptions} $0 "/START" $1
+    IfErrors skip
+    Exec '"$INSTDIR\${PROGRAM}"'
+    skip:
+FunctionEnd
 
 Section
     ; what an older version had that this one doesn't

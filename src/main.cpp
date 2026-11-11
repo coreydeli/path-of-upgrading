@@ -10,6 +10,8 @@
 #include "platform/globalshortcuts.h"
 #include "platform/notifier.h"
 #include "platform/opener.h"
+#include "platform/packageinstaller.h"
+#include "platform/restart.h"
 #include "platform/secretstore.h"
 #include "platform/singleinstance.h"
 #include "platform/tray.h"
@@ -85,6 +87,13 @@ int main(int argc, char *argv[])
                      [&] { desktop.tellAboutUpdate(root.updates()->newVersion()); });
     desktop.setWindow(qobject_cast<QWindow *>(engine.rootObjects().value(0)));
     desktop.reportProblems();
+    root.setUpdateInstaller(pou::createPackageInstaller(pou::installedKind(qEnvironmentVariable("APPIMAGE")),
+                                                        qEnvironmentVariable("APPIMAGE")),
+                            [](pou::PackageInstaller::After after) {
+                                if (after == pou::PackageInstaller::After::Restart)
+                                    pou::startAgainAfterExit();
+                                QCoreApplication::quit();
+                            });
     root.updateChecker().start();
 
     const int exitCode = app.exec();

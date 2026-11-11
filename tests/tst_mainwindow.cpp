@@ -20,6 +20,7 @@
 
 #include <KLocalizedQmlContext>
 #include <QAccessible>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
@@ -195,6 +196,8 @@ struct Window
                        .colors = colors,
                        .tradeOffered = tradeOffered},
             std::unique_ptr<GameWatcher>(game));
+        // whatever the build was configured for, a test says what it needs
+        app->updates()->setInstallKind(InstallKind::Source);
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
         QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
@@ -4385,6 +4388,45 @@ private Q_SLOTS:
         QVERIFY(click(button(dialog, u"Update Now"_s)));
         QCOMPARE(w.opener->opened, QList<QUrl>{QUrl(releaseBase + u"/tag/v99.0.0"_s)});
         QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    void installDialogShowsTheCommand()
+    {
+        Window w;
+        w.app->updates()->setInstallKind(InstallKind::Debian);
+        QObject *install = w.window->findChild<QObject *>(u"installDialog"_s);
+        QVERIFY(!isVisible(install));
+        releaseIsOut(w, u"99.0.0"_s);
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+
+        const Release release = readReleases(fakeReleases({fakeRelease(u"99.0.0"_s)})).first();
+        const QByteArray package = "pretend this is a package";
+        const QByteArray sum = QCryptographicHash::hash(package, QCryptographicHash::Sha256).toHex();
+        w.network->answers = {
+            {.body = sum + "  " + assetFor(release, InstallKind::Debian)->name.toUtf8() + "\n"},
+            {.body = package}};
+        QVERIFY(click(button(dialog, u"Update Now"_s)));
+        QTRY_VERIFY_WITH_TIMEOUT(install->property("opened").toBool(), 5000);
+        QTRY_COMPARE_WITH_TIMEOUT(w.app->updates()->stage(), UpdateStage::Manual, 5000);
+        QVERIFY(w.opener->opened.isEmpty());
+
+        QObject *command = w.window->findChild<QObject *>(u"installCommand"_s);
+        QVERIFY(command);
+        QVERIFY(command->property("text").toString().startsWith(u"sudo apt install '"_s));
+        QVERIFY(button(install, u"Close"_s));
+
+        QObject *copy = w.window->findChild<QObject *>(u"copyCommandButton"_s);
+        QVERIFY(click(copy));
+        QCOMPARE(w.opener->copied, QStringList{w.app->updates()->command()});
+        QObject *folder = w.window->findChild<QObject *>(u"openFolderButton"_s);
+        QVERIFY(click(folder));
+        QCOMPARE(w.opener->opened.size(), 1);
+        QVERIFY(w.opener->opened.at(0).isLocalFile());
+
+        QVERIFY(click(button(install, u"Close"_s)));
+        QTRY_VERIFY(!isVisible(install));
+        QCOMPARE(w.app->updates()->stage(), UpdateStage::Idle);
     }
 
     void updateDialogLaterAndSkip()

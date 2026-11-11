@@ -52,6 +52,7 @@ qt_add_qml_module(pou_app
     QML_FILES
         qml/AboutPage.qml
         qml/UpdateDialog.qml
+        qml/InstallDialog.qml
         qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml
