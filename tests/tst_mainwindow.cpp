@@ -1706,6 +1706,9 @@ private Q_SLOTS:
         const QString lookFor = text(w.find(u"panelLookFor"_s));
         QVERIFY(lookFor.contains(u" or more"_s));
         QCOMPARE(lookFor, upgrades->chosenLookFor());
+        QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
+        QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u", item level "_s));
+        QCOMPARE(text(w.find(u"panelCanRoll"_s)), upgrades->chosenCanRoll().join(u'\n'));
         QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());
         QVERIFY(!w.find(u"tile:Gloves"_s)->property("chosen").toBool());
 
@@ -1741,6 +1744,14 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"panelGauge"_s)));
         QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Wants most"_s);
         QVERIFY(text(w.find(u"panelLookFor"_s)).contains(u" or more"_s));
+        QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
+        // the weapon has no item class to go by
+        QVERIFY(click(w.find(u"tile:Weapon"_s)));
+        QVERIFY(w.settled());
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Weapon"_s);
+        QVERIFY(!isVisible(w.find(u"panelCanRoll"_s)));
+        QVERIFY(click(w.find(u"tile:Gloves"_s)));
+        QVERIFY(w.settled());
         // there's nothing worn to search for a better one of
         QVERIFY(!isVisible(w.find(u"panelFind"_s)));
         QVERIFY(!isVisible(w.find(u"panelTakeOff"_s)));
@@ -3515,7 +3526,8 @@ private Q_SLOTS:
         QObject *group = w.window->findChild<QObject *>(u"settingsGroupAction"_s);
         QVERIFY(group);
         QCOMPARE(group->property("text").toString(), u"Settings"_s);
-        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s, u"aboutAction"_s}) {
+        for (const QString &name :
+             {u"overlayAction"_s, u"appearanceAction"_s, u"helpAction"_s, u"aboutAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
             QCOMPARE(action->parent(), group);
@@ -3552,6 +3564,22 @@ private Q_SLOTS:
         QCOMPARE(w.opener->opened.first(), QUrl(u"https://github.com/coreydeli/path-of-upgrading"_s));
         QVERIFY(click(w.find(u"credit:Cinzel"_s)));
         QCOMPARE(w.opener->opened.last(), QUrl(u"https://github.com/NDISCOVER/Cinzel"_s));
+    }
+
+    void helpPage()
+    {
+        Window w;
+        QVERIFY(w.show(u"helpAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Help"_s);
+
+        // nothing is opened until you click for it
+        QVERIFY(w.opener->opened.isEmpty());
+        QVERIFY(click(w.find(u"wikiButton"_s)));
+        QCOMPARE(w.opener->opened,
+                 QList<QUrl>{QUrl(u"https://github.com/coreydeli/path-of-upgrading/wiki"_s)});
+        QVERIFY(click(w.find(u"topic:Hotkeys-and-the-Overlay"_s)));
+        QCOMPARE(w.opener->opened.last(),
+                 QUrl(u"https://github.com/coreydeli/path-of-upgrading/wiki/Hotkeys-and-the-Overlay"_s));
     }
 
     void sidebarOpensSettings()
@@ -3695,7 +3723,7 @@ private Q_SLOTS:
         const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,    u"gearScoreAction"_s,
                                      u"weightsAction"_s,    u"ignoredAction"_s, u"checkedAction"_s,
                                      u"pobAction"_s,        u"tradeAction"_s,   u"overlayAction"_s,
-                                     u"appearanceAction"_s, u"aboutAction"_s};
+                                     u"appearanceAction"_s, u"helpAction"_s,    u"aboutAction"_s};
         for (const QString &action : actions) {
             QVERIFY2(w.show(action), qPrintable(action));
             const QString title = w.page()->property("title").toString();

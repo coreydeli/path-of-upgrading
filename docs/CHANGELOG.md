@@ -15,6 +15,17 @@ version that comes out.
   the missing stats, and "Look for" gives it too, as "Life 55 or more (up to
   149)". An empty slot's "Wants most" shows it the same way. The figures come
   from Path of Building's data for Path of Exile 2.
+- The slot panel on a wide gear page has a Can roll line under Look for. It lists up
+  to six stats the build wants most in that slot, each with the top tier's range and its
+  item level, such as "Life 100 to 149, item level 82". It's left out for weapons,
+  off hands, jewels, flasks and charms.
+- The character you play is picked in a Character box at the top of Your Gear, which shows
+  its build.
+- An About page in the sidebar's Settings group. It shows the version and edition, the
+  license, the Qt and KDE Frameworks versions, where Path of Building was found, links to the
+  source, the releases and the issue tracker, and the credits.
+- A Help page in the sidebar's Settings group. It opens the wiki, or one of its pages, in
+  your browser.
 
 ### Changed
 
@@ -36,6 +47,8 @@ version that comes out.
   don't count.
 - In the gear score profiles, "Weapon DPS" is now "Weapon damage per second".
 - The sidebar's Gear group is now called Gear Settings.
+- The Characters page is now called Import Character, and it is in Gear Settings. The window
+  opens on Your Gear rather than on the Characters page.
 - Build Review's "Look Again" is now "Update", and it also reads the builds
   you've saved in Path of Building since.
 
