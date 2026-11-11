@@ -5,6 +5,7 @@
 #include "app/settingsstore.h"
 #include "core/datafiles.h"
 #include "core/parser.h"
+#include "core/weighedprofile.h"
 #include "fakenetwork.h"
 #include "pobfixtures.h"
 #include "services/pobengine.h"
@@ -142,7 +143,7 @@ private Q_SLOTS:
         QCOMPARE(i.store.pobBuild(wren).value_or(QString()), ranger({u"Weapon 1"_s}));
     }
 
-    void saysWhichProfile()
+    void saysTheScoreIsAStart()
     {
         Importer i;
         const QString wren = i.play(u"Wren"_s);
@@ -150,7 +151,7 @@ private Q_SLOTS:
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.importer.message(),
                  u"Imported the level 70 Witch build for Wren. It has no items equipped. "
-                 u"Chose the Energy Shield spellcaster gear score profile for it."_s);
+                 u"The gear score is a general start until Path of Building weighs the build."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-caster"_s);
 
         // nothing more to say when it's the one it has
@@ -160,11 +161,11 @@ private Q_SLOTS:
 
         i.importer.importText(witch(true));
         QVERIFY(i.importer.message().endsWith(
-            u"Chose the Minion summoner on Energy Shield gear score profile for it."_s));
+            u"The gear score is a general start until Path of Building weighs the build."_s));
         QCOMPARE(i.store.find(wren)->buildProfile, u"minion-es"_s);
     }
 
-    void saysTheAttackerProfile()
+    void saysTheScoreIsAStartForAnAttacker()
     {
         Importer i;
         const QString wren = i.play(u"Wren"_s);
@@ -172,8 +173,20 @@ private Q_SLOTS:
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.importer.message(),
                  u"Imported the level 60 Monk build for Wren. It has no items equipped. "
-                 u"Chose the Energy Shield attacker gear score profile for it."_s);
+                 u"The gear score is a general start until Path of Building weighs the build."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-attacker"_s);
+    }
+
+    void saysNothingOnceWeighed()
+    {
+        Importer i;
+        const QString wren = i.play(u"Wren"_s);
+        Character weighed = *i.store.find(wren);
+        weighed.weighed = WeighedProfile{};
+        QVERIFY(i.store.save(wren, weighed));
+
+        i.importer.importText(witch());
+        QVERIFY(!i.importer.message().contains(u"general start"_s));
     }
 
     void saysNothingOfAPickedProfile()
