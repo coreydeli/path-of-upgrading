@@ -163,6 +163,26 @@ Item {
                 }
             }
 
+            RowLayout {
+                Layout.fillWidth: true
+                visible: panel.upgrades.chosenCanRoll.length > 0
+                spacing: Kirigami.Units.largeSpacing
+
+                QQC2.Label {
+                    Layout.alignment: Qt.AlignTop
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+                    text: qsTr("Can roll")
+                    color: Kirigami.Theme.disabledTextColor
+                }
+
+                QQC2.Label {
+                    objectName: "panelCanRoll"
+                    Layout.fillWidth: true
+                    text: panel.upgrades.chosenCanRoll.join("\n")
+                    wrapMode: Text.Wrap
+                }
+            }
+
             TradeStatus {
                 objectName: "panelTradeStatus"
                 Layout.fillWidth: true
