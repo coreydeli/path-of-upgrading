@@ -91,6 +91,11 @@ ColumnLayout {
         title: qsTr("Import a Build")
     }
 
+    SectionText {
+        objectName: "setupScoreNote"
+        text: qsTr("Once Path of Building is set up, the gear score comes from your build.")
+    }
+
     Sheet {
         FormCard.FormTextFieldDelegate {
             id: codeField

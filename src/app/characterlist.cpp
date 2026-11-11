@@ -110,7 +110,7 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
         const Character *character = m_store->find(id);
         if (!character)
             return {};
-        if (character->buildProfile == noBuildProfile)
+        if (character->weightsOnly || character->buildProfile == noBuildProfile)
             return u"Your stat weights"_s;
         const BuildProfile *profile = buildProfile(character->buildProfile);
         return profile ? profile->name : QString();

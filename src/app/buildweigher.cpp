@@ -49,9 +49,18 @@ void BuildWeigher::setSettings(const PobSettings &settings)
     consider();
 }
 
-bool BuildWeigher::weighAgain()
+bool BuildWeigher::canWeigh() const
 {
     if (!m_settings.enabled || !m_character->exists() || !m_character->build())
+        return false;
+    // judged by your own weights, or by a profile that isn't there
+    const Character &character = m_character->character();
+    return !character.weightsOnly && buildProfile(character.buildProfile);
+}
+
+bool BuildWeigher::weighAgain()
+{
+    if (!canWeigh())
         return false;
     m_gaveUp.clear();
     cancel();
@@ -75,12 +84,9 @@ QString BuildWeigher::attempt() const
 
 bool BuildWeigher::needed() const
 {
-    if (!m_settings.enabled || !m_character->exists() || !m_character->build())
+    if (!canWeigh())
         return false;
     const Character &character = m_character->character();
-    // judged by your own weights, or by a profile that isn't there
-    if (!buildProfile(character.buildProfile))
-        return false;
     if (!character.weighed)
         return m_gaveUp != attempt();
     return !upToDate(*character.weighed) && m_gaveUp != attempt();

@@ -119,7 +119,7 @@ GearScoreOptions gearScoreOptions(const Character &character, const QString &slo
                                   const PobPriorities &priorities)
 {
     GearScoreOptions options;
-    options.build = character.buildProfile;
+    options.build = character.weightsOnly ? noBuildProfile.toString() : character.buildProfile;
     options.weighed = character.weighed;
     options.tweaks = character.tweaks;
     options.ignore = [rules = character.ignored](const QString &key) {

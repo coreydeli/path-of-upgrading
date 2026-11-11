@@ -86,7 +86,7 @@ Item {
             QQC2.Label {
                 objectName: "panelProfile"
                 Layout.fillWidth: true
-                text: qsTr("Build profile: %1").arg(panel.app.gearScoring.profiles[panel.app.gearScoring.profile])
+                text: panel.app.gearScoring.state
                 font.bold: true
                 wrapMode: Text.Wrap
             }

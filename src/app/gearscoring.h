@@ -14,10 +14,11 @@
 namespace pou {
 
 class ActiveCharacter;
+class BuildWeigher;
 
 // How the gear score rates the gear of the character you play, as the window
-// shows it: by which build profile, and how much each of its stats counts,
-// which are the rows. Each change is saved straight away.
+// shows it: what it comes from, and how much each of its stats counts, which
+// are the rows. Each change is saved straight away.
 class GearScoring : public QAbstractListModel
 {
     Q_OBJECT
@@ -27,13 +28,20 @@ class GearScoring : public QAbstractListModel
     // The name of the one you play, empty while you play nobody and there
     // are no rows.
     Q_PROPERTY(QString character READ character NOTIFY changed)
-    // The build profiles' names, then none, for your stat weights alone.
-    Q_PROPERTY(QStringList profiles READ profiles CONSTANT)
-    // Choosing one yourself, even the one it has, stops importing a build from
-    // changing it.
-    Q_PROPERTY(int profile READ profile WRITE setProfile NOTIFY changed)
-    // What the profile is for.
+    // Where the gear score comes from, in words: weighed by Path of Building,
+    // being weighed, or a general start until it has.
+    Q_PROPERTY(QString state READ state NOTIFY changed)
+    // More about it: what the profile it starts from is for.
     Q_PROPERTY(QString summary READ summary NOTIFY changed)
+    // When Path of Building weighed the build, as a date for the user's
+    // locale, empty when it hasn't.
+    Q_PROPERTY(QString weighedOn READ weighedOn NOTIFY changed)
+    // Path of Building is weighing the build now.
+    Q_PROPERTY(bool weighing READ isWeighing NOTIFY changed)
+    // It can be asked to weigh again.
+    Q_PROPERTY(bool canWeigh READ canWeigh NOTIFY changed)
+    // Items are judged by your stat weights alone, with no gear score.
+    Q_PROPERTY(bool weightsOnly READ weightsOnly WRITE setWeightsOnly NOTIFY changed)
     // How much a stat can count, from not at all to three times as much,
     // each with its factor: "Normal (1x)".
     Q_PROPERTY(QStringList levels READ levels CONSTANT)
@@ -50,20 +58,25 @@ public:
     };
 
     // It has to outlive it.
-    explicit GearScoring(ActiveCharacter *active, QObject *parent = nullptr);
+    GearScoring(ActiveCharacter *active, BuildWeigher *weigher, QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = {}) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
     QString character() const;
-    QStringList profiles() const;
-    int profile() const;
-    void setProfile(int profile);
+    QString state() const;
     QString summary() const;
+    QString weighedOn() const;
+    bool isWeighing() const;
+    bool canWeigh() const;
+    bool weightsOnly() const;
+    void setWeightsOnly(bool on);
     QStringList levels() const;
     bool isTweaked() const;
 
+    // Has Path of Building weigh the build again, even if it has already.
+    Q_INVOKABLE void weighAgain();
     Q_INVOKABLE void setLevel(const QString &label, int level);
     // Every stat back to how the profile has it.
     Q_INVOKABLE void reset();
@@ -82,7 +95,7 @@ private:
     void setError(const QString &why);
 
     ActiveCharacter *m_active;
-    QString m_profile; // the one the rows are for
+    BuildWeigher *m_weigher;
     QList<TweakableStat> m_stats;
     QString m_error;
 };

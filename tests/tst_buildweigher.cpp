@@ -226,11 +226,33 @@ private Q_SLOTS:
         w.weigher.setSettings({});
         const QString id = w.add(u"Torvald"_s);
         Character character = *w.store.find(id);
-        character.buildProfile = noBuildProfile.toString();
+        character.weightsOnly = true;
         QVERIFY(w.store.save(id, character));
         w.active.setId(id);
         QTest::qWait(500);
         QCOMPARE(w.pob.runs(), 0);
+        QVERIFY(!w.weigher.canWeigh());
+        QVERIFY(!w.weigher.weighAgain());
+
+        // and weighs once you stop
+        QVERIFY(w.active.change([](Character &c) { c.weightsOnly = false; }));
+        QVERIFY(w.weigher.canWeigh());
+        QVERIFY(w.settles());
+        QVERIFY(w.active.character().weighed);
+    }
+
+    void aStartThatIsGoneCantBeWeighed()
+    {
+        Weighing w;
+        w.weigher.setSettings({});
+        const QString id = w.add(u"Torvald"_s);
+        Character character = *w.store.find(id);
+        character.buildProfile = u"glass-cannon"_s;
+        QVERIFY(w.store.save(id, character));
+        w.active.setId(id);
+        QTest::qWait(500);
+        QCOMPARE(w.pob.runs(), 0);
+        QVERIFY(!w.weigher.canWeigh());
     }
 
     void anotherCharacterMidWeighDropsTheFirst()

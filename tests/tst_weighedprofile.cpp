@@ -241,6 +241,44 @@ private Q_SLOTS:
         }
     }
 
+    void theRatedProfileIsTheStartWhenNothingWasWeighed()
+    {
+        const BuildProfile rated = ratedProfile(startProfile(), std::nullopt);
+        QCOMPARE(rated.stats.size(), startProfile().stats.size());
+    }
+
+    void theRatedProfileTakesWeighedGroupsFromTheWeighing()
+    {
+        const WeighedProfile w = weighedProfile(
+            {{u"Boots"_s, {{u"#% increased Movement Speed"_s, 1, 0}, {u"# to maximum Life"_s, 0.05, 0}}}},
+            startProfile(), rolls());
+        const BuildProfile rated = ratedProfile(startProfile(), w);
+        const auto row = [&rated](const QString &key) -> const ProfileStat * {
+            for (const ProfileStat &s : rated.stats) {
+                if (s.key == key)
+                    return &s;
+            }
+            return nullptr;
+        };
+        // life counts 8 in the start profile, but not in boots, which were weighed
+        QVERIFY(row(u"#% increased Movement Speed"_s));
+        int lifeOnBoots = 0;
+        int lifeOnHelmets = 0;
+        for (const ProfileStat &s : rated.stats) {
+            if (s.key != u"# to maximum Life"_s)
+                continue;
+            lifeOnBoots += s.importance.at(u"Boots"_s) > 0.5;
+            lifeOnHelmets += s.importance.at(u"Helmet"_s) == 8;
+        }
+        // the weighing's own, and the start's for the others
+        QCOMPARE(lifeOnBoots, 1);
+        QCOMPARE(lifeOnHelmets, 1);
+        // and item properties stay
+        const auto armour = std::ranges::find_if(rated.stats, isPropertyStat);
+        QVERIFY(armour != rated.stats.end());
+        QCOMPARE(armour->importance.at(u"Boots"_s), 6);
+    }
+
     void notSavedIsNone()
     {
         QVERIFY(!weighedProfileFromJson({}));
