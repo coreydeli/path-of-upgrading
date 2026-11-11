@@ -74,7 +74,8 @@ FormCard.FormCardDialog {
         text: dialog.app.updates.command
         readOnly: true
         wrapMode: TextEdit.WrapAnywhere
-        font: Kirigami.Theme.fixedWidthFont
+        // Kirigami 6.13 has no fixedWidthFont, and this only shows on Linux
+        font.family: "monospace"
     }
 
     FormCard.FormButtonDelegate {
