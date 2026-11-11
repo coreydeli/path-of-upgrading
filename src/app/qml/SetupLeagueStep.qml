@@ -13,7 +13,7 @@ ColumnLayout {
 
     spacing: 0
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "setupLeagueBox"
             text: qsTr("League")
@@ -32,7 +32,7 @@ ColumnLayout {
             onActivated: step.options.league = currentValue
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "setupHardcoreSwitch"
@@ -41,7 +41,7 @@ ColumnLayout {
             onToggled: step.options.hardcore = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "setupSoloSwitch"

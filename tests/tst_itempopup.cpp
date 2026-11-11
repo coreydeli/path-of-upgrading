@@ -639,7 +639,7 @@ private Q_SLOTS:
         costly.caps = u"Caps your lightning resistance"_s;
         QTest::newRow("losses, risks and caps")
             << costly
-            << QStringList{u"Fire Resistance drops below the cap\nCold Resistance drops below the cap"_s,
+            << QStringList{u"Fire Resistance drops below the cap"_s, u"Cold Resistance drops below the cap"_s,
                            u"Minion skills lose a level"_s, u"Caps your lightning resistance"_s};
 
         ItemReport judged = aReport();

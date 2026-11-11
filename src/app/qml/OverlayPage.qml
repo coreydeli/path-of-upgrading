@@ -42,7 +42,7 @@ ColumnsPage {
         title: qsTr("Hotkeys")
     }
 
-    FormCard.FormCard {
+    Sheet {
         KeyField {
             objectName: "checkKey"
             label: qsTr("Check an item")
@@ -51,7 +51,7 @@ ColumnsPage {
             onChosen: key => overlayPage.refused = !overlayPage.options.setCheckKey(key)
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: overlayPage.tradeOffered
         }
 
@@ -64,7 +64,7 @@ ColumnsPage {
             onChosen: key => overlayPage.refused = !overlayPage.options.setResultsKey(key)
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: gameOnlyText.visible
         }
 
@@ -76,7 +76,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: refusedText.visible
         }
 
@@ -87,7 +87,7 @@ ColumnsPage {
             text: qsTr("That key is already taken.")
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: errorText.visible
         }
 
@@ -99,7 +99,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "advancedCopySwitch"
@@ -109,7 +109,7 @@ ColumnsPage {
             onToggled: overlayPage.options.advancedCopy = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "clipboardSwitch"
@@ -119,7 +119,7 @@ ColumnsPage {
             onToggled: overlayPage.options.watchClipboard = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "pausedSwitch"
@@ -134,7 +134,7 @@ ColumnsPage {
         title: qsTr("Popup")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "positionBox"
             text: qsTr("Where it shows")
@@ -145,7 +145,7 @@ ColumnsPage {
             onActivated: overlayPage.options.position = currentValue
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.AbstractFormDelegate {
             background: null
@@ -180,7 +180,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "compactSwitch"
@@ -190,7 +190,7 @@ ColumnsPage {
             onToggled: overlayPage.options.compact = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "colorblindSwitch"
@@ -200,7 +200,7 @@ ColumnsPage {
             onToggled: overlayPage.options.colorblind = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "autoHide"
@@ -229,7 +229,7 @@ ColumnsPage {
         title: qsTr("General")
     }
 
-    FormCard.FormCard {
+    Sheet {
         SwitchRow {
             objectName: "startSwitch"
             text: qsTr("Start with the desktop")
@@ -238,7 +238,7 @@ ColumnsPage {
             onToggled: overlayPage.options.startWithDesktop = checked
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             objectName: "startErrorSeparator"
             visible: startError.visible
         }

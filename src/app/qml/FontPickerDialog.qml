@@ -107,7 +107,7 @@ FormCard.FormCardDialog {
         Keys.onDownPressed: fontList.incrementCurrentIndex()
     }
 
-    FormCard.FormDelegateSeparator {}
+    RowRule {}
 
     QQC2.ScrollView {
         Layout.fillWidth: true

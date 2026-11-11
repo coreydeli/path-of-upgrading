@@ -18,7 +18,7 @@ ColumnsPage {
         title: qsTr("The Wiki")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormButtonDelegate {
             objectName: "wikiButton"
             text: qsTr("Open the Wiki")
@@ -32,7 +32,7 @@ ColumnsPage {
         title: qsTr("Pages")
     }
 
-    FormCard.FormCard {
+    Sheet {
         Repeater {
             model: helpPage.help.topics
 

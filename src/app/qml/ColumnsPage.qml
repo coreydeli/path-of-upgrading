@@ -140,7 +140,9 @@ FormCard.FormCardPage {
         place();
     }
 
-    background: WindowGlow {}
+    background: Rectangle {
+        color: Kirigami.Theme.backgroundColor
+    }
 
     component PageColumn: ColumnLayout {
         required property int index

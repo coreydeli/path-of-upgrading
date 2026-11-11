@@ -28,7 +28,7 @@ ColumnLayout {
         title: qsTr("Your Characters")
     }
 
-    FormCard.FormCard {
+    Sheet {
         visible: characterRows.count > 0
 
         Repeater {
@@ -50,7 +50,7 @@ ColumnLayout {
         title: qsTr("Add a Character")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: nameField
             objectName: "setupNameField"
@@ -59,7 +59,7 @@ ColumnLayout {
             onAccepted: addButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: addButton
@@ -73,7 +73,7 @@ ColumnLayout {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: charactersError.visible
         }
 
@@ -91,7 +91,7 @@ ColumnLayout {
         title: qsTr("Import a Build")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: codeField
             objectName: "setupCodeField"
@@ -100,7 +100,7 @@ ColumnLayout {
             onAccepted: importButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: importButton
@@ -111,7 +111,7 @@ ColumnLayout {
             onClicked: step.importer.importText(codeField.text)
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "setupFileButton"
@@ -136,7 +136,7 @@ ColumnLayout {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: importMessage.visible
         }
 

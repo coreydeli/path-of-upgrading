@@ -242,10 +242,15 @@ private Q_SLOTS:
         QVERIFY(gauge);
         QCOMPARE(gauge->property("fraction").toDouble(), 0.72);
         QCOMPARE(gauge->property("tint").value<QColor>(), grade(u"A"_s));
-        QCOMPARE(gauge->property("ring").toBool(), true);
         QCOMPARE(gauge->property("text").toString(), u"72 A"_s);
         QVERIFY(gauge->implicitWidth() > 0);
-        QCOMPARE(gauge->implicitWidth(), gauge->implicitHeight());
+    }
+
+    void aGaugeLightsPipsToItsGrade()
+    {
+        QCOMPARE(make("ScoreGauge { score: \"72\"; grade: \"A\" }")->property("lit").toInt(), 4);
+        QCOMPARE(make("ScoreGauge { score: \"10\"; grade: \"D\" }")->property("lit").toInt(), 1);
+        QCOMPARE(make("ScoreGauge { score: \"\"; grade: \"\" }")->property("lit").toInt(), 0);
     }
 
     void aGaugeStaysWithinTheRing()
@@ -274,37 +279,32 @@ private Q_SLOTS:
         QCOMPARE(read->text(QAccessible::Name), u"Gear score 72, grade A"_s);
     }
 
-    void plainDrawsAGaugeAsText()
+    void aPlateIsSquareWhenPlain()
     {
+        std::unique_ptr<QQuickItem> plate = make("Plate { width: 100; height: 50 }");
+        QCOMPARE(plate->property("notch").toDouble(), 12.0);
         m_style->setProperty("plain", true);
-        std::unique_ptr<QQuickItem> gauge = make("ScoreGauge { score: \"72\"; grade: \"A\" }");
-        QCOMPARE(gauge->property("ring").toBool(), false);
-        // the size of a line of text, not of a ring
-        QVERIFY(gauge->implicitHeight() < 3 * 16);
+        std::unique_ptr<QQuickItem> square = make("Plate { width: 100; height: 50 }");
+        QCOMPARE(square->property("notch").toDouble(), 0.0);
     }
 
-    void aFrameHasFourCorners() { QCOMPARE(corners(), 4); }
-
-    void plainLeavesOutTheCorners()
+    void aSheetHoldsItsRowsToTheMaximumWidth()
     {
-        m_style->setProperty("plain", true);
-        QCOMPARE(corners(), 0);
+        std::unique_ptr<QQuickItem> sheet = make("Sheet { width: 1000; maximumWidth: 400 }");
+        QVERIFY(sheet);
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 400.0);
+        sheet->setWidth(300);
+        const double side = sheet->property("side").toDouble();
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 300.0 - 2 * side);
     }
 
-    void aFrameLightsInTheAccent()
+    void aNoticeShowsOneLineEach()
     {
-        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
-        const auto outline = [&] {
-            return frame->childItems()
-                .at(0)
-                ->property("border")
-                .value<QObject *>()
-                ->property("color")
-                .value<QColor>();
-        };
-        QCOMPARE(outline(), call(u"frame"_s).value<QColor>());
-        frame->setProperty("lit", true);
-        QCOMPARE(outline(), color(u"highlight"_s));
+        std::unique_ptr<QQuickItem> none = make("Notice { }");
+        QCOMPARE(none->isVisible(), false);
+        std::unique_ptr<QQuickItem> two = make("Notice { lines: [\"Loses life\", \"Loses speed\"] }");
+        QCOMPARE(two->isVisible(), true);
+        QCOMPARE(two->property("tint").value<QColor>(), tone(3, false));
     }
 
     void aTableMeasuresItsChangesAgainstTheBiggest()
@@ -348,18 +348,6 @@ private:
         else
             item->setParentItem(m_window.contentItem());
         return item;
-    }
-
-    // the corner pieces are the children that are ten by ten
-    int corners()
-    {
-        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
-        int count = 0;
-        for (QQuickItem *child : frame->childItems()) {
-            if (child->width() == 10 && child->height() == 10)
-                ++count;
-        }
-        return count;
     }
 
     QVariant call(const QString &name, const QVariantList &args = {}) const
