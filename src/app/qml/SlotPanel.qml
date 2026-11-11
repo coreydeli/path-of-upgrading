@@ -21,8 +21,10 @@ Item {
     implicitWidth: Kirigami.Units.gridUnit * 20
     implicitHeight: contentHeight + 2 * Kirigami.Units.gridUnit
 
-    OrnateFrame {
+    Plate {
         anchors.fill: parent
+        line: Style.frame(Kirigami.Theme)
+        lineWidth: 1
     }
 
     // just the picked slot
@@ -130,10 +132,7 @@ Item {
                 }
             }
 
-            Ornament {
-                Layout.fillWidth: true
-                diamond: !Style.plain
-            }
+            RowRule {}
 
             SlotNotes {
                 objectName: "panelNotes"

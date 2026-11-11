@@ -39,8 +39,10 @@ Item {
         width: parent.width
         height: content.implicitHeight + 2 * Kirigami.Units.gridUnit
 
-        OrnateFrame {
+        Plate {
             anchors.fill: parent
+            line: Style.frame(Kirigami.Theme)
+            lineWidth: 1
         }
 
         ColumnLayout {
@@ -104,10 +106,8 @@ Item {
                 text: qsTr("Corrupted")
             }
 
-            Ornament {
-                Layout.fillWidth: true
+            RowRule {
                 visible: panel.picked
-                diamond: !Style.plain
             }
 
             ColumnLayout {

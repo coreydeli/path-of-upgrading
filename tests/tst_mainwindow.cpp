@@ -3679,7 +3679,7 @@ private Q_SLOTS:
         QVERIFY(!wrenScore->property("score").toString().isEmpty());
         QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));
 
-        // the one you play has the gold frame
+        // the one you play has the accent frame
         const auto frame = [](QObject *row) {
             return search(row, [](QObject *o) { return o->objectName() == u"playedFrame"; });
         };
@@ -3688,22 +3688,6 @@ private Q_SLOTS:
         w.app->characterList()->setCurrent(wren->property("characterId").toString());
         QVERIFY(isVisible(frame(wren)));
         QVERIFY(!isVisible(frame(ash)));
-    }
-
-    // a soft light behind the pages, with the app's colors and not Plain
-    void pagesHaveALight()
-    {
-        Window w(true, false, QStringLiteral(COLORS));
-        w.app->appearance()->setColors(u"app"_s);
-        w.app->appearance()->setDecorations(u"full"_s);
-        QObject *glow = w.page()->property("background").value<QObject *>();
-        QVERIFY(glow);
-        QCOMPARE(glow->property("lit").toBool(), true);
-        w.app->appearance()->setDecorations(u"plain"_s);
-        QCOMPARE(glow->property("lit").toBool(), false);
-        w.app->appearance()->setDecorations(u"full"_s);
-        w.app->appearance()->setColors(u"desktop"_s);
-        QCOMPARE(glow->property("lit").toBool(), false);
     }
 
     void showsAppearanceSettings()

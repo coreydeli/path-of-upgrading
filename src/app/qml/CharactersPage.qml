@@ -94,12 +94,13 @@ ColumnsPage {
                         }
                     }
 
-                    // the one you play is framed in gold
-                    OrnateFrame {
+                    // the one you play is framed in the accent
+                    Plate {
                         objectName: "playedFrame"
                         anchors.fill: parent
                         visible: characterRow.checked
-                        lit: true
+                        line: Style.accent(Kirigami.Theme)
+                        lineWidth: 2
                     }
                 }
 

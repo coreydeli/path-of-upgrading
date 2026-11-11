@@ -75,7 +75,7 @@ ColumnsPage {
         FormCard.FormComboBoxDelegate {
             objectName: "decorationsBox"
             text: qsTr("Decorations")
-            description: qsTr("Plain leaves out the corner pieces, the glow and the animation.")
+            description: qsTr("Plain squares the cut corners and leaves out the animation.")
             textRole: "text"
             valueRole: "value"
             model: appearancePage.decorationChoices

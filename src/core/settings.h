@@ -82,7 +82,7 @@ ColorTheme colorThemeFromId(QStringView id);
 
 // How much is drawn besides the colors.
 enum class Decorations {
-    Full, // corner pieces, the glow, gauges and the popup's animation
+    Full, // cut corners and the popup's animation
     Plain
 };
 QString decorationsId(Decorations decorations);
