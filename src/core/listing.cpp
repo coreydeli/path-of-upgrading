@@ -221,16 +221,22 @@ QString formatPrice(const std::optional<ListingPrice> &price)
     return formatNumber(price->amount) + u' ' + currency;
 }
 
+// "about 3 Divine Orbs", or "about 1 Divine Orb".
+static QString orbs(double amount, const QString &name)
+{
+    return u"about %1 %2 Orb%3"_s.arg(formatNumber(amount), name, amount == 1 ? QString() : u"s"_s);
+}
+
 QString formatConvertedPrice(const ListingPrice &price, double exalts, double divineRate)
 {
     if (!std::isfinite(exalts))
         return {};
     const QString currency = price.currency.toLower();
     if (currency != u"divine" && divineRate > 0 && exalts >= divineRate)
-        return u"about %1 div"_s.arg(formatNumber(roundTo(exalts / divineRate, 1)));
+        return orbs(roundTo(exalts / divineRate, 1), u"Divine"_s);
     if (currency == u"exalted")
         return {};
-    return u"about %1 ex"_s.arg(formatNumber(roundTo(exalts, exalts < 10 ? 1 : 0)));
+    return orbs(roundTo(exalts, exalts < 10 ? 1 : 0), u"Exalted"_s);
 }
 
 QString listedAgo(const QDateTime &indexed, const QDateTime &now)
