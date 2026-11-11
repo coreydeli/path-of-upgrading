@@ -96,4 +96,8 @@ QList<TweakableStat> tweakableStats(const BuildProfile &profile);
 // character's profile. A tweak already under the new label is kept.
 void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId);
 
+// The same for the labels that were spelled short ("Fire res", "Mana regen")
+// and are written out now.
+void renameShortTweaks(QHash<QString, double> &tweaks);
+
 } // namespace pou

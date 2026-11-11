@@ -26,7 +26,7 @@ struct TotalChange
 struct ResistChange
 {
     Element element = Element::Fire;
-    QString label; // "Fire res"
+    QString label; // "Fire Resistance"
     double delta = 0;
     double cap = 75;
     // the rest needs your resistances to be known

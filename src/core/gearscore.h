@@ -89,7 +89,7 @@ QStringList weakRolls(const GearScore &gear, int underPercent = 50);
 
 // What would raise a gear score, in the words the popup uses. Each is empty
 // when there's nothing to say.
-//   "Missing what your build wants: Life (up to 149), Fire res (up to 45)."
+//   "Missing what your build wants: Life (up to 149), Fire Resistance (up to 45)."
 QString missingNote(const GearScore &gear);
 //   "Not in the gear score: #% increased Rarity of Items found."
 QString notScoredNote(const GearScore &gear);
