@@ -221,6 +221,26 @@ private Q_SLOTS:
         QCOMPARE(sums.value(u"two file.exe"_s), b.toLower());
         QVERIFY(parseChecksums("").isEmpty());
     }
+
+    void notesAreReadableText()
+    {
+        const QString markdown =
+            u"## What's Changed\n* **Fixed** the `popup` at [the mouse](https://example.org/x)\n"
+            u"* <b>Added</b> a thing\n\n\n\n1. First\r\n"_s;
+        QCOMPARE(plainNotes(markdown),
+                 u"What's Changed\nFixed the popup at the mouse\nAdded a thing\n\nFirst"_s);
+        QVERIFY(plainNotes(QString()).isEmpty());
+    }
+
+    void longNotesAreCutAtAWord()
+    {
+        const QString words = u"word "_s.repeated(100);
+        const QString cut = plainNotes(words, 50);
+        QVERIFY(cut.startsWith(u"word word"_s));
+        QVERIFY(cut.endsWith(u"\nThe rest is on the release page."_s));
+        QVERIFY(cut.size() < 100);
+        QCOMPARE(plainNotes(u"short"_s, 50), u"short"_s);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestUpdates)
