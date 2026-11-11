@@ -4425,6 +4425,39 @@ private Q_SLOTS:
         QCOMPARE(w.app->updates()->stage(), UpdateStage::Idle);
     }
 
+    void installDialogOffersARestartAfterAPackage()
+    {
+        // an installer that says it worked
+        class Installed : public PackageInstaller
+        {
+        public:
+            After after() const override { return After::Offer; }
+            void install(const QString &, const Done &done) override { done({}); }
+        };
+        Window w;
+        w.app->updates()->setInstallKind(InstallKind::Debian);
+        QList<PackageInstaller::After> finished;
+        w.app->setUpdateInstaller(std::make_unique<Installed>(),
+                                  [&](PackageInstaller::After a) { finished << a; });
+        releaseIsOut(w, u"99.0.0"_s);
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+
+        const Release release = readReleases(fakeReleases({fakeRelease(u"99.0.0"_s)})).first();
+        const QByteArray package = "pretend this is a package";
+        const QByteArray sum = QCryptographicHash::hash(package, QCryptographicHash::Sha256).toHex();
+        w.network->answers = {
+            {.body = sum + "  " + assetFor(release, InstallKind::Debian)->name.toUtf8() + "\n"},
+            {.body = package}};
+        QVERIFY(click(button(dialog, u"Update Now"_s)));
+        QTRY_COMPARE_WITH_TIMEOUT(w.app->updates()->stage(), UpdateStage::Installed, 5000);
+        QObject *restart = w.window->findChild<QObject *>(u"restartButton"_s);
+        QTRY_VERIFY(isVisible(restart));
+        QVERIFY(finished.isEmpty());
+        QVERIFY(click(restart));
+        QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+    }
+
     void updateDialogLaterAndSkip()
     {
         Window w;

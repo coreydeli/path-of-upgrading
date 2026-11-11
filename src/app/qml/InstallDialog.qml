@@ -45,9 +45,12 @@ FormCard.FormCardDialog {
             case UpdateStage.Downloading:
                 return qsTr("Downloading version %1 and checking it.").arg(dialog.app.updates.newVersion);
             case UpdateStage.Installing:
-                return qsTr("Installing version %1. The app restarts when it's done.").arg(dialog.app.updates.newVersion);
+                return qsTr("Installing version %1.").arg(dialog.app.updates.newVersion);
             case UpdateStage.Manual:
-                return qsTr("Version %1 is downloaded and checked. Run this in a terminal to install it, then start the app again.").arg(dialog.app.updates.newVersion);
+                return (dialog.app.updates.installError.length > 0 ? dialog.app.updates.installError + " " : "")
+                    + qsTr("Version %1 is downloaded and checked. Run this in a terminal to install it, then start the app again.").arg(dialog.app.updates.newVersion);
+            case UpdateStage.Installed:
+                return qsTr("Version %1 is installed. Restart the app to use it.").arg(dialog.app.updates.newVersion);
             case UpdateStage.Failed:
                 return dialog.app.updates.installError;
             }
@@ -75,6 +78,14 @@ FormCard.FormCardDialog {
         readOnly: true
         wrapMode: TextEdit.WrapAnywhere
         font: Kirigami.Theme.fixedWidthFont
+    }
+
+    FormCard.FormButtonDelegate {
+        objectName: "restartButton"
+        visible: dialog.stage === UpdateStage.Installed
+        text: qsTr("Restart Now")
+        icon.name: "view-refresh"
+        onClicked: dialog.app.updates.restart()
     }
 
     FormCard.FormButtonDelegate {

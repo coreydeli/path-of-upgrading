@@ -164,11 +164,23 @@ void Updates::downloaded(const QString &file)
     Q_EMIT changed();
     m_installer->install(file, [this](const QString &error) {
         if (!error.isEmpty()) {
-            fail(error);
+            if (m_installer->fallsBackToCommand()) {
+                // it couldn't, so you do it: the reason and the command
+                m_error = error;
+                m_command = manualCommand(m_kind, m_file);
+                m_stage = UpdateStage::Manual;
+                Q_EMIT changed();
+            } else {
+                fail(error);
+            }
             return;
         }
-        if (m_finish)
+        if (m_installer->after() == PackageInstaller::After::Offer) {
+            m_stage = UpdateStage::Installed;
+            Q_EMIT changed();
+        } else if (m_finish) {
             m_finish(m_installer->after());
+        }
     });
 }
 
@@ -177,6 +189,12 @@ void Updates::fail(const QString &why)
     m_error = why;
     m_stage = UpdateStage::Failed;
     Q_EMIT changed();
+}
+
+void Updates::restart()
+{
+    if (m_stage == UpdateStage::Installed && m_finish)
+        m_finish(PackageInstaller::After::Restart);
 }
 
 void Updates::dismiss()
