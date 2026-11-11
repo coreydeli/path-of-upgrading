@@ -36,15 +36,20 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   you and how dangerous it is to run, and it suggests what to do with the bad
   ones, such as an Orb of Annulment with its odds. It counts your character's
   resistances and life when it knows them. A release shows a waystone as before.
-- The gear score uses a build profile: life and resistances, Energy Shield
-  spellcaster, Energy Shield attacker, or minion summoner. You can change how
-  much each stat adds under Affix Impact, from Not at all (0x) to Three times
-  (3x). Stat weights can be edited or suggested from the gear you have equipped, and
-  stats you don't care about can be ignored or left out of searches.
+- The gear score comes from your build. With Path of Building on, it weighs
+  what each mod is worth to your build in each slot, and keeps the result with
+  your character, so the score works without Path of Building running. Until
+  then, and for jewels, a start profile picked from the build is used: life and
+  resistances, Energy Shield spellcaster, Energy Shield attacker, or minion
+  summoner. You can change how much each stat adds under Affix Impact, from Not
+  at all (0x) to Three times (3x). Stat weights can be edited or suggested from
+  the gear you have equipped, and "Judge by my stat weights alone" judges items
+  by them with no gear score. Stats you don't care about can be ignored or left
+  out of searches.
 - Imports builds from Path of Building: from a code, a link, a file, or one
   you saved in Path of Building's own folder. It runs Path of Building without
   its window, so your build's own numbers judge the item. The import picks the
-  profile that fits the build.
+  start profile that fits the build, until Path of Building has weighed it.
 - Finds Path of Building as the Flatpak from Flathub
   (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
   installer on Windows, or in a folder you choose. When it can't be found or
@@ -109,6 +114,12 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   as `path-of-upgrading --background` does. Turn that off with the switch on the
   Settings page, in the sidebar's Settings group, and it stays off. It tells you
   with a notification if the hotkeys couldn't be set up.
+- Looks on GitHub for a newer release when it starts, and about once a day while
+  it runs. When one is out, a dialog offers to update now, later or skip that
+  version. With the window hidden, a notification says so instead. Update Now
+  downloads the file for how you installed the app and checks it against the
+  release's checksums. Nothing is installed until you press Update Now. Turn the
+  check off, or include betas, under Updates on the Settings page.
 - Has the app's own controls, colors and fonts, so it looks the same on every
   desktop. Its colors are dark, as a KDE color scheme of its own, or follow your
   desktop's, from the Appearance page in the same group. It also picks the
@@ -156,6 +167,10 @@ sudo pacman -U ./path-of-upgrading-*-x86_64.pkg.tar.zst
 
 pacman installs what it needs with it.
 
+The app doesn't install Arch packages itself. When a newer release is out,
+Update Now downloads the new package and shows the `sudo pacman -U` command for
+it. Run that yourself.
+
 ### Debian 13
 
 apt installs the package with what it needs, when you give it the file's path:
@@ -167,6 +182,11 @@ sudo apt install ./path-of-upgrading_*_amd64.deb
 It is made on Debian 13. Distros based on Debian or Ubuntu with Qt 6.8 and KDE
 Frameworks 6.13 or newer may take it too, but only Debian 13 is tested. If apt
 can't find what it depends on, build it from source instead.
+
+When a newer release is out, Update Now downloads the new package and asks
+PackageKit to install it, with your desktop's password prompt. The update
+window then offers Restart Now. If PackageKit isn't there or fails, the window
+shows the `sudo apt install` command to run instead.
 
 ### Fedora
 
@@ -180,7 +200,10 @@ sudo dnf install ./path-of-upgrading-*.rpm
 
 dnf installs what it needs with it. It needs Fedora with KDE Frameworks 6.
 CentOS Stream and RHEL don't have those, so they aren't covered. There is no
-package repository yet, so download each new file by hand.
+package repository yet. Update Now downloads each new file for you and asks
+PackageKit to install it, with your desktop's password prompt. The update
+window then offers Restart Now. If PackageKit isn't there or fails, it shows
+the `sudo dnf install` command to run instead.
 
 ### AppImage
 
@@ -201,9 +224,11 @@ missing, as in a container, start it with `--appimage-extract-and-run`:
 ./PathOfUpgrading-*-x86_64.AppImage --appimage-extract-and-run
 ```
 
-The AppImage doesn't update itself, so download each new release by hand. With
-"Start with your desktop" on, the autostart entry starts the AppImage file, so if
-you move the file, turn the switch off and on again.
+The AppImage updates itself. When a newer release is out, Update Now downloads
+it, checks it, puts it in place of the file you started and restarts the app.
+The folder the AppImage is in must be writable, as the new file is written next
+to it. With "Start with your desktop" on, the autostart entry starts the
+AppImage file, so if you move the file, turn the switch off and on again.
 
 ### Other Linux distros
 
@@ -224,7 +249,8 @@ cmake --install build --prefix ~/.local
 
 That installs it for you alone, with its entry in the app menu. Use
 `sudo cmake --install build` instead to install it for everyone, in
-`/usr/local`.
+`/usr/local`. Update Now opens the release page on GitHub instead, so you build
+the new version yourself.
 
 ### Windows
 
@@ -234,6 +260,11 @@ ask for an administrator. It puts the app in
 
 The zip has the same program and needs no installing. Unzip it anywhere and
 open `path-of-upgrading.exe` in the `Path of Upgrading` folder.
+
+When a newer release is out, Update Now runs the new setup exe quietly. That
+installs the new version and starts it. The zip gets the setup too, so the new
+version goes into `AppData\Local\Programs\Path of Upgrading`, and the copy you
+unzipped stays as it was.
 
 Neither is signed yet, so the first time you open one, SmartScreen says it
 doesn't know the app. Choose More info, then Run anyway.
@@ -381,7 +412,7 @@ an X server of their own from `xvfb-run`.
 - `~/.local/share/path-of-upgrading` has your characters and the items you
   checked
 - `~/.cache/path-of-upgrading` has what it learned from the trade site and
-  poe.ninja
+  poe.ninja, and any update it downloaded, in `updates`
 
 The app writes an entry to `~/.config/autostart` the first time it starts, so it
 can start with your desktop. You can turn that off with the Start with your

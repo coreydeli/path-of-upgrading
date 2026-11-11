@@ -26,6 +26,17 @@ version that comes out.
   source, the releases and the issue tracker, and the credits.
 - A Help page in the sidebar's Settings group. It opens the wiki, or one of its pages, in
   your browser.
+- The app looks on GitHub for a newer release when it starts, and about once a
+  day while it runs. A dialog called "A New Version Is Out" offers Update Now,
+  Later or Skip This Version. With the window hidden, a notification says so
+  instead. Turn the check off, or include betas, in the Updates card on the
+  Settings page.
+- Update Now downloads the file for how you installed the app and checks it
+  against the release's checksums before anything else happens. The AppImage
+  replaces itself and restarts, and the Windows setup runs quietly. Debian and
+  Fedora packages go through PackageKit, and show the command to run when it
+  isn't there or fails. Arch shows the command to run. A build from source opens
+  the release page.
 
 ### Changed
 
@@ -60,6 +71,12 @@ version that comes out.
   opens on Your Gear rather than on the Characters page.
 - Build Review's "Look Again" is now "Update", and it also reads the builds
   you've saved in Path of Building since.
+- The gear score is now weighed by Path of Building for your build, and kept with
+  the character. The Gear Score page has no build profile list. "Judge by my stat
+  weights alone" is a switch in place of the None profile, and Weigh Again weighs
+  the build again.
+  The popup, the Characters page, the import message and the upgrade search no
+  longer name a build profile.
 
 ### Fixed
 
