@@ -27,7 +27,8 @@ enum Stage {
     Idle,
     Downloading,
     Installing,
-    Manual, // downloaded, and you run the command
+    Manual,    // downloaded, and you run the command
+    Installed, // a package is in, and the app asks to restart
     Failed,
 };
 Q_ENUM_NS(Stage)
@@ -60,7 +61,7 @@ class Updates : public QObject
     Q_PROPERTY(pou::UpdateStage::Stage stage READ stage NOTIFY changed)
     // How much of the download has come, 0 to 1, or -1 when the size isn't known
     Q_PROPERTY(double progress READ progress NOTIFY changed)
-    // Why the download or the install failed
+    // Why the download or the install failed, or why the command is shown
     Q_PROPERTY(QString installError READ installError NOTIFY changed)
     // For the kinds of install that need a terminal: the command to run
     Q_PROPERTY(QString command READ command NOTIFY changed)
@@ -101,6 +102,8 @@ public:
     // installed and checks it, then installs it, or shows the command for it.
     // With no file for that, it opens the release's page on GitHub.
     Q_INVOKABLE void updateNow();
+    // After a package is installed: starts the new version.
+    Q_INVOKABLE void restart();
     // Stops a download, or closes what it said.
     Q_INVOKABLE void dismiss();
     Q_INVOKABLE void copyCommand();

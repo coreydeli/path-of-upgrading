@@ -76,6 +76,7 @@ class FakeInstaller : public PackageInstaller
 {
 public:
     After after() const override { return m_after; }
+    bool fallsBackToCommand() const override { return fallback; }
     void install(const QString &file, const Done &done) override
     {
         installed << file;
@@ -84,6 +85,7 @@ public:
 
     QStringList installed;
     QString error;
+    bool fallback = false;
     After m_after = After::Restart;
 };
 
@@ -286,6 +288,45 @@ private Q_SLOTS:
         QVERIFY(!finished);
         s.updates.dismiss();
         QCOMPARE(s.updates.stage(), UpdateStage::Idle);
+    }
+
+    void aPackageInstallsAndOffersARestart()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->fallback = true;
+        installer->m_after = PackageInstaller::After::Offer;
+        QList<PackageInstaller::After> finished;
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) { finished << a; });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Installed; }, 5000));
+        // it waits for you
+        QVERIFY(finished.isEmpty());
+        QVERIFY(s.updates.command().isEmpty());
+        s.updates.restart();
+        QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+    }
+
+    void aPackageThatWontInstallShowsTheCommandAndWhy()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Fedora);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->fallback = true;
+        installer->error = u"The install was cancelled."_s;
+        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) {});
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Fedora), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Manual; }, 5000));
+        QCOMPARE(s.updates.installError(), u"The install was cancelled."_s);
+        QVERIFY(s.updates.command().startsWith(u"sudo dnf install '"_s));
+        // and restarting isn't offered
+        s.updates.restart();
+        QCOMPARE(s.updates.stage(), UpdateStage::Manual);
     }
 
     void aBadDownloadFails()

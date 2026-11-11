@@ -104,8 +104,10 @@ private Q_SLOTS:
         QVERIFY(createPackageInstaller(InstallKind::AppImage, u"/x/a.AppImage"_s));
         QVERIFY(createPackageInstaller(InstallKind::Windows, {}));
         QVERIFY(!createPackageInstaller(InstallKind::Arch, {}));
-        QVERIFY(!createPackageInstaller(InstallKind::Debian, {}));
-        QVERIFY(!createPackageInstaller(InstallKind::Fedora, {}));
+#ifndef Q_OS_WIN
+        QVERIFY(createPackageInstaller(InstallKind::Debian, {}));
+        QVERIFY(createPackageInstaller(InstallKind::Fedora, {}));
+#endif
         QVERIFY(!createPackageInstaller(InstallKind::Source, {}));
     }
 };
