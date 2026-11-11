@@ -48,6 +48,21 @@ CharacterList::CharacterList(CharacterStore *store, ActiveCharacter *active, Set
     connect(this, &QAbstractItemModel::dataChanged, this, follow);
     connect(this, &QAbstractItemModel::modelReset, this, follow);
     connect(this, &QAbstractItemModel::rowsRemoved, this, follow);
+    // and so does where it is, as rows come and go
+    const auto followRow = [this] {
+        Q_EMIT currentRowChanged();
+    };
+    connect(this, &CharacterList::currentChanged, this, followRow);
+    connect(this, &QAbstractItemModel::modelReset, this, followRow);
+    connect(this, &QAbstractItemModel::rowsInserted, this, followRow);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, followRow);
+
+    const auto followCount = [this] {
+        Q_EMIT countChanged();
+    };
+    connect(this, &QAbstractItemModel::modelReset, this, followCount);
+    connect(this, &QAbstractItemModel::rowsInserted, this, followCount);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, followCount);
     // wearing something or tuning the gear score changes the one you play
     connect(active, &ActiveCharacter::changed, this, [this] {
         const int row = int(m_ids.indexOf(m_active->id()));
@@ -258,6 +273,8 @@ void CharacterList::changed(const QString &id)
         beginMoveRows({}, from, from, {}, to > from ? to + 1 : to);
         m_ids = ids;
         endMoveRows();
+        // a move can shift where the one you play is
+        Q_EMIT currentRowChanged();
     }
     const QModelIndex row = index(to);
     Q_EMIT dataChanged(row, row);

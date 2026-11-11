@@ -13,6 +13,7 @@ ColumnsPage {
     required property App app
     readonly property GearList gear: app.gearList
     readonly property Resistances resists: app.resistances
+    readonly property CharacterList characters: app.characterList
 
     // On a wide window the slots are laid out like the character's equipment
     // screen, which wants the page to itself. Narrower, they're a list.
@@ -64,6 +65,23 @@ ColumnsPage {
     }
 
     FormCard.FormCard {
+        FormCard.FormComboBoxDelegate {
+            id: characterBox
+            objectName: "characterBox"
+            visible: gearPage.characters.count > 0
+            text: qsTr("Character")
+            description: gearPage.characters.currentBuild !== "" ? gearPage.characters.currentBuild : qsTr("No build imported")
+            textRole: "name"
+            valueRole: "characterId"
+            model: gearPage.characters
+            currentIndex: gearPage.characters.currentRow
+            onActivated: gearPage.characters.current = currentValue
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: characterBox.visible
+        }
+
         FormCard.FormTextDelegate {
             id: overall
             objectName: "overallScore"
@@ -79,7 +97,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
             text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, under Import Character in Gear Settings.")
         }
 
         FormCard.FormDelegateSeparator {
