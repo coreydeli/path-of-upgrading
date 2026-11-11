@@ -338,7 +338,7 @@ std::optional<TradeFinder::Plan> TradeFinder::pobPlan() const
     QStringList notes;
     if (m_level > 0)
         notes << u"Nothing listed keeps your damage mods, so these may give up some damage."_s;
-    notes << u"Weighed by Path of Building for your build's damage and effective HP."_s;
+    notes << u"Weighed by Path of Building for your build's damage and Effective HP."_s;
     if (search.dropped > 0)
         notes << u"The trade site limits how many filters a search can have, so it looks at the %1 mods "
                  u"that count most."_s.arg(search.filters);
@@ -369,7 +369,7 @@ TradeFinder::Plan TradeFinder::similarPlan() const
         .looser = search.level + 1 < similarSearchLevels(),
     };
     if (search.unique && search.need == 0)
-        plan.note = u"Nothing matched its stats, so these are all the %1 listed."_s.arg(m_item.name);
+        plan.note = u"Nothing matched its stats, so these are the %1 listed instead."_s.arg(m_item.name);
     else if (search.level > 0)
         plan.note = u"Nothing matched your exact values, so these have %1, on %2 of the %3 stats."_s.arg(
             search.levelLabel, QString::number(search.need), QString::number(search.total));

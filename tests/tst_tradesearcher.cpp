@@ -264,7 +264,7 @@ private Q_SLOTS:
                                      << TradeSearch::Error::TooComplex
                                      << u"The trade site says the search has too many filters."_s << false;
         QTest::newRow("turned down") << siteError(u"Invalid query"_s) << TradeSearch::Error::Failed
-                                     << u"The trade site says: Invalid query"_s << true;
+                                     << u"The trade site refused the search: Invalid query"_s << true;
         QTest::newRow("unreachable") << FakeAnswer{.error = QNetworkReply::HostNotFoundError}
                                      << TradeSearch::Error::Failed
                                      << u"Couldn't reach the trade site: Host www.pathofexile.com not found"_s
@@ -347,7 +347,7 @@ private Q_SLOTS:
         TradeSearch *search = searcher.search(body);
         QVERIFY(finishes(search));
         QCOMPARE(search->error(), TradeSearch::Error::Failed);
-        QCOMPARE(search->errorString(), u"The trade site says: Invalid status option"_s);
+        QCOMPARE(search->errorString(), u"The trade site refused the search: Invalid status option"_s);
         QCOMPARE(network.sent.size(), sent);
         // the browser gets the last one that went
         QCOMPARE(
