@@ -56,6 +56,7 @@ QJsonObject toJson(const Character &character)
         {u"ignored"_s, toJson(character.ignored)},
         {u"buildProfile"_s, character.buildProfile},
         {u"profilePicked"_s, character.profilePicked},
+        {u"weightsOnly"_s, character.weightsOnly},
         {u"tweaks"_s, numbersToJson(character.tweaks)},
         {u"chaosInoculation"_s, character.chaosInoculation},
         {u"twoHandedInOne"_s, character.wielding.twoHandedInOne},
@@ -93,6 +94,7 @@ std::optional<Character> characterFromJson(const QJsonObject &o)
     c.buildProfile = o.value(u"buildProfile").toString();
     // before this was kept, only you could have set a profile
     c.profilePicked = o.value(u"profilePicked").toBool(!c.buildProfile.isEmpty());
+    c.weightsOnly = o.value(u"weightsOnly").toBool();
     c.tweaks = numbersFromJson(o.value(u"tweaks").toObject());
     renameCriticalTweaks(c.tweaks, c.buildProfile);
     renameShortTweaks(c.tweaks);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "app/activecharacter.h"
 
+#include "core/buildimport.h"
 #include "core/pobeval.h"
 #include "core/pobverdict.h"
 #include "core/wearing.h"
@@ -31,6 +32,16 @@ void ActiveCharacter::reload()
     m_character = character ? *character : Character();
     const std::optional<QString> xml = character ? m_store->pobBuild(m_id) : std::nullopt;
     m_build = xml ? parsePobBuild(*xml) : std::nullopt;
+    // Judging by your weights alone used to be a profile called none. It's its
+    // own switch now, and the profile is the one the weighing starts from.
+    if (character && m_character.buildProfile == noBuildProfile) {
+        m_character.weightsOnly = true;
+        m_character.buildProfile = m_build ? fittingProfile(*m_build) : defaultBuildProfile.toString();
+        // and when it can't be saved, this happens again the next time
+        if (!m_store->save(m_id, m_character))
+            qCWarning(lcPob, "Couldn't save the change to how %s is judged: %s", qUtf8Printable(m_id),
+                      qUtf8Printable(m_store->errorString()));
+    }
     const QString sent = m_build ? *xml : QString();
     const QList<PobItem> wearing =
         m_build ? pobWearing(m_character.gear, m_character.fromPob, m_build->swapInUse) : QList<PobItem>();
