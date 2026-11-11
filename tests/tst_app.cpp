@@ -819,11 +819,11 @@ private Q_SLOTS:
         // changing how items are judged makes one too
         Folders folders;
         Running r(folders);
-        r.app.gearScoring()->setProfile(1);
+        r.app.gearScoring()->setWeightsOnly(true);
         QCOMPARE(r.app.characters().ids().size(), 1);
         QCOMPARE(r.app.character().character().name, u"My character"_s);
-        QCOMPARE(r.app.character().character().buildProfile, u"es-caster"_s);
-        QCOMPARE(r.app.gearScoring()->profile(), 1);
+        QVERIFY(r.app.character().character().weightsOnly);
+        QVERIFY(r.app.gearScoring()->weightsOnly());
         QCOMPARE(r.app.gearScoring()->error(), QString());
     }
 
@@ -835,10 +835,12 @@ private Q_SLOTS:
         settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
         folders.set(settings);
         Running r(folders);
-        QCOMPARE(r.checked().gearBuild, u"Life and resistances"_s);
-        r.app.gearScoring()->setProfile(1);
-        QCOMPARE(r.app.characters().find(settings.character)->buildProfile, u"es-caster"_s);
-        QCOMPARE(r.app.checker().popup().report().gearBuild, u"Energy Shield spellcaster"_s);
+        QVERIFY(!r.checked().gearScore.isEmpty());
+        r.app.gearScoring()->setWeightsOnly(true);
+        QVERIFY(r.app.characters().find(settings.character)->weightsOnly);
+        QVERIFY(r.app.checker().popup().report().scoreLabel.startsWith(u"by your weights"_s));
+        r.app.gearScoring()->setWeightsOnly(false);
+        QVERIFY(!r.checked().gearScore.isEmpty());
     }
 
     void statWeights()
@@ -1276,7 +1278,8 @@ private Q_SLOTS:
         QVERIFY(r.asked().contains(fetch));
         QCOMPARE(results.rowCount(), 2);
         QCOMPARE(results.data(results.index(0), TradeResults::PriceRole).toString(), u"3 div"_s);
-        QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(), u"about 1200 Exalted Orbs"_s);
+        QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(),
+                 u"about 1200 Exalted Orbs"_s);
     }
 
     void tradeResultsJudged()
@@ -1344,7 +1347,8 @@ private Q_SLOTS:
         QVERIFY(finished.wait());
         QCOMPARE(r.app.results().total(), 2);
         r.network->answers = {{.status = 400, .body = R"({"error":{"message":"Nope."}})"}};
-        QTest::ignoreMessage(QtWarningMsg, "Couldn't search the trade site: The trade site refused the search: Nope.");
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Couldn't search the trade site: The trade site refused the search: Nope.");
         r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
         QVERIFY(finished.wait());
         QVERIFY(!r.app.finder().found());

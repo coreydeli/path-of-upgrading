@@ -351,11 +351,31 @@ local function weigh(request)
         return {ok = false, error = "Path of Building can't weigh mods for this slot."}
     end
 
+    -- what each mod says and the most the slot rolls of it, from its list
+    local known = {}
+    pcall(function()
+        local category = generator.calcContext.itemCategory
+        for _, kind in pairs(generator.modData) do
+            for _, entry in pairs(kind) do
+                if type(entry) == "table" and entry.tradeMod then
+                    local roll = category and entry[category]
+                    known[entry.tradeMod.id] = {text = entry.tradeMod.text, top = roll and number(roll.max)}
+                end
+            end
+        end
+    end)
+
     query = json.decode(query).query
     local group = query.stats[1]
     local mods = {}
     for _, filter in ipairs(group.filters) do
-        table.insert(mods, {id = filter.id, weight = number(filter.value.weight)})
+        local about = known[filter.id] or {}
+        table.insert(mods, {
+            id = filter.id,
+            weight = number(filter.value.weight),
+            text = about.text,
+            top = about.top,
+        })
     end
     if #mods == 0 then
         return {ok = false, error = "None of the mods this slot can have would help the build."}

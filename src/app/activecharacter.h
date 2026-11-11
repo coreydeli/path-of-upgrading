@@ -43,6 +43,8 @@ public:
     // loaded them, see summary in pobbridge.lua. None until then, and again
     // when it's given another build or other gear.
     const std::optional<PobStats> &pobStats() const { return m_pobStats; }
+    // The build as Path of Building was given it, empty when there's none.
+    const QString &pobXml() const { return m_pobXml; }
 
     // Makes a character and says which it is, or leaves why in *why. See wear().
     using Starter = std::function<QString(QString *why)>;

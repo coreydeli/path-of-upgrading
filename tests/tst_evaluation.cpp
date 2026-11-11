@@ -358,6 +358,14 @@ private Q_SLOTS:
         QCOMPARE(byWeight.at(1).key, u"# to maximum Mana"_s);
         QCOMPARE(byWeight.at(1).usefulness, byWeight.at(1).weight);
         QCOMPARE(byWeight.at(2).key, u"#% increased Rarity of Items found"_s);
+
+        // as when you ask for it, whatever the start profile is
+        Character weightsOnly = c;
+        weightsOnly.weightsOnly = true;
+        QCOMPARE(evaluate(better, weightsOnly).mode, ScoreMode::StatWeights);
+        const QList<StatRow> asked = evaluate(better, weightsOnly).comparison.rows;
+        QCOMPARE(asked.at(0).key, u"# to maximum Life"_s);
+        QCOMPARE(asked.at(2).key, u"#% increased Rarity of Items found"_s);
     }
 
     void whatEquippingChanges()

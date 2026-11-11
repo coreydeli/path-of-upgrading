@@ -359,9 +359,10 @@ private Q_SLOTS:
         QCOMPARE(found.kind, Kind::Upgrades);
         QCOMPARE(found.title, u"Better for your build than Doom Visage (gear score %1)"_s.arg(
                                   evaluate(helmet, character).gear->score));
-        QCOMPARE(found.note, u"Scored by your build's weights for Armour at least 280, Life, and Fire Resistance. "
-                             u"Each has at least 2 of "
-                             u"these at a decent roll: Life, Fire Resistance. Best for your build first."_s);
+        QCOMPARE(found.note,
+                 u"Scored by your build's weights for Armour at least 280, Life, and Fire Resistance. "
+                 u"Each has at least 2 of "
+                 u"these at a decent roll: Life, Fire Resistance. Best for your build first."_s);
         QCOMPARE(found.total, 9);
         QCOMPARE(found.listingIds, QStringList{u"a"_s});
     }
@@ -552,7 +553,8 @@ private Q_SLOTS:
         QCOMPARE(
             site.finder.found()->note,
             u"Scored by your build's weights for Armour at least 108, Evasion Rating at least 99, Energy "
-            u"Shield at least 36, Life, Fire Resistance, and 1 more. Each has at least 2 of these at a decent roll: "
+            u"Shield at least 36, Life, Fire Resistance, and 1 more. Each has at least 2 of these at a "
+            u"decent roll: "
             u"Movement Speed, Life, Fire Resistance. Best for your build first."_s);
 
         // and when yours has none of it
@@ -626,8 +628,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData());
         site.finder.setCharacter(character);
         QVERIFY(site.finds(helmet, Kind::Upgrades));
-        QCOMPARE(site.finder.errorString(),
-                 u"Your build profile wants none of the stats this slot can have."_s);
+        QCOMPARE(site.finder.errorString(), u"Your build wants none of the stats this slot can have."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -1401,8 +1402,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData());
         site.finder.setCharacter(character);
         QVERIFY(site.finds(helmet, Kind::CraftBases));
-        QCOMPARE(site.finder.errorString(),
-                 u"Your build profile has no key stats for this slot to look for."_s);
+        QCOMPARE(site.finder.errorString(), u"Your build has no key stats for this slot to look for."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 

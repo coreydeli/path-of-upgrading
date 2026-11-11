@@ -571,7 +571,6 @@ ItemReport reportOf(const ItemCheck &check)
     if (e.gear && e.gear->isRated() && e.mode != ScoreMode::PathOfBuilding) {
         report.gearScore = QString::number(e.gear->score);
         report.gearGrade = e.gear->grade;
-        report.gearBuild = e.gear->buildName;
         const GearScore *yours = e.gearEquipped && e.gearEquipped->isRated() ? &*e.gearEquipped : nullptr;
         if (yours)
             report.yourGearScore = QString::number(yours->score);

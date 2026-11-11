@@ -36,6 +36,7 @@ private Q_SLOTS:
         ember.ignored = {{u"chaosres"_s, {}, IgnoreRule::Mode::Exclude}};
         ember.buildProfile = u"minion-es"_s;
         ember.profilePicked = true;
+        ember.weightsOnly = true;
         ember.tweaks = {{u"Spirit"_s, 2}};
         ResistEntry entry;
         entry.values[Element::Fire] = 78;
@@ -58,6 +59,7 @@ private Q_SLOTS:
         QCOMPARE(back.ignored, ember.ignored);
         QCOMPARE(back.buildProfile, ember.buildProfile);
         QVERIFY(back.profilePicked);
+        QVERIFY(back.weightsOnly);
         QCOMPARE(back.tweaks, ember.tweaks);
         QCOMPARE(back.resists, ember.resists);
         QVERIFY(back.chaosInoculation);
@@ -105,6 +107,7 @@ private Q_SLOTS:
         QVERIFY(!fresh.chaosInoculation);
         QCOMPARE(fresh.wielding, Wielding{});
         QVERIFY(!fresh.profilePicked);
+        QVERIFY(!fresh.weightsOnly);
         QVERIFY(!toJson(fresh).contains(u"resists"));
     }
 
