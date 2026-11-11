@@ -112,7 +112,8 @@ private Q_SLOTS:
     void betasAreYourChoice()
     {
         Setup s;
-        QVERIFY(!s.updates.includesBetas());
+        QCOMPARE(s.updates.includesBetas(), isBetaBuild());
+        s.updates.setIncludeBetas(false);
         s.look({u"0.7.0-beta.1"_s});
         QVERIFY(!s.updates.isPending());
         s.updates.setIncludeBetas(true);
