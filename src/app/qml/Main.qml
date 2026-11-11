@@ -17,7 +17,7 @@ Kirigami.ApplicationWindow {
     function groupOf(page: Item): Kirigami.Action {
         if (page === charactersPage || page === gearScorePage || page === weightsPage || page === ignoredPage)
             return gearGroupAction;
-        if (page === overlayPage || page === appearancePage)
+        if (page === overlayPage || page === appearancePage || page === aboutPage)
             return settingsGroupAction;
         return null;
     }
@@ -190,7 +190,7 @@ Kirigami.ApplicationWindow {
                 text: qsTr("Settings")
                 icon.name: "settings-configure"
                 // lit while one of its pages is shown
-                checked: overlayAction.checked || appearanceAction.checked
+                checked: overlayAction.checked || appearanceAction.checked || aboutAction.checked
 
                 Kirigami.Action {
                     id: overlayAction
@@ -210,6 +210,16 @@ Kirigami.ApplicationWindow {
                     checkable: true
                     QQC2.ActionGroup.group: pages
                     onTriggered: root.show(appearancePage)
+                }
+
+                Kirigami.Action {
+                    id: aboutAction
+                    objectName: "aboutAction"
+                    text: qsTr("About")
+                    icon.name: "help-about"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(aboutPage)
                 }
             }
         ]
@@ -308,6 +318,11 @@ Kirigami.ApplicationWindow {
         AppearancePage {
             id: appearancePage
             appearance: root.app.appearance
+        }
+
+        AboutPage {
+            id: aboutPage
+            about: root.app.about
         }
     }
 }

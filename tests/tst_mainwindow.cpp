@@ -3517,7 +3517,7 @@ private Q_SLOTS:
         QObject *group = w.window->findChild<QObject *>(u"settingsGroupAction"_s);
         QVERIFY(group);
         QCOMPARE(group->property("text").toString(), u"Settings"_s);
-        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s}) {
+        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s, u"aboutAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
             QCOMPARE(action->parent(), group);
@@ -3529,8 +3529,31 @@ private Q_SLOTS:
         QCOMPARE(group->property("checked").toBool(), true);
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"aboutAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(group->property("checked").toBool(), false);
+    }
+
+    void aboutPage()
+    {
+        Window w;
+        QVERIFY(w.show(u"aboutAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"About"_s);
+        // the version is the application's, and is empty in a test
+        QCOMPARE(w.find(u"versionText"_s)->property("description").toString(),
+                 u"unknown, a %1"_s.arg(isBetaBuild() ? u"beta"_s : u"release"_s));
+        QCOMPARE(w.find(u"licenseText"_s)->property("description").toString(), u"MIT"_s);
+
+        // nothing is opened until you click for it
+        QVERIFY(w.opener->opened.isEmpty());
+        QVERIFY(click(w.find(u"repositoryButton"_s)));
+        QVERIFY(click(w.find(u"releasesButton"_s)));
+        QVERIFY(click(w.find(u"issuesButton"_s)));
+        QCOMPARE(w.opener->opened.size(), 3);
+        QCOMPARE(w.opener->opened.first(), QUrl(u"https://github.com/coreydeli/path-of-upgrading"_s));
+        QVERIFY(click(w.find(u"credit:Cinzel"_s)));
+        QCOMPARE(w.opener->opened.last(), QUrl(u"https://github.com/NDISCOVER/Cinzel"_s));
     }
 
     void sidebarOpensSettings()
@@ -3674,7 +3697,7 @@ private Q_SLOTS:
         const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,    u"gearScoreAction"_s,
                                      u"weightsAction"_s,    u"ignoredAction"_s, u"checkedAction"_s,
                                      u"pobAction"_s,        u"tradeAction"_s,   u"overlayAction"_s,
-                                     u"appearanceAction"_s};
+                                     u"appearanceAction"_s, u"aboutAction"_s};
         for (const QString &action : actions) {
             QVERIFY2(w.show(action), qPrintable(action));
             const QString title = w.page()->property("title").toString();
