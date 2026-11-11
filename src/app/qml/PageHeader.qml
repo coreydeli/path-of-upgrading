@@ -16,25 +16,33 @@ ColumnLayout {
 
     spacing: Kirigami.Units.smallSpacing
 
-    Rectangle {
+    // Takes the width it's given and wants none, so how wide the slab is
+    // doesn't feed back into how wide the header is.
+    Item {
         Layout.topMargin: Kirigami.Units.largeSpacing + 2
-        Layout.leftMargin: header.inset
-        Layout.maximumWidth: header.width - 2 * header.inset
-        implicitWidth: slab.implicitWidth + 2 * Kirigami.Units.largeSpacing
+        Layout.fillWidth: true
+        Layout.preferredWidth: 0
         implicitHeight: slab.implicitHeight
-        color: Style.paper
-        Accessible.role: Accessible.Heading
-        Accessible.name: header.title
 
-        Text {
-            id: slab
+        Rectangle {
+            x: header.inset
+            width: Math.min(slab.implicitWidth + 2 * Kirigami.Units.largeSpacing,
+                            parent.width - 2 * header.inset)
+            height: parent.height
+            color: Style.paper
+            Accessible.role: Accessible.Heading
+            Accessible.name: header.title
 
-            anchors.centerIn: parent
-            width: Math.min(implicitWidth, parent.width - 2 * Kirigami.Units.largeSpacing)
-            elide: Text.ElideRight
-            font: Style.titleFont(Kirigami.Theme.defaultFont, 1.8)
-            color: Style.ink
-            text: header.title
+            Text {
+                id: slab
+
+                anchors.centerIn: parent
+                width: Math.min(implicitWidth, parent.width - 2 * Kirigami.Units.largeSpacing)
+                elide: Text.ElideRight
+                font: Style.titleFont(Kirigami.Theme.defaultFont, 1.8)
+                color: Style.ink
+                text: header.title
+            }
         }
     }
 
