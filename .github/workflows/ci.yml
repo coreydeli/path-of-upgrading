@@ -176,11 +176,13 @@ jobs:
       - name: Configure
         env:
           DEBIAN_VERSION: ${{ inputs.debian-version }}
+          TAG: ${{ inputs.tag }}
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           -DPOU_BETA=${{ (inputs.beta || github.workflow == 'CI') && 'ON' || 'OFF' }}
           ${DEBIAN_VERSION:+"-DPOU_PACKAGE_VERSION=$DEBIAN_VERSION"}
+          ${TAG:+"-DPOU_BUILD_VERSION=${TAG#v}"}
       - name: Build
         run: |
           ccache --zero-stats
@@ -382,10 +384,13 @@ jobs:
           key: ccache-windows-${{ github.sha }}
           restore-keys: ccache-windows-
       - name: Configure
+        env:
+          TAG: ${{ inputs.tag }}
         run: >-
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           -DPOU_BETA=${{ inputs.beta && 'ON' || 'OFF' }}
+          ${TAG:+"-DPOU_BUILD_VERSION=${TAG#v}"}
       # going on past an error, so each run shows them all
       - name: Build
         run: |

@@ -80,6 +80,7 @@ Settings loadSettings(const QSettings &store, bool beta)
 {
     Settings s;
     s.trade.enabled = beta;
+    s.updates.includeBetas = beta;
     read(store, u"character"_s, s.character);
     read(store, u"app/setupDone"_s, s.setupDone);
 
@@ -119,6 +120,11 @@ Settings loadSettings(const QSettings &store, bool beta)
     read(store, u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds, 2, 120);
     read(store, u"overlay/paused"_s, overlay.paused);
     read(store, u"overlay/startChosen"_s, overlay.startChosen);
+
+    UpdateSettings &updates = s.updates;
+    read(store, u"updates/checkOnLaunch"_s, updates.checkOnLaunch);
+    read(store, u"updates/includeBetas"_s, updates.includeBetas);
+    read(store, u"updates/skipped"_s, updates.skipped);
 
     AppearanceSettings &appearance = s.appearance;
     appearance.colors = colorThemeFromId(store.value(u"appearance/theme"_s).toString());
@@ -175,6 +181,13 @@ void saveSettings(QSettings &store, const Settings &s, bool beta)
     store.setValue(u"overlay/autoHideSeconds"_s, overlay.autoHideSeconds);
     store.setValue(u"overlay/paused"_s, overlay.paused);
     store.setValue(u"overlay/startChosen"_s, overlay.startChosen);
+
+    const UpdateSettings &updates = s.updates;
+    store.setValue(u"updates/checkOnLaunch"_s, updates.checkOnLaunch);
+    // chosen once, like trade searches
+    if (updates.includeBetas != beta || store.contains(u"updates/includeBetas"_s))
+        store.setValue(u"updates/includeBetas"_s, updates.includeBetas);
+    store.setValue(u"updates/skipped"_s, updates.skipped);
 
     const AppearanceSettings &appearance = s.appearance;
     store.setValue(u"appearance/theme"_s, colorThemeId(appearance.colors));

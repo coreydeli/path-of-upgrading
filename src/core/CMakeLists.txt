@@ -45,6 +45,7 @@ add_library(pou_core STATIC
     tradedata.cpp tradedata.h
     tradequery.cpp tradequery.h
     tradesite.cpp tradesite.h
+    updates.cpp updates.h
     verdict.h
     weighedprofile.cpp weighedprofile.h
     weights.cpp weights.h
@@ -52,7 +53,10 @@ add_library(pou_core STATIC
 )
 
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
-target_compile_definitions(pou_core PRIVATE POU_BETA_BUILD=$<BOOL:${POU_BETA}>)
+target_compile_definitions(pou_core PRIVATE
+    POU_BETA_BUILD=$<BOOL:${POU_BETA}>
+    POU_BUILD_VERSION="${POU_BUILD_VERSION}"
+)
 target_link_libraries(pou_core PUBLIC Qt6::Core PRIVATE ZLIB::ZLIB)
 
 # what each kind of item can roll, from tools/slot-mods.py
