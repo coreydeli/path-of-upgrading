@@ -120,6 +120,20 @@ QString RecommendedUpgrades::chosenLookFor() const
     return wantedText(wantedStats(m_chosen, &*worn, options));
 }
 
+QStringList RecommendedUpgrades::chosenCanRoll() const
+{
+    if (m_chosen.isEmpty())
+        return {};
+    const Character &character = m_active->character();
+    const auto worn = character.gear.constFind(m_chosen);
+    const bool isWorn = worn != character.gear.cend();
+    const GearScoreOptions options = gearScoreOptions(character, m_chosen, m_priorities);
+    QStringList lines;
+    for (const RollRange &r : canRoll(m_chosen, isWorn ? &*worn : nullptr, options))
+        lines << rollRangeText(r);
+    return lines;
+}
+
 bool RecommendedUpgrades::chosenWorn() const
 {
     return m_active->character().gear.contains(m_chosen);
