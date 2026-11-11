@@ -10,6 +10,7 @@ ColumnsPage {
     id: overlayPage
 
     required property OverlayOptions options
+    required property Updates updates
     // the results key is for trade searches
     property bool tradeOffered: true
     // the league, which has no page of its own without trade
@@ -223,6 +224,44 @@ ColumnsPage {
         visible: !overlayPage.tradeOffered
         options: overlayPage.tradeOptions
         tradeOffered: false
+    }
+
+    SectionHeader {
+        title: qsTr("Updates")
+    }
+
+    Sheet {
+        SwitchRow {
+            objectName: "checkForUpdatesSwitch"
+            text: qsTr("Check for updates when the app starts")
+            description: qsTr("Asks GitHub once a day while it runs. Nothing is installed without you saying so.")
+            checked: overlayPage.updates.checkOnLaunch
+            onToggled: overlayPage.updates.checkOnLaunch = checked
+        }
+
+        RowRule {}
+
+        SwitchRow {
+            objectName: "includeBetasSwitch"
+            text: qsTr("Include beta builds")
+            description: qsTr("Betas come out often and may have bugs.")
+            checked: overlayPage.updates.includeBetas
+            onToggled: overlayPage.updates.includeBetas = checked
+        }
+
+        RowRule {}
+
+        FormRow {
+            text: qsTr("You have version %1").arg(overlayPage.updates.version)
+            description: overlayPage.updates.status
+
+            QQC2.Button {
+                objectName: "checkNowButton"
+                text: qsTr("Check Now")
+                enabled: !overlayPage.updates.checking
+                onClicked: overlayPage.updates.checkNow()
+            }
+        }
     }
 
     SectionHeader {
