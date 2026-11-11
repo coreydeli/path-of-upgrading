@@ -3528,7 +3528,8 @@ private Q_SLOTS:
         QObject *group = w.window->findChild<QObject *>(u"settingsGroupAction"_s);
         QVERIFY(group);
         QCOMPARE(group->property("text").toString(), u"Settings"_s);
-        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s, u"aboutAction"_s}) {
+        for (const QString &name :
+             {u"overlayAction"_s, u"appearanceAction"_s, u"helpAction"_s, u"aboutAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
             QCOMPARE(action->parent(), group);
@@ -3565,6 +3566,22 @@ private Q_SLOTS:
         QCOMPARE(w.opener->opened.first(), QUrl(u"https://github.com/coreydeli/path-of-upgrading"_s));
         QVERIFY(click(w.find(u"credit:Cinzel"_s)));
         QCOMPARE(w.opener->opened.last(), QUrl(u"https://github.com/NDISCOVER/Cinzel"_s));
+    }
+
+    void helpPage()
+    {
+        Window w;
+        QVERIFY(w.show(u"helpAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Help"_s);
+
+        // nothing is opened until you click for it
+        QVERIFY(w.opener->opened.isEmpty());
+        QVERIFY(click(w.find(u"wikiButton"_s)));
+        QCOMPARE(w.opener->opened,
+                 QList<QUrl>{QUrl(u"https://github.com/coreydeli/path-of-upgrading/wiki"_s)});
+        QVERIFY(click(w.find(u"topic:Hotkeys-and-the-Overlay"_s)));
+        QCOMPARE(w.opener->opened.last(),
+                 QUrl(u"https://github.com/coreydeli/path-of-upgrading/wiki/Hotkeys-and-the-Overlay"_s));
     }
 
     void sidebarOpensSettings()
@@ -3708,7 +3725,7 @@ private Q_SLOTS:
         const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,    u"gearScoreAction"_s,
                                      u"weightsAction"_s,    u"ignoredAction"_s, u"checkedAction"_s,
                                      u"pobAction"_s,        u"tradeAction"_s,   u"overlayAction"_s,
-                                     u"appearanceAction"_s, u"aboutAction"_s};
+                                     u"appearanceAction"_s, u"helpAction"_s,    u"aboutAction"_s};
         for (const QString &action : actions) {
             QVERIFY2(w.show(action), qPrintable(action));
             const QString title = w.page()->property("title").toString();
