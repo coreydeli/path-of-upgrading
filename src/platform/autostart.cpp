@@ -33,7 +33,7 @@ bool Autostart::setEnabled(bool enabled)
 {
     m_error.clear();
     if (m_file.isEmpty()) {
-        m_error = u"There's nowhere to keep it."_s;
+        m_error = u"There's nowhere to save the autostart file."_s;
         return !enabled;
     }
     QSettings run(m_file, QSettings::NativeFormat);
@@ -87,7 +87,7 @@ bool Autostart::setEnabled(bool enabled)
     }
 
     if (m_file.isEmpty()) {
-        m_error = u"There's nowhere to keep it."_s;
+        m_error = u"There's nowhere to save the autostart file."_s;
         return false;
     }
     if (!QDir().mkpath(QFileInfo(m_file).absolutePath())) {

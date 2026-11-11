@@ -6,5 +6,5 @@ DesktopEntry=io.github.coreydeli.PathOfUpgrading
 
 [Event/hotkeysUnavailable]
 Name=The hotkeys couldn't be set up
-Comment=The desktop wouldn't take the program's hotkeys
+Comment=The desktop wouldn't take the app's hotkeys
 Action=Popup
