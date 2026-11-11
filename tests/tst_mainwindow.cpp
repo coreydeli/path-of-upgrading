@@ -3825,7 +3825,8 @@ private Q_SLOTS:
         QObject *wrenScore = wren->findChild<QObject *>(u"rowScore"_s);
         QVERIFY(isVisible(wrenScore));
         QVERIFY(!isVisible(ash->findChild<QObject *>(u"rowScore"_s)));
-        QCOMPARE(wren->property("detail").toString(), u"Gear score goes by Life and resistances"_s);
+        QCOMPARE(wren->property("detail").toString(),
+                 u"A general start, until Path of Building weighs your build"_s);
         QCOMPARE(ash->property("detail").toString(), QString());
         QVERIFY(!wrenScore->property("score").toString().isEmpty());
         QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));

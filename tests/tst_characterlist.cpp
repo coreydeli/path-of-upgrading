@@ -5,6 +5,7 @@
 #include "core/buildprofiles.h"
 #include "core/gearscore.h"
 #include "core/parser.h"
+#include "core/weighedprofile.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
 
@@ -175,7 +176,7 @@ private Q_SLOTS:
         const QHash<int, QByteArray> names = c.list.roleNames();
         QCOMPARE(names.value(CharacterList::ScoreRole), "score"_ba);
         QCOMPARE(names.value(CharacterList::GradeRole), "grade"_ba);
-        QCOMPARE(names.value(CharacterList::ProfileRole), "profile"_ba);
+        QCOMPARE(names.value(CharacterList::SourceRole), "source"_ba);
     }
 
     void ratingFollowsWhatYouWear()
@@ -191,27 +192,27 @@ private Q_SLOTS:
         QVERIFY(!c.list.index(0).data(CharacterList::ScoreRole).toString().isEmpty());
     }
 
-    void sayWhatTheGearScoreGoesBy()
+    void saySourceOfTheGearScore()
     {
         Characters c;
         const QString plain = c.saved(u"Plain"_s);
         Character weights = named(u"Weights"_s);
-        weights.buildProfile = noBuildProfile.toString();
+        weights.weightsOnly = true;
         const QString byWeights = c.store.add(weights).value_or(QString());
-        Character lost = named(u"Lost"_s);
-        lost.buildProfile = u"no-such-profile"_s;
-        const QString unknown = c.store.add(lost).value_or(QString());
+        Character weighed = named(u"Weighed"_s);
+        weighed.weighed = WeighedProfile{};
+        const QString byBuild = c.store.add(weighed).value_or(QString());
         c.list.load();
-        const auto profile = [&](const QString &id) {
+        const auto source = [&](const QString &id) {
             for (int row = 0; row < c.list.rowCount(); ++row) {
                 if (c.list.index(row).data(CharacterList::IdRole).toString() == id)
-                    return c.list.index(row).data(CharacterList::ProfileRole).toString();
+                    return c.list.index(row).data(CharacterList::SourceRole).toString();
             }
             return u"missing"_s;
         };
-        QCOMPARE(profile(plain), u"Life and resistances"_s);
-        QCOMPARE(profile(byWeights), u"Your stat weights"_s);
-        QCOMPARE(profile(unknown), QString());
+        QCOMPARE(source(plain), u"A general start, until Path of Building weighs your build"_s);
+        QCOMPARE(source(byWeights), u"Judged by your stat weights alone"_s);
+        QCOMPARE(source(byBuild), u"Weighed by Path of Building for your build"_s);
     }
 
     void problems()
