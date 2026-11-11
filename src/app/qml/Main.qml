@@ -131,7 +131,7 @@ Kirigami.ApplicationWindow {
                 Kirigami.Action {
                     id: gearScoreAction
                     objectName: "gearScoreAction"
-                    text: qsTr("Gear Grade")
+                    text: qsTr("Gear Score")
                     icon.name: "rating"
                     checkable: true
                     QQC2.ActionGroup.group: pages
