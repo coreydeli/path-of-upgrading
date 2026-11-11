@@ -1,10 +1,10 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
 #
-# Starts an AppImage in a container with nothing else, as root, on Fedora or
-# Arch Linux. The AppImage leaves out what a desktop already has (the X and
-# OpenGL libraries, the font stack), so those are installed first, as they
-# would be anywhere you'd run it. It runs until the timeout, unless a QML
+# Starts an AppImage in a container with nothing else, as root, on Fedora,
+# Arch Linux or Ubuntu. The AppImage leaves out what a desktop already has
+# (the X and OpenGL libraries, the font stack), so those are installed first,
+# as they would be anywhere you'd run it. It runs until the timeout, unless a QML
 # module or a plugin is missing, which stops it at once.
 #
 # check-appimage.sh <the AppImage>
@@ -13,6 +13,11 @@ image=$(realpath "$1")
 if command -v dnf > /dev/null; then
     dnf -y install dbus-daemon libxcb libglvnd-egl libglvnd-glx libglvnd-opengl harfbuzz freetype \
         libxkbcommon fontconfig
+elif command -v apt-get > /dev/null; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y dbus-daemon libxcb1 libegl1 libgl1 libopengl0 libharfbuzz0b libfreetype6 libxkbcommon0 \
+        fontconfig
 else
     pacman -Sy --noconfirm dbus libxcb libglvnd harfbuzz freetype2 libxkbcommon fontconfig
 fi
