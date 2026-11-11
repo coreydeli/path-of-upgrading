@@ -72,6 +72,19 @@ struct OverlaySettings
     friend bool operator==(const OverlaySettings &, const OverlaySettings &) = default;
 };
 
+struct UpdateSettings
+{
+    bool checkOnLaunch = true; // and about once a day, asking GitHub for a newer release
+    // Betas count as newer releases. A beta starts with this on, and a release
+    // with it off, until you choose.
+    bool includeBetas = false;
+    // The version you chose to skip, like "0.7.0-beta.5", which isn't offered
+    // again. A newer one is.
+    QString skipped;
+
+    friend bool operator==(const UpdateSettings &, const UpdateSettings &) = default;
+};
+
 // Whose colors the app uses.
 enum class ColorTheme {
     App,    // its own, from the color scheme that comes with it
@@ -116,6 +129,7 @@ struct Settings
     TradeSettings trade;
     PobSettings pob;
     OverlaySettings overlay;
+    UpdateSettings updates;
     AppearanceSettings appearance;
 
     friend bool operator==(const Settings &, const Settings &) = default;
