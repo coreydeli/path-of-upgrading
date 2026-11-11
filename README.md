@@ -54,8 +54,8 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
   one that finds nothing is tried again a little looser. While trade searches
-  are on, poe.ninja's prices are updated every 10 minutes, or as often as you
-  set on the Trade page.
+  are on, poe.ninja's prices are updated automatically, every 10 minutes unless
+  you set another number of minutes, from 1 to 60, on the Trade page.
 - In a beta, shows the listings a search found in a window over the game, opened
   from the popup or with the Results hotkey. Each says whether it is an upgrade
   for the character you play, by how much and what it changes, the way the popup
@@ -76,13 +76,15 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and what each slot needs to score
-  more. On a wide window the slots are laid out like your character's equipment
-  screen. Pick one to see what would improve it, the stats to look for in a
+  more, and the most each slot can roll, such as Life (up to 149), from Path of
+  Building's Path of Exile 2 data. On a wide window the slots are laid out like
+  your character's equipment screen. Pick one to see what would improve it, the stats to look for in a
   better item, and a Find an Upgrade search of the trade site when trade
   searches are on. Its Recommended Upgrades card lists up to three slots to
   upgrade first, with the stats to look for. The gear page also has your
-  resistances, from your build or typed in off the character sheet, so an item
-  that leaves one under the cap says so.
+  resistances, from your build or typed in from your character sheet, with a
+  maximum for each element and a safety buffer, so an item that leaves one
+  under the cap, or closer to it than the buffer, says so.
 - Spreads the settings pages across a wide window. Their cards flow into up to
   three columns, and stack again on a narrow one. The gear page stays in one
   column on a wide window, with the equipment screen under the overall score,
@@ -341,7 +343,8 @@ it has no trade at all.
 Work is done on short branches off `beta` and merged back into it. A
 pre-release, like `v0.7.0-beta.2`, with the packages and the changes since the
 last one, is made from `beta` by hand (Run workflow on the Release workflow) or
-each night when `beta` has new code. Merging `beta` into `main` releases the version
+each night when `beta` has new code. Docs alone don't count, and a merge into
+`beta` doesn't make one. Merging `beta` into `main` releases the version
 in `CMakeLists.txt` as the latest release, and the next beta needs a new
 version. The version is also in the metainfo's newest release, the PKGBUILD and
 the RPM spec, and CI checks they all say the same.
