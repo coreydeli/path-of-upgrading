@@ -15,6 +15,10 @@ version that comes out.
   the missing stats, and "Look for" gives it too, as "Life 55 or more (up to
   149)". An empty slot's "Wants most" shows it the same way. The figures come
   from Path of Building's data for Path of Exile 2.
+- The slot panel on a wide gear page has a Can roll line under Look for. It lists up
+  to six stats the build wants most in that slot, each with the top tier's range and its
+  item level, such as "Life 100 to 149, item level 82". It's left out for weapons,
+  off hands, jewels, flasks and charms.
 - The character you play is picked in a Character box at the top of Your Gear, which shows
   its build.
 - An About page in the sidebar's Settings group. It shows the version and edition, the

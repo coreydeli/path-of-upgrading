@@ -78,9 +78,10 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   score of each slot, the overall score, and what each slot needs to score
   more, and the most each slot can roll, such as Life (up to 149), from Path of
   Building's Path of Exile 2 data. On a wide window the slots are laid out like
-  your character's equipment screen. Pick one to see what would improve it, the stats to look for in a
-  better item, and a Find an Upgrade search of the trade site when trade
-  searches are on. Its Recommended Upgrades card lists up to three slots to
+  your character's equipment screen. Pick one to see what would improve it, the
+  stats to look for in a better item, the top rolls the slot can have with their
+  item levels (Can roll), and a Find an Upgrade search of the trade site when
+  trade searches are on. Its Recommended Upgrades card lists up to three slots to
   upgrade first, with the stats to look for. The gear page also has your
   resistances, from your build or typed in from your character sheet, with a
   maximum for each element and a safety buffer, so an item that leaves one
