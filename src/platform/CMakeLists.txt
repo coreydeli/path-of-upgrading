@@ -17,6 +17,8 @@ add_library(pou_platform STATIC
     notifier.cpp notifier.h
     opener.cpp opener.h
     overlay.cpp overlay.h
+    packageinstaller.cpp packageinstaller.h
+    restart.cpp restart.h
     screenmap.cpp screenmap.h
     secretstore.cpp secretstore.h
     showwindow.cpp showwindow.h
