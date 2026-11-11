@@ -18,11 +18,11 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
 
 ## Features
 
-- Compares the item you check with the one you wear in the same slot. The
+- Compares the item you check with the one you have equipped in the same slot. The
   verdict goes by Path of Building once you have imported a build, by a gear
   score for your build, or by your own stat weights. A ring, charm or jewel
   also shows what it would do in each place it fits.
-- Works without a build too. Wear gear or set stat weights before you add a
+- Works without a build too. Equip gear or set stat weights before you add a
   character, and the app makes one called My character and plays it.
 - Opens a setup guide the first time the window opens, for your league, trade
   searches (in a beta), a first character and the key that checks an item.
@@ -39,7 +39,7 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
 - The gear score uses a build profile: life and resistances, Energy Shield
   spellcaster, Energy Shield attacker, or minion summoner. You can change how
   much each stat adds under Affix Impact, from Not at all (0x) to Three times
-  (3x). Stat weights can be edited or suggested from the gear you wear, and
+  (3x). Stat weights can be edited or suggested from the gear you have equipped, and
   stats you don't care about can be ignored or left out of searches.
 - Imports builds from Path of Building: from a code, a link, a file, or one
   you saved in Path of Building's own folder. It runs Path of Building without
@@ -61,11 +61,11 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   for the character you play, by how much and what it changes, the way the popup
   does, with its price, what that comes to in exalts or divines, the seller and
   how long ago it was listed.
-- Draws the popup and the results window with a title band in the item's
-  rarity color, a verdict banner and framed cards, and a bar behind each
-  change in the popup's table, sized against the biggest change. The popup
-  fades in and rises a little when it opens, unless Decorations is Plain or
-  the desktop has animations off.
+- Draws the popup and the results window in the app's own look, with cut-corner
+  panels. The popup's title takes the item's rarity color, and it has a verdict
+  banner. Each gain or loss in the popup's table has a bar under its figure,
+  sized against the biggest change. The popup fades in and rises a little when
+  it opens, unless Decorations is Plain or the desktop has animations off.
 - Trade searches are in the betas only, where they start on. They can be
   turned off, and set to the right league, including hardcore. Solo self-found
   turns them off, as there is no trading in it. Once you change that on the
@@ -109,14 +109,15 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   as `path-of-upgrading --background` does. Turn that off with the switch on the
   Settings page, in the sidebar's Settings group, and it stays off. It tells you
   with a notification if the hotkeys couldn't be set up.
-- Has dark colors of its own, as a KDE color scheme, or follows your desktop's
-  colors, from the Appearance page in the same group. It also picks the heading
-  font (Cinzel by default), the text font and the text size. The text size
-  follows your desktop's unless you set one, from 6 to 32 points. The font list
-  only shows fonts that scale smoothly, each in its own face. Decorations there
-  can be set to Full, the default, or Plain. Plain leaves out the glow behind
-  the pages, the corner pieces, and the popup's fade and rise, and shows the
-  gear scores as text rather than in rings.
+- Has the app's own controls, colors and fonts, so it looks the same on every
+  desktop. Its colors are dark, as a KDE color scheme of its own, or follow your
+  desktop's, from the Appearance page in the same group. It also picks the
+  heading font (Big Shoulders Display by default), the text font (Spectral by
+  default) and the text size. The text size follows your desktop's unless you
+  set one, from 6 to 32 points. The font list only shows fonts that scale
+  smoothly, each in its own face. Decorations there can be set to Full, the
+  default, or Plain. Plain squares off the cut corners, leaves out the popup's
+  fade and rise, and shows a listing's gear score as text rather than in a ring.
 - Has an About page and a Help page in the sidebar's Settings group. About shows the version
   and edition, the license, the Qt and KDE Frameworks versions, where Path of Building was
   found, links to the source, the releases and the issue tracker, and the credits. Help opens
@@ -153,8 +154,7 @@ sudo pacman -Syu
 sudo pacman -U ./path-of-upgrading-*-x86_64.pkg.tar.zst
 ```
 
-pacman installs what it needs with it. For the Plasma look outside Plasma,
-install `qqc2-desktop-style` too.
+pacman installs what it needs with it.
 
 ### Debian 13
 
@@ -202,7 +202,7 @@ missing, as in a container, start it with `--appimage-extract-and-run`:
 ```
 
 The AppImage doesn't update itself, so download each new release by hand. With
-"Start with the desktop" on, the autostart entry starts the AppImage file, so if
+"Start with your desktop" on, the autostart entry starts the AppImage file, so if
 you move the file, turn the switch off and on again.
 
 ### Other Linux distros
@@ -281,7 +281,7 @@ by the gear score or your stat weights.
 
 Your settings and characters are kept, in the folders under
 [Your data](#your-data) on Linux, and in AppData on Windows. On Linux the
-autostart entry stays too, so turn off Start with the desktop before you
+autostart entry stays too, so turn off Start with your desktop before you
 uninstall.
 
 ## Requirements
@@ -315,7 +315,7 @@ To use it:
 - the LayerShellQt Wayland plugin, `layer-shell-qt`, which the popup needs to
   show over the game. The Arch, Debian and Fedora packages depend on it, and
   the AppImage includes it.
-- [Path of Building Community](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2)
+- [Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2)
   for Path of Exile 2, if you want to import builds. The easiest way is the
   Flatpak: `flatpak install flathub community.pathofbuilding.PathOfBuilding`.
   Open it once for Path of Exile 2, so it downloads what it needs. Other
@@ -384,7 +384,7 @@ an X server of their own from `xvfb-run`.
   poe.ninja
 
 The app writes an entry to `~/.config/autostart` the first time it starts, so it
-can start with your desktop. You can turn that off with the Start with the
+can start with your desktop. You can turn that off with the Start with your
 desktop switch, or in System Settings. Removing the package doesn't remove the
 entry, so turn the switch off before you uninstall.
 
@@ -430,10 +430,10 @@ IDs are kept in the Windows Credential Manager.
 - [rusty-path-of-building](https://github.com/meehl/rusty-path-of-building)
   (MIT) is what makes Path of Building run on Linux, and it is the Flatpak on
   Flathub. Path of Upgrading finds Path of Building where it puts it.
-- The headings are set in [Cinzel](https://github.com/NDISCOVER/Cinzel) by
-  default, by The Cinzel Project Authors (SIL Open Font License 1.1, in
-  `data/fonts`), which the app carries. The Appearance page can set another
-  heading font.
+- The headings are set in [Big Shoulders Display](https://github.com/xotypeco/big_shoulders)
+  and the text in [Spectral](https://github.com/productiontype/Spectral), by their
+  project authors (SIL Open Font License 1.1, in `data/fonts`), which the app
+  carries. The Appearance page can set other fonts.
 - Currency prices come from [poe.ninja](https://poe.ninja), and the listings
   from the official [Path of Exile trade site](https://www.pathofexile.com/trade2).
 - Path of Exile is a trademark of Grinding Gear Games. This project isn't
@@ -441,5 +441,6 @@ IDs are kept in the Windows Credential Manager.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The Cinzel font is under the SIL Open Font
-License 1.1, see [OFL.txt](data/fonts/OFL.txt).
+MIT, see [LICENSE](LICENSE). The fonts are under the SIL Open Font License 1.1,
+see [OFL-Spectral.txt](data/fonts/OFL-Spectral.txt) and
+[OFL-BigShoulders.txt](data/fonts/OFL-BigShoulders.txt).
