@@ -114,6 +114,12 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   as `path-of-upgrading --background` does. Turn that off with the switch on the
   Settings page, in the sidebar's Settings group, and it stays off. It tells you
   with a notification if the hotkeys couldn't be set up.
+- Looks on GitHub for a newer release when it starts, and about once a day while
+  it runs. When one is out, a dialog offers to update now, later or skip that
+  version. With the window hidden, a notification says so instead. Update Now
+  downloads the file for how you installed the app and checks it against the
+  release's checksums. Nothing is installed until you press Update Now. Turn the
+  check off, or include betas, under Updates on the Settings page.
 - Has the app's own controls, colors and fonts, so it looks the same on every
   desktop. Its colors are dark, as a KDE color scheme of its own, or follow your
   desktop's, from the Appearance page in the same group. It also picks the
@@ -161,6 +167,10 @@ sudo pacman -U ./path-of-upgrading-*-x86_64.pkg.tar.zst
 
 pacman installs what it needs with it.
 
+The app doesn't install Arch packages itself. When a newer release is out,
+Update Now downloads the new package and shows the `sudo pacman -U` command for
+it. Run that yourself.
+
 ### Debian 13
 
 apt installs the package with what it needs, when you give it the file's path:
@@ -172,6 +182,11 @@ sudo apt install ./path-of-upgrading_*_amd64.deb
 It is made on Debian 13. Distros based on Debian or Ubuntu with Qt 6.8 and KDE
 Frameworks 6.13 or newer may take it too, but only Debian 13 is tested. If apt
 can't find what it depends on, build it from source instead.
+
+When a newer release is out, Update Now downloads the new package and asks
+PackageKit to install it, with your desktop's password prompt. The update
+window then offers Restart Now. If PackageKit isn't there or fails, the window
+shows the `sudo apt install` command to run instead.
 
 ### Fedora
 
@@ -185,7 +200,10 @@ sudo dnf install ./path-of-upgrading-*.rpm
 
 dnf installs what it needs with it. It needs Fedora with KDE Frameworks 6.
 CentOS Stream and RHEL don't have those, so they aren't covered. There is no
-package repository yet, so download each new file by hand.
+package repository yet. Update Now downloads each new file for you and asks
+PackageKit to install it, with your desktop's password prompt. The update
+window then offers Restart Now. If PackageKit isn't there or fails, it shows
+the `sudo dnf install` command to run instead.
 
 ### AppImage
 
@@ -206,9 +224,11 @@ missing, as in a container, start it with `--appimage-extract-and-run`:
 ./PathOfUpgrading-*-x86_64.AppImage --appimage-extract-and-run
 ```
 
-The AppImage doesn't update itself, so download each new release by hand. With
-"Start with your desktop" on, the autostart entry starts the AppImage file, so if
-you move the file, turn the switch off and on again.
+The AppImage updates itself. When a newer release is out, Update Now downloads
+it, checks it, puts it in place of the file you started and restarts the app.
+The folder the AppImage is in must be writable, as the new file is written next
+to it. With "Start with your desktop" on, the autostart entry starts the
+AppImage file, so if you move the file, turn the switch off and on again.
 
 ### Other Linux distros
 
@@ -229,7 +249,8 @@ cmake --install build --prefix ~/.local
 
 That installs it for you alone, with its entry in the app menu. Use
 `sudo cmake --install build` instead to install it for everyone, in
-`/usr/local`.
+`/usr/local`. Update Now opens the release page on GitHub instead, so you build
+the new version yourself.
 
 ### Windows
 
@@ -239,6 +260,11 @@ ask for an administrator. It puts the app in
 
 The zip has the same program and needs no installing. Unzip it anywhere and
 open `path-of-upgrading.exe` in the `Path of Upgrading` folder.
+
+When a newer release is out, Update Now runs the new setup exe quietly. That
+installs the new version and starts it. The zip gets the setup too, so the new
+version goes into `AppData\Local\Programs\Path of Upgrading`, and the copy you
+unzipped stays as it was.
 
 Neither is signed yet, so the first time you open one, SmartScreen says it
 doesn't know the app. Choose More info, then Run anyway.
@@ -386,7 +412,7 @@ an X server of their own from `xvfb-run`.
 - `~/.local/share/path-of-upgrading` has your characters and the items you
   checked
 - `~/.cache/path-of-upgrading` has what it learned from the trade site and
-  poe.ninja
+  poe.ninja, and any update it downloaded, in `updates`
 
 The app writes an entry to `~/.config/autostart` the first time it starts, so it
 can start with your desktop. You can turn that off with the Start with your
