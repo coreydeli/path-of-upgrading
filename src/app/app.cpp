@@ -74,6 +74,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_results(&m_trade, &m_rates)
     , m_resultsPanel(qml, m_input.get(), &m_results)
     , m_updates(m_network.get())
+    , m_updatesModel(&m_updates, &m_settings, m_opener.get())
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)

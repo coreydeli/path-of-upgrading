@@ -61,4 +61,13 @@ void Desktop::reportProblems()
                        m_hotkeys->errorString() + u" The settings are in the Path of Upgrading window."_s);
 }
 
+void Desktop::tellAboutUpdate(const QString &version)
+{
+    if (m_window && m_window->isVisible())
+        return;
+    m_notifier->notify(Notifier::Event::UpdateAvailable, u"A New Version Is Out"_s,
+                       u"Version %1 of Path of Upgrading is ready."_s.arg(version),
+                       {.text = u"Update"_s, .run = [this] { showWindow(); }});
+}
+
 } // namespace pou

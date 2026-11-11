@@ -39,6 +39,7 @@ qt_add_library(pou_app STATIC
     tradereport.cpp tradereport.h
     traderesults.cpp traderesults.h
     tradesession.cpp tradesession.h
+    updates.cpp updates.h
     words.h
 )
 
@@ -49,6 +50,7 @@ qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
         qml/AboutPage.qml
+        qml/UpdateDialog.qml
         qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml

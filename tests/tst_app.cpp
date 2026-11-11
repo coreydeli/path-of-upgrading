@@ -322,18 +322,18 @@ private Q_SLOTS:
         // main() starts the checks, so a program under test asks nothing
         QCOMPARE(network->sent.size(), 0);
 
-        r.app.updates().check();
-        QVERIFY(QTest::qWaitFor([&] { return !r.app.updates().isChecking(); }, 1000));
-        QCOMPARE(r.app.updates().newest()->tag, u"v99.0.0-beta.1"_s);
-        QVERIFY(r.app.updates().isOffered());
+        r.app.updateChecker().check();
+        QVERIFY(QTest::qWaitFor([&] { return !r.app.updateChecker().isChecking(); }, 1000));
+        QCOMPARE(r.app.updateChecker().newest()->tag, u"v99.0.0-beta.1"_s);
+        QVERIFY(r.app.updateChecker().isOffered());
 
         settings.updates.skipped = u"99.0.0-beta.1"_s;
         QVERIFY(r.app.settings().set(settings));
-        QVERIFY(r.app.updates().isSkipped());
+        QVERIFY(r.app.updateChecker().isSkipped());
 
         settings.updates.includeBetas = false;
         QVERIFY(r.app.settings().set(settings));
-        QVERIFY(!r.app.updates().newest());
+        QVERIFY(!r.app.updateChecker().newest());
     }
 
     void pobFound()

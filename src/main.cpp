@@ -81,9 +81,11 @@ int main(int argc, char *argv[])
     engine.setInitialProperties(
         {{u"app"_s, QVariant::fromValue(&root)}, {u"startHidden"_s, commandLine.background()}});
     engine.loadFromModule("PathOfUpgrading", "Main");
+    QObject::connect(root.updates(), &pou::Updates::offered, &desktop,
+                     [&] { desktop.tellAboutUpdate(root.updates()->newVersion()); });
     desktop.setWindow(qobject_cast<QWindow *>(engine.rootObjects().value(0)));
     desktop.reportProblems();
-    root.updates().start();
+    root.updateChecker().start();
 
     const int exitCode = app.exec();
     // The main window reads from the app, so it goes before the app does.
