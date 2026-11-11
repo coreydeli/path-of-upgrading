@@ -288,6 +288,16 @@ private Q_SLOTS:
         QCOMPARE(square->property("notch").toDouble(), 0.0);
     }
 
+    void aSheetHoldsItsRowsToTheMaximumWidth()
+    {
+        std::unique_ptr<QQuickItem> sheet = make("Sheet { width: 1000; maximumWidth: 400 }");
+        QVERIFY(sheet);
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 400.0);
+        sheet->setWidth(300);
+        const double side = sheet->property("side").toDouble();
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 300.0 - 2 * side);
+    }
+
     void aNoticeShowsOneLineEach()
     {
         std::unique_ptr<QQuickItem> none = make("Notice { }");
