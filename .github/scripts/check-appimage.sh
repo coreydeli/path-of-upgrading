@@ -15,7 +15,15 @@ if command -v dnf > /dev/null; then
         libxkbcommon fontconfig
 elif command -v apt-get > /dev/null; then
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update
+    # GitHub's runners now and then can't look up Ubuntu's own servers, so after
+    # a failed try, use the mirror the runners themselves use
+    sources=/etc/apt/sources.list.d/ubuntu.sources
+    for try in 1 2 3; do
+        apt-get update --error-on=any && break
+        test "$try" -lt 3 || exit 1
+        sed -i 's|http://archive.ubuntu.com|http://azure.archive.ubuntu.com|g; s|http://security.ubuntu.com|http://azure.archive.ubuntu.com|g' "$sources"
+        sleep 5
+    done
     apt-get install -y dbus-daemon libxcb1 libegl1 libgl1 libopengl0 libharfbuzz0b libfreetype6 libxkbcommon0 \
         fontconfig
 else
