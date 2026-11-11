@@ -62,7 +62,7 @@ ColumnsPage {
         Accessible.selected: checkedPage.wide && index === checkedPage.picked
         background: Rectangle {
             visible: checkedPage.wide
-            color: itemRow.index === checkedPage.picked ? Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.18)
+            color: itemRow.index === checkedPage.picked ? Style.tint(Kirigami.Theme.backgroundColor, Style.accent(Kirigami.Theme), 0.18)
                                                          : itemRow.hovered || itemRow.visualFocus ? Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.08)
                                                                                                   : "transparent"
         }

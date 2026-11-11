@@ -3,6 +3,7 @@
 #include "app/commandline.h"
 #include "app/desktop.h"
 #include "app/fonts.h"
+#include "app/ownstyle.h"
 #include "core/pobinstall.h"
 #include "platform/gameinput.h"
 #include "platform/gamewatcher.h"
@@ -15,13 +16,9 @@
 
 #include <KLocalizedQmlContext>
 #include <QApplication>
-#include <QDir>
-#include <QFileInfo>
-#include <QLibraryInfo>
 #include <QNetworkAccessManager>
 #include <QQmlApplicationEngine>
 #include <QQmlExtensionPlugin>
-#include <QQuickStyle>
 #include <QWindow>
 
 #ifdef Q_OS_WIN
@@ -32,33 +29,6 @@
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
 using namespace Qt::Literals::StringLiterals;
-
-namespace {
-
-bool styleInstalled(const QString &uri)
-{
-    const QString relative = QString(uri).replace(u'.', u'/');
-    QStringList dirs =
-        qEnvironmentVariable("QML_IMPORT_PATH").split(QDir::listSeparator(), Qt::SkipEmptyParts);
-    dirs << QLibraryInfo::path(QLibraryInfo::QmlImportsPath);
-    for (const QString &dir : std::as_const(dirs)) {
-        if (QFileInfo::exists(dir + u'/' + relative + u"/qmldir"))
-            return true;
-    }
-    return false;
-}
-
-// Follow the Plasma look when qqc2-desktop-style is around, otherwise use
-// Fusion, which at least picks up the platform palette.
-void pickControlsStyle()
-{
-    if (!QQuickStyle::name().isEmpty())
-        return;
-    const QString desktop = u"org.kde.desktop"_s;
-    QQuickStyle::setStyle(styleInstalled(desktop) ? desktop : u"Fusion"_s);
-}
-
-} // namespace
 
 int main(int argc, char *argv[])
 {
@@ -89,7 +59,7 @@ int main(int argc, char *argv[])
     // anything below is set up.
     const std::unique_ptr<pou::SingleInstance> instance = pou::runOnce();
 
-    pickControlsStyle();
+    pou::useOwnStyle();
 
     QQmlApplicationEngine engine;
     KLocalization::setupLocalizedContext(&engine);

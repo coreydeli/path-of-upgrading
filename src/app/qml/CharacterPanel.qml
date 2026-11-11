@@ -50,7 +50,7 @@ Item {
                     objectName: "panelCharacter"
                     Layout.fillWidth: true
                     text: panel.character
-                    color: Style.gold(Kirigami.Theme)
+                    color: Style.accent(Kirigami.Theme)
                     font: Style.titleFont(Kirigami.Theme.defaultFont, 1.4)
                     wrapMode: Text.Wrap
                     Accessible.role: Accessible.Heading

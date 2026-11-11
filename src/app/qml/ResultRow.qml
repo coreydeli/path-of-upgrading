@@ -136,10 +136,10 @@ Item {
                     Layout.alignment: Qt.AlignRight
                     implicitWidth: priceLabel.implicitWidth + 2 * Kirigami.Units.smallSpacing
                     implicitHeight: priceLabel.implicitHeight + 2
-                    color: Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.1)
+                    color: Style.tint(Kirigami.Theme.backgroundColor, Style.accent(Kirigami.Theme), 0.1)
                     border {
                         width: 1
-                        color: Style.gold(Kirigami.Theme)
+                        color: Style.accent(Kirigami.Theme)
                     }
 
                     QQC2.Label {

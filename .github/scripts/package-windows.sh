@@ -27,6 +27,9 @@ cp "$build/path-of-upgrading.exe" "$app/"
 cp /ucrt64/bin/luajit.exe "$app/"
 cp -r "$qml" "$app/qml"
 cp -r "$plugins"/. "$app/"
+# the app's own style, for Kirigami
+mkdir -p "$app/kf6/kirigami/platform"
+cp "$build/src/kf6/kirigami/platform/PouStyle.dll" "$app/kf6/kirigami/platform/"
 mkdir "$app/data"
 cp /ucrt64/bin/data/icontheme.rcc "$app/data/"
 # where the app looks for its colors, as Qt's data folders include data next to the program
@@ -58,7 +61,7 @@ if ldd "$app/path-of-upgrading.exe" | grep -i 'not found'; then
 fi
 
 cp "$repo/LICENSE" "$app/LICENSE.txt"
-cp "$repo/data/fonts/OFL.txt" "$app/OFL-Cinzel.txt"
+cp "$repo/data/fonts/OFL-Spectral.txt" "$repo/data/fonts/OFL-BigShoulders.txt" "$app/"
 zip -qr "path-of-upgrading-$label-windows.zip" "${app##*/}"
 makensis -V2 -DVERSION="$version" -DLABEL="$label" -DAPP="$(cygpath -w "$app")" \
     -DOUTFILE="$(cygpath -w "$out/path-of-upgrading-$label-setup.exe")" \

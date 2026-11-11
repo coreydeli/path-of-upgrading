@@ -124,7 +124,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "addStatButton"
             // the main thing on the page
-            icon.color: Style.gold(weightsPage.Kirigami.Theme)
+            icon.color: Style.accent(weightsPage.Kirigami.Theme)
             font.weight: Font.DemiBold
             text: qsTr("Add a Stat")
             icon.name: "list-add"

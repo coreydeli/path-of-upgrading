@@ -44,6 +44,7 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Widgets Qml Quick Quic
 # The window is Kirigami, which is only loaded at run time, as is the key
 # recorder from KDeclarative. Debian 13 has these.
 find_package(KF6Kirigami 6.13 REQUIRED)
+find_package(KF6KirigamiPlatform 6.13 REQUIRED)
 find_package(KF6KirigamiAddons 1.7 REQUIRED)
 find_package(KF6Declarative 6.13 REQUIRED)
 # The colors of the app are a KDE color scheme, which this applies

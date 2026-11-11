@@ -123,13 +123,16 @@ void Appearance::followFonts()
     const AppearanceSettings &chosen = appearance();
     QStringList missing;
 
+    // the app's own face unless another is chosen
     QFont font = m_desktopFont;
-    if (!chosen.textFont.isEmpty()) {
-        if (QFontDatabase::hasFamily(chosen.textFont))
-            font.setFamily(chosen.textFont);
-        else
+    QString family = chosen.textFont.isEmpty() ? textFontFamily() : chosen.textFont;
+    if (!QFontDatabase::hasFamily(family)) {
+        if (!chosen.textFont.isEmpty())
             missing << chosen.textFont;
+        family = textFontFamily();
     }
+    if (QFontDatabase::hasFamily(family))
+        font.setFamily(family);
     if (chosen.textSize > 0)
         font.setPointSizeF(chosen.textSize);
     if (font != m_font) {

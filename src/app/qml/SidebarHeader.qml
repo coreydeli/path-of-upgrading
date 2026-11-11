@@ -41,7 +41,7 @@ Item {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
             font: Style.titleFont(Kirigami.Theme.defaultFont, 1.15)
-            color: Style.gold(Kirigami.Theme)
+            color: Style.accent(Kirigami.Theme)
             text: qsTr("Path of Upgrading")
             wrapMode: Text.WordWrap
         }

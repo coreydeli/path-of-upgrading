@@ -45,6 +45,6 @@ Item {
         width: 5
         height: 5
         rotation: 45
-        color: Style.gold(Kirigami.Theme)
+        color: Style.accent(Kirigami.Theme)
     }
 }
