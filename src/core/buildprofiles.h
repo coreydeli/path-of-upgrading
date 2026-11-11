@@ -26,6 +26,14 @@ public:
         , m_elsewhere(elsewhere)
     {}
 
+    // Values for the slot groups listed, and 0 for the rest.
+    static PerSlot of(const QList<std::pair<QString, double>> &overrides, double elsewhere = 0)
+    {
+        PerSlot out(elsewhere);
+        out.m_overrides = overrides;
+        return out;
+    }
+
     double at(const QString &slotGroup) const;
 
     // Slot groups where the value differs from elsewhere().
@@ -51,6 +59,10 @@ struct ProfileStat
     QString key;
     std::optional<Element> resist;
 };
+
+// Whether the stat is one of the item's own, like "[Base] Armour", rather than
+// a mod.
+bool isPropertyStat(const ProfileStat &stat);
 
 // What a kind of character wants from its gear, for the gear score.
 struct BuildProfile
