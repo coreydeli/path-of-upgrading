@@ -89,12 +89,12 @@ QStringList weakRolls(const GearScore &gear, int underPercent = 50);
 
 // What would raise a gear score, in the words the popup uses. Each is empty
 // when there's nothing to say.
-//   "Missing what your build wants: Life (up to 149), Fire res (up to 45)."
+//   "Missing what your build wants: Life (up to 149), Fire Resistance (up to 45)."
 QString missingNote(const GearScore &gear);
 //   "Not in the gear score: #% increased Rarity of Items found."
 QString notScoredNote(const GearScore &gear);
 // The stats rolled under a share of an excellent roll, the weakest first and
-// three at most, "Weak rolls: Life 62 of up to 149, Cold res 35% of an
+// three at most, "Weak rolls: Life 62 of up to 149, Cold Resistance 35% of an
 // excellent roll." Runes aren't rolls, so they're left out.
 QString weakRollsNote(const GearScore &gear, int underPercent = 50);
 

@@ -150,7 +150,7 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
         r = compareWith(item, {itemIn(equipped, weaponSlot), itemIn(equipped, offhandSlot)}, weights,
                         weaponSlot, ignore);
         if (equipped.contains(offhandSlot))
-            notes << u"Two-handed, so it's compared against your weapon and offhand together."_s;
+            notes << u"Two-handed, so it's compared against your weapon and off hand together."_s;
     } else if (!slot.isEmpty()) {
         r = compareWith(item, {itemIn(equipped, slot)}, weights, slot, ignore);
     } else if (comparesWithWeakest(item.slot)) {
@@ -172,15 +172,15 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
     if (item.slot == u"Offhand" && !item.itemClass.contains(u"quiver", Qt::CaseInsensitive)) {
         const Item *weapon = itemIn(equipped, otherHand(r.targetSlot));
         if (weapon && !twoHandedWithOffhand(*weapon, &item, equipped, wielding))
-            notes << u"Your weapon is two-handed, so you can't use this with it."_s;
+            notes << u"Your weapon is two-handed, so you can't equip this with it."_s;
     }
 
     r.isEquipped = sameItem(item, itemIn(equipped, r.targetSlot));
 
     const bool hasBaseline = !r.replacing.isEmpty();
     if (!hasBaseline)
-        notes << u"Nothing saved for %1 yet. Check the item you wear there and click Wear as %1."_s.arg(
-            r.targetSlot);
+        notes << u"Nothing saved for %1 yet. Check the item you have equipped there and press Equip as %1."_s
+                     .arg(slotLabel(r.targetSlot));
     const bool anyWeighted =
         std::any_of(r.rows.cbegin(), r.rows.cend(), [](const StatRow &row) { return row.weight != 0; });
     if (!anyWeighted && !r.rows.isEmpty())

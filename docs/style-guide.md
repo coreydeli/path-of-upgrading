@@ -68,7 +68,7 @@ in QML.
   Spirit, Effective HP, DPS, Minion DPS.
 - Keep the `#` in stat lines, because the trade site uses it. A range is
   `"# to #"`, and the code tests for it with `row.key.contains(u"# to #")`.
-- Element names start with a capital on a label, as `Fire res`, and are lower
+- Element names start with a capital on a label, as `Fire Resistance`, and are lower
   case inside a sentence, as `Caps your fire resistance`.
 - Keep the league names as the trade site has them, such as "Standard", and
   name the modes as the settings page does: "Hardcore", "Solo self-found".

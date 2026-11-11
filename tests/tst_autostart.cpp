@@ -135,7 +135,7 @@ private Q_SLOTS:
         Autostart autostart(QString(), entry);
         QVERIFY(!autostart.isEnabled());
         QVERIFY(!autostart.setEnabled(true));
-        QCOMPARE(autostart.errorString(), u"There's nowhere to keep it."_s);
+        QCOMPARE(autostart.errorString(), u"There's nowhere to save the autostart file."_s);
         QVERIFY(!autostart.isEnabled());
         // and off is as it is
         QVERIFY(autostart.setEnabled(false));

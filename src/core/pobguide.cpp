@@ -111,7 +111,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
             guide.details << runProblem;
             guide.steps << u"Press Update to try once more."_s
                         << u"If it keeps failing, open %1 yourself to see whether it works."_s.arg(
-                               onWindows(places) ? u"Path of Building"_s : u"Path of Building PoE 2"_s);
+                               onWindows(places) ? u"Path of Building"_s : u"Path of Building Community (PoE2)"_s);
         }
         guide.steps = numbered(guide.steps);
         return guide;
@@ -132,9 +132,9 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
         guide.details << u"Path of Upgrading uses the Path of Building from Flathub to work out how an item "
                          u"changes your build."_s;
         if (noFlatpak)
-            guide.steps << u"Install Flatpak on this computer, see https://flatpak.org/setup/"_s;
+            guide.steps << u"Install Flatpak on this computer. See https://flatpak.org/setup/"_s;
         guide.steps << u"Install \"Path of Building\" from Flathub, in Discover or with the buttons below."_s
-                    << u"Open \"Path of Building PoE 2\" once, and wait while it downloads what it needs."_s
+                    << u"Open \"Path of Building Community (PoE2)\" once, and wait while it downloads what it needs."_s
                     << (noFlatpak ? u"Restart Path of Upgrading."_s : u"Press Update."_s);
         guide.getFlatpak = true;
         break;
@@ -142,7 +142,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
         guide.headline = u"Path of Building is installed, but not set up for Path of Exile 2 yet."_s;
         guide.details << u"It downloads what it needs for Path of Exile 2 the first time you open it for "
                          u"that game."_s;
-        guide.steps << u"Open \"Path of Building PoE 2\" from your application menu."_s
+        guide.steps << u"Open \"Path of Building Community (PoE2)\" from your application menu."_s
                     << u"Wait until its window shows."_s << u"Press Update."_s;
         break;
     case PobProblem::NoLuajit:

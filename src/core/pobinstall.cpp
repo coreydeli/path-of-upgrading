@@ -183,7 +183,7 @@ PobLookup lookForPob(const PobPlaces &places, const QString &location)
 
     if (flatpak) {
         return notFound(PobProblem::NotOpened,
-                        u"Open Path of Building PoE 2 once, so it downloads what it needs."_s);
+                        u"Open Path of Building Community (PoE2) once, so it downloads what it needs."_s);
     }
     if (hasPob(native)) {
         PobLookup lookup = notFound(PobProblem::NoLuajit,

@@ -162,7 +162,7 @@ private Q_SLOTS:
                                      "Let go of the other keys, then press F2 again."_s;
         QTest::newRow("not over the game")
             << NotOverGame << QString()
-            << u"Your mouse wasn't over the game. Hover the item in game, then press F2."_s;
+            << u"Your mouse wasn't over the game. Hover over the item in the game, then press F2."_s;
         QTest::newRow("nothing copied")
             << NothingCopied << QString()
             << u"No item under the mouse. Hover an item until its tooltip shows, then press F2."_s;

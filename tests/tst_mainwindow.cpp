@@ -736,7 +736,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"importButton"_s)));
         QObject *message = w.find(u"importMessage"_s);
         QVERIFY(isVisible(message));
-        QCOMPARE(text(message), u"Imported the level 40 Ranger build for Ranger. It has no items on."_s);
+        QCOMPARE(text(message), u"Imported the level 40 Ranger build for Ranger. It has no items equipped."_s);
         QCOMPARE(text(code), QString());
 
         // on a new one, as there was none to play
@@ -798,7 +798,7 @@ private Q_SLOTS:
                  u"Saved %1"_s.arg(QLocale().toString(modified, QLocale::ShortFormat)));
         QVERIFY(click(saved));
         QCOMPARE(text(w.find(u"importMessage"_s)),
-                 u"Imported the level 40 Ranger build for Leveling. It has no items on."_s);
+                 u"Imported the level 40 Ranger build for Leveling. It has no items equipped."_s);
     }
 
     // as for one saved while you were on another page
@@ -1824,7 +1824,7 @@ private Q_SLOTS:
         QObject *summary = w.find(u"resistSummary"_s);
         QCOMPARE(text(summary), u"Fire 80%, Cold 60%"_s);
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"From your build in Path of Building, with what you wear now."_s);
+                 u"From your build in Path of Building, with what you have equipped now."_s);
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
         for (const QString &field :
              {u"fireMaximum"_s, u"coldMaximum"_s, u"lightningMaximum"_s, u"chaosMaximum"_s}) {
@@ -1847,7 +1847,7 @@ private Q_SLOTS:
         QVERIFY(resists->isFromSheet());
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"Typed in from your character sheet, with what you wear now."_s);
+                 u"Typed in from your character sheet, with what you have equipped now."_s);
         for (const QString &field :
              {u"fireResist"_s, u"coldResist"_s, u"lightningResist"_s, u"chaosResist"_s})
             QVERIFY(isVisible(w.find(field)));
@@ -4233,7 +4233,7 @@ private Q_SLOTS:
         QVERIFY(code->setProperty("text", ranger));
         QVERIFY(click(w.inGuide(u"setupImportButton"_s)));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"Imported the level 40 Ranger build for Ranger. It has no items on."_s);
+                 u"Imported the level 40 Ranger build for Ranger. It has no items equipped."_s);
         QCOMPARE(text(code), QString());
         QCOMPARE(w.inGuide(u"setupCharacter:Ranger"_s)->property("description").toString(),
                  u"Level 40 Ranger"_s);
@@ -4271,7 +4271,7 @@ private Q_SLOTS:
         QVERIFY(saved);
         QVERIFY(click(saved));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"Imported the level 40 Ranger build for Leveling. It has no items on."_s);
+                 u"Imported the level 40 Ranger build for Leveling. It has no items equipped."_s);
     }
 
     void setupGuideShowsTheHotkeyItHas()

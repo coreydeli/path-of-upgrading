@@ -64,7 +64,7 @@ XKeySender::XKeySender(QObject *parent)
         return;
     const xcb_query_extension_reply_t *xtest = xcb_get_extension_data(m_x.xcb(), &xcb_test_id);
     if (!xtest || !xtest->present)
-        m_errorString = u"The X server has no XTest, which it needs to press keys for us."_s;
+        m_errorString = u"The X server has no XTest, which Path of Upgrading needs to press keys."_s;
 }
 
 XKeySender::~XKeySender()

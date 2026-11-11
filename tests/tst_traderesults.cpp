@@ -364,11 +364,11 @@ private Q_SLOTS:
         QCOMPARE(changed.first().at(0).toModelIndex().row(), 0);
         QCOMPARE(changed.first().at(1).toModelIndex().row(), 5);
         QCOMPARE(changed.first().at(2).value<QList<int>>(), (QList<int>{TradeResults::ConvertedRole}));
-        QCOMPARE(site.text(0, TradeResults::ConvertedRole), u"about 2100 ex"_s);
-        QCOMPARE(site.text(1, TradeResults::ConvertedRole), u"about 1.4 div"_s);
+        QCOMPARE(site.text(0, TradeResults::ConvertedRole), u"about 2100 Exalted Orbs"_s);
+        QCOMPARE(site.text(1, TradeResults::ConvertedRole), u"about 1.4 Divine Orbs"_s);
         // nothing when it says as much as the price, or there's no rate
         QCOMPARE(site.text(2, TradeResults::ConvertedRole), QString());
-        QCOMPARE(site.text(3, TradeResults::ConvertedRole), u"about 40 ex"_s);
+        QCOMPARE(site.text(3, TradeResults::ConvertedRole), u"about 40 Exalted Orbs"_s);
         QCOMPARE(site.text(4, TradeResults::ConvertedRole), QString());
         QCOMPARE(site.text(5, TradeResults::ConvertedRole), QString());
     }
@@ -381,7 +381,7 @@ private Q_SLOTS:
         site.results.setSearch(foundBy(1));
         QVERIFY(site.loads());
         QVERIFY(site.hasRates(700));
-        QCOMPARE(site.text(0, TradeResults::ConvertedRole), u"about 2100 ex"_s);
+        QCOMPARE(site.text(0, TradeResults::ConvertedRole), u"about 2100 Exalted Orbs"_s);
 
         // after a search in another league, and after searches ran in that one
         TradeFinder::Found other = foundBy(1, u"Zz9"_s);
@@ -403,7 +403,7 @@ private Q_SLOTS:
         // with nothing to change
         QVERIFY(changed.isEmpty());
         QVERIFY(site.loads());
-        QCOMPARE(site.text(0, TradeResults::ConvertedRole), u"about 2100 ex"_s);
+        QCOMPARE(site.text(0, TradeResults::ConvertedRole), u"about 2100 Exalted Orbs"_s);
     }
 
     void leavesOutTheSold()
@@ -782,7 +782,7 @@ private Q_SLOTS:
         QStringList labels;
         for (const ReportFigure &figure : verdictIn(site, 0).figures)
             labels << figure.label;
-        QCOMPARE(labels, (QStringList{u"Cold res"_s, u"Lightning res"_s, u"Chaos res"_s, u"Life"_s}));
+        QCOMPARE(labels, (QStringList{u"Cold Resistance"_s, u"Lightning Resistance"_s, u"Chaos Resistance"_s, u"Life"_s}));
     }
 
     // with cold and fire resistance on the helmet you wear
@@ -807,10 +807,10 @@ private Q_SLOTS:
         const ResultVerdict loses = verdictIn(site, 0);
         QCOMPARE(loses.verdict, u"Loses resistance"_s);
         QCOMPARE(loses.tone, Tone::Bad);
-        QCOMPARE(loses.losses, QStringList{u"Cold res drops below the cap (40% of 75%)"_s});
+        QCOMPARE(loses.losses, QStringList{u"Cold Resistance drops below the cap (40% of 75%)"_s});
         // what it takes off fire leaves little over the cap
         QCOMPARE(loses.risks.size(), 1);
-        QVERIFY(loses.risks.first().startsWith(u"Fire res would be only 5% over the cap"));
+        QVERIFY(loses.risks.first().startsWith(u"Fire Resistance would be only 5% over the cap"));
 
         const ResultVerdict risky = verdictIn(site, 1);
         QCOMPARE(risky.verdict, u"Risky upgrade"_s);

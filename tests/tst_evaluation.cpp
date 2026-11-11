@@ -110,17 +110,17 @@ private Q_SLOTS:
     void resistancesFirst()
     {
         Character c;
-        c.tweaks = {{u"Cold res"_s, 0.5}};
+        c.tweaks = {{u"Cold Resistance"_s, 0.5}};
         // lightning is right on the cap
         c.resists = resists({}, 60, 60, 75, 0);
 
         // those you're short of, unless you tuned them yourself
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks,
-                 (ProfileTweaks{{u"Fire res"_s, 2}, {u"Cold res"_s, 0.5}}));
+                 (ProfileTweaks{{u"Fire Resistance"_s, 2}, {u"Cold Resistance"_s, 0.5}}));
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.chaos = true}).tweaks,
-                 (ProfileTweaks{{u"Fire res"_s, 2}, {u"Cold res"_s, 0.5}, {u"Chaos res"_s, 2}}));
+                 (ProfileTweaks{{u"Fire Resistance"_s, 2}, {u"Cold Resistance"_s, 0.5}, {u"Chaos Resistance"_s, 2}}));
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.resistsFirst = false}).tweaks,
-                 (ProfileTweaks{{u"Cold res"_s, 0.5}}));
+                 (ProfileTweaks{{u"Cold Resistance"_s, 0.5}}));
     }
 
     void gearThatRaisesTheCap()
@@ -134,7 +134,7 @@ private Q_SLOTS:
         QCOMPARE(options.resistNeed[Element::Fire], 12.0);
         QCOMPARE(options.resistNeed[Element::Cold], 9.0);
         // so only fire is short
-        QCOMPARE(options.tweaks, (ProfileTweaks{{u"Fire res"_s, 2}}));
+        QCOMPARE(options.tweaks, (ProfileTweaks{{u"Fire Resistance"_s, 2}}));
     }
 
     void chaosInoculation()
@@ -143,10 +143,10 @@ private Q_SLOTS:
         c.chaosInoculation = true;
         c.resists = resists({}, 80, 80, 80, 0);
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.chaos = true}).tweaks,
-                 (ProfileTweaks{{u"Chaos res"_s, 0}}));
+                 (ProfileTweaks{{u"Chaos Resistance"_s, 0}}));
 
-        c.tweaks = {{u"Chaos res"_s, 1}};
-        QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks, (ProfileTweaks{{u"Chaos res"_s, 1}}));
+        c.tweaks = {{u"Chaos Resistance"_s, 1}};
+        QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks, (ProfileTweaks{{u"Chaos Resistance"_s, 1}}));
     }
 
     void byGearScore_data()
@@ -489,7 +489,7 @@ private Q_SLOTS:
         c.resists = resists(gear, 90, {}, {}, {});
         const Evaluation e = evaluate(lifeAmulet(64), c);
         QCOMPARE(e.risks.size(), 1);
-        QVERIFY(e.risks.at(0).startsWith(u"Fire res would be only 5% over the cap"));
+        QVERIFY(e.risks.at(0).startsWith(u"Fire Resistance would be only 5% over the cap"));
         QVERIFY(e.losses.isEmpty());
         QCOMPARE(e.comparison.verdict, Verdict::Risky);
     }
@@ -505,7 +505,7 @@ private Q_SLOTS:
         QCOMPARE(e.resistLosses.at(0).element, Element::Fire);
         QCOMPARE(e.resistLosses.at(0).to, 60.0);
         QCOMPARE(e.resistRank, -1);
-        QCOMPARE(e.risks, QStringList{u"Fire res drops below the cap (60% of 75%)"_s});
+        QCOMPARE(e.risks, QStringList{u"Fire Resistance drops below the cap (60% of 75%)"_s});
         QCOMPARE(e.losses, e.risks);
     }
 
@@ -611,7 +611,7 @@ private Q_SLOTS:
         const Evaluation resist = evaluate(lifeAmulet(40), c);
         QCOMPARE(resist.comparison.verdict, Verdict::ResistLoss);
         QCOMPARE(resist.losses.size(), 2);
-        QVERIFY(resist.losses.first().startsWith(u"Fire res"_s));
+        QVERIFY(resist.losses.first().startsWith(u"Fire Resistance"_s));
         QVERIFY(resist.losses.last().startsWith(u"Life drops"_s));
         QCOMPARE(resist.risks, resist.losses);
 
@@ -623,7 +623,7 @@ private Q_SLOTS:
         QCOMPARE(health.comparison.verdict, Verdict::DefenceLoss);
         QCOMPARE(health.losses.size(), 2);
         QVERIFY(health.losses.first().startsWith(u"Life drops"_s));
-        QVERIFY(health.losses.last().startsWith(u"Fire res"_s));
+        QVERIFY(health.losses.last().startsWith(u"Fire Resistance"_s));
     }
 
     void aTieGoesToResistanceWithoutPathOfBuilding()
@@ -635,7 +635,7 @@ private Q_SLOTS:
         const Evaluation e = evaluate(lifeAmulet(110), c);
         QCOMPARE(e.losses.size(), 2);
         QCOMPARE(e.comparison.verdict, Verdict::ResistLoss);
-        QVERIFY(e.losses.first().startsWith(u"Fire res"_s));
+        QVERIFY(e.losses.first().startsWith(u"Fire Resistance"_s));
     }
 
     void pathOfBuildingsJudgement()

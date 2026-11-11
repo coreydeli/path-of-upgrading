@@ -54,7 +54,7 @@ public:
         BaseRole,                    // its base type, empty when that's its name
         ScoreRole,                   // its gear score, "34", empty when nothing is worn
         GradeRole,                   // "D"
-        LookForRole,                 // "Life 55 or more, Fire res 24 or more"
+        LookForRole,                 // "Life 55 or more, Fire Resistance 24 or more"
         TradeRole,                   // a tradeReport, what its search is up to
     };
 

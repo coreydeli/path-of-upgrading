@@ -145,7 +145,7 @@ private Q_SLOTS:
         TradeReply *reply = client.search(u"Standard"_s, {});
         QVERIFY(finishes(reply));
         QCOMPARE(reply->error(), TradeReply::Error::Rejected);
-        QCOMPARE(reply->errorString(), u"The trade site says: Invalid query"_s);
+        QCOMPARE(reply->errorString(), u"The trade site refused the search: Invalid query"_s);
         QCOMPARE(reply->siteMessage(), u"Invalid query"_s);
     }
 

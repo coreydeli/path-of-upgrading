@@ -150,7 +150,7 @@ private Q_SLOTS:
         QVERIFY(guide.installedAt.isEmpty());
         QCOMPARE(guide.steps.size(), 3);
         QVERIFY(guide.steps[0].startsWith(u"1. Install \"Path of Building\" from Flathub, in Discover"));
-        QVERIFY(guide.steps[1].startsWith(u"2. Open \"Path of Building PoE 2\" once"));
+        QVERIFY(guide.steps[1].startsWith(u"2. Open \"Path of Building Community (PoE2)\" once"));
         QCOMPARE(guide.steps[2], u"3. Press Update."_s);
         QVERIFY(guide.getFlatpak);
         QVERIFY(!guide.getInstaller);
@@ -174,7 +174,7 @@ private Q_SLOTS:
         QVERIFY(computer.installFlatpak());
         const PobGuide guide = guideFor(computer.places);
         QVERIFY(guide.headline.contains(u"not set up for Path of Exile 2"));
-        QVERIFY(guide.steps[0].contains(u"Open \"Path of Building PoE 2\""));
+        QVERIFY(guide.steps[0].contains(u"Open \"Path of Building Community (PoE2)\""));
         QVERIFY(guide.steps.last().contains(u"Update"));
         // it's installed already
         QVERIFY(!guide.getFlatpak);
@@ -243,7 +243,7 @@ private Q_SLOTS:
         QCOMPARE(guide.headline, u"Path of Building was found, but it wouldn't start."_s);
         QVERIFY(guide.details.contains(u"Path of Building didn't start in time."_s));
         QCOMPARE(guide.steps.size(), 2);
-        QVERIFY(guide.steps[1].contains(u"open Path of Building PoE 2 yourself"));
+        QVERIFY(guide.steps[1].contains(u"open Path of Building Community (PoE2) yourself"));
         // it's still where it was found
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(computer.flatpakFolder()));
     }
