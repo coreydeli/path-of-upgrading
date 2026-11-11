@@ -220,11 +220,13 @@ private Q_SLOTS:
         w.pobVersion = u"0.3.3"_s;
         w.date = u"2026-11-11"_s;
         w.damageWeight = 0.6;
+        w.build = u"abc123"_s;
         const std::optional<WeighedProfile> back = weighedProfileFromJson(toJson(w));
         QVERIFY(back);
         QCOMPARE(back->pobVersion, w.pobVersion);
         QCOMPARE(back->date, w.date);
         QCOMPARE(back->damageWeight, 0.6);
+        QCOMPARE(back->build, u"abc123"_s);
         QCOMPARE(back->slots, w.slots);
         QCOMPARE(back->profile.stats.size(), w.profile.stats.size());
         for (qsizetype i = 0; i < w.profile.stats.size(); ++i) {
