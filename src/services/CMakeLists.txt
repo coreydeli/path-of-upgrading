@@ -9,6 +9,7 @@ add_library(pou_services STATIC
     tradedatastore.cpp tradedatastore.h
     tradesearcher.cpp tradesearcher.h
     updatechecker.cpp updatechecker.h
+    updatedownloader.cpp updatedownloader.h
 )
 
 qt_add_resources(pou_services pobbridge
