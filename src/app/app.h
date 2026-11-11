@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "app/about.h"
 #include "app/activecharacter.h"
 #include "app/appearance.h"
 #include "app/buildimporter.h"
@@ -79,6 +80,7 @@ class App : public QObject
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
+    Q_PROPERTY(pou::About *about READ about CONSTANT)
 
 public:
     // Where it keeps what it has between runs.
@@ -151,6 +153,7 @@ public:
     PobOptions *pobOptions() { return &m_pobOptions; }
     Appearance *appearance() { return &m_appearance; }
     Onboarding *onboarding() { return &m_onboarding; }
+    About *about() { return &m_about; }
 
 private:
     void followSettings();
@@ -198,6 +201,7 @@ private:
     Autostart m_autostart;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
+    About m_about;
     Appearance m_appearance;
     Onboarding m_onboarding;
 };

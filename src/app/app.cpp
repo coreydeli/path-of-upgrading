@@ -89,6 +89,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
                                     .icon = QGuiApplication::desktopFileName()})
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
     , m_pobOptions(&m_settings, &m_pob, m_places, m_opener.get())
+    , m_about(&m_pobOptions, m_opener.get())
     , m_appearance(&m_settings, paths.colors)
     , m_onboarding(&m_settings, &m_characterList, &m_overlayOptions)
 {
