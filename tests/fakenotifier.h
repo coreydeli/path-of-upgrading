@@ -15,12 +15,16 @@ public:
         Event event;
         QString title;
         QString text;
+        QString action; // the button's text, if it had one
     };
 
-    void notify(Event event, const QString &title, const QString &text) override
+    void notify(Event event, const QString &title, const QString &text, const Action &action = {}) override
     {
-        sent.append({event, title, text});
+        sent.append({event, title, text, action.text});
+        actions.append(action.run);
     }
 
     QList<Sent> sent;
+    // what each one's button does
+    QList<std::function<void()>> actions;
 };
