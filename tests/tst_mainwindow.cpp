@@ -1708,6 +1708,9 @@ private Q_SLOTS:
         const QString lookFor = text(w.find(u"panelLookFor"_s));
         QVERIFY(lookFor.contains(u" or more"_s));
         QCOMPARE(lookFor, upgrades->chosenLookFor());
+        QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
+        QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u", item level "_s));
+        QCOMPARE(text(w.find(u"panelCanRoll"_s)), upgrades->chosenCanRoll().join(u'\n'));
         QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());
         QVERIFY(!w.find(u"tile:Gloves"_s)->property("chosen").toBool());
 
@@ -1743,6 +1746,14 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"panelGauge"_s)));
         QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Wants most"_s);
         QVERIFY(text(w.find(u"panelLookFor"_s)).contains(u" or more"_s));
+        QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
+        // the weapon has no item class to go by
+        QVERIFY(click(w.find(u"tile:Weapon"_s)));
+        QVERIFY(w.settled());
+        QCOMPARE(text(w.find(u"panelSlot"_s)), u"Weapon"_s);
+        QVERIFY(!isVisible(w.find(u"panelCanRoll"_s)));
+        QVERIFY(click(w.find(u"tile:Gloves"_s)));
+        QVERIFY(w.settled());
         // there's nothing worn to search for a better one of
         QVERIFY(!isVisible(w.find(u"panelFind"_s)));
         QVERIFY(!isVisible(w.find(u"panelTakeOff"_s)));

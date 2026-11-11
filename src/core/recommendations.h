@@ -34,6 +34,27 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
 // "Life 60 or more (up to 149), Cold res 25 or more".
 QString wantedText(const QList<WantedStat> &stats);
 
+// What a slot can roll of a stat the build wants: the top tier's range, and the
+// item level it needs.
+struct RollRange
+{
+    QString label; // "Life"
+    ModTier top;
+
+    friend bool operator==(const RollRange &, const RollRange &) = default;
+};
+
+// The stats the build wants in a slot, as many as `count`, with what their top
+// tier rolls on the item class there (the worn item's, else the slot's).
+// Those the table has nothing for are left out, so it's empty for a slot
+// with no class, like the weapon. Unlike wantedStats(), it doesn't matter what
+// is worn.
+QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreOptions &options,
+                         int count = 6);
+
+// "Life 100 to 149, item level 82", or one number when the tier has no range.
+QString rollRangeText(const RollRange &range);
+
 struct Recommendation
 {
     QString slot;
