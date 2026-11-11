@@ -85,6 +85,8 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   resistances, from your build or typed in from your character sheet, with a
   maximum for each element and a safety buffer, so an item that leaves one
   under the cap, or closer to it than the buffer, says so.
+- Pick the character you play with the Character box at the top of Your Gear. You add
+  characters and import builds under Import Character, in the sidebar's Gear Settings group.
 - Spreads the settings pages across a wide window. Their cards flow into up to
   three columns, and stack again on a narrow one. The gear page stays in one
   column on a wide window, with the equipment screen under the overall score,
@@ -114,6 +116,10 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   can be set to Full, the default, or Plain. Plain leaves out the glow behind
   the pages, the corner pieces, and the popup's fade and rise, and shows the
   gear scores as text rather than in rings.
+- Has an About page and a Help page in the sidebar's Settings group. About shows the version
+  and edition, the license, the Qt and KDE Frameworks versions, where Path of Building was
+  found, links to the source, the releases and the issue tracker, and the credits. Help opens
+  the wiki, or one of its pages, in your browser.
 
 
 ## Installing
