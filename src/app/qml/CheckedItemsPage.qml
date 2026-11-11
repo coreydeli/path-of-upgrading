@@ -117,7 +117,7 @@ ColumnsPage {
             objectName: "noItemsText"
             visible: itemRows.count === 0
             text: qsTr("You haven't checked any items yet.")
-            description: checkedPage.key !== "" ? qsTr("Hover over an item in the game and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in the game and press the hotkey for checking one. You can set it on the Settings page.")
+            description: checkedPage.key !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on the Settings page.")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
         }
@@ -175,7 +175,7 @@ ColumnsPage {
         }
 
         FormCard.FormTextDelegate {
-            text: qsTr("The list will be empty. You can check an item again in the game.")
+            text: qsTr("The list will be empty. You can check the items in the game again.")
             textItem.wrapMode: Text.Wrap
         }
     }

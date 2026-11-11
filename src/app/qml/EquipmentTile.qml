@@ -26,7 +26,7 @@ QQC2.AbstractButton {
     // what's in it in one line, for the screen reader and the tests
     readonly property string description: {
         if (empty)
-            return qsTr("Nothing saved");
+            return qsTr("Not saved yet");
         const parts = [name];
         if (base !== "")
             parts.push(base);
@@ -135,7 +135,7 @@ QQC2.AbstractButton {
             QQC2.Label {
                 objectName: "slotName"
                 Layout.fillWidth: true
-                text: tile.slot
+                text: Words.slot(tile.slot)
                 color: Kirigami.Theme.disabledTextColor
                 font: Kirigami.Theme.smallFont
                 elide: Text.ElideRight

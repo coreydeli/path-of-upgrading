@@ -492,7 +492,7 @@ private Q_SLOTS:
         ring.wearIn = {u"Ring 1"_s, u"Ring 2"_s};
         popup.showReport(ring, mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
-        QVERIFY(shown(popup, u"Wear as"_s));
+        QVERIFY(shown(popup, u"Equip as"_s));
         QVERIFY(button(popup, u"Ring 1"_s));
         QSignalSpy asked(&popup, &ItemPopup::wearAsked);
         QVERIFY(click(popup, u"Ring 2"_s));
@@ -501,7 +501,7 @@ private Q_SLOTS:
 
         // what you wear already
         popup.showReport(aReport(), mouseAt(200, 300));
-        QVERIFY(!shown(popup, u"Wear as"_s));
+        QVERIFY(!shown(popup, u"Equip as"_s));
         QVERIFY(!button(popup, u"Ring 2"_s));
     }
 
@@ -522,7 +522,7 @@ private Q_SLOTS:
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
         QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
 
-        QVERIFY(shown(popup, u"If you wear it in"_s));
+        QVERIFY(shown(popup, u"If you equip it in"_s));
         QVERIFY(shown(popup, u"Doom Loop, Gold Ring"_s));
         QVERIFY(shown(popup, u"Empty"_s));
         const QQuickItem *loss = shown(popup, u"-3.4 gear score"_s);
@@ -557,7 +557,7 @@ private Q_SLOTS:
         // and nothing when there's nothing to choose between
         ring.placements.clear();
         popup.showReport(ring, mouseAt(200, 300));
-        QVERIFY(!shown(popup, u"If you wear it in"_s));
+        QVERIFY(!shown(popup, u"If you equip it in"_s));
         QVERIFY(!shown(popup, u"Doom Loop, Gold Ring"_s));
         QVERIFY(button(popup, u"Ring 1"_s));
     }
@@ -576,7 +576,7 @@ private Q_SLOTS:
         QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
         const QQuickItem *first = button(popup, u"Jewel 1"_s);
         const QQuickItem *last = button(popup, u"Jewel 12"_s);
-        const QQuickItem *label = shown(popup, u"Wear as"_s);
+        const QQuickItem *label = shown(popup, u"Equip as"_s);
         QVERIFY(first && last && label);
         const auto middle = [](const QQuickItem *item) {
             return item->mapToScene(item->boundingRect().center()).y();

@@ -144,7 +144,7 @@ QList<ReportFigure> headlineOf(const PobVerdict &v)
             .label = u"Effective HP"_s, .change = signedNumber(*ehp) + u'%', .tone = toneOf(*ehp)};
     }
     if (v.resistGain != 0) {
-        headline << ReportFigure{.label = u"Resistance toward the caps"_s,
+        headline << ReportFigure{.label = u"Resistances toward the caps"_s,
                                  .change = signedNumber(v.resistGain),
                                  .tone = toneOf(v.resistGain)};
     }

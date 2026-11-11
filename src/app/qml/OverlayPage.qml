@@ -124,7 +124,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "pausedSwitch"
             text: qsTr("Pause")
-            description: qsTr("The hotkeys and the clipboard are ignored until you turn this off.")
+            description: qsTr("The hotkeys and copied items are ignored until you turn this off.")
             checked: overlayPage.options.paused
             onToggled: overlayPage.options.paused = checked
         }
@@ -194,7 +194,7 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "colorblindSwitch"
-            text: qsTr("Colorblind friendly colors")
+            text: qsTr("Colorblind-friendly colors")
             description: qsTr("Blue for better and orange for worse, in place of green and red.")
             checked: overlayPage.options.colorblind
             onToggled: overlayPage.options.colorblind = checked
@@ -232,7 +232,7 @@ ColumnsPage {
     Sheet {
         SwitchRow {
             objectName: "startSwitch"
-            text: qsTr("Start with the desktop")
+            text: qsTr("Start with your desktop")
             description: qsTr("Waits in the tray when you log in, without the window.")
             checked: overlayPage.options.startWithDesktop
             onToggled: overlayPage.options.startWithDesktop = checked

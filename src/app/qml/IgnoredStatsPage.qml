@@ -93,8 +93,8 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: ignoredPage.ignored.character === ""
-            text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, under Import Character in Gear Settings.")
+            text: qsTr("You haven't picked a character yet.")
+            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
         TableHeader {

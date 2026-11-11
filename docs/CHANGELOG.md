@@ -29,6 +29,11 @@ version that comes out.
 
 ### Changed
 
+- The app uses the game's words. It says equip, Unequip, Equipped by and Equip as in place
+  of wear, Take Off and Worn, and Off Hand for the off hand. The gear score's stats are spelled
+  out, such as Fire Resistance, Energy Shield Recharge and Movement Speed, and the tweaks you
+  saved move to the new names. Prices converted in the results are in full, such as "about 3
+  Divine Orbs". The Gear Grade page is Gear Score again.
 - The gear page's "Your Resistances" card is now called "Resistances". A line
   under its heading says where the numbers come from, and the line of values
   stays hidden until they are known.

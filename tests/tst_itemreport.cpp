@@ -510,7 +510,7 @@ private Q_SLOTS:
                  (QList<ReportFigure>{
                      {.label = u"Minion DPS"_s, .change = u"+10%"_s, .tone = Tone::Good},
                      {.label = u"Effective HP"_s, .change = u"-2.5%"_s, .tone = Tone::Bad},
-                     {.label = u"Resistance toward the caps"_s, .change = u"+12"_s, .tone = Tone::Good},
+                     {.label = u"Resistances toward the caps"_s, .change = u"+12"_s, .tone = Tone::Good},
                  }));
 
         // what it doesn't know or doesn't change
@@ -520,7 +520,7 @@ private Q_SLOTS:
         QCOMPARE(reportOf(judgedByPob(v)).headline,
                  (QList<ReportFigure>{
                      {.label = u"DPS"_s, .change = u"0%"_s},
-                     {.label = u"Resistance toward the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
+                     {.label = u"Resistances toward the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
                  }));
         QVERIFY(reportOf(judgedByPob({})).headline.isEmpty());
         QVERIFY(reportOf(judged(Verdict::Upgrade)).headline.isEmpty());

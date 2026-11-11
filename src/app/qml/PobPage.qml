@@ -253,7 +253,7 @@ ColumnsPage {
                     spacing: Kirigami.Units.largeSpacing
 
                     QQC2.Label {
-                        text: qsTr("Survivability")
+                        text: qsTr("Defences")
                     }
 
                     QQC2.Slider {
