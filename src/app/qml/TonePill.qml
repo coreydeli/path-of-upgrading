@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 
-// A small rounded tag in the color of what it means for you, for a word like
+// A small square tag in the color of what it means for you, for a word like
 // "Better" or "Instant buyout".
 Rectangle {
     id: pill
@@ -17,19 +17,15 @@ Rectangle {
 
     implicitWidth: label.implicitWidth + 2 * Kirigami.Units.smallSpacing + 2
     implicitHeight: label.implicitHeight + 2
-    radius: height / 2
-    color: Style.tint(Kirigami.Theme.backgroundColor, tint, 0.15)
-    border {
-        width: 1
-        color: Style.tint(Kirigami.Theme.backgroundColor, tint, 0.4)
-    }
+    color: tint
 
     QQC2.Label {
         id: label
 
         anchors.centerIn: parent
-        color: pill.tint
-        font: Kirigami.Theme.smallFont
+        // dark type on the tone, as on the verdict block
+        color: Style.ink
+        font: Style.labelFont(Kirigami.Theme.smallFont)
         text: pill.text
     }
 }

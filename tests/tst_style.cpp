@@ -242,10 +242,15 @@ private Q_SLOTS:
         QVERIFY(gauge);
         QCOMPARE(gauge->property("fraction").toDouble(), 0.72);
         QCOMPARE(gauge->property("tint").value<QColor>(), grade(u"A"_s));
-        QCOMPARE(gauge->property("ring").toBool(), true);
         QCOMPARE(gauge->property("text").toString(), u"72 A"_s);
         QVERIFY(gauge->implicitWidth() > 0);
-        QCOMPARE(gauge->implicitWidth(), gauge->implicitHeight());
+    }
+
+    void aGaugeLightsPipsToItsGrade()
+    {
+        QCOMPARE(make("ScoreGauge { score: \"72\"; grade: \"A\" }")->property("lit").toInt(), 4);
+        QCOMPARE(make("ScoreGauge { score: \"10\"; grade: \"D\" }")->property("lit").toInt(), 1);
+        QCOMPARE(make("ScoreGauge { score: \"\"; grade: \"\" }")->property("lit").toInt(), 0);
     }
 
     void aGaugeStaysWithinTheRing()
@@ -274,13 +279,22 @@ private Q_SLOTS:
         QCOMPARE(read->text(QAccessible::Name), u"Gear score 72, grade A"_s);
     }
 
-    void plainDrawsAGaugeAsText()
+    void aPlateIsSquareWhenPlain()
     {
+        std::unique_ptr<QQuickItem> plate = make("Plate { width: 100; height: 50 }");
+        QCOMPARE(plate->property("notch").toDouble(), 12.0);
         m_style->setProperty("plain", true);
-        std::unique_ptr<QQuickItem> gauge = make("ScoreGauge { score: \"72\"; grade: \"A\" }");
-        QCOMPARE(gauge->property("ring").toBool(), false);
-        // the size of a line of text, not of a ring
-        QVERIFY(gauge->implicitHeight() < 3 * 16);
+        std::unique_ptr<QQuickItem> square = make("Plate { width: 100; height: 50 }");
+        QCOMPARE(square->property("notch").toDouble(), 0.0);
+    }
+
+    void aNoticeShowsOneLineEach()
+    {
+        std::unique_ptr<QQuickItem> none = make("Notice { }");
+        QCOMPARE(none->isVisible(), false);
+        std::unique_ptr<QQuickItem> two = make("Notice { lines: [\"Loses life\", \"Loses speed\"] }");
+        QCOMPARE(two->isVisible(), true);
+        QCOMPARE(two->property("tint").value<QColor>(), tone(3, false));
     }
 
     void aFrameHasFourCorners() { QCOMPARE(corners(), 4); }

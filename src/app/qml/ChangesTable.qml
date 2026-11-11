@@ -37,8 +37,7 @@ ColumnLayout {
         id: number
 
         visible: false
-        font.bold: true
-        font.features: ({"tnum": 1})
+        font: Style.figureFont(Kirigami.Theme.defaultFont, 0.9)
         text: "+88,888%"
     }
 
@@ -49,21 +48,21 @@ ColumnLayout {
 
         QQC2.Label {
             Layout.fillWidth: true
-            font: Kirigami.Theme.smallFont
+            font: Style.labelFont(Kirigami.Theme.smallFont)
             text: table.title
         }
 
         QQC2.Label {
             Layout.preferredWidth: table.numberWidth
             horizontalAlignment: Text.AlignRight
-            font: Kirigami.Theme.smallFont
+            font: Style.labelFont(Kirigami.Theme.smallFont)
             text: qsTr("Now")
         }
 
         QQC2.Label {
             Layout.preferredWidth: table.numberWidth
             horizontalAlignment: Text.AlignRight
-            font: Kirigami.Theme.smallFont
+            font: Style.labelFont(Kirigami.Theme.smallFont)
             text: qsTr("With it")
         }
 
@@ -98,7 +97,8 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: text !== ""
                     wrapMode: Text.Wrap
-                    font: Kirigami.Theme.smallFont
+                    font.pointSize: Kirigami.Theme.smallFont.pointSize
+                    font.italic: true
                     text: change.modelData.note
                     tone: table.plainNotes ? Tone.Plain : change.modelData.tone
                     colorblind: table.colorblind
@@ -124,33 +124,30 @@ ColumnLayout {
 
             Item {
                 Layout.preferredWidth: table.numberWidth
-                Layout.preferredHeight: figure.implicitHeight
+                Layout.preferredHeight: figure.implicitHeight + 6
                 Layout.alignment: Qt.AlignTop
-
-                // how big the change is, to the right for a gain and the
-                // left for a loss, behind the number
-                Rectangle {
-                    readonly property real part: table.biggest > 0 ? table.sizeOf(change.modelData.change) / table.biggest : 0
-
-                    x: change.modelData.tone === Tone.Bad ? parent.width / 2 - width : parent.width / 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(part > 0 ? 2 : 0, part * parent.width / 2)
-                    height: parent.height - 4
-                    visible: change.modelData.tone === Tone.Good || change.modelData.tone === Tone.Bad
-                    color: Style.tint(Kirigami.Theme.backgroundColor,
-                                      Style.tone(change.modelData.tone, table.colorblind, Kirigami.Theme), 0.3)
-                }
 
                 ToneLabel {
                     id: figure
 
                     width: parent.width
                     horizontalAlignment: Text.AlignRight
-                    font.bold: true
-                    font.features: ({"tnum": 1})
+                    font: Style.figureFont(Kirigami.Theme.defaultFont, 0.9)
                     text: change.modelData.change
                     tone: change.modelData.tone
                     colorblind: table.colorblind
+                }
+
+                // how big the change is, under its number, longer for more
+                Rectangle {
+                    readonly property real part: table.biggest > 0 ? table.sizeOf(change.modelData.change) / table.biggest : 0
+
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    width: Math.max(3, part * parent.width * 0.8)
+                    height: 3
+                    visible: change.modelData.tone === Tone.Good || change.modelData.tone === Tone.Bad
+                    color: Style.tone(change.modelData.tone, table.colorblind, Kirigami.Theme)
                 }
             }
         }
