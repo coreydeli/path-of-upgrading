@@ -1,5 +1,6 @@
 # The app itself: the windows in QML and what they show in C++
 qt_add_library(pou_app STATIC
+    about.cpp about.h
     activecharacter.cpp activecharacter.h
     app.cpp app.h
     appearance.cpp appearance.h
@@ -45,6 +46,7 @@ set_source_files_properties(qml/Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
+        qml/AboutPage.qml
         qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml
