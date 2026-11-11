@@ -77,7 +77,7 @@ struct UpdateSettings
     bool checkOnLaunch = true; // and about once a day, asking GitHub for a newer release
     // Betas count as newer releases. A beta starts with this on, and a release
     // with it off, until you choose.
-    bool includeBetas = false;
+    bool includeBetas = isBetaBuild();
     // The version you chose to skip, like "0.7.0-beta.5", which isn't offered
     // again. A newer one is.
     QString skipped;
