@@ -114,6 +114,21 @@ The folders split the code like this:
 | `src/platform` | The operating system: overlay windows, global shortcuts and reading the game, through XWayland on Linux |
 | `src/app` | The QML app, its models in C++ and the QML in `src/app/qml` |
 
+`data/slotmods.json` lists the mods each slot can roll, with their tiers, and
+the gear notes read it. It comes from Path of Building's Path of Exile 2 data,
+so make it again by hand after a game patch. Point `tools/slot-mods.py` at the
+Path of Building folder that has `Data/ModItem.lua` and `Data/Bases/` in it,
+and at the file to write:
+
+```bash
+python3 -I tools/slot-mods.py <PathOfBuilding2 folder> data/slotmods.json
+```
+
+The Flatpak keeps that folder under
+`~/.var/app/community.pathofbuilding.PathOfBuilding/data/`. Nothing is
+downloaded, so the folder must be there already. Commit the new file like any
+other change.
+
 Keep comments short and plain. Explain what isn't obvious from the code, and
 don't narrate it or make up a reason for it.
 
