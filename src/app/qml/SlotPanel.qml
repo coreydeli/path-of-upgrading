@@ -88,7 +88,7 @@ Item {
                     QQC2.Label {
                         objectName: "panelSlot"
                         Layout.fillWidth: true
-                        text: content.slot
+                        text: Words.slot(content.slot)
                         color: Style.accent(Kirigami.Theme)
                         font: Style.sectionFont(Kirigami.Theme.defaultFont)
                         elide: Text.ElideRight
@@ -98,7 +98,7 @@ Item {
                     QQC2.Label {
                         objectName: "panelItem"
                         Layout.fillWidth: true
-                        text: content.name !== "" ? content.name : qsTr("Nothing saved")
+                        text: content.name !== "" ? content.name : qsTr("Not saved yet")
                         color: content.name !== "" ? Style.rarity(content.rarity, Kirigami.Theme) : Kirigami.Theme.disabledTextColor
                         font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
                         wrapMode: Text.Wrap
@@ -218,9 +218,9 @@ Item {
                 QQC2.Button {
                     objectName: "panelTakeOff"
                     visible: content.name !== ""
-                    text: qsTr("Take Off")
+                    text: qsTr("Unequip")
                     icon.name: "list-remove"
-                    Accessible.name: qsTr("Take Off %1").arg(content.slot)
+                    Accessible.name: qsTr("Unequip %1").arg(Words.slot(content.slot))
                     onClicked: panel.gear.takeOff(content.slot)
                 }
             }

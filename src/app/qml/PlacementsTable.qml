@@ -20,7 +20,7 @@ ColumnLayout {
         Layout.fillWidth: true
         opacity: 0.7
         font: Kirigami.Theme.smallFont
-        text: qsTr("If you wear it in")
+        text: qsTr("If you equip it in")
     }
 
     Repeater {
@@ -44,7 +44,7 @@ ColumnLayout {
 
                     QQC2.Label {
                         font.bold: place.modelData.best
-                        text: place.modelData.slot
+                        text: Words.slot(place.modelData.slot)
                     }
 
                     // the place its verdict is for

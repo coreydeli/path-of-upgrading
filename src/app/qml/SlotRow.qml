@@ -26,7 +26,7 @@ FormCard.AbstractFormDelegate {
     // what's in it in one line, for the screen reader and the tests
     readonly property string description: {
         if (name === "")
-            return qsTr("Nothing saved");
+            return qsTr("Not saved yet");
         const parts = [name];
         if (base !== "")
             parts.push(base);
@@ -76,7 +76,7 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "slotName"
                 Layout.fillWidth: true
-                text: row.slot
+                text: Words.slot(row.slot)
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
                 Accessible.ignored: true
@@ -85,7 +85,7 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "itemName"
                 Layout.fillWidth: true
-                text: row.name !== "" ? row.name : qsTr("Nothing saved")
+                text: row.name !== "" ? row.name : qsTr("Not saved yet")
                 color: row.name !== "" ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
                 wrapMode: Text.Wrap
                 Accessible.ignored: true
@@ -141,10 +141,10 @@ FormCard.AbstractFormDelegate {
             QQC2.ToolButton {
                 objectName: "takeOffButton"
                 visible: row.name !== ""
-                text: qsTr("Take Off")
+                text: qsTr("Unequip")
                 icon.name: "list-remove"
                 display: QQC2.AbstractButton.IconOnly
-                Accessible.name: qsTr("Take Off %1").arg(row.slot)
+                Accessible.name: qsTr("Unequip %1").arg(Words.slot(row.slot))
                 QQC2.ToolTip.text: text
                 QQC2.ToolTip.visible: hovered
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
