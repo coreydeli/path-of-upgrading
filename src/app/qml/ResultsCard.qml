@@ -82,9 +82,6 @@ Rectangle {
             }
         }
 
-        Ornament {
-            Layout.fillWidth: true
-        }
 
         // before there's a search to show
         QQC2.Label {
@@ -180,7 +177,10 @@ Rectangle {
         }
     }
 
-    OrnateFrame {
+    Plate {
         anchors.fill: parent
+        z: -1
+        line: Style.frame(Kirigami.Theme)
+        lineWidth: 1
     }
 }

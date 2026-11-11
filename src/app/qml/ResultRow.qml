@@ -58,9 +58,10 @@ Item {
             color: Style.rarity(row.rarity, Kirigami.Theme)
         }
 
-        OrnateFrame {
+        Plate {
             anchors.fill: parent
-            lit: hover.hovered
+            line: hover.hovered ? Style.accent(Kirigami.Theme) : Style.frame(Kirigami.Theme)
+            lineWidth: 1
         }
     }
 

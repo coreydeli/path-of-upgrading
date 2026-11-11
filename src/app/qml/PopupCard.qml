@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
 // What the popup shows: the item you checked and what it means for you.
-Rectangle {
+Item {
     id: card
 
     required property ItemPopup popup
@@ -32,7 +32,15 @@ Rectangle {
 
     implicitWidth: Kirigami.Units.gridUnit * 22
     implicitHeight: band.height + content.implicitHeight + 2 * Kirigami.Units.largeSpacing
-    color: Kirigami.Theme.backgroundColor
+
+    // the cut-cornered plate everything sits on
+    Plate {
+        anchors.fill: parent
+        z: -1
+        fill: Kirigami.Theme.backgroundColor
+        line: card.accent
+        lineWidth: 2
+    }
 
     HoverHandler {
         onHoveredChanged: card.popup.hovered = hovered
@@ -48,16 +56,7 @@ Rectangle {
             right: parent.right
         }
         height: names.implicitHeight + 2 * Kirigami.Units.largeSpacing
-        gradient: Gradient {
-            GradientStop {
-                position: 0
-                color: Style.tint(Kirigami.Theme.backgroundColor, card.accent, 0.18)
-            }
-            GradientStop {
-                position: 1
-                color: Kirigami.Theme.backgroundColor
-            }
-        }
+        color: Style.tint(Kirigami.Theme.backgroundColor, card.accent, 0.14)
 
         HoverHandler {
             cursorShape: Qt.SizeAllCursor
@@ -208,9 +207,8 @@ Rectangle {
 
                         ToneLabel {
                             Layout.fillWidth: true
-                            font.bold: true
-                            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
-                            font.features: ({"tnum": 1})
+                            horizontalAlignment: Text.AlignRight
+                            font: Style.figureFont(Kirigami.Theme.defaultFont, 2.2)
                             text: card.report.score
                             tone: card.report.verdictTone
                             colorblind: card.popup.colorblind
@@ -236,24 +234,20 @@ Rectangle {
             }
         }
 
-        Ornament {
-            Layout.fillWidth: true
-            visible: banner.visible
-        }
 
         // what it costs you, which matters more than what it gives
-        Kirigami.InlineMessage {
+        Notice {
             Layout.fillWidth: true
-            visible: card.report.losses.length > 0
-            type: Kirigami.MessageType.Error
-            text: card.report.losses.join("\n")
+            lines: card.report.losses
+            tone: Tone.Bad
+            colorblind: card.popup.colorblind
         }
 
-        Kirigami.InlineMessage {
+        Notice {
             Layout.fillWidth: true
-            visible: card.report.risks.length > 0
-            type: Kirigami.MessageType.Warning
-            text: card.report.risks.join("\n")
+            lines: card.report.risks
+            tone: Tone.Warning
+            colorblind: card.popup.colorblind
         }
 
         ToneLabel {
@@ -617,9 +611,6 @@ Rectangle {
             visible: card.popup.tradeAvailable && card.report.gear
             spacing: Kirigami.Units.smallSpacing
 
-            Ornament {
-                Layout.fillWidth: true
-            }
 
             Flow {
                 Layout.fillWidth: true
@@ -724,9 +715,5 @@ Rectangle {
                 }
             }
         }
-    }
-
-    OrnateFrame {
-        anchors.fill: parent
     }
 }
