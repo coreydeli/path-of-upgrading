@@ -37,7 +37,7 @@ ColumnsPage {
         title: qsTr("Your Characters")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "noCharactersText"
             visible: characterRows.count === 0
@@ -168,7 +168,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: charactersError.visible
         }
 
@@ -181,7 +181,7 @@ ColumnsPage {
             textItem.color: Kirigami.Theme.negativeTextColor
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: problemsText.visible
         }
 
@@ -201,7 +201,7 @@ ColumnsPage {
         title: qsTr("Add a Character")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: nameField
             objectName: "nameField"
@@ -210,7 +210,7 @@ ColumnsPage {
             onAccepted: addButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: addButton
@@ -249,7 +249,7 @@ ColumnsPage {
         title: qsTr("Import a Build")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: codeField
             objectName: "codeField"
@@ -258,7 +258,7 @@ ColumnsPage {
             onAccepted: importButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: importButton
@@ -273,7 +273,7 @@ ColumnsPage {
             onClicked: charactersPage.importer.importText(codeField.text)
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "fileButton"
@@ -283,7 +283,7 @@ ColumnsPage {
             onClicked: fileDialog.open()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: importMessage.visible
         }
 
@@ -303,7 +303,7 @@ ColumnsPage {
         title: qsTr("Saved in Path of Building")
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: savedBuilds
         objectName: "savedBuilds"
         visible: charactersPage.importer.buildsFolder !== ""
@@ -331,7 +331,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "refreshBuildsButton"

@@ -4,7 +4,7 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // The league you play in, which the Trade page and, without trade, the
 // Settings page have. Anything put inside goes under the switches.
-FormCard.FormCard {
+Sheet {
     id: card
 
     required property TradeOptions options
@@ -29,7 +29,7 @@ FormCard.FormCard {
         onActivated: card.options.league = currentValue
     }
 
-    FormCard.FormDelegateSeparator {}
+    RowRule {}
 
     SwitchRow {
         objectName: "hardcoreSwitch"
@@ -38,7 +38,7 @@ FormCard.FormCard {
         onToggled: card.options.hardcore = checked
     }
 
-    FormCard.FormDelegateSeparator {}
+    RowRule {}
 
     SwitchRow {
         objectName: "soloSwitch"

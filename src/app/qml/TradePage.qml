@@ -51,7 +51,7 @@ ColumnsPage {
     title: qsTr("Trade")
     description: qsTr("Searching the trade site from the popup, the league and what you will pay.")
 
-    FormCard.FormCard {
+    Sheet {
         Layout.topMargin: Kirigami.Units.largeSpacing
 
         SwitchRow {
@@ -62,7 +62,7 @@ ColumnsPage {
             onToggled: tradePage.options.enabled = checked
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: unavailableText.visible
         }
 
@@ -82,7 +82,7 @@ ColumnsPage {
     LeagueCard {
         options: tradePage.options
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: searchedText.visible
         }
 
@@ -99,7 +99,7 @@ ColumnsPage {
         title: qsTr("Listings")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "sellersBox"
             text: qsTr("Sellers")
@@ -115,7 +115,7 @@ ColumnsPage {
         title: qsTr("Budget")
     }
 
-    FormCard.FormCard {
+    Sheet {
         NumberField {
             objectName: "budgetMin"
             label: qsTr("Lowest price")
@@ -127,7 +127,7 @@ ColumnsPage {
             onEdited: value => tradePage.options.budgetMin = value
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "budgetMax"
@@ -140,7 +140,7 @@ ColumnsPage {
             onEdited: value => tradePage.options.budgetMax = value
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormComboBoxDelegate {
             objectName: "currencyBox"
@@ -153,7 +153,7 @@ ColumnsPage {
             onActivated: tradePage.options.currency = currentValue
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "autoRateSwitch"
@@ -163,7 +163,7 @@ ColumnsPage {
             onToggled: tradePage.options.autoRate = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "rateMinutes"
@@ -177,7 +177,7 @@ ColumnsPage {
             onEdited: value => tradePage.options.rateMinutes = value
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "divineRate"
@@ -196,14 +196,14 @@ ColumnsPage {
         title: qsTr("Signed In")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "sessionStatus"
             text: tradePage.session.status
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormRow {
             text: qsTr("Session ID")
@@ -246,7 +246,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: sessionError.visible
         }
 
@@ -259,7 +259,7 @@ ColumnsPage {
             textItem.color: Kirigami.Theme.negativeTextColor
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "findSessionButton"
@@ -269,7 +269,7 @@ ColumnsPage {
             onClicked: tradePage.showFindSession = !tradePage.showFindSession
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: findSessionSteps.visible
         }
 
@@ -282,7 +282,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: signInButton.visible
         }
 

@@ -107,7 +107,7 @@ FormCard.FormCardDialog {
         text: dialog.picker.message
     }
 
-    FormCard.FormDelegateSeparator {}
+    RowRule {}
 
     QQC2.ScrollView {
         Layout.fillWidth: true

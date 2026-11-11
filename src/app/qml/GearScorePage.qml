@@ -51,7 +51,7 @@ ColumnsPage {
         title: scorePage.scoring.character !== "" ? qsTr("For %1").arg(scorePage.scoring.character) : qsTr("Build Profile")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: scorePage.scoring.character === ""
@@ -68,7 +68,7 @@ ColumnsPage {
             onActivated: chosen => scorePage.scoring.profile = chosen
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: scoreError.visible
         }
 
@@ -99,7 +99,7 @@ ColumnsPage {
         text: qsTr("Changes how much each stat adds to the gear score. The number is what the stat's points are multiplied by, so Normal (1x) is how the profile has it, Not at all (0x) leaves the stat out and Three times (3x) triples it.")
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: stats
         objectName: "stats"
         visible: statRows.count > 0
@@ -114,7 +114,7 @@ ColumnsPage {
             controlsWidth: scorePage.levelWidth
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: scorePage.wide
         }
 
@@ -125,7 +125,7 @@ ColumnsPage {
             delegate: StatRow {}
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "resetButton"

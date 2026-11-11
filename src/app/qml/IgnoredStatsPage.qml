@@ -89,7 +89,7 @@ ColumnsPage {
         title: ignoredPage.ignored.character !== "" ? qsTr("For %1").arg(ignoredPage.ignored.character) : qsTr("Ignored Stats")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: ignoredPage.ignored.character === ""
@@ -107,7 +107,7 @@ ColumnsPage {
             controlsWidth: ignoredPage.modeWidth
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: ignoredPage.wide
         }
 
@@ -117,7 +117,7 @@ ColumnsPage {
             delegate: GroupRow {}
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: ignoredError.visible
         }
 
@@ -141,7 +141,7 @@ ColumnsPage {
         title: qsTr("One by One")
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: singleStats
         objectName: "singleStats"
 
@@ -155,7 +155,7 @@ ColumnsPage {
             controlsWidth: ignoredPage.modeWidth
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: ignoredPage.wide && statRows.count > 0
         }
 
@@ -172,7 +172,7 @@ ColumnsPage {
             text: qsTr("You ignore no stat by itself.")
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "ignoreStatButton"

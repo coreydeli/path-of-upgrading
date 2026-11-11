@@ -78,6 +78,7 @@ qt_add_qml_module(pou_app
         qml/Notice.qml
         qml/Plate.qml
         qml/RowRule.qml
+        qml/Sheet.qml
         qml/ScoreGauge.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml

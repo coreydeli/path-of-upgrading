@@ -81,7 +81,7 @@ ColumnsPage {
         title: weightsPage.weights.character !== "" ? qsTr("For %1").arg(weightsPage.weights.character) : qsTr("Stat Weights")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: weightsPage.weights.character === ""
@@ -99,7 +99,7 @@ ColumnsPage {
             controlsWidth: weightsPage.boxWidth
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: weightsPage.wide && weightRows.count > 0
         }
 
@@ -118,7 +118,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
         }
 
         FormCard.FormButtonDelegate {
@@ -148,7 +148,7 @@ ColumnsPage {
             onClicked: weightsPage.weights.reset()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: weightsError.visible
         }
 
@@ -211,7 +211,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         QQC2.ScrollView {
             id: suggestionsView

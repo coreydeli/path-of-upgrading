@@ -63,7 +63,7 @@ ColumnsPage {
         title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             id: overall
             objectName: "overallScore"
@@ -82,7 +82,7 @@ ColumnsPage {
             description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: overall.visible || nobody.visible
         }
 
@@ -104,7 +104,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: gearError.visible
         }
 
@@ -128,7 +128,7 @@ ColumnsPage {
         title: qsTr("Resistances")
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: resistances
         objectName: "resistances"
 
@@ -138,7 +138,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormTextDelegate {
             id: resistSummary
@@ -148,7 +148,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: resistSummary.visible
         }
 
@@ -188,7 +188,7 @@ ColumnsPage {
             onEdited: value => gearPage.resists.chaos = value
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: fireMaximum.visible
         }
 
@@ -232,7 +232,7 @@ ColumnsPage {
             onEdited: value => gearPage.resists.margin = value
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: resistError.visible
         }
 
@@ -252,7 +252,7 @@ ColumnsPage {
     }
 
     // on the equipment screen they're under the rest
-    FormCard.FormCard {
+    Sheet {
         id: extras
         objectName: "extras"
         visible: gearPage.gear.hasExtras && !gearPage.equipment

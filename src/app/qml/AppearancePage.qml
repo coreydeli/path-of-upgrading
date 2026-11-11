@@ -46,7 +46,7 @@ ColumnsPage {
         title: qsTr("Theme")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "colorsBox"
             text: qsTr("Colors")
@@ -58,7 +58,7 @@ ColumnsPage {
             onActivated: appearancePage.appearance.colors = currentValue
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: colorsError.visible
         }
 
@@ -70,7 +70,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormComboBoxDelegate {
             objectName: "decorationsBox"
@@ -88,7 +88,7 @@ ColumnsPage {
         title: qsTr("Fonts")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormButtonDelegate {
             objectName: "headingFontButton"
             text: qsTr("Heading font")
@@ -96,7 +96,7 @@ ColumnsPage {
             onClicked: headingFontPicker.open()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "textFontButton"
@@ -105,7 +105,7 @@ ColumnsPage {
             onClicked: textFontPicker.open()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "desktopSizeSwitch"
@@ -114,7 +114,7 @@ ColumnsPage {
             onToggled: appearancePage.appearance.textSize = checked ? 0 : Math.round(appearancePage.appearance.desktopTextSize)
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: textSize.visible
         }
 
@@ -133,7 +133,7 @@ ColumnsPage {
             onEdited: value => appearancePage.appearance.textSize = value
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: fontsError.visible
         }
 
@@ -148,7 +148,7 @@ ColumnsPage {
     }
 
     // what the choices look like together, as it changes
-    FormCard.FormCard {
+    Sheet {
         FormCard.AbstractFormDelegate {
             background: null
             focusPolicy: Qt.NoFocus
