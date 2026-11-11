@@ -67,7 +67,7 @@ CharacterList::CharacterList(CharacterStore *store, ActiveCharacter *active, Set
     connect(active, &ActiveCharacter::changed, this, [this] {
         const int row = int(m_ids.indexOf(m_active->id()));
         if (row >= 0)
-            Q_EMIT dataChanged(index(row), index(row), {ProfileRole, ScoreRole, GradeRole});
+            Q_EMIT dataChanged(index(row), index(row), {SourceRole, ScoreRole, GradeRole});
     });
 }
 
@@ -106,14 +106,15 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
         return {};
     case BuildRole:
         return m_builds.value(id);
-    case ProfileRole: {
+    case SourceRole: {
         const Character *character = m_store->find(id);
         if (!character)
             return {};
-        if (character->buildProfile == noBuildProfile)
-            return u"Your stat weights"_s;
-        const BuildProfile *profile = buildProfile(character->buildProfile);
-        return profile ? profile->name : QString();
+        if (character->weightsOnly)
+            return u"Judged by your stat weights alone"_s;
+        if (character->weighed)
+            return u"Weighed by Path of Building for your build"_s;
+        return u"A general start, until Path of Building weighs your build"_s;
     }
     case ScoreRole:
     case GradeRole: {
@@ -130,8 +131,8 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> CharacterList::roleNames() const
 {
     return {
-        {IdRole, "characterId"},  {NameRole, "name"},   {BuildRole, "build"},
-        {ProfileRole, "profile"}, {ScoreRole, "score"}, {GradeRole, "grade"},
+        {IdRole, "characterId"}, {NameRole, "name"},   {BuildRole, "build"},
+        {SourceRole, "source"},  {ScoreRole, "score"}, {GradeRole, "grade"},
     };
 }
 

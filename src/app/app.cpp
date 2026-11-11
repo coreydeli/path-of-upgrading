@@ -57,6 +57,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_character(&m_characters, &m_pob)
     , m_input(std::move(input))
     , m_checker(qml, m_input.get())
+    , m_weigher(&m_character, &m_pob)
     , m_shortcuts(std::move(shortcuts))
     , m_game(std::move(game))
     , m_hotkeys(m_shortcuts.get(), m_game.get())
@@ -81,7 +82,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_gearList(&m_character, &m_settings)
     , m_upgrades(&m_character, &m_settings, &m_trade, &m_tradeData, &m_rates, &m_results)
     , m_resistances(&m_character)
-    , m_gearScoring(&m_character)
+    , m_gearScoring(&m_character, &m_weigher)
     , m_statWeights(&m_character)
     , m_statPicker(&m_tradeData, &m_history)
     , m_ignoredStats(&m_character)
@@ -119,6 +120,9 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     connect(&m_settings, &SettingsStore::changed, this, &App::followSettings);
 
     const Settings &settings = m_settings.settings();
+    // checks go first
+    m_weigher.setBusy([this] { return m_checker.isChecking(); });
+    m_weigher.setSettings(settings.pob);
     m_character.setId(settings.character);
     lookForPob();
     m_checker.setPob(&m_pob);
@@ -201,6 +205,7 @@ void App::followSettings()
     const Settings &settings = m_settings.settings();
     m_checker.setSettings(settings);
     m_results.judge().setSettings(settings.pob);
+    m_weigher.setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
     if (settings.character != m_character.id())
         m_character.setId(settings.character);

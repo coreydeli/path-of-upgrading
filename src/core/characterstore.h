@@ -29,9 +29,13 @@ struct Character
     QSet<QString> fromPob;
     Weights weights = defaultWeights();
     QList<IgnoreRule> ignored;
-    QString buildProfile; // gear score profile id, empty for the default
+    // The gear score profile the weighing starts from, and rates what it
+    // hasn't weighed, by id. Empty for the default.
+    QString buildProfile;
     // You chose the profile yourself, so importing a build leaves it be.
     bool profilePicked = false;
+    // Items are judged by your stat weights alone, with no gear score.
+    bool weightsOnly = false;
     ProfileTweaks tweaks;
     // What Path of Building weighed for the build, once it has.
     std::optional<WeighedProfile> weighed;

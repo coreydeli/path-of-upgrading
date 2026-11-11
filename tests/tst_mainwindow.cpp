@@ -1344,7 +1344,7 @@ private Q_SLOTS:
         // the choices are still there to make
         QObject *box = w.find(u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(isVisible(box));
-        QVERIFY(isVisible(w.find(u"profileBox"_s)));
+        QVERIFY(isVisible(w.find(u"weightsOnlySwitch"_s)));
 
         w.window->resize(1000, 700);
         QTRY_VERIFY(!w.page()->property("wide").toBool());
@@ -1411,7 +1411,7 @@ private Q_SLOTS:
         QCOMPARE(text(w.find(u"panelCharacter"_s)), u"Wren"_s);
         QCOMPARE(text(w.find(u"panelBuild"_s)), u"No build imported"_s);
         QVERIFY(isVisible(w.find(u"panelScore"_s)));
-        QVERIFY(text(w.find(u"panelProfile"_s)).startsWith(u"Build profile: "_s));
+        QCOMPARE(text(w.find(u"panelProfile"_s)), w.app->gearScoring()->state());
         QVERIFY(!text(w.find(u"panelScoring"_s)).isEmpty());
         // beside the list, which has no buttons now
         const auto *list = qobject_cast<QQuickItem *>(row);
@@ -1914,15 +1914,14 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearScoreAction"_s));
         QVERIFY(isVisible(w.find(u"nobodyText"_s)));
         QVERIFY(!isVisible(w.find(u"scoreError"_s)));
-        // the default profile can be changed all the same
-        QObject *profile = w.find(u"profileBox"_s);
-        QVERIFY(isVisible(profile));
+        // the default start can be changed all the same
+        QVERIFY(isVisible(w.find(u"scoreState"_s)));
         QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
         QVERIFY(isVisible(w.in(u"stats"_s, u"stat:Life"_s)));
-        QVERIFY(activate(profile, 1));
+        QVERIFY(toggle(w.find(u"weightsOnlySwitch"_s)));
         QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
         QCOMPARE(w.app->character().character().name, u"My character"_s);
-        QCOMPARE(w.app->character().character().buildProfile, u"es-caster"_s);
+        QVERIFY(w.app->character().character().weightsOnly);
     }
 
     void gearScore()
@@ -1937,10 +1936,13 @@ private Q_SLOTS:
         });
         QVERIFY(isVisible(heading));
 
-        QObject *profile = w.find(u"profileBox"_s);
-        QVERIFY(isVisible(profile));
-        QCOMPARE(profile->property("currentText").toString(), u"Life and resistances"_s);
-        QCOMPARE(profile->property("description").toString(), w.app->gearScoring()->summary());
+        QObject *state = w.find(u"scoreState"_s);
+        QVERIFY(isVisible(state));
+        QCOMPARE(text(state), u"A general start, until Path of Building weighs your build."_s);
+        QCOMPARE(state->property("description").toString(), w.app->gearScoring()->summary());
+        QVERIFY(isVisible(w.find(u"weighAgainButton"_s)));
+        // with Path of Building off here, there is nothing to ask
+        QVERIFY(!w.find(u"weighAgainButton"_s)->property("enabled").toBool());
         QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
         QVERIFY(isVisible(w.find(u"stats"_s)));
         QObject *impact = search(w.page(), [](QObject *o) {
@@ -1957,10 +1959,6 @@ private Q_SLOTS:
         QCOMPARE(level->property("currentText").toString(), u"Normal (1x)"_s);
         QCOMPARE(level->property("model").toStringList().at(0), u"Not at all (0x)"_s);
         QCOMPARE(w.find(u"resetButton"_s)->property("enabled").toBool(), false);
-
-        // and one picked elsewhere
-        w.app->gearScoring()->setProfile(3);
-        QCOMPARE(profile->property("currentText").toString(), u"Minion summoner on Energy Shield"_s);
     }
 
     void statLevels()
@@ -1982,23 +1980,26 @@ private Q_SLOTS:
         QCOMPARE(reset->property("enabled").toBool(), false);
     }
 
-    void pickBuildProfile()
+    void judgeByWeightsAlone()
     {
         Window w;
         QVERIFY(w.show(u"gearScoreAction"_s));
         w.play({});
-        QObject *profile = w.find(u"profileBox"_s);
-        QVERIFY(activate(profile, 1));
-        QCOMPARE(w.app->character().character().buildProfile, u"es-caster"_s);
-        QVERIFY(isVisible(w.in(u"stats"_s, u"stat:Spell skill levels"_s)));
-
-        // and none, by your stat weights alone
-        QVERIFY(activate(profile, 4));
-        QCOMPARE(w.app->character().character().buildProfile, u"none"_s);
-        QCOMPARE(profile->property("description").toString(),
+        QObject *sw = w.find(u"weightsOnlySwitch"_s);
+        QVERIFY(isVisible(sw));
+        QVERIFY(!sw->property("checked").toBool());
+        QVERIFY(toggle(sw));
+        QVERIFY(w.app->character().character().weightsOnly);
+        QCOMPARE(text(w.find(u"scoreState"_s)), u"Judged by your stat weights alone"_s);
+        QCOMPARE(w.find(u"scoreState"_s)->property("description").toString(),
                  u"Items are judged by your stat weights alone, with no gear score."_s);
         QVERIFY(!isVisible(w.find(u"stats"_s)));
         QVERIFY(!isVisible(w.find(u"scoreHelp"_s)));
+
+        // and back
+        QVERIFY(toggle(sw));
+        QVERIFY(!w.app->character().character().weightsOnly);
+        QVERIFY(isVisible(w.in(u"stats"_s, u"stat:Life"_s)));
     }
 
     void cantSaveGearScore()
@@ -2009,7 +2010,7 @@ private Q_SLOTS:
         const QString file = w.dir.filePath(u"data/characters/"_s + id + u".json"_s);
         QVERIFY(QFile::remove(file));
         QVERIFY(QDir().mkdir(file));
-        QVERIFY(activate(w.find(u"profileBox"_s), 1));
+        QVERIFY(toggle(w.find(u"weightsOnlySwitch"_s)));
         QObject *error = w.find(u"scoreError"_s);
         QVERIFY(isVisible(error));
         QVERIFY(text(error).startsWith(u"Couldn't save Wren: "_s));
@@ -3826,7 +3827,8 @@ private Q_SLOTS:
         QObject *wrenScore = wren->findChild<QObject *>(u"rowScore"_s);
         QVERIFY(isVisible(wrenScore));
         QVERIFY(!isVisible(ash->findChild<QObject *>(u"rowScore"_s)));
-        QCOMPARE(wren->property("detail").toString(), u"Gear score goes by Life and resistances"_s);
+        QCOMPARE(wren->property("detail").toString(),
+                 u"A general start, until Path of Building weighs your build"_s);
         QCOMPARE(ash->property("detail").toString(), QString());
         QVERIFY(!wrenScore->property("score").toString().isEmpty());
         QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));

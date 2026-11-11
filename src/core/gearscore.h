@@ -60,7 +60,6 @@ struct GearScore
     enum class Unrated { No, FlaskOrCharm, Unidentified, Unique };
 
     QString build;
-    QString buildName;
     QString slot; // slot group
     Unrated unrated = Unrated::No;
     int score = 0;

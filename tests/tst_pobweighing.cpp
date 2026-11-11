@@ -84,6 +84,50 @@ private Q_SLOTS:
 
         QCOMPARE(readPobWeighing({}).mods.size(), 0);
     }
+
+    void keepsWhatEachModSays()
+    {
+        QJsonObject life = mod(u"explicit.stat_life"_s, 2);
+        life.insert(u"text"_s, u"+# to maximum Life"_s);
+        life.insert(u"top"_s, 120);
+        QJsonObject odd = mod(u"explicit.stat_odd"_s, 1);
+        odd.insert(u"top"_s, -5);
+        const PobWeighing weighing =
+            readPobWeighing({{u"mods"_s, QJsonArray{life, odd, mod(u"explicit.stat_plain"_s, 1)}}});
+        QCOMPARE(weighing.about.value(u"explicit.stat_life"_s).text, u"+# to maximum Life"_s);
+        QCOMPARE(weighing.about.value(u"explicit.stat_life"_s).top, 120.0);
+        // a roll that makes no sense is no roll
+        QCOMPARE(weighing.about.value(u"explicit.stat_odd"_s).top, 0.0);
+        QCOMPARE(weighing.about.value(u"explicit.stat_plain"_s).text, QString());
+    }
+
+    void makesASlotWeighing()
+    {
+        QJsonObject life = mod(u"explicit.stat_life"_s, 2);
+        life.insert(u"text"_s, u"+# to maximum Life"_s);
+        life.insert(u"top"_s, 120);
+        QJsonObject speed = mod(u"explicit.stat_speed"_s, 1);
+        speed.insert(u"text"_s, u"#% increased Attack Speed (local)"_s);
+        // and one that doesn't say what it is can't be a stat
+        const SlotWeighing slot = slotWeighing(
+            u"Gloves"_s,
+            readPobWeighing({{u"mods"_s, QJsonArray{life, speed, mod(u"explicit.stat_plain"_s, 1)}}}));
+        QCOMPARE(slot.group, u"Gloves"_s);
+        QCOMPARE(slot.mods.size(), 2);
+        QCOMPARE(slot.mods[0].key, u"# to maximum Life"_s);
+        QCOMPARE(slot.mods[0].weight, 2.0);
+        QCOMPARE(slot.mods[0].top, 120.0);
+        QCOMPARE(slot.mods[1].key, u"#% increased Attack Speed"_s);
+        QCOMPARE(slot.mods[1].top, 0.0);
+    }
+
+    void tellsBuildsApart()
+    {
+        QCOMPARE(buildFingerprint({}), QString());
+        QVERIFY(!buildFingerprint(u"<a/>"_s).isEmpty());
+        QCOMPARE(buildFingerprint(u"<a/>"_s), buildFingerprint(u"<a/>"_s));
+        QVERIFY(buildFingerprint(u"<a/>"_s) != buildFingerprint(u"<b/>"_s));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestPobWeighing)

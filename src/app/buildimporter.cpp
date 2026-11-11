@@ -38,9 +38,8 @@ QString imported(const BuildImport &done, const PobBuild &build)
         said << u"Copy your weapon in the game once, as the build doesn't include its damage."_s;
     else if (done.withoutDamage > 1)
         said << u"Copy your weapons in the game once, as the build doesn't include their damage."_s;
-    if (done.profileChanged)
-        said << u"Chose the %1 gear score profile for it."_s.arg(
-            buildProfile(done.character.buildProfile)->name);
+    if (done.profileChanged && !done.character.weighed)
+        said << u"The gear score is a general start until Path of Building weighs the build."_s;
     return said.join(u' ');
 }
 

@@ -5,6 +5,7 @@ qt_add_library(pou_app STATIC
     app.cpp app.h
     appearance.cpp appearance.h
     buildimporter.cpp buildimporter.h
+    buildweigher.cpp buildweigher.h
     characterlist.cpp characterlist.h
     checkeditems.cpp checkeditems.h
     commandline.cpp commandline.h

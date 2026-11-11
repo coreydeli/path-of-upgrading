@@ -134,6 +134,8 @@ endif()
 
 pou_add_app_test(tst_activecharacter itemtexts.h)
 pou_use_fakepob(tst_activecharacter)
+pou_add_app_test(tst_buildweigher)
+pou_use_fakepob(tst_buildweigher)
 pou_add_app_test(tst_characterlist itemtexts.h)
 pou_add_app_test(tst_appearance)
 target_compile_definitions(tst_appearance PRIVATE
