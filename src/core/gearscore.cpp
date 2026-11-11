@@ -27,6 +27,38 @@ double capOf(const ProfileStat &s, const QString &slot)
     return cap != 0 ? cap : 1;
 }
 
+// What rates items in a slot group: the weighed stats where the character has
+// them, else the profile. The weighed groups keep the profile's item
+// properties, as weighings only cover mods.
+struct Rating
+{
+    QString id;
+    QString name;
+    QList<const ProfileStat *> stats;
+};
+
+std::optional<Rating> ratingFor(const GearScoreOptions &options, const QString &group)
+{
+    const BuildProfile *profile = buildProfile(options.build);
+    if (!profile)
+        return std::nullopt;
+    Rating rating{.id = profile->id, .name = profile->name, .stats = {}};
+    if (options.weighed && options.weighed->covers(group)) {
+        rating.id = options.weighed->profile.id;
+        rating.name = options.weighed->profile.name;
+        for (const ProfileStat &s : options.weighed->profile.stats)
+            rating.stats << &s;
+        for (const ProfileStat &s : profile->stats) {
+            if (isPropertyStat(s))
+                rating.stats << &s;
+        }
+        return rating;
+    }
+    for (const ProfileStat &s : profile->stats)
+        rating.stats << &s;
+    return rating;
+}
+
 bool isIgnored(const GearScoreOptions &options, const QString &key)
 {
     return options.ignore && options.ignore(key);
@@ -62,13 +94,15 @@ QString resistNote(Element e, double need, bool partly)
 
 std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &options)
 {
-    const BuildProfile *profile = buildProfile(options.build);
-    if (!profile || item.slot.isEmpty())
+    if (item.slot.isEmpty())
+        return std::nullopt;
+    const std::optional<Rating> rating = ratingFor(options, groupOf(item.slot));
+    if (!rating)
         return std::nullopt;
 
     GearScore result;
-    result.build = profile->id;
-    result.buildName = profile->name;
+    result.build = rating->id;
+    result.buildName = rating->name;
     result.slot = groupOf(item.slot);
     const QString &slot = result.slot;
     if (slot == u"Charm" || slot == u"Life Flask" || slot == u"Mana Flask")
@@ -81,9 +115,9 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
         return result;
 
     QList<const ProfileStat *> wanted;
-    for (const ProfileStat &s : profile->stats) {
-        if (importanceOf(s, slot, options) > 0)
-            wanted << &s;
+    for (const ProfileStat *s : rating->stats) {
+        if (importanceOf(*s, slot, options) > 0)
+            wanted << s;
     }
     // What the ideal item is made of. Ignored stats don't count towards it,
     // and nor do resistances you're nearly capped on.
@@ -290,32 +324,32 @@ QString weakRollsNote(const GearScore &gear, int underPercent)
 
 double usefulness(const QString &slot, const QString &key, const GearScoreOptions &options)
 {
-    const BuildProfile *profile = buildProfile(options.build);
-    if (!profile)
-        return 0;
     const QString group = groupOf(slot);
-    for (const ProfileStat &s : profile->stats) {
-        if (!s.pattern.match(key).hasMatch())
+    const std::optional<Rating> rating = ratingFor(options, group);
+    if (!rating)
+        return 0;
+    for (const ProfileStat *s : rating->stats) {
+        if (!s->pattern.match(key).hasMatch())
             continue;
-        const double importance = importanceOf(s, group, options);
-        return importance > 0 ? importance / capOf(s, group) : 0;
+        const double importance = importanceOf(*s, group, options);
+        return importance > 0 ? importance / capOf(*s, group) : 0;
     }
     return 0;
 }
 
 QList<KeyStat> topStats(const QString &slot, int count, const GearScoreOptions &options)
 {
-    const BuildProfile *profile = buildProfile(options.build);
-    if (!profile)
-        return {};
     const QString group = groupOf(slot);
+    const std::optional<Rating> rating = ratingFor(options, group);
+    if (!rating)
+        return {};
     QList<KeyStat> out;
-    for (const ProfileStat &s : profile->stats) {
-        if (s.key.isEmpty() || s.resist)
+    for (const ProfileStat *s : rating->stats) {
+        if (s->key.isEmpty() || s->resist)
             continue;
-        const double importance = importanceOf(s, group, options);
+        const double importance = importanceOf(*s, group, options);
         if (importance >= 4)
-            out.append({s.key, s.label, importance, s.cap.at(group)});
+            out.append({s->key, s->label, importance, s->cap.at(group)});
     }
     std::stable_sort(out.begin(), out.end(),
                      [](const KeyStat &a, const KeyStat &b) { return a.importance > b.importance; });
@@ -329,20 +363,20 @@ double searchMinimum(double cap)
 
 QList<SearchWeight> searchWeights(const QString &slot, const GearScoreOptions &options)
 {
-    const BuildProfile *profile = buildProfile(options.build);
-    if (!profile)
-        return {};
     const QString group = groupOf(slot);
+    const std::optional<Rating> rating = ratingFor(options, group);
+    if (!rating)
+        return {};
     QList<SearchWeight> out;
-    for (const ProfileStat &s : profile->stats) {
-        const double importance = importanceOf(s, group, options);
-        if (!(importance > 0) || (!s.key.isEmpty() && isIgnored(options, s.key)))
+    for (const ProfileStat *s : rating->stats) {
+        const double importance = importanceOf(*s, group, options);
+        if (!(importance > 0) || (!s->key.isEmpty() && isIgnored(options, s->key)))
             continue;
-        const std::optional<double> need = needFor(s, options);
+        const std::optional<double> need = needFor(*s, options);
         if (need && *need <= 0)
             continue;
-        const double cap = capOf(s, group);
-        out.append({s.label, s.pattern, s.key, importance / cap, importance, cap, s.resist, need});
+        const double cap = capOf(*s, group);
+        out.append({s->label, s->pattern, s->key, importance / cap, importance, cap, s->resist, need});
     }
     return out;
 }
