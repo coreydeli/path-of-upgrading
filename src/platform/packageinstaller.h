@@ -19,6 +19,7 @@ public:
     enum class After {
         Restart, // the new program starts as this one goes
         Quit,    // the installer starts the new program
+        Offer,   // the new one is in place, and the app asks you to restart
     };
 
     // Says how it went: empty when it worked, or why it didn't.
@@ -27,6 +28,8 @@ public:
     virtual ~PackageInstaller() = default;
 
     virtual After after() const = 0;
+    // Whether a failure shows the command to run by hand, in place of the error.
+    virtual bool fallsBackToCommand() const { return false; }
     // The file is one the downloader has checked.
     virtual void install(const QString &file, const Done &done) = 0;
 };
