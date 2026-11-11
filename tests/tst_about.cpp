@@ -77,7 +77,9 @@ private Q_SLOTS:
             names << map.value(u"name"_s).toString();
             QVERIFY(map.value(u"url"_s).toString().startsWith(u"https://"_s));
         }
-        QVERIFY(names.contains(u"Cinzel"_s));
+        QVERIFY(names.contains(u"Big Shoulders"_s));
+        QVERIFY(names.contains(u"Spectral"_s));
+        QVERIFY(!names.contains(u"Cinzel"_s));
         QVERIFY(names.contains(u"Path of Building Community"_s));
     }
 
