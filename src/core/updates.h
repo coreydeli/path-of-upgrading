@@ -85,6 +85,10 @@ QList<Release> readReleases(const QByteArray &json);
 // and never goes back to an older one.
 std::optional<Release> newerRelease(const QList<Release> &releases, const Version &have, bool betas);
 
+// A release's notes as plain lines of text: the Markdown's headings, emphasis,
+// links, list markers and HTML left out, and long notes cut short.
+QString plainNotes(const QString &markdown, int limit = 4000);
+
 // The file to download for how it was installed, by the names the release
 // workflow gives them, if the release has one.
 std::optional<ReleaseAsset> assetFor(const Release &release, InstallKind kind);

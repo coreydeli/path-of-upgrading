@@ -16,6 +16,7 @@
 #include "itemtexts.h"
 #include "stylefortests.h"
 #include "tradefixtures.h"
+#include "updatetexts.h"
 
 #include <KLocalizedQmlContext>
 #include <QAccessible>
@@ -4356,6 +4357,96 @@ private Q_SLOTS:
         w.app->onboarding()->ask();
         QTRY_VERIFY(guide->property("opened").toBool());
         QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
+    }
+
+    // The release GitHub will say is out, for the next look.
+    static void releaseIsOut(Window &w, const QString &version, bool tradeAsked = true)
+    {
+        // the trade site's and poe.ninja's answers go first
+        if (tradeAsked)
+            QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
+        w.network->answers = {{.body = fakeReleases({fakeRelease(version)})}};
+        w.app->updateChecker().check();
+        QTRY_VERIFY_WITH_TIMEOUT(!w.app->updateChecker().isChecking(), 5000);
+    }
+
+    void updateDialogOffersTheRelease()
+    {
+        Window w;
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        QVERIFY(!isVisible(dialog));
+        releaseIsOut(w, u"99.0.0"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QCOMPARE(dialog->property("title").toString(), u"A New Version Is Out"_s);
+        QVERIFY(button(dialog, u"Update Now"_s));
+        QVERIFY(button(dialog, u"Later"_s));
+        QVERIFY(button(dialog, u"Skip This Version"_s));
+
+        QVERIFY(click(button(dialog, u"Update Now"_s)));
+        QCOMPARE(w.opener->opened, QList<QUrl>{QUrl(releaseBase + u"/tag/v99.0.0"_s)});
+        QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    void updateDialogLaterAndSkip()
+    {
+        Window w;
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        releaseIsOut(w, u"99.0.0"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QVERIFY(click(button(dialog, u"Later"_s)));
+        QTRY_VERIFY(!isVisible(dialog));
+        QVERIFY(w.settings().updates.skipped.isEmpty());
+        QVERIFY(w.opener->opened.isEmpty());
+
+        // Check Now offers it again, and Skip keeps it from coming back
+        w.network->answers = {{.body = fakeReleases({fakeRelease(u"99.0.0"_s)})}};
+        w.app->updates()->checkNow();
+        QTRY_VERIFY_WITH_TIMEOUT(!w.app->updateChecker().isChecking(), 5000);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QVERIFY(click(button(dialog, u"Skip This Version"_s)));
+        QTRY_VERIFY(!isVisible(dialog));
+        QCOMPARE(w.settings().updates.skipped, u"99.0.0"_s);
+        QVERIFY(w.opener->opened.isEmpty());
+    }
+
+    void updateDialogWaitsForTheWindowAndTheSetup()
+    {
+        Window w(true, true, {}, std::nullopt);
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        // a first run doesn't ask the trade site
+        releaseIsOut(w, u"99.0.0"_s, false);
+        QVERIFY(w.app->updates()->isPending());
+        QVERIFY(!isVisible(dialog));
+        w.window->show();
+        // the setup guide has the window first
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        QVERIFY(!dialog->property("opened").toBool());
+        QVERIFY(click(w.inGuide(u"skipButton"_s)));
+        QTRY_VERIFY(dialog->property("opened").toBool());
+    }
+
+    void updatesCardInTheSettings()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QObject *launch = w.find(u"checkForUpdatesSwitch"_s);
+        QObject *betas = w.find(u"includeBetasSwitch"_s);
+        QCOMPARE(launch->property("checked").toBool(), true);
+        QCOMPARE(launch->property("text").toString(), u"Check for updates when the app starts"_s);
+        QCOMPARE(betas->property("text").toString(), u"Include beta builds"_s);
+        QCOMPARE(betas->property("checked").toBool(), w.settings().updates.includeBetas);
+
+        QVERIFY(toggle(launch));
+        QVERIFY(!w.settings().updates.checkOnLaunch);
+        QVERIFY(toggle(betas));
+        QCOMPARE(w.settings().updates.includeBetas, betas->property("checked").toBool());
+
+        QObject *now = w.find(u"checkNowButton"_s);
+        QCOMPARE(text(now), u"Check Now"_s);
+        QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
+        w.network->answers = {{.body = fakeReleases({fakeRelease(u"0.0.1"_s)})}};
+        QVERIFY(click(now));
+        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You have the newest version."_s, 5000);
     }
 
     // in the background, as it is at login

@@ -16,6 +16,8 @@ QString eventId(Notifier::Event event)
     switch (event) {
     case Notifier::Event::HotkeysUnavailable:
         return u"hotkeysUnavailable"_s;
+    case Notifier::Event::UpdateAvailable:
+        return u"updateAvailable"_s;
     }
     Q_UNREACHABLE_RETURN({});
 }

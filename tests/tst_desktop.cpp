@@ -179,6 +179,32 @@ private Q_SLOTS:
         QVERIFY(s.notifier.sent.isEmpty());
     }
 
+    void tellsAboutAnUpdateWithTheWindowHidden()
+    {
+        Setup s;
+        s.desktop.setWindow(&s.window);
+        s.desktop.tellAboutUpdate(u"0.8.0"_s);
+        QCOMPARE(s.notifier.sent.size(), 1);
+        const FakeNotifier::Sent &sent = s.notifier.sent.first();
+        QCOMPARE(sent.event, Notifier::Event::UpdateAvailable);
+        QCOMPARE(sent.title, u"A New Version Is Out"_s);
+        QCOMPARE(sent.text, u"Version 0.8.0 of Path of Upgrading is ready."_s);
+        QCOMPARE(sent.action, u"Update"_s);
+        // and its button shows the window
+        QVERIFY(!s.window.isVisible());
+        s.notifier.actions.first()();
+        QVERIFY(s.window.isVisible());
+    }
+
+    void leavesTheUpdateToTheWindowWhenItIsOpen()
+    {
+        Setup s;
+        s.desktop.setWindow(&s.window);
+        s.window.show();
+        s.desktop.tellAboutUpdate(u"0.8.0"_s);
+        QVERIFY(s.notifier.sent.isEmpty());
+    }
+
     void staysQuietOtherwise()
     {
         Setup s;

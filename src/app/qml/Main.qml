@@ -268,6 +268,12 @@ Kirigami.ApplicationWindow {
         windowShown: root.visible
     }
 
+    UpdateDialog {
+        objectName: "updateDialog"
+        app: root.app
+        windowShown: root.visible
+    }
+
     // The pages wait here while they aren't shown, so they keep where you
     // were on them.
     Item {
@@ -323,6 +329,7 @@ Kirigami.ApplicationWindow {
             options: root.app.overlayOptions
             tradeOffered: root.app.tradeOffered
             tradeOptions: root.app.tradeOptions
+            updates: root.app.updates
         }
 
         AppearancePage {

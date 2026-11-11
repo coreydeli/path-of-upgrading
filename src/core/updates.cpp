@@ -147,6 +147,40 @@ std::optional<Release> newerRelease(const QList<Release> &releases, const Versio
     return newest;
 }
 
+QString plainNotes(const QString &markdown, int limit)
+{
+    static const QRegularExpression heading(uR"(^\s{0,3}#{1,6}\s*)"_s);
+    static const QRegularExpression marker(uR"(^\s*(?:[-*+]|\d+\.)\s+)"_s);
+    static const QRegularExpression link(uR"(!?\[([^\]]*)\]\([^)]*\))"_s);
+    static const QRegularExpression tag(uR"(<[^>\n]*>)"_s);
+    static const QRegularExpression emphasis(uR"(\*\*|__|`)"_s);
+
+    QStringList lines;
+    bool blank = true;
+    for (QString line : markdown.split(u'\n')) {
+        line.remove(u'\r');
+        line.remove(heading);
+        line.remove(marker);
+        line.replace(link, u"\\1"_s);
+        line.remove(tag);
+        line.remove(emphasis);
+        line = line.trimmed();
+        // one empty line between paragraphs at most
+        if (line.isEmpty() && blank)
+            continue;
+        blank = line.isEmpty();
+        lines << line;
+    }
+    QString text = lines.join(u'\n').trimmed();
+    if (text.size() > limit) {
+        text.truncate(limit);
+        // not in the middle of a word
+        text.truncate(text.lastIndexOf(u'\n') > limit / 2 ? text.lastIndexOf(u'\n') : text.lastIndexOf(u' '));
+        text = text.trimmed() + u"\nThe rest is on the release page."_s;
+    }
+    return text;
+}
+
 std::optional<ReleaseAsset> assetFor(const Release &release, InstallKind kind)
 {
     QString ending;

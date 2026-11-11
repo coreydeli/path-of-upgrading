@@ -28,6 +28,7 @@
 #include "app/tradeoptions.h"
 #include "app/traderesults.h"
 #include "app/tradesession.h"
+#include "app/updates.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
@@ -81,6 +82,7 @@ class App : public QObject
     Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
+    Q_PROPERTY(pou::Updates *updates READ updates CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
     Q_PROPERTY(pou::About *about READ about CONSTANT)
@@ -140,7 +142,8 @@ public:
     ResultsPanel &resultsPanel() { return m_resultsPanel; }
     // Looks for a newer release on GitHub, which main() starts once the
     // program is up.
-    UpdateChecker &updates() { return m_updates; }
+    UpdateChecker &updateChecker() { return m_updates; }
+    Updates *updates() { return &m_updatesModel; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -197,6 +200,7 @@ private:
     TradeResults m_results;
     ResultsPanel m_resultsPanel;
     UpdateChecker m_updates;
+    Updates m_updatesModel;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;
