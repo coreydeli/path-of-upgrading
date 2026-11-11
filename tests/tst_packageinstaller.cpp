@@ -42,7 +42,9 @@ private Q_SLOTS:
         installer.install(update, [&](const QString &e) { error = e; });
         QVERIFY(error.isEmpty());
         QCOMPARE(read(target), QByteArray("new"));
+#ifndef Q_OS_WIN
         QVERIFY(QFile::permissions(target).testFlag(QFileDevice::ExeOwner));
+#endif
         QVERIFY(!QFile::exists(target + u".new"_s));
         QVERIFY(QFile::exists(update));
         QCOMPARE(installer.after(), PackageInstaller::After::Restart);

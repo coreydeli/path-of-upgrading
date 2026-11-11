@@ -84,6 +84,9 @@ private Q_SLOTS:
 
     void theFolderIsYoursAlone()
     {
+#ifdef Q_OS_WIN
+        QSKIP("Windows has no group and other permissions to take away");
+#endif
         Setup s;
         s.network.answers = {sums(s.name(), package), {.body = package}};
         s.downloader.start(release(), InstallKind::Debian);
