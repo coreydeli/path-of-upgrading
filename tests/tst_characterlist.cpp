@@ -276,6 +276,40 @@ private Q_SLOTS:
         QCOMPARE(list.current(), QString());
     }
 
+    void rowOfTheOneYouPlay()
+    {
+        Characters c;
+        c.saved(u"Anya"_s);
+        const QString wren = c.saved(u"Wren"_s);
+        c.list.load();
+        QSignalSpy row(&c.list, &CharacterList::currentRowChanged);
+        QSignalSpy count(&c.list, &CharacterList::countChanged);
+        QCOMPARE(c.list.count(), 2);
+        QCOMPARE(c.list.currentRow(), -1);
+
+        c.list.setCurrent(wren);
+        QCOMPARE(c.list.currentRow(), 1);
+        QCOMPARE(row.size(), 1);
+
+        // a new name that sorts first moves it down
+        QVERIFY(c.list.add(u"Aaron"_s) != wren);
+        QCOMPARE(c.list.count(), 3);
+        QCOMPARE(count.size(), 1);
+        c.list.setCurrent(wren);
+        QCOMPARE(c.list.currentRow(), 2);
+        row.clear();
+        QVERIFY(c.list.rename(wren, u"Abel"_s));
+        QCOMPARE(c.list.currentRow(), 1);
+        QVERIFY(row.size() > 0);
+
+        row.clear();
+        QVERIFY(c.list.remove(c.list.current()));
+        QCOMPARE(c.list.count(), 2);
+        QCOMPARE(count.size(), 2);
+        QVERIFY(row.size() > 0);
+        QCOMPARE(c.list.currentRow(), 0);
+    }
+
     void add()
     {
         Characters c;

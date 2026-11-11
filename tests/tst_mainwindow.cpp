@@ -33,6 +33,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QRegularExpression>
 #include <QSet>
 #include <QSignalSpy>
 #include <QStandardPaths>
@@ -456,14 +457,24 @@ private Q_SLOTS:
         QVERIFY(addBundledFonts());
     }
 
-    void init() { QTest::failOnWarning(); }
+    void init()
+    {
+        // Debian 13's Qt 6.8 now and then warns from its own animation timer that the
+        // driver isn't running (Arch and Windows never do), so only that one passes there
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
+        QTest::failOnWarning(
+            QRegularExpression(u"^(?!QUnifiedTimer::stopAnimationDriver: driver is not running$)"_s));
+#else
+        QTest::failOnWarning();
+#endif
+    }
 
     void opens()
     {
         Window w;
         QVERIFY(w.window);
         QCOMPARE(w.window->title(), u"Path of Upgrading"_s);
-        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
     }
 
     void showsItself()
@@ -485,6 +496,7 @@ private Q_SLOTS:
     void noCharacters()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         QVERIFY(isVisible(w.find(u"noCharactersText"_s)));
         QVERIFY(!isVisible(w.find(u"charactersError"_s)));
         QVERIFY(!isVisible(w.find(u"problemsText"_s)));
@@ -496,6 +508,7 @@ private Q_SLOTS:
     void addCharacter()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         QVERIFY(w.shown());
         QObject *name = w.find(u"nameField"_s);
         QObject *add = w.find(u"addButton"_s);
@@ -537,6 +550,7 @@ private Q_SLOTS:
     void addWithoutName()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         QObject *name = w.find(u"nameField"_s);
         QVERIFY(name->setProperty("text", u"  "_s));
         QVERIFY(QMetaObject::invokeMethod(name, "accepted"));
@@ -546,9 +560,39 @@ private Q_SLOTS:
         QCOMPARE(text(error), u"Give the character a name."_s);
     }
 
+    void characterPickerOnTheGearPage()
+    {
+        Window w;
+        QObject *box = w.find(u"characterBox"_s);
+        QVERIFY(box);
+        // there's nobody to pick yet
+        QVERIFY(!isVisible(box));
+
+        CharacterList *list = w.app->characterList();
+        list->add(u"Wren"_s);
+        const QString ash = list->add(u"Ash"_s);
+        QTRY_VERIFY(isVisible(box));
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
+        QCOMPARE(box->property("count").toInt(), 2);
+        QCOMPARE(box->property("currentText").toString(), u"Ash"_s);
+
+        // picking plays the one it names
+        QVERIFY(activate(box, 1));
+        QCOMPARE(list->current(), list->data(list->index(1), CharacterList::IdRole).toString());
+        QCOMPARE(box->property("currentText").toString(), u"Wren"_s);
+        QCOMPARE(w.settings().character, list->current());
+        QVERIFY(list->current() != ash);
+
+        // and the characters page says the same
+        QVERIFY(w.show(u"charactersAction"_s));
+        QVERIFY(w.find(u"character:Wren"_s)->property("checked").toBool());
+        QVERIFY(!w.find(u"character:Ash"_s)->property("checked").toBool());
+    }
+
     void pickCharacter()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         CharacterList *list = w.app->characterList();
         const QString wren = list->add(u"Wren"_s);
         list->add(u"Ash"_s);
@@ -605,6 +649,7 @@ private Q_SLOTS:
     void gearButtonName()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         w.app->characterList()->add(u"Wren"_s);
         QObject *button = w.find(u"character:Wren"_s)->findChild<QObject *>(u"gearButton"_s);
         QCOMPARE(text(button), u"View Gear"_s);
@@ -615,6 +660,7 @@ private Q_SLOTS:
     {
         // which are icons that all look alike, so each says whose it is
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         w.app->characterList()->add(u"Wren"_s);
         QObject *row = w.find(u"character:Wren"_s);
         QCOMPARE(spoken(row->findChild<QObject *>(u"renameButton"_s)), u"Rename Wren"_s);
@@ -624,6 +670,7 @@ private Q_SLOTS:
     void renameCharacter()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         CharacterList *list = w.app->characterList();
         const QString wren = list->add(u"Wren"_s);
         QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"renameButton"_s)));
@@ -656,6 +703,7 @@ private Q_SLOTS:
     void removeCharacter()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         CharacterList *list = w.app->characterList();
         list->add(u"Wren"_s);
         QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"removeButton"_s)));
@@ -671,6 +719,7 @@ private Q_SLOTS:
     void keepCharacter()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         CharacterList *list = w.app->characterList();
         list->add(u"Wren"_s);
         QVERIFY(click(w.find(u"character:Wren"_s)->findChild<QObject *>(u"removeButton"_s)));
@@ -683,6 +732,7 @@ private Q_SLOTS:
     void importBuild()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         QObject *code = w.find(u"codeField"_s);
         QVERIFY(code->setProperty("text", ranger));
         QVERIFY(click(w.find(u"importButton"_s)));
@@ -700,6 +750,7 @@ private Q_SLOTS:
     void importFails()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         QObject *code = w.find(u"codeField"_s);
         QVERIFY(code->setProperty("text", u"nonsense"_s));
         QVERIFY(QMetaObject::invokeMethod(code, "accepted"));
@@ -712,6 +763,7 @@ private Q_SLOTS:
     void downloading()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         // with the sites answered first
         QVERIFY(w.rated());
         QObject *code = w.find(u"codeField"_s);
@@ -731,6 +783,7 @@ private Q_SLOTS:
     void savedBuilds()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         const QString folder = w.pob.folder.path();
         QVERIFY(makePob(folder));
         w.app->pobOptions()->setLocation(folder);
@@ -972,7 +1025,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"checkedAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Item History"_s);
         QVERIFY(w.show(u"charactersAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Import Character"_s);
     }
 
     void gearForNobody()
@@ -3296,7 +3349,8 @@ private Q_SLOTS:
         QObject *group = w.window->findChild<QObject *>(u"gearGroupAction"_s);
         QVERIFY(group);
         QCOMPARE(group->property("text").toString(), u"Gear Settings"_s);
-        for (const QString &name : {u"gearScoreAction"_s, u"weightsAction"_s, u"ignoredAction"_s}) {
+        for (const QString &name :
+             {u"charactersAction"_s, u"gearScoreAction"_s, u"weightsAction"_s, u"ignoredAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
             QCOMPARE(action->parent(), group);
@@ -3315,6 +3369,8 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearScoreAction"_s));
         QCOMPARE(group->property("checked").toBool(), true);
         QVERIFY(w.show(u"charactersAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"checkedAction"_s));
         QCOMPARE(group->property("checked").toBool(), false);
     }
 
@@ -3333,24 +3389,25 @@ private Q_SLOTS:
 
         QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
+        QVERIFY(w.sidebarRow(u"Import Character"_s));
         QVERIFY(w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(w.sidebarRow(u"Ignored Stats"_s));
         QVERIFY(w.sidebarRow(u"Back"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
         // opening it shows no page yet
-        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
 
         QVERIFY(w.clickRow(u"Stat Weights"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
         // the sidebar stays on Gear, so the next page is one click away
         QTest::qWait(500);
         QVERIFY(w.sidebarRow(u"Back"_s));
-        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QVERIFY(!w.sidebarRow(u"Item History"_s));
         QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), true);
         QVERIFY(w.clickRow(u"Ignored Stats"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Ignored Stats"_s);
         QTest::qWait(500);
-        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QVERIFY(!w.sidebarRow(u"Item History"_s));
         QCOMPARE(w.sidebarRow(u"Ignored Stats"_s)->property("checked").toBool(), true);
         QCOMPARE(w.sidebarRow(u"Stat Weights"_s)->property("checked").toBool(), false);
         QVERIFY(w.clickRow(u"Gear Grade"_s));
@@ -3358,19 +3415,19 @@ private Q_SLOTS:
 
         // Back goes up a level without picking a page
         QVERIFY(w.clickRow(u"Back"_s));
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Gear Grade"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Gear Grade"_s);
         QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), true);
-        QCOMPARE(w.sidebarRow(u"Characters"_s)->property("checked").toBool(), false);
+        QCOMPARE(w.sidebarRow(u"Item History"_s)->property("checked").toBool(), false);
 
         // a page from outside the group takes the sidebar back to the top
         QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
         QVERIFY(w.show(u"gearAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Back"_s));
 
         // the other pages stay one click away
@@ -3383,20 +3440,20 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.shown());
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
-        w.sidebarRow(u"Characters"_s)->forceActiveFocus(Qt::TabFocusReason);
-        QCOMPARE(w.focusedRow(), u"Characters"_s);
-        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
+        w.sidebarRow(u"Your Gear"_s)->forceActiveFocus(Qt::TabFocusReason);
         QCOMPARE(w.focusedRow(), u"Your Gear"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Gear Settings"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
         QTRY_VERIFY(w.sidebarRow(u"Gear Grade"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
 
-        // Back, then the three pages
+        // Back, then the four pages
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Back"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Import Character"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Gear Grade"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
@@ -3408,7 +3465,7 @@ private Q_SLOTS:
 
         // the sidebar is still on Gear, so another page is a key press away
         QTest::qWait(500);
-        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QVERIFY(!w.sidebarRow(u"Item History"_s));
         w.sidebarRow(u"Stat Weights"_s)->forceActiveFocus(Qt::TabFocusReason);
         QCOMPARE(w.focusedRow(), u"Stat Weights"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
@@ -3442,7 +3499,7 @@ private Q_SLOTS:
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
         QTRY_VERIFY(w.sidebarRow(u"Stat Weights"_s));
-        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QVERIFY(!w.sidebarRow(u"Item History"_s));
         QTest::qWait(500);
         QVERIFY(w.clickRow(u"Stat Weights"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Stat Weights"_s);
@@ -3453,7 +3510,7 @@ private Q_SLOTS:
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
         QVERIFY(w.clickRow(u"Back"_s));
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
         QCOMPARE(w.sidebarRow(u"Gear Settings"_s)->property("checked").toBool(), true);
         QVERIFY(w.clickRow(u"Your Gear"_s));
@@ -3461,7 +3518,7 @@ private Q_SLOTS:
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
     }
 
     // Settings and Appearance are one level down, under Settings
@@ -3497,20 +3554,20 @@ private Q_SLOTS:
         QVERIFY(w.clickRow(u"Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
         QVERIFY(w.sidebarRow(u"Back"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
         // opening it shows no page yet
-        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
 
         QVERIFY(w.clickRow(u"Appearance"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
         QTest::qWait(500);
         QVERIFY(w.sidebarRow(u"Back"_s));
-        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QVERIFY(!w.sidebarRow(u"Item History"_s));
         QCOMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), true);
 
         // Back goes up a level without picking a page
         QVERIFY(w.clickRow(u"Back"_s));
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Appearance"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
         QCOMPARE(w.sidebarRow(u"Settings"_s)->property("checked").toBool(), true);
@@ -3519,7 +3576,7 @@ private Q_SLOTS:
         QVERIFY(w.clickRow(u"Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
         QVERIFY(w.show(u"tradeAction"_s));
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Back"_s));
         QCOMPARE(w.sidebarRow(u"Settings"_s)->property("checked").toBool(), false);
     }
@@ -3529,13 +3586,13 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.shown());
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
 
         QVERIFY(w.show(u"overlayAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
         QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
         QTRY_COMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), false);
 
         // from a Gear page straight to a Settings page
@@ -3546,7 +3603,7 @@ private Q_SLOTS:
         QCOMPARE(w.page()->property("title").toString(), u"Appearance"_s);
         QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Stat Weights"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
         QTRY_COMPARE(w.sidebarRow(u"Appearance"_s)->property("checked").toBool(), true);
 
         // and back to Gear
@@ -3559,12 +3616,12 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.shown());
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
         w.sidebarRow(u"Settings"_s)->forceActiveFocus(Qt::TabFocusReason);
         QCOMPARE(w.focusedRow(), u"Settings"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
         QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
-        QTRY_VERIFY(!w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
 
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Back"_s);
@@ -3577,7 +3634,7 @@ private Q_SLOTS:
 
         // still on Settings, so the other page is a key press away
         QTest::qWait(500);
-        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QVERIFY(!w.sidebarRow(u"Item History"_s));
         w.sidebarRow(u"Settings"_s)->forceActiveFocus(Qt::TabFocusReason);
         QCOMPARE(w.focusedRow(), u"Settings"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
@@ -3608,17 +3665,17 @@ private Q_SLOTS:
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
         QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
-        QVERIFY(!w.sidebarRow(u"Characters"_s));
+        QVERIFY(!w.sidebarRow(u"Item History"_s));
         QTest::qWait(500);
         QVERIFY(w.clickRow(u"Back"_s));
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
         QTest::qWait(500);
         QVERIFY(w.clickRow(u"Your Gear"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Your Gear"_s);
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), false);
         QVERIFY(QMetaObject::invokeMethod(w.drawer(), "open"));
         QTRY_COMPARE(w.drawer()->property("drawerOpen").toBool(), true);
-        QTRY_VERIFY(w.sidebarRow(u"Characters"_s));
+        QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
     }
 
     // the title and what the page is for, at the top of each page
@@ -3678,6 +3735,7 @@ private Q_SLOTS:
     void charactersShowTheirGearScore()
     {
         Window w;
+        QVERIFY(w.show(u"charactersAction"_s));
         w.play({{u"Helmet"_s, item(itemtexts::helmetNew)}});
         QVERIFY(!w.app->characterList()->add(u"Ash"_s).isEmpty());
         // you play the one just added, which wears nothing
