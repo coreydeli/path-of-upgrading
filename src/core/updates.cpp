@@ -33,7 +33,7 @@ QString Version::text() const
 
 std::strong_ordering operator<=>(const Version &a, const Version &b)
 {
-    if (const auto order = a.numbers <=> b.numbers; order != 0)
+    if (const auto order = a.numbers <=> b.numbers; std::is_neq(order))
         return order;
     return betaRank(a) <=> betaRank(b);
 }
