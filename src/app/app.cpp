@@ -74,6 +74,9 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_finder(&m_trade, &m_tradeData, &m_rates)
     , m_results(&m_trade, &m_rates)
     , m_resultsPanel(qml, m_input.get(), &m_results)
+    , m_updates(m_network.get())
+    , m_downloader(m_network.get(), paths.cache + u"/updates"_s)
+    , m_updatesModel(&m_updates, &m_settings, m_opener.get(), &m_downloader)
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)
@@ -162,6 +165,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
         m_upgrades.finder().setSignedIn(m_tradeSession.isSaved());
     });
     followTrade();
+    m_updates.follow(settings.updates);
 
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
         if (hotkey == Hotkeys::Hotkey::Check)
@@ -208,6 +212,7 @@ void App::followSettings()
     if (settings.pob.location != m_pobLocation)
         lookForPob();
     followTrade();
+    m_updates.follow(settings.updates);
 }
 
 void App::followKeys()

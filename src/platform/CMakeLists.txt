@@ -17,6 +17,8 @@ add_library(pou_platform STATIC
     notifier.cpp notifier.h
     opener.cpp opener.h
     overlay.cpp overlay.h
+    packageinstaller.cpp packageinstaller.h
+    restart.cpp restart.h
     screenmap.cpp screenmap.h
     secretstore.cpp secretstore.h
     showwindow.cpp showwindow.h
@@ -58,6 +60,7 @@ else()
     target_sources(pou_platform PRIVATE
         kde/kdeglobalshortcuts.cpp kde/kdeglobalshortcuts.h
         kde/kdenotifier.cpp kde/kdenotifier.h
+        packagekitinstaller.cpp packagekitinstaller.h
         xcb/xconnection.cpp xcb/xconnection.h
         xcb/xgameinput.cpp xcb/xgameinput.h
         xcb/xgamewatcher.cpp xcb/xgamewatcher.h
@@ -67,8 +70,8 @@ else()
         xcb/xwindows.cpp xcb/xwindows.h
     )
     target_link_libraries(pou_platform
-        PUBLIC PkgConfig::XCB
-        PRIVATE Qt6::DBus KF6::DBusAddons KF6::GlobalAccel KF6::Notifications KF6::WindowSystem
+        PUBLIC PkgConfig::XCB Qt6::DBus
+        PRIVATE KF6::DBusAddons KF6::GlobalAccel KF6::Notifications KF6::WindowSystem
                 LayerShellQt::Interface
     )
 endif()

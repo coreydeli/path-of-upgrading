@@ -9,7 +9,7 @@ TrayNotifier::TrayNotifier(Tray *tray)
     : m_tray(tray)
 {}
 
-void TrayNotifier::notify(Event, const QString &title, const QString &text)
+void TrayNotifier::notify(Event, const QString &title, const QString &text, const Action &)
 {
     if (m_tray)
         m_tray->showMessage(title, text);

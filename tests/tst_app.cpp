@@ -16,6 +16,7 @@
 #include "maptexts.h"
 #include "stylefortests.h"
 #include "tradefixtures.h"
+#include "updatetexts.h"
 
 #include <QDir>
 #include <QGuiApplication>
@@ -306,6 +307,33 @@ private Q_SLOTS:
         settings.overlay.scale = 0.75;
         QVERIFY(r.app.settings().set(settings));
         QCOMPARE(r.app.checker().popup().scale(), 0.75);
+    }
+
+    void updatesFollowTheSettings()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.enabled = false;
+        settings.updates.includeBetas = true;
+        folders.set(settings);
+        auto *network = new FakeNetwork;
+        network->answers = {{.body = fakeReleases({fakeRelease(u"99.0.0-beta.1"_s, true)})}};
+        Running r(folders, desktop(), network);
+        // main() starts the checks, so a program under test asks nothing
+        QCOMPARE(network->sent.size(), 0);
+
+        r.app.updateChecker().check();
+        QVERIFY(QTest::qWaitFor([&] { return !r.app.updateChecker().isChecking(); }, 1000));
+        QCOMPARE(r.app.updateChecker().newest()->tag, u"v99.0.0-beta.1"_s);
+        QVERIFY(r.app.updateChecker().isOffered());
+
+        settings.updates.skipped = u"99.0.0-beta.1"_s;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(r.app.updateChecker().isSkipped());
+
+        settings.updates.includeBetas = false;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!r.app.updateChecker().newest());
     }
 
     void pobFound()
@@ -807,12 +835,12 @@ private Q_SLOTS:
         settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
         folders.set(settings);
         Running r(folders);
-        QCOMPARE(r.checked().gearBuild, u"Life and resistances"_s);
+        QVERIFY(!r.checked().gearScore.isEmpty());
         r.app.gearScoring()->setWeightsOnly(true);
         QVERIFY(r.app.characters().find(settings.character)->weightsOnly);
         QVERIFY(r.app.checker().popup().report().scoreLabel.startsWith(u"by your weights"_s));
         r.app.gearScoring()->setWeightsOnly(false);
-        QCOMPARE(r.app.checker().popup().report().gearBuild, u"Life and resistances"_s);
+        QVERIFY(!r.checked().gearScore.isEmpty());
     }
 
     void statWeights()

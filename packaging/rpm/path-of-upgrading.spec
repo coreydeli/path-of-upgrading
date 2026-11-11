@@ -91,12 +91,16 @@ price an item and find bases to craft on.
 
 %build
 # Qt adds a run path to the program, which it doesn't need in /usr/bin.
-# Trade searches start on in a beta, and off in a release.
+# Trade searches start on in a beta, and off in a release. The program says
+# its version as the release tag does, 0.7.0-beta.1 for 0.7.0~beta.1.
+version_tag=$(echo '%{version}' | tr '~' '-')
 %cmake -G Ninja \
     -DCMAKE_SKIP_INSTALL_RPATH=ON \
     -DCMAKE_COMPILE_WARNING_AS_ERROR=%{?with_werror:ON}%{!?with_werror:OFF} \
     -DBUILD_TESTING=%{?with_check:ON}%{!?with_check:OFF} \
-    -DPOU_BETA=%[ "%{version}" != "%{srcver}" ? "ON" : "OFF" ]
+    -DPOU_BETA=%[ "%{version}" != "%{srcver}" ? "ON" : "OFF" ] \
+    -DPOU_BUILD_VERSION="$version_tag" \
+    -DPOU_INSTALL_KIND=rpm
 %cmake_build
 
 %install

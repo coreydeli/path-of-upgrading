@@ -16,9 +16,11 @@
 #include "itemtexts.h"
 #include "stylefortests.h"
 #include "tradefixtures.h"
+#include "updatetexts.h"
 
 #include <KLocalizedQmlContext>
 #include <QAccessible>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
@@ -194,6 +196,8 @@ struct Window
                        .colors = colors,
                        .tradeOffered = tradeOffered},
             std::unique_ptr<GameWatcher>(game));
+        // whatever the build was configured for, a test says what it needs
+        app->updates()->setInstallKind(InstallKind::Source);
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
         QVariantMap properties{{u"app"_s, QVariant::fromValue(app.get())}};
@@ -3825,7 +3829,8 @@ private Q_SLOTS:
         QObject *wrenScore = wren->findChild<QObject *>(u"rowScore"_s);
         QVERIFY(isVisible(wrenScore));
         QVERIFY(!isVisible(ash->findChild<QObject *>(u"rowScore"_s)));
-        QCOMPARE(wren->property("detail").toString(), u"Gear score goes by Life and resistances"_s);
+        QCOMPARE(wren->property("detail").toString(),
+                 u"A general start, until Path of Building weighs your build"_s);
         QCOMPARE(ash->property("detail").toString(), QString());
         QVERIFY(!wrenScore->property("score").toString().isEmpty());
         QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));
@@ -4355,6 +4360,168 @@ private Q_SLOTS:
         w.app->onboarding()->ask();
         QTRY_VERIFY(guide->property("opened").toBool());
         QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
+    }
+
+    // The release GitHub will say is out, for the next look.
+    static void releaseIsOut(Window &w, const QString &version, bool tradeAsked = true)
+    {
+        // the trade site's and poe.ninja's answers go first
+        if (tradeAsked)
+            QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
+        w.network->answers = {{.body = fakeReleases({fakeRelease(version)})}};
+        w.app->updateChecker().check();
+        QTRY_VERIFY_WITH_TIMEOUT(!w.app->updateChecker().isChecking(), 5000);
+    }
+
+    void updateDialogOffersTheRelease()
+    {
+        Window w;
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        QVERIFY(!isVisible(dialog));
+        releaseIsOut(w, u"99.0.0"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QCOMPARE(dialog->property("title").toString(), u"A New Version Is Out"_s);
+        QVERIFY(button(dialog, u"Update Now"_s));
+        QVERIFY(button(dialog, u"Later"_s));
+        QVERIFY(button(dialog, u"Skip This Version"_s));
+
+        QVERIFY(click(button(dialog, u"Update Now"_s)));
+        QCOMPARE(w.opener->opened, QList<QUrl>{QUrl(releaseBase + u"/tag/v99.0.0"_s)});
+        QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    void installDialogShowsTheCommand()
+    {
+        Window w;
+        w.app->updates()->setInstallKind(InstallKind::Debian);
+        QObject *install = w.window->findChild<QObject *>(u"installDialog"_s);
+        QVERIFY(!isVisible(install));
+        releaseIsOut(w, u"99.0.0"_s);
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+
+        const Release release = readReleases(fakeReleases({fakeRelease(u"99.0.0"_s)})).first();
+        const QByteArray package = "pretend this is a package";
+        const QByteArray sum = QCryptographicHash::hash(package, QCryptographicHash::Sha256).toHex();
+        w.network->answers = {
+            {.body = sum + "  " + assetFor(release, InstallKind::Debian)->name.toUtf8() + "\n"},
+            {.body = package}};
+        QVERIFY(click(button(dialog, u"Update Now"_s)));
+        QTRY_VERIFY_WITH_TIMEOUT(install->property("opened").toBool(), 5000);
+        QTRY_COMPARE_WITH_TIMEOUT(w.app->updates()->stage(), UpdateStage::Manual, 5000);
+        QVERIFY(w.opener->opened.isEmpty());
+
+        QObject *command = w.window->findChild<QObject *>(u"installCommand"_s);
+        QVERIFY(command);
+        QVERIFY(command->property("text").toString().startsWith(u"sudo apt install '"_s));
+        QVERIFY(button(install, u"Close"_s));
+
+        QObject *copy = w.window->findChild<QObject *>(u"copyCommandButton"_s);
+        QVERIFY(click(copy));
+        QCOMPARE(w.opener->copied, QStringList{w.app->updates()->command()});
+        QObject *folder = w.window->findChild<QObject *>(u"openFolderButton"_s);
+        QVERIFY(click(folder));
+        QCOMPARE(w.opener->opened.size(), 1);
+        QVERIFY(w.opener->opened.at(0).isLocalFile());
+
+        QVERIFY(click(button(install, u"Close"_s)));
+        QTRY_VERIFY(!isVisible(install));
+        QCOMPARE(w.app->updates()->stage(), UpdateStage::Idle);
+    }
+
+    void installDialogOffersARestartAfterAPackage()
+    {
+        // an installer that says it worked
+        class Installed : public PackageInstaller
+        {
+        public:
+            After after() const override { return After::Offer; }
+            void install(const QString &, const Done &done) override { done({}); }
+        };
+        Window w;
+        w.app->updates()->setInstallKind(InstallKind::Debian);
+        QList<PackageInstaller::After> finished;
+        w.app->setUpdateInstaller(std::make_unique<Installed>(),
+                                  [&](PackageInstaller::After a) { finished << a; });
+        releaseIsOut(w, u"99.0.0"_s);
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+
+        const Release release = readReleases(fakeReleases({fakeRelease(u"99.0.0"_s)})).first();
+        const QByteArray package = "pretend this is a package";
+        const QByteArray sum = QCryptographicHash::hash(package, QCryptographicHash::Sha256).toHex();
+        w.network->answers = {
+            {.body = sum + "  " + assetFor(release, InstallKind::Debian)->name.toUtf8() + "\n"},
+            {.body = package}};
+        QVERIFY(click(button(dialog, u"Update Now"_s)));
+        QTRY_COMPARE_WITH_TIMEOUT(w.app->updates()->stage(), UpdateStage::Installed, 5000);
+        QObject *restart = w.window->findChild<QObject *>(u"restartButton"_s);
+        QTRY_VERIFY(isVisible(restart));
+        QVERIFY(finished.isEmpty());
+        QVERIFY(click(restart));
+        QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+    }
+
+    void updateDialogLaterAndSkip()
+    {
+        Window w;
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        releaseIsOut(w, u"99.0.0"_s);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QVERIFY(click(button(dialog, u"Later"_s)));
+        QTRY_VERIFY(!isVisible(dialog));
+        QVERIFY(w.settings().updates.skipped.isEmpty());
+        QVERIFY(w.opener->opened.isEmpty());
+
+        // Check Now offers it again, and Skip keeps it from coming back
+        w.network->answers = {{.body = fakeReleases({fakeRelease(u"99.0.0"_s)})}};
+        w.app->updates()->checkNow();
+        QTRY_VERIFY_WITH_TIMEOUT(!w.app->updateChecker().isChecking(), 5000);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QVERIFY(click(button(dialog, u"Skip This Version"_s)));
+        QTRY_VERIFY(!isVisible(dialog));
+        QCOMPARE(w.settings().updates.skipped, u"99.0.0"_s);
+        QVERIFY(w.opener->opened.isEmpty());
+    }
+
+    void updateDialogWaitsForTheWindowAndTheSetup()
+    {
+        Window w(true, true, {}, std::nullopt);
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        // a first run doesn't ask the trade site
+        releaseIsOut(w, u"99.0.0"_s, false);
+        QVERIFY(w.app->updates()->isPending());
+        QVERIFY(!isVisible(dialog));
+        w.window->show();
+        // the setup guide has the window first
+        QTRY_VERIFY(w.guide()->property("opened").toBool());
+        QVERIFY(!dialog->property("opened").toBool());
+        QVERIFY(click(w.inGuide(u"skipButton"_s)));
+        QTRY_VERIFY(dialog->property("opened").toBool());
+    }
+
+    void updatesCardInTheSettings()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QObject *launch = w.find(u"checkForUpdatesSwitch"_s);
+        QObject *betas = w.find(u"includeBetasSwitch"_s);
+        QCOMPARE(launch->property("checked").toBool(), true);
+        QCOMPARE(launch->property("text").toString(), u"Check for updates when the app starts"_s);
+        QCOMPARE(betas->property("text").toString(), u"Include beta builds"_s);
+        QCOMPARE(betas->property("checked").toBool(), w.settings().updates.includeBetas);
+
+        QVERIFY(toggle(launch));
+        QVERIFY(!w.settings().updates.checkOnLaunch);
+        QVERIFY(toggle(betas));
+        QCOMPARE(w.settings().updates.includeBetas, betas->property("checked").toBool());
+
+        QObject *now = w.find(u"checkNowButton"_s);
+        QCOMPARE(text(now), u"Check Now"_s);
+        QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
+        w.network->answers = {{.body = fakeReleases({fakeRelease(u"0.0.1"_s)})}};
+        QVERIFY(click(now));
+        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You have the newest version."_s, 5000);
     }
 
     // in the background, as it is at login

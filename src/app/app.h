@@ -28,6 +28,7 @@
 #include "app/tradeoptions.h"
 #include "app/traderesults.h"
 #include "app/tradesession.h"
+#include "app/updates.h"
 #include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
@@ -38,6 +39,8 @@
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
+#include "services/updatechecker.h"
+#include "services/updatedownloader.h"
 
 #include <QObject>
 #include <QString>
@@ -80,6 +83,7 @@ class App : public QObject
     Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
+    Q_PROPERTY(pou::Updates *updates READ updates CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
     Q_PROPERTY(pou::About *about READ about CONSTANT)
@@ -137,6 +141,16 @@ public:
     // The listings of the last search, and the window that shows them.
     TradeResults &results() { return m_results; }
     ResultsPanel &resultsPanel() { return m_resultsPanel; }
+    // Looks for a newer release on GitHub, which main() starts once the
+    // program is up.
+    UpdateChecker &updateChecker() { return m_updates; }
+    // What installs an update by itself, for the kinds of install that can,
+    // and what to do once it has: restart or quit.
+    void setUpdateInstaller(std::unique_ptr<PackageInstaller> installer, const Updates::Finish &finish)
+    {
+        m_updatesModel.setInstaller(std::move(installer), finish);
+    }
+    Updates *updates() { return &m_updatesModel; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -192,6 +206,9 @@ private:
     TradeFinder m_finder;
     TradeResults m_results;
     ResultsPanel m_resultsPanel;
+    UpdateChecker m_updates;
+    UpdateDownloader m_downloader;
+    Updates m_updatesModel;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;

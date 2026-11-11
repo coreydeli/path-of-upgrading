@@ -119,7 +119,6 @@ struct ItemReport
     Q_PROPERTY(QString gearScore MEMBER gearScore)
     Q_PROPERTY(QString gearGrade MEMBER gearGrade)
     Q_PROPERTY(QString yourGearScore MEMBER yourGearScore)
-    Q_PROPERTY(QString gearBuild MEMBER gearBuild)
     Q_PROPERTY(QList<pou::ReportFigure> gearParts MEMBER gearParts)
     Q_PROPERTY(QStringList gearNotes MEMBER gearNotes)
     Q_PROPERTY(QStringList losses MEMBER losses)
@@ -163,7 +162,6 @@ public:
     QString gearScore;
     QString gearGrade;
     QString yourGearScore;
-    QString gearBuild; // the build profile's name
     // What the gear score is made of: the points each stat the build wants
     // adds to yours and to the item's, out of 100, biggest change first.
     QList<ReportFigure> gearParts;

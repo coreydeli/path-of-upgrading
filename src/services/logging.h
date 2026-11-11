@@ -11,5 +11,6 @@ namespace pou {
 Q_DECLARE_LOGGING_CATEGORY(lcNinja)
 Q_DECLARE_LOGGING_CATEGORY(lcPob)
 Q_DECLARE_LOGGING_CATEGORY(lcTrade)
+Q_DECLARE_LOGGING_CATEGORY(lcUpdates)
 
 } // namespace pou

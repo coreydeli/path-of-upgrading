@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QString>
 #include <QStringList>
 
 class QWindow;
@@ -37,6 +38,10 @@ public:
     // Says in a notification what's wrong once the program is up, if
     // anything is.
     void reportProblems();
+
+    // Tells you a newer version is out, when the window isn't open. The
+    // notification's Update button shows the window, which has the choices.
+    void tellAboutUpdate(const QString &version);
 
 Q_SIGNALS:
     // It was started again with --setup.

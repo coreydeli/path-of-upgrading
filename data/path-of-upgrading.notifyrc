@@ -8,3 +8,8 @@ DesktopEntry=io.github.coreydeli.PathOfUpgrading
 Name=The hotkeys couldn't be set up
 Comment=The desktop wouldn't take the app's hotkeys
 Action=Popup
+
+[Event/updateAvailable]
+Name=A new version is out
+Comment=A newer release of the app is on GitHub
+Action=Popup

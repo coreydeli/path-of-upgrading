@@ -9,7 +9,7 @@ namespace pou {
 class KdeNotifier : public Notifier
 {
 public:
-    void notify(Event event, const QString &title, const QString &text) override;
+    void notify(Event event, const QString &title, const QString &text, const Action &action = {}) override;
 };
 
 } // namespace pou

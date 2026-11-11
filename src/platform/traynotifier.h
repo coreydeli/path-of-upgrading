@@ -15,7 +15,9 @@ class TrayNotifier : public Notifier
 public:
     explicit TrayNotifier(Tray *tray);
 
-    void notify(Event event, const QString &title, const QString &text) override;
+    // A tray message has no button, so the action is left out. Opening the
+    // window from the icon does what it would.
+    void notify(Event event, const QString &title, const QString &text, const Action &action = {}) override;
 
 private:
     QPointer<Tray> m_tray;

@@ -56,14 +56,14 @@ ColumnsPage {
                 required property string characterId
                 required property string name
                 required property string build
-                required property string profile
+                required property string source
                 required property string score
                 required property string grade
 
                 objectName: "character:" + name
                 text: name
                 description: build !== "" ? build : qsTr("No build imported")
-                detail: score !== "" ? qsTr("Gear score goes by %1").arg(profile) : ""
+                detail: score !== "" ? source : ""
                 // the list says which it is, so it stays right when that
                 // changes some other way
                 checked: characterId === charactersPage.characters.current

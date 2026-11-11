@@ -712,9 +712,8 @@ private Q_SLOTS:
         ItemReport rated = aReport();
         rated.gearScore = u"78"_s;
         rated.gearGrade = u"A"_s;
-        rated.gearBuild = u"Minions"_s;
         rated.yourGearScore = u"64"_s;
-        QTest::newRow("gear score") << rated << QStringList{u"78 A"_s, u"gear score for Minions, yours 64"_s};
+        QTest::newRow("gear score") << rated << QStringList{u"78 A"_s, u"gear score, yours 64"_s};
 
         ItemReport firstRated = aReport();
         firstRated.gearScore = u"78"_s;

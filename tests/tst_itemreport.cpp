@@ -261,13 +261,12 @@ private Q_SLOTS:
     {
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
-        e.gear = GearScore{.buildName = u"Minions"_s, .score = 78, .grade = u"A"_s};
-        e.gearEquipped = GearScore{.buildName = u"Minions"_s, .score = 56, .grade = u"B"_s};
+        e.gear = GearScore{.score = 78, .grade = u"A"_s};
+        e.gearEquipped = GearScore{.score = 56, .grade = u"B"_s};
         ItemReport report = reportOf(check);
         QCOMPARE(report.gearScore, u"78"_s);
         QCOMPARE(report.gearGrade, u"A"_s);
         QCOMPARE(report.yourGearScore, u"56"_s);
-        QCOMPARE(report.gearBuild, u"Minions"_s);
 
         e.gearEquipped->unrated = GearScore::Unrated::Unique;
         report = reportOf(check);
