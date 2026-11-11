@@ -33,6 +33,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QRegularExpression>
 #include <QSet>
 #include <QSignalSpy>
 #include <QStandardPaths>
@@ -456,7 +457,17 @@ private Q_SLOTS:
         QVERIFY(addBundledFonts());
     }
 
-    void init() { QTest::failOnWarning(); }
+    void init()
+    {
+        // Debian 13's Qt 6.8 now and then warns from its own animation timer that the
+        // driver isn't running (Arch and Windows never do), so only that one passes there
+#if QT_VERSION < QT_VERSION_CHECK(6, 9, 0)
+        QTest::failOnWarning(
+            QRegularExpression(u"^(?!QUnifiedTimer::stopAnimationDriver: driver is not running$)"_s));
+#else
+        QTest::failOnWarning();
+#endif
+    }
 
     void opens()
     {
