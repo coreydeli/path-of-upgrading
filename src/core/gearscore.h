@@ -94,7 +94,7 @@ QString missingNote(const GearScore &gear);
 //   "Not in the gear score: #% increased Rarity of Items found."
 QString notScoredNote(const GearScore &gear);
 // The stats rolled under a share of an excellent roll, the weakest first and
-// three at most, "Weak rolls: Life 62 of up to 149, Cold res 35% of an
+// three at most, "Weak rolls: Life 62 of up to 149, Cold Resistance 35% of an
 // excellent roll." Runes aren't rolls, so they're left out.
 QString weakRollsNote(const GearScore &gear, int underPercent = 50);
 

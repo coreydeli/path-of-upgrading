@@ -68,7 +68,7 @@ inline constexpr QStringView minionProfile = u"minion-es";
 // For scoring by your stat weights alone, as no profile has it.
 inline constexpr QStringView noBuildProfile = u"none";
 
-// What the profiles call a resistance, "Fire res".
+// What the profiles call a resistance, "Fire Resistance".
 QString resistLabel(Element e);
 
 const QList<BuildProfile> &buildProfiles();
