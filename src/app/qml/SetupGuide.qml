@@ -98,13 +98,13 @@ FormCard.FormCardDialog {
                 Layout.fillWidth: true
                 spacing: 0
 
-                FormCard.FormCard {
+                Sheet {
                     FormCard.FormTextDelegate {
                         text: qsTr("Hold the mouse over an item in Path of Exile 2 and press a key. A popup says whether it's an upgrade for your build.")
                         textItem.wrapMode: Text.Wrap
                     }
 
-                    FormCard.FormDelegateSeparator {}
+                    RowRule {}
 
                     FormCard.FormTextDelegate {
                         text: qsTr("This takes a minute, and you can change all of it later.")
@@ -143,14 +143,14 @@ FormCard.FormCardDialog {
                 Layout.fillWidth: true
                 spacing: 0
 
-                FormCard.FormCard {
+                Sheet {
                     FormCard.FormTextDelegate {
                         objectName: "hotkeyText"
                         text: guide.app.onboarding.hotkey !== "" ? qsTr("Hold the mouse over an item in the game and press %1.").arg(guide.app.onboarding.hotkey) : qsTr("The key to check an item isn't set. Choose one on the Settings page.")
                         textItem.wrapMode: Text.Wrap
                     }
 
-                    FormCard.FormDelegateSeparator {}
+                    RowRule {}
 
                     FormCard.FormTextDelegate {
                         text: qsTr("To see this guide again, start the program with --setup.")

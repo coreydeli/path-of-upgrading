@@ -68,8 +68,6 @@ qt_add_qml_module(pou_app
         qml/Main.qml
         qml/NumberBox.qml
         qml/NumberField.qml
-        qml/Ornament.qml
-        qml/OrnateFrame.qml
         qml/OverlayPage.qml
         qml/PageHeader.qml
         qml/PlacementsTable.qml
@@ -83,6 +81,8 @@ qt_add_qml_module(pou_app
         qml/ResultsWindow.qml
         qml/Notice.qml
         qml/Plate.qml
+        qml/RowRule.qml
+        qml/Sheet.qml
         qml/ScoreGauge.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
@@ -103,7 +103,6 @@ qt_add_qml_module(pou_app
         qml/TonePill.qml
         qml/TradePage.qml
         qml/TradeStatus.qml
-        qml/WindowGlow.qml
 )
 
 # the fonts the program carries

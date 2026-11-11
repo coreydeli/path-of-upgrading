@@ -24,7 +24,7 @@ ColumnsPage {
         text: qsTr("Path of Building works out what an item would do to your build's damage and defences.")
     }
 
-    FormCard.FormCard {
+    Sheet {
         Layout.topMargin: Kirigami.Units.largeSpacing
 
         SwitchRow {
@@ -40,14 +40,14 @@ ColumnsPage {
         title: qsTr("Where It Is")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "foundText"
             text: pobPage.options.headline
             description: pobPage.options.details.join(" ")
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: installedAtText.visible
         }
 
@@ -59,7 +59,7 @@ ColumnsPage {
             description: pobPage.options.installedAt
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: buildsAtText.visible
         }
 
@@ -71,7 +71,7 @@ ColumnsPage {
             description: pobPage.options.buildsAt
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: stepsText.visible
         }
 
@@ -83,7 +83,7 @@ ColumnsPage {
             description: pobPage.options.steps.join("\n")
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: discoverButton.visible
         }
 
@@ -97,7 +97,7 @@ ColumnsPage {
             onClicked: pobPage.options.openDiscover()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: flathubButton.visible
         }
 
@@ -111,7 +111,7 @@ ColumnsPage {
             onClicked: pobPage.options.openFlathub()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: copyCommandButton.visible
         }
 
@@ -125,7 +125,7 @@ ColumnsPage {
             onClicked: pobPage.options.copyInstallCommand()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: installerButton.visible
         }
 
@@ -139,7 +139,7 @@ ColumnsPage {
             onClicked: pobPage.options.openInstaller()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "updateButton"
@@ -151,7 +151,7 @@ ColumnsPage {
             onClicked: pobPage.app.updatePob()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormTextFieldDelegate {
             id: folderField
@@ -171,7 +171,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormTextDelegate {
             objectName: "folderNote"
@@ -181,7 +181,7 @@ ColumnsPage {
                                                           : Kirigami.Theme.textColor
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "chooseFolderButton"
@@ -191,7 +191,7 @@ ColumnsPage {
             onClicked: folderDialog.open()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: usualPlacesButton.visible
         }
 
@@ -205,7 +205,7 @@ ColumnsPage {
             onClicked: pobPage.options.useUsualPlaces()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "placesButton"
@@ -215,7 +215,7 @@ ColumnsPage {
             onClicked: pobPage.showPlaces = !pobPage.showPlaces
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: placesText.visible
         }
 
@@ -233,7 +233,7 @@ ColumnsPage {
     }
 
     // These only weigh Path of Building's numbers, so they wait for it to be on.
-    FormCard.FormCard {
+    Sheet {
         enabled: pobPage.options.enabled
 
         FormCard.AbstractFormDelegate {
@@ -275,7 +275,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "resistsSwitch"
@@ -285,7 +285,7 @@ ColumnsPage {
             onToggled: pobPage.options.resistsFirst = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "chaosSwitch"
@@ -295,7 +295,7 @@ ColumnsPage {
             onToggled: pobPage.options.chaos = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "keepDamageSwitch"
@@ -305,7 +305,7 @@ ColumnsPage {
             onToggled: pobPage.options.keepDamage = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "keepDefenceSwitch"
@@ -315,7 +315,7 @@ ColumnsPage {
             onToggled: pobPage.options.keepDefence = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "spiritSwitch"
@@ -325,7 +325,7 @@ ColumnsPage {
             onToggled: pobPage.options.spirit = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "attributesSwitch"

@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// The title over a card, in the heading font and the gold, with a short rule
-// under it. It stands in for FormHeader, and takes the same title and
-// maximumWidth, which ColumnsPage sets.
+// The title over a card, a small slab of paper. It stands in for FormHeader,
+// and takes the same title and maximumWidth, which ColumnsPage sets.
 Item {
     id: header
 
@@ -37,18 +35,24 @@ Item {
         }
         spacing: 2
 
-        QQC2.Label {
-            Layout.fillWidth: true
-            color: Style.accent(Kirigami.Theme)
-            font: Style.sectionFont(Kirigami.Theme.defaultFont)
-            text: header.title
-            wrapMode: Text.WordWrap
+        Rectangle {
+            Layout.maximumWidth: content.width
+            implicitWidth: slab.implicitWidth + 2 * Kirigami.Units.smallSpacing + 2
+            implicitHeight: slab.implicitHeight + 2
+            color: Style.paper
             Accessible.role: Accessible.Heading
-        }
+            Accessible.name: header.title
 
-        Ornament {
-            Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-            diamond: !Style.plain
+            Text {
+                id: slab
+
+                anchors.centerIn: parent
+                width: Math.min(implicitWidth, parent.width - 2 * Kirigami.Units.smallSpacing)
+                elide: Text.ElideRight
+                font: Style.sectionFont(Kirigami.Theme.defaultFont)
+                color: Style.ink
+                text: header.title
+            }
         }
     }
 }

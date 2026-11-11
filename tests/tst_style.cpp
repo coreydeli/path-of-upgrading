@@ -288,6 +288,16 @@ private Q_SLOTS:
         QCOMPARE(square->property("notch").toDouble(), 0.0);
     }
 
+    void aSheetHoldsItsRowsToTheMaximumWidth()
+    {
+        std::unique_ptr<QQuickItem> sheet = make("Sheet { width: 1000; maximumWidth: 400 }");
+        QVERIFY(sheet);
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 400.0);
+        sheet->setWidth(300);
+        const double side = sheet->property("side").toDouble();
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 300.0 - 2 * side);
+    }
+
     void aNoticeShowsOneLineEach()
     {
         std::unique_ptr<QQuickItem> none = make("Notice { }");
@@ -295,30 +305,6 @@ private Q_SLOTS:
         std::unique_ptr<QQuickItem> two = make("Notice { lines: [\"Loses life\", \"Loses speed\"] }");
         QCOMPARE(two->isVisible(), true);
         QCOMPARE(two->property("tint").value<QColor>(), tone(3, false));
-    }
-
-    void aFrameHasFourCorners() { QCOMPARE(corners(), 4); }
-
-    void plainLeavesOutTheCorners()
-    {
-        m_style->setProperty("plain", true);
-        QCOMPARE(corners(), 0);
-    }
-
-    void aFrameLightsInTheAccent()
-    {
-        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
-        const auto outline = [&] {
-            return frame->childItems()
-                .at(0)
-                ->property("border")
-                .value<QObject *>()
-                ->property("color")
-                .value<QColor>();
-        };
-        QCOMPARE(outline(), call(u"frame"_s).value<QColor>());
-        frame->setProperty("lit", true);
-        QCOMPARE(outline(), color(u"highlight"_s));
     }
 
     void aTableMeasuresItsChangesAgainstTheBiggest()
@@ -362,18 +348,6 @@ private:
         else
             item->setParentItem(m_window.contentItem());
         return item;
-    }
-
-    // the corner pieces are the children that are ten by ten
-    int corners()
-    {
-        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
-        int count = 0;
-        for (QQuickItem *child : frame->childItems()) {
-            if (child->width() == 10 && child->height() == 10)
-                ++count;
-        }
-        return count;
     }
 
     QVariant call(const QString &name, const QVariantList &args = {}) const

@@ -18,14 +18,14 @@ ColumnsPage {
         title: qsTr("This Version")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "versionText"
             text: qsTr("Version")
             description: qsTr("%1, a %2").arg(aboutPage.about.version).arg(aboutPage.about.edition.toLowerCase())
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormTextDelegate {
             objectName: "licenseText"
@@ -33,7 +33,7 @@ ColumnsPage {
             description: aboutPage.about.license
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormTextDelegate {
             objectName: "qtText"
@@ -41,7 +41,7 @@ ColumnsPage {
             description: aboutPage.about.qtVersion
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormTextDelegate {
             objectName: "frameworksText"
@@ -49,7 +49,7 @@ ColumnsPage {
             description: aboutPage.about.frameworksVersion
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormTextDelegate {
             objectName: "pobText"
@@ -63,7 +63,7 @@ ColumnsPage {
         title: qsTr("Project")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormButtonDelegate {
             objectName: "repositoryButton"
             text: qsTr("Source Code")
@@ -72,7 +72,7 @@ ColumnsPage {
             onClicked: aboutPage.about.openRepository()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "releasesButton"
@@ -82,7 +82,7 @@ ColumnsPage {
             onClicked: aboutPage.about.openReleases()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "issuesButton"
@@ -97,7 +97,7 @@ ColumnsPage {
         title: qsTr("Credits")
     }
 
-    FormCard.FormCard {
+    Sheet {
         Repeater {
             model: aboutPage.about.credits
 

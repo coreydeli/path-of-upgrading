@@ -23,8 +23,10 @@ Item {
 
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.gridUnit
 
-    OrnateFrame {
+    Plate {
         anchors.fill: parent
+        line: Style.frame(Kirigami.Theme)
+        lineWidth: 1
     }
 
     ColumnLayout {
@@ -75,10 +77,7 @@ Item {
             }
         }
 
-        Ornament {
-            Layout.fillWidth: true
-            diamond: !Style.plain
-        }
+        RowRule {}
 
         ColumnLayout {
             Layout.fillWidth: true
