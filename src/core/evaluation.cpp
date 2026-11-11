@@ -120,6 +120,7 @@ GearScoreOptions gearScoreOptions(const Character &character, const QString &slo
 {
     GearScoreOptions options;
     options.build = character.buildProfile;
+    options.weighed = character.weighed;
     options.tweaks = character.tweaks;
     options.ignore = [rules = character.ignored](const QString &key) {
         return isIgnored(rules, key);

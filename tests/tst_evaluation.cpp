@@ -76,6 +76,11 @@ private Q_SLOTS:
         QVERIFY(!options.ignore(u"# to maximum Life"_s));
         // without resistances there's no telling what you need
         QVERIFY(!options.resistNeed[Element::Fire]);
+        QVERIFY(!options.weighed);
+
+        c.weighed = WeighedProfile{
+            .profile = {}, .slots = {u"Helmet"_s}, .pobVersion = u"0.3.3"_s, .date = {}, .damageWeight = 0.5};
+        QCOMPARE(gearScoreOptions(c, u"Helmet"_s).weighed->pobVersion, u"0.3.3"_s);
     }
 
     void eachResistanceNeedsToReachItsOwnMaximum()
@@ -118,7 +123,8 @@ private Q_SLOTS:
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks,
                  (ProfileTweaks{{u"Fire Resistance"_s, 2}, {u"Cold Resistance"_s, 0.5}}));
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.chaos = true}).tweaks,
-                 (ProfileTweaks{{u"Fire Resistance"_s, 2}, {u"Cold Resistance"_s, 0.5}, {u"Chaos Resistance"_s, 2}}));
+                 (ProfileTweaks{
+                     {u"Fire Resistance"_s, 2}, {u"Cold Resistance"_s, 0.5}, {u"Chaos Resistance"_s, 2}}));
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.resistsFirst = false}).tweaks,
                  (ProfileTweaks{{u"Cold Resistance"_s, 0.5}}));
     }

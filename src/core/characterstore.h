@@ -33,6 +33,8 @@ struct Character
     // You chose the profile yourself, so importing a build leaves it be.
     bool profilePicked = false;
     ProfileTweaks tweaks;
+    // What Path of Building weighed for the build, once it has.
+    std::optional<WeighedProfile> weighed;
     std::optional<ResistRecord> resists;
     // Path of Building found Chaos Inoculation the last time it loaded the
     // build. Kept for when it isn't running.
