@@ -9,7 +9,42 @@ version that comes out.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- The gear notes say the most each slot can roll, such as "Life (up to 149)" in
+  the missing stats, and "Look for" gives it too, as "Life 55 or more (up to
+  149)". An empty slot's "Wants most" shows it the same way. The figures come
+  from Path of Building's data for Path of Exile 2.
+
+### Changed
+
+- The gear page's "Your Resistances" card is now called "Resistances". A line
+  under its heading says where the numbers come from, and the line of values
+  stays hidden until they are known.
+- "Typed in off your character sheet" is now "Type them in from your character
+  sheet", with the numbers the game's sheet shows, over the maximum too.
+- "Margin over the maximum" is now "Safety buffer". An item that leaves a
+  resistance closer to its maximum than this gets a warning.
+- "Maximum resistance" is now four rows: Fire, Cold, Lightning and Chaos
+  maximum, each from 1 to 100. An imported build's maximums are used until you
+  change one, and a single maximum saved by an earlier version is used for all
+  four.
+- On the Trade page, "Update poe.ninja's prices every" is now "Update poe.ninja's
+  prices automatically", with minutes beside the number.
+- A beta is no longer made on every merge into beta. It comes out when it's
+  made by hand, or each night when there's new code. Changes to the docs alone
+  don't count.
+- In the gear score profiles, "Weapon DPS" is now "Weapon damage per second".
+- The sidebar's Gear group is now called Gear Settings.
+- Build Review's "Look Again" is now "Update", and it also reads the builds
+  you've saved in Path of Building since.
+
+### Fixed
+
+- A weapon's damage is no longer listed as missing in a slot's gear notes.
+- With a two-handed weapon in the main hand, the off hand no longer counts
+  toward the gear score, and the popup no longer offers to wear an off-hand
+  item there, unless the character can hold one beside it.
 
 ## [0.6.0] - 2026-11-10
 
