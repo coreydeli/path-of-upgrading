@@ -16,7 +16,7 @@ in QML.
 - Title Case for the window title, the sidebar entries, page titles, the
   section headers of a settings page, buttons and dialog titles:
   - `title: qsTr("Build Analysis")` on a page
-  - `FormCard.FormHeader { title: qsTr("What Matters Most") }`
+  - `SectionHeader { title: qsTr("What Matters Most") }`
   - `text: qsTr("Open on the Trade Site")` and `text: qsTr("Show More")` on buttons
   - `title: qsTr("Add a Stat")` on a dialog
 - Sentence case for switch and row labels, field labels, descriptions, status
@@ -291,11 +291,11 @@ QT_NO_URL_CAST_FROM_STRING  QT_USE_QSTRINGBUILDER  QT_NO_FOREACH  QT_NO_KEYWORDS
   import org.kde.kirigamiaddons.formcard as FormCard
   ```
 
-- A settings page is a `ColumnsPage` with a `title`. `ColumnsPage.qml` is a
+- A page is a `ColumnsPage` with a `title`. `ColumnsPage.qml` is a
   `FormCard.FormCardPage` that flows its cards into up to three columns on a
-  wide window, and stacks them on a narrow one. Its rows sit in
-  `FormCard.FormCard` cards, a card with a title gets a `FormCard.FormHeader`,
-  and a `FormCard.FormDelegateSeparator {}` goes between rows in a card. Set
+  wide window, and stacks them on a narrow one. Its cards are `Sheet`s, the
+  app's own cut-corner plate, and a `Sheet` with a title has a `SectionHeader`
+  before it. Rows inside a `Sheet` are separated with `RowRule {}`. Set
   `minColumnWidth` and `maxColumnWidth` when a page's cards need more or less
   room. See `TradePage.qml`.
 - Help text under a card is `SectionText`, which is as wide as the card it goes
