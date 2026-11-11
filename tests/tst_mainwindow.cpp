@@ -3567,8 +3567,8 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"issuesButton"_s)));
         QCOMPARE(w.opener->opened.size(), 3);
         QCOMPARE(w.opener->opened.first(), QUrl(u"https://github.com/coreydeli/path-of-upgrading"_s));
-        QVERIFY(click(w.find(u"credit:Cinzel"_s)));
-        QCOMPARE(w.opener->opened.last(), QUrl(u"https://github.com/NDISCOVER/Cinzel"_s));
+        QVERIFY(click(w.find(u"credit:Spectral"_s)));
+        QCOMPARE(w.opener->opened.last(), QUrl(u"https://github.com/productiontype/Spectral"_s));
     }
 
     void helpPage()
