@@ -280,8 +280,7 @@ Item {
                 opacity: 0.7
                 text: {
                     const report = card.report;
-                    const parts = [report.gearBuild !== "" ? qsTr("gear score for %1").arg(report.gearBuild)
-                                                           : qsTr("gear score")];
+                    const parts = [qsTr("gear score")];
                     if (report.yourGearScore !== "")
                         parts.push(qsTr("yours %1").arg(report.yourGearScore));
                     return parts.join(", ");

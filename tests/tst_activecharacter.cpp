@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/activecharacter.h"
+#include "core/buildprofiles.h"
 #include "core/parser.h"
 #include "fakepob.h"
 #include "itemtexts.h"
@@ -382,6 +383,41 @@ private Q_SLOTS:
         QCOMPARE(c.started, 0);
         QVERIFY(c.store.ids().isEmpty());
         QVERIFY(!c.active.exists());
+    }
+
+    void judgedByWeightsBecomesAFlag()
+    {
+        // a saved "none" is now a switch, over the profile a build fits
+        Characters c;
+        Character none = inGrimCrown();
+        none.buildProfile = noBuildProfile.toString();
+        const QString id = c.add(none);
+        c.active.setId(id);
+        QVERIFY(c.active.character().weightsOnly);
+        QCOMPARE(c.active.character().buildProfile, defaultBuildProfile.toString());
+        // saved, so it happens once
+        QVERIFY(c.saved(id).weightsOnly);
+        QCOMPARE(c.saved(id).buildProfile, defaultBuildProfile.toString());
+
+        const QString withBuild = c.add(
+            none,
+            u"<PathOfBuilding2><Build level=\"90\" className=\"Warrior\">"
+            "<PlayerStat stat=\"Life\" value=\"1000\"/><PlayerStat stat=\"EnergyShield\" value=\"9000\"/>"
+            "</Build></PathOfBuilding2>"_s);
+        c.active.setId(withBuild);
+        QVERIFY(c.active.character().weightsOnly);
+        QCOMPARE(c.active.character().buildProfile, energyShieldProfile.toString());
+    }
+
+    void aProfileIsLeftAlone()
+    {
+        Characters c;
+        Character hand = inGrimCrown();
+        hand.buildProfile = u"es-caster"_s;
+        const QString id = c.add(hand);
+        c.active.setId(id);
+        QVERIFY(!c.active.character().weightsOnly);
+        QCOMPARE(c.active.character().buildProfile, u"es-caster"_s);
     }
 
     void changeMakesOne()

@@ -39,6 +39,7 @@ struct WeighedProfile
     QString pobVersion;      // of the Path of Building that weighed it
     QString date;            // ISO, when
     double damageWeight = 0; // the balance it was weighed by
+    QString build;           // which build, by buildFingerprint()
 
     bool covers(const QString &group) const { return slots.contains(group); }
 };
@@ -59,6 +60,14 @@ WeighedProfile weighedProfile(const QList<SlotWeighing> &weighings, const BuildP
 // The start profile's stats that aren't mods ("[Base] Armour"), which
 // weighings don't cover, so they rate the weighed groups as before.
 QList<ProfileStat> itemPropertyStats(const BuildProfile &start);
+
+// The stats that rate the gear, as the Gear Score page lists them: the
+// weighed ones for the groups that were weighed, and the start profile's for
+// the rest and for item properties. Just the start when nothing was weighed.
+BuildProfile ratedProfile(const BuildProfile &start, const std::optional<WeighedProfile> &weighed);
+
+// Tells builds apart, from the XML Path of Building was given.
+QString buildFingerprint(const QString &pobXml);
 
 QJsonObject toJson(const WeighedProfile &weighed);
 // Empty when the object isn't one.

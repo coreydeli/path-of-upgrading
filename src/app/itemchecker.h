@@ -47,6 +47,8 @@ public:
     void checkItem(const Item &item);
 
     ItemPopup &popup() { return m_popup; }
+    // That Path of Building is working on the item.
+    bool isChecking() const { return m_judge.isWaiting(); }
 
 Q_SIGNALS:
     // Each item read, gear or not.

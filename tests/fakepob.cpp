@@ -182,6 +182,7 @@ int main(int argc, char *argv[])
             r.insert(u"items"_s, request.value(u"items"));
         }
         if (command == u"weigh") {
+            count(u"weighs"_s);
             const QJsonObject weighed{{u"slot"_s, request.value(u"slot")},
                                       {u"weights"_s, request.value(u"weights")}};
             if (QFile file(u"weighed.json"_s); file.open(QIODevice::WriteOnly))
