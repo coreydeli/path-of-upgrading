@@ -84,6 +84,8 @@ ColumnLayout {
 
             ColumnLayout {
                 Layout.fillWidth: true
+                // the numbers can't squeeze a name out, however wide the face
+                Layout.minimumWidth: Kirigami.Units.gridUnit * 6
                 spacing: 0
 
                 QQC2.Label {
