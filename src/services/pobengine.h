@@ -108,6 +108,9 @@ public:
     // by how much it raises those stats. See weigh in pobbridge.lua for the
     // answer, and readPobWeighing() for reading it.
     PobReply *weigh(const QString &slot, const QList<PobStatWeight> &weights);
+    // Starts it if it isn't running, so it loads the build. It is started the
+    // first time it's asked something otherwise.
+    void load();
     // Stops it, failing what it hasn't answered. It starts again the next time
     // it's asked something, even when it couldn't start before.
     void stop();

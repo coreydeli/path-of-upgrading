@@ -145,6 +145,14 @@ PobReply *PobEngine::weigh(const QString &slot, const QList<PobStatWeight> &weig
     return ask({{u"cmd"_s, u"weigh"_s}, {u"slot"_s, slot}, {u"weights"_s, array}});
 }
 
+void PobEngine::load()
+{
+    if (m_state == State::Unavailable || m_xml.isEmpty())
+        return;
+    if (!m_process && (m_state != State::Failed || m_retry.hasExpired()))
+        start();
+}
+
 PobReply *PobEngine::ask(const QJsonObject &request)
 {
     auto *reply = new PobReply(this);

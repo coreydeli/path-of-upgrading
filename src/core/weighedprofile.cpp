@@ -3,6 +3,7 @@
 
 #include "core/numbers.h"
 
+#include <QCryptographicHash>
 #include <QJsonArray>
 #include <QSet>
 #include <algorithm>
@@ -166,6 +167,14 @@ QList<ProfileStat> itemPropertyStats(const BuildProfile &start)
     return out;
 }
 
+QString buildFingerprint(const QString &pobXml)
+{
+    return pobXml.isEmpty()
+               ? QString()
+               : QString::fromLatin1(
+                     QCryptographicHash::hash(pobXml.toUtf8(), QCryptographicHash::Sha1).toHex());
+}
+
 QJsonObject toJson(const WeighedProfile &weighed)
 {
     QJsonArray stats;
@@ -184,6 +193,7 @@ QJsonObject toJson(const WeighedProfile &weighed)
         {u"pobVersion"_s, weighed.pobVersion},
         {u"date"_s, weighed.date},
         {u"damageWeight"_s, weighed.damageWeight},
+        {u"build"_s, weighed.build},
         {u"slots"_s, QJsonArray::fromStringList(weighed.slots)},
         {u"stats"_s, stats},
     };
@@ -201,6 +211,7 @@ std::optional<WeighedProfile> weighedProfileFromJson(const QJsonObject &o)
     out.pobVersion = o.value(u"pobVersion").toString();
     out.date = o.value(u"date").toString();
     out.damageWeight = o.value(u"damageWeight").toDouble();
+    out.build = o.value(u"build").toString();
     for (const QJsonValue &slot : o.value(u"slots").toArray()) {
         if (ratedGroups().contains(slot.toString()))
             out.slots << slot.toString();
