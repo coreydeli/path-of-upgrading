@@ -317,7 +317,10 @@ QString buildNoteFor(Need need, const QString &line, const MapBuild &build, int 
         }
         if (names.isEmpty())
             return {};
-        return u"Your %1 resistance is under the cap."_s.arg(names.join(u", "_s));
+        if (names.size() == 1)
+            return u"Your %1 resistance is under the cap."_s.arg(names.first());
+        const QString last = names.takeLast();
+        return u"Your %1 and %2 resistances are under the cap."_s.arg(names.join(u", "_s), last);
     }
     case Need::ChaosRes:
         if (const auto have = under(Element::Chaos))
