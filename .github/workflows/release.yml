@@ -578,6 +578,13 @@ jobs:
           TAG: ${{ needs.plan.outputs.tag }}
           VERSION: ${{ needs.plan.outputs.version }}
         run: |
+          # GitHub turns the ~ in a beta's Debian and Fedora packages into a
+          # dot, so they're named that way first, and the checksums list the
+          # files as the release has them
+          for file in *~*; do
+              [ -e "$file" ] || continue
+              mv -- "$file" "$(printf '%s' "$file" | tr '~' '.')"
+          done
           sha256sum -- * > SHA256SUMS
           if [ "$GITHUB_REF_NAME" = beta ]; then
               n=${TAG##*-beta.}
