@@ -270,7 +270,18 @@ private Q_SLOTS:
         const MapCheck pen = check(
             maptexts::header + u"Monster Damage Penetrates 7% Elemental Resistances\n"_s, withResists(60));
         QCOMPARE(pen.mods.first().danger, Danger::Deadly);
-        QVERIFY(pen.mods.first().buildNote.contains(u"fire, cold, lightning"_s));
+        QCOMPARE(pen.mods.first().buildNote,
+                 u"Your fire, cold and lightning resistances are under the cap."_s);
+
+        // one or two under the cap read as a sentence too
+        MapBuild two = withResists(80);
+        two.resists->values[Element::Cold] = 40;
+        const QString penetrates =
+            maptexts::header + u"Monster Damage Penetrates 7% Elemental Resistances\n"_s;
+        QCOMPARE(check(penetrates, two).mods.first().buildNote, u"Your cold resistance is under the cap."_s);
+        two.resists->values[Element::Fire] = 40;
+        QCOMPARE(check(penetrates, two).mods.first().buildNote,
+                 u"Your fire and cold resistances are under the cap."_s);
     }
 
     void aThinHealthPool()
