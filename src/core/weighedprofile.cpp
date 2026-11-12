@@ -160,13 +160,6 @@ WeighedProfile weighedProfile(const QList<SlotWeighing> &weighings, const BuildP
     return out;
 }
 
-QList<ProfileStat> itemPropertyStats(const BuildProfile &start)
-{
-    QList<ProfileStat> out;
-    std::ranges::copy_if(start.stats, std::back_inserter(out), isPropertyStat);
-    return out;
-}
-
 BuildProfile ratedProfile(const BuildProfile &start, const std::optional<WeighedProfile> &weighed)
 {
     if (!weighed)
