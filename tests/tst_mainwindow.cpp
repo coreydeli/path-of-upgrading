@@ -4441,8 +4441,10 @@ private Q_SLOTS:
         Window w;
         w.app->updates()->setInstallKind(InstallKind::Debian);
         QList<PackageInstaller::After> finished;
-        w.app->setUpdateInstaller(std::make_unique<Installed>(),
-                                  [&](PackageInstaller::After a) { finished << a; });
+        w.app->setUpdateInstaller(std::make_unique<Installed>(), [&](PackageInstaller::After a) {
+            finished << a;
+            return true;
+        });
         releaseIsOut(w, u"99.0.0"_s);
         QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
         QTRY_VERIFY(dialog->property("opened").toBool());
