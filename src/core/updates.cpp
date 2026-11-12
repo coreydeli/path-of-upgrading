@@ -96,8 +96,15 @@ InstallKind installKindFromId(QStringView id)
 
 bool isReleaseUrl(const QUrl &url)
 {
-    return url.isValid() && url.scheme() == u"https" && url.host() == u"github.com" && url.port() == -1 &&
-           url.userInfo().isEmpty() && url.path().startsWith(releasesPath);
+    if (!url.isValid() || url.scheme() != u"https" || url.host() != u"github.com" || url.port() != -1 ||
+        !url.userInfo().isEmpty())
+        return false;
+    const QString path = url.path(QUrl::FullyDecoded);
+    // a ".." would climb out of the releases to anywhere else on GitHub
+    const QStringList segments = path.split(u'/');
+    if (segments.contains(u"."_s) || segments.contains(u".."_s))
+        return false;
+    return path.startsWith(releasesPath);
 }
 
 QList<Release> readReleases(const QByteArray &json)
