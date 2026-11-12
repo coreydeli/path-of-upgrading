@@ -24,6 +24,10 @@ class FakeTransaction : public QObject
     Q_CLASSINFO("D-Bus Interface", "org.freedesktop.PackageKit.Transaction")
 
 public:
+    // what it does once it's asked to install
+    enum class Then { Finish, Nothing, Drop };
+
+    Then then = Then::Finish;
     uint exitCode = 1;
     QString errorDetails;
     bool refuse = false;
@@ -36,6 +40,12 @@ public Q_SLOTS:
         flagsSeen = flags;
         filesSeen = files;
         QTimer::singleShot(0, this, [this] {
+            if (then == Then::Nothing)
+                return;
+            if (then == Then::Drop) {
+                Q_EMIT Destroy();
+                return;
+            }
             if (!errorDetails.isEmpty())
                 Q_EMIT ErrorCode(5, errorDetails);
             Q_EMIT Finished(exitCode, 1);
@@ -45,6 +55,7 @@ public Q_SLOTS:
 Q_SIGNALS:
     Q_SCRIPTABLE void ErrorCode(uint code, const QString &details);
     Q_SCRIPTABLE void Finished(uint exitCode, uint runtime);
+    Q_SCRIPTABLE void Destroy();
 };
 
 class FakeDaemon : public QObject
@@ -103,6 +114,7 @@ private Q_SLOTS:
 
     void init()
     {
+        m_transaction.then = FakeTransaction::Then::Finish;
         m_transaction.exitCode = 1;
         m_transaction.errorDetails.clear();
         m_transaction.filesSeen.clear();
@@ -141,6 +153,41 @@ private Q_SLOTS:
     {
         m_transaction.exitCode = 2;
         QCOMPARE(run(), u"PackageKit couldn't install it."_s);
+    }
+
+    void packageKitStoppingSaysSo()
+    {
+        m_transaction.then = FakeTransaction::Then::Nothing;
+        PackageKitInstaller installer(QDBusConnection::sessionBus(), fakeService);
+        QString error = u"not called"_s;
+        installer.install(u"/tmp/x/pkg.deb"_s, [&](const QString &e) { error = e; });
+        QVERIFY(QTest::qWaitFor([&] { return !m_transaction.filesSeen.isEmpty(); }, 5000));
+        // as when it crashes
+        QVERIFY(m_server.unregisterService(fakeService));
+        const bool ended = QTest::qWaitFor([&] { return error != u"not called"_s; }, 5000);
+        QVERIFY(m_server.registerService(fakeService));
+        QVERIFY(ended);
+        QCOMPARE(error, u"PackageKit stopped before the install was done."_s);
+    }
+
+    void aTransactionDroppedUnfinishedSaysSo()
+    {
+        m_transaction.then = FakeTransaction::Then::Drop;
+        QCOMPARE(run(), u"PackageKit stopped before the install was done."_s);
+    }
+
+    void aSecondInstallCanStartOnceOneHasEnded()
+    {
+        m_transaction.then = FakeTransaction::Then::Drop;
+        PackageKitInstaller installer(QDBusConnection::sessionBus(), fakeService);
+        int calls = 0;
+        installer.install(u"/tmp/x/pkg.deb"_s, [&](const QString &) { ++calls; });
+        QVERIFY(QTest::qWaitFor([&] { return calls == 1; }, 5000));
+        m_transaction.then = FakeTransaction::Then::Finish;
+        QString error = u"not called"_s;
+        installer.install(u"/tmp/x/pkg.deb"_s, [&](const QString &e) { error = e; });
+        QVERIFY(QTest::qWaitFor([&] { return error != u"not called"_s; }, 5000));
+        QVERIFY(error.isEmpty());
     }
 
     void noPackageKitOnTheBusSaysSo()

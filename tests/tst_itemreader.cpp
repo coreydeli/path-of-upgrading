@@ -7,6 +7,7 @@
 #include <QTest>
 
 using namespace pou;
+using namespace std::chrono_literals;
 
 namespace {
 
@@ -93,6 +94,38 @@ private Q_SLOTS:
         Q_EMIT game.copyFailed(GameInput::Failure::NothingCopied, {}, overItem);
         reader.read();
         QCOMPARE(game.copies, 2);
+    }
+
+    void givesUpWhenTheGameNeverAnswers()
+    {
+        // as when the game's input drops a copy it can't start
+        FakeGameInput game;
+        game.mouseAt = overItem;
+        ItemReader reader(&game);
+        reader.setHotkey(u"F2"_s);
+        reader.setGiveUpAfter(50ms);
+        QSignalSpy failed(&reader, &ItemReader::failed);
+        reader.read();
+        QVERIFY(failed.wait());
+        QCOMPARE(failed.first().at(0).toString(),
+                 u"The game didn't copy the item in time. Press F2 again."_s);
+        QCOMPARE(mouseOf(failed), std::optional(overItem));
+        QVERIFY(reader.canRead());
+
+        reader.read();
+        QCOMPARE(game.copies, 2);
+    }
+
+    void doesntGiveUpOnAnAnswer()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        reader.setGiveUpAfter(50ms);
+        QSignalSpy failed(&reader, &ItemReader::failed);
+        reader.read();
+        Q_EMIT game.itemCopied(itemtexts::helmetNew, overItem);
+        QTest::qWait(100);
+        QVERIFY(failed.isEmpty());
     }
 
     void pausedReadsNothing()

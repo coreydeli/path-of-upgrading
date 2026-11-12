@@ -396,7 +396,9 @@ jobs:
         shell: pwsh
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v7
-      - uses: msys2/setup-msys2@v2
+      # by commit, as it isn't GitHub's own and it sets up what builds the
+      # Windows release
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         with:
           msystem: UCRT64
           update: true
@@ -578,6 +580,13 @@ jobs:
           TAG: ${{ needs.plan.outputs.tag }}
           VERSION: ${{ needs.plan.outputs.version }}
         run: |
+          # GitHub turns the ~ in a beta's Debian and Fedora packages into a
+          # dot, so they're named that way first, and the checksums list the
+          # files as the release has them
+          for file in *~*; do
+              [ -e "$file" ] || continue
+              mv -- "$file" "$(printf '%s' "$file" | tr '~' '.')"
+          done
           sha256sum -- * > SHA256SUMS
           if [ "$GITHUB_REF_NAME" = beta ]; then
               n=${TAG##*-beta.}
