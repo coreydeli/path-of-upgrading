@@ -5,6 +5,7 @@
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <QDBusServiceWatcher>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -35,6 +36,10 @@ public:
         , m_file(file)
         , m_done(done)
     {
+        // when PackageKit stops, as when it crashes, nothing else would end it
+        auto *gone =
+            new QDBusServiceWatcher(m_service, m_bus, QDBusServiceWatcher::WatchForUnregistration, this);
+        connect(gone, &QDBusServiceWatcher::serviceUnregistered, this, &PackageKitRun::transactionGone);
         QDBusMessage create =
             QDBusMessage::createMethodCall(m_service, rootPath, rootInterface, u"CreateTransaction"_s);
         auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(create), this);
@@ -55,6 +60,8 @@ private Q_SLOTS:
         m_bus.connect(m_service, path, transactionInterface, u"ErrorCode"_s, this,
                       SLOT(errorCame(uint, QString)));
         m_bus.connect(m_service, path, transactionInterface, u"Finished"_s, this, SLOT(finished(uint, uint)));
+        // which comes after Finished, unless the transaction was dropped first
+        m_bus.connect(m_service, path, transactionInterface, u"Destroy"_s, this, SLOT(transactionGone()));
         // no flags, which leaves "only trusted" off, as this isn't from a repository
         QDBusMessage install =
             QDBusMessage::createMethodCall(m_service, path, transactionInterface, u"InstallFiles"_s);
@@ -86,6 +93,8 @@ private Q_SLOTS:
         else
             finish(u"PackageKit couldn't install it."_s);
     }
+
+    void transactionGone() { finish(u"PackageKit stopped before the install was done."_s); }
 
 private:
     void finish(const QString &error)
