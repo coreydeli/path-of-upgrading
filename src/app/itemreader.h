@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
+#include <chrono>
 #include <optional>
 
 namespace pou {
@@ -28,6 +29,9 @@ public:
     void setWatchClipboard(bool watch);
     // Reads nothing at all.
     void setPaused(bool paused);
+    // How long it waits for the game before it says nothing came. Tests wait
+    // less.
+    void setGiveUpAfter(std::chrono::milliseconds wait);
 
     // Has the game copy the item under the mouse, which ends in itemRead() or
     // failed(). Does nothing while it can't read. When the popup was in the way
@@ -52,11 +56,13 @@ private:
     void copied(const QString &text, const std::optional<ScreenPoint> &mouse);
     void notCopied(GameInput::Failure why, const QString &detail, const std::optional<ScreenPoint> &mouse);
     void copiedByHand(const QString &text);
+    void giveUp();
     void finish();
     QString hotkey() const;
 
     GameInput *m_input;
     QTimer m_slow;
+    QTimer m_giveUp;
     QString m_hotkey;
     bool m_advanced = false;
     bool m_watchClipboard = true;
