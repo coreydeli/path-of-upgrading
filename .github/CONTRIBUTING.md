@@ -45,26 +45,31 @@ Run the tests on the private bus the README describes:
 cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 ```
 
-CI builds on Arch Linux, on Debian 13, on Fedora and on Windows in MSYS2,
-checks the formatting, treats warnings as errors and runs every test. The
-Fedora job also builds the RPM and checks it with rpmlint. When packages are
-made, for a release or a pull request that changes how they're made, one job
-installs each of the Arch, Debian and Fedora packages in a clean container of
-that distribution with its own tool, to see that it starts, and another
-installs and uninstalls the Windows setup program. The Debian job makes the
-AppImage, and when packages are made another job starts it in clean Fedora,
-Arch Linux and Ubuntu containers. A change has to pass all of it. The steps
-are in `.github/workflows/ci.yml`.
+Each pull request runs one pipeline, in `.github/workflows/release.yml`, in
+stages that each wait for the one before:
 
-The check named CI is the one `beta` requires before a pull request can merge.
-It passes once every other job has passed or been skipped.
+1. Plan works out what changed, and whether the run releases.
+2. Format checks the formatting.
+3. The builds, on Arch Linux, Debian 13, Fedora and Windows in MSYS2, treat
+   warnings as errors and run every test. The Fedora job also checks the RPM
+   with rpmlint, and the Debian job makes the AppImage.
+4. When packages are made, for a release or a pull request that changes how
+   they're made, the Arch, Debian and Fedora packages are each installed in a
+   clean container of their distribution with its own tool, to see that they
+   start, the AppImage is started in clean Fedora, Arch Linux and Ubuntu
+   containers, and the Windows setup program is installed and uninstalled.
+5. CI passes once everything before it has passed or been skipped. It's the
+   check `beta` requires before a pull request can merge.
+6. Release passes once CI has, and makes the release when there's one to make.
+   It's the check `main` requires.
 
 A change to nothing but Markdown files, the `docs` folder, `.gitignore` or the
-issue forms skips those builds, and they show as skipped, which counts as a
-pass. A push to `main` builds when it releases, or when it changes more than
-the docs. A merge into `beta` doesn't build again, as its pull
-request was checked. A beta release is made by hand, or each night when `beta`
-has new code.
+issue forms skips the builds, and they show as skipped, which counts as a
+pass. A push to `main` releases the version once, and otherwise builds only
+when it changes more than the docs. A merge into `beta` doesn't build again,
+as its pull request was checked. A beta release is made by hand (Run workflow
+on `beta`), or each night when `beta` has new code. Run by hand on another
+branch, the pipeline checks that branch.
 
 ## Branches and pull requests
 
