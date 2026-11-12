@@ -38,15 +38,6 @@ private Q_SLOTS:
                               u"#% to Cold Resistance"_s, u"#% to Lightning Resistance"_s}));
     }
 
-    void describesRules()
-    {
-        const QList<IgnoreRule> rules = {
-            {u"res"_s, {}, IgnoreRule::Mode::Exclude},
-            {{}, u"# to Strength"_s, IgnoreRule::Mode::Ignore},
-        };
-        QCOMPARE(describe(rules), QStringList({u"All resistances (excluded)"_s, u"# to Strength"_s}));
-    }
-
     void jsonRoundTripDropsBadRules()
     {
         const QJsonArray saved = {

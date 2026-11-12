@@ -85,9 +85,9 @@ QString gearGrade(int score);
 QStringList notScoredStats(const GearScore &gear);
 //   the missing ones, with the most the item can roll: "Life (up to 149)"
 QStringList missingStats(const GearScore &gear);
-//   the weakest rolls under that share of an excellent roll, "Life 62 of up to
-//   149", or "Life 40% of an excellent roll" when it isn't known what the
-//   item can roll
+//   the weakest three rolls under that share of an excellent roll, "Life 62 of
+//   up to 149", or "Life 40% of an excellent roll" when it isn't known what
+//   the item can roll. Runes aren't rolls, so they're left out.
 QStringList weakRolls(const GearScore &gear, int underPercent = 50);
 
 // What would raise a gear score, in the words the popup uses. Each is empty
@@ -96,10 +96,6 @@ QStringList weakRolls(const GearScore &gear, int underPercent = 50);
 QString missingNote(const GearScore &gear);
 //   "Not in the gear score: #% increased Rarity of Items found."
 QString notScoredNote(const GearScore &gear);
-// The stats rolled under a share of an excellent roll, the weakest first and
-// three at most, "Weak rolls: Life 62 of up to 149, Cold Resistance 35% of an
-// excellent roll." Runes aren't rolls, so they're left out.
-QString weakRollsNote(const GearScore &gear, int underPercent = 50);
 
 // Points per unit of a stat for the build in that slot, with your tweaks; 0
 // when the build doesn't want it there.

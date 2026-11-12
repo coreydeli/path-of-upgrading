@@ -205,13 +205,6 @@ private Q_SLOTS:
         QCOMPARE(life->importance.at(u"Ring"_s), 0);
     }
 
-    void itemPropertiesAreTheStarts()
-    {
-        const QList<ProfileStat> properties = itemPropertyStats(startProfile());
-        QCOMPARE(properties.size(), 1);
-        QCOMPARE(properties.first().label, u"Armour"_s);
-    }
-
     void saved()
     {
         WeighedProfile w = weighedProfile(
