@@ -178,8 +178,8 @@ void Updates::downloaded(const QString &file)
         if (m_installer->after() == PackageInstaller::After::Offer) {
             m_stage = UpdateStage::Installed;
             Q_EMIT changed();
-        } else if (m_finish) {
-            m_finish(m_installer->after());
+        } else {
+            finish(m_installer->after());
         }
     });
 }
@@ -193,8 +193,16 @@ void Updates::fail(const QString &why)
 
 void Updates::restart()
 {
-    if (m_stage == UpdateStage::Installed && m_finish)
-        m_finish(PackageInstaller::After::Restart);
+    if (m_stage == UpdateStage::Installed)
+        finish(PackageInstaller::After::Restart);
+}
+
+void Updates::finish(PackageInstaller::After after)
+{
+    if (!m_finish || m_finish(after))
+        return;
+    fail(u"Version %1 is installed, but the app couldn't restart by itself. "
+         u"Quit it from the tray icon, then start it again."_s.arg(newVersion()));
 }
 
 void Updates::dismiss()
