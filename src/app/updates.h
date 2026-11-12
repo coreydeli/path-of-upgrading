@@ -77,8 +77,9 @@ public:
     void setInstallKind(InstallKind kind);
     // What puts a downloaded update in place, and what happens next: the
     // program restarts or quits, as the installer says. Without one, the
-    // kinds that need a terminal show the command.
-    using Finish = std::function<void(PackageInstaller::After)>;
+    // kinds that need a terminal show the command. Finish is false when the
+    // new version couldn't be started, and the program keeps running.
+    using Finish = std::function<bool(PackageInstaller::After)>;
     void setInstaller(std::unique_ptr<PackageInstaller> installer, const Finish &finish);
 
     bool checksOnLaunch() const;
@@ -124,6 +125,7 @@ private:
     void change(const std::function<void(UpdateSettings &)> &edit);
     void downloaded(const QString &file);
     void fail(const QString &why);
+    void finish(PackageInstaller::After after);
 
     UpdateChecker *m_checker;
     SettingsStore *m_settings;
