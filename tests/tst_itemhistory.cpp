@@ -222,6 +222,54 @@ private Q_SLOTS:
         QCOMPARE(names(ItemHistory(path).recent()), QStringList{u"Doom Visage"_s});
     }
 
+    void unreadableIsKept()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("{ not quite");
+        file.close();
+
+        ItemHistory history(path);
+        QCOMPARE(history.keptAsidePath(), path + u".unreadable"_s);
+        history.add(helmetNew);
+        QVERIFY(history.save());
+        QFile kept(history.keptAsidePath());
+        QVERIFY(kept.open(QIODevice::ReadOnly));
+        QCOMPARE(kept.readAll(), QByteArray("{ not quite"));
+    }
+
+    void unreadableAgain()
+    {
+        // the newest one it couldn't read is kept
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        for (const QByteArray &text : {QByteArray("first"), QByteArray("second")}) {
+            QFile file(path);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write(text);
+            file.close();
+            const ItemHistory history(path);
+        }
+        QFile kept(path + u".unreadable"_s);
+        QVERIFY(kept.open(QIODevice::ReadOnly));
+        QCOMPARE(kept.readAll(), QByteArray("second"));
+    }
+
+    void readableIsntKept()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        {
+            ItemHistory history(path);
+            history.add(helmetNew);
+        }
+        const ItemHistory again(path);
+        QVERIFY(!QFile::exists(again.keptAsidePath()));
+        QVERIFY(QFile::exists(path));
+    }
+
     void cantSave()
     {
         // in a folder where a file is

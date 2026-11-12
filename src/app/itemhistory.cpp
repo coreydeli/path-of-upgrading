@@ -59,6 +59,11 @@ void ItemHistory::clearRecent()
     Q_EMIT changed();
 }
 
+QString ItemHistory::keptAsidePath() const
+{
+    return m_path + u".unreadable"_s;
+}
+
 bool ItemHistory::save()
 {
     m_saveTimer.stop();
@@ -78,8 +83,12 @@ void ItemHistory::load()
     if (!QFile::exists(m_path))
         return;
     const std::optional<QJsonObject> o = readJsonFile(m_path, &m_error);
-    if (!o)
+    if (!o) {
+        // put by, as the next save goes over it
+        QFile::remove(keptAsidePath());
+        QFile::rename(m_path, keptAsidePath());
         return;
+    }
     // as the game's text, which is read again with what the parser knows now
     for (const QJsonValue &text : o->value(u"recent").toArray()) {
         if (std::optional<Item> item = parseItem(text.toString()))
