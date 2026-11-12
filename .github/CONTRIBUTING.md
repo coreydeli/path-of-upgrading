@@ -47,20 +47,22 @@ cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 
 CI builds on Arch Linux, on Debian 13, on Fedora and on Windows in MSYS2,
 checks the formatting, treats warnings as errors and runs every test. The
-Fedora job also builds the RPM and checks it with rpmlint. For a release, one
-job installs each of the Arch, Debian and Fedora packages in a clean container
-of that distribution with its own tool, to see that it starts, and another
+Fedora job also builds the RPM and checks it with rpmlint. When packages are
+made, for a release or a pull request that changes how they're made, one job
+installs each of the Arch, Debian and Fedora packages in a clean container of
+that distribution with its own tool, to see that it starts, and another
 installs and uninstalls the Windows setup program. The Debian job makes the
-AppImage, and for a release another job starts it in clean Fedora, Arch Linux
-and Ubuntu containers. A change has to pass all of it. The
-steps are in `.github/workflows/ci.yml`.
+AppImage, and when packages are made another job starts it in clean Fedora,
+Arch Linux and Ubuntu containers. A change has to pass all of it. The steps
+are in `.github/workflows/ci.yml`.
 
 The check named CI is the one `beta` requires before a pull request can merge.
 It passes once every other job has passed or been skipped.
 
-A change to nothing but Markdown files, the `docs` folder or the issue forms
-skips those builds, and they show as skipped, which counts as a pass. Pushes
-to `main` always build. A merge into `beta` doesn't build again, as its pull
+A change to nothing but Markdown files, the `docs` folder, `.gitignore` or the
+issue forms skips those builds, and they show as skipped, which counts as a
+pass. A push to `main` builds when it releases, or when it changes more than
+the docs. A merge into `beta` doesn't build again, as its pull
 request was checked. A beta release is made by hand, or each night when `beta`
 has new code.
 
