@@ -25,20 +25,24 @@ arch)
     pacman_retry -Syu --noconfirm
     pacman_retry -U --noconfirm "$package"
     pacman_retry -S --noconfirm --needed dbus
-    plugin=/usr/lib/qt6/plugins/wayland-shell-integration/liblayer-shell.so
+    plugins=/usr/lib/qt6/plugins
     ;;
 debian)
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
-    apt-get install -y "$package" dbus-daemon
+    # without what it recommends, so those can't stand in for a missing
+    # dependency
+    apt-get install -y --no-install-recommends "$package" dbus-daemon
     # the build's own packages could have brought it in already, so this
     # checks that the package itself asks for it
     dpkg-deb -f "$package" Depends | grep -qw layer-shell-qt
-    plugin=/usr/lib/x86_64-linux-gnu/qt6/plugins/wayland-shell-integration/liblayer-shell.so
+    # the certificates the trade site, poe.ninja and GitHub are checked by
+    test -f /etc/ssl/certs/ca-certificates.crt
+    plugins=/usr/lib/x86_64-linux-gnu/qt6/plugins
     ;;
 fedora)
     dnf -y install "$package" dbus-daemon
-    plugin=/usr/lib64/qt6/plugins/wayland-shell-integration/liblayer-shell.so
+    plugins=/usr/lib64/qt6/plugins
     ;;
 *)
     echo "Don't know $distro" >&2
@@ -46,7 +50,9 @@ fedora)
     ;;
 esac
 
-test -f "$plugin"
+# the Wayland overlay, and the icons, which are SVG
+test -f "$plugins/wayland-shell-integration/liblayer-shell.so"
+test -f "$plugins/iconengines/libqsvgicon.so"
 
 export QT_QPA_PLATFORM=offscreen
 export QT_NO_XDG_DESKTOP_PORTAL=1
