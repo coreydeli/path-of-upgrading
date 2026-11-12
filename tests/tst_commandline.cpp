@@ -61,7 +61,16 @@ private Q_SLOTS:
         qputenv("APPIMAGE", "/made up/Made-up $1.AppImage");
         const QString command = CommandLine::backgroundCommand();
         qunsetenv("APPIMAGE");
-        QCOMPARE(command, u"\"/made up/Made-up \\$1.AppImage\" --background"_s);
+        // the backslash before the dollar sign doubled, as the value is a string first
+        QCOMPARE(command, u"\"/made up/Made-up \\\\$1.AppImage\" --background"_s);
+    }
+
+    void backgroundInAnAppImageWithOddCharacters()
+    {
+        qputenv("APPIMAGE", "/made up/a\\b \"c\" 100%.AppImage");
+        const QString command = CommandLine::backgroundCommand();
+        qunsetenv("APPIMAGE");
+        QCOMPARE(command, u"\"/made up/a\\\\\\\\b \\\\\"c\\\\\" 100%%.AppImage\" --background"_s);
     }
 #endif
 
