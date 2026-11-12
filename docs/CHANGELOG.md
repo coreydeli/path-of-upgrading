@@ -85,6 +85,33 @@ version that comes out.
 - With a two-handed weapon in the main hand, the off hand no longer counts
   toward the gear score, and the popup no longer offers to wear an off-hand
   item there, unless the character can hold one beside it.
+- An update download that gets no data for 30 seconds now gives up with a
+  message, rather than leaving Update Now stuck until you restart the app.
+- Update Now can install a beta's Debian and Fedora packages. Their checksums
+  now name the files as GitHub stores them, with a dot where the version has a
+  `~`.
+- If PackageKit stops partway through an install, the update dialog says so and
+  shows the command to run, rather than refusing later installs until you
+  restart the app.
+- After you press Forget, searches no longer send the trade site's session
+  cookie.
+- When Xwayland restarts, the app connects to it again, and the hotkeys go back
+  to being taken only while the game runs. Before, they stayed taken until you
+  restarted the app.
+- The Debian package depends on the Qt SVG icon plugin and the CA certificates,
+  so a plain install shows its icons and can reach the trade site and poe.ninja.
+- The Windows setup always installs to its own folder, even when it's given one
+  with `/D=`, so it no longer empties that folder.
+- The waystone check's note on elemental penetration reads as a sentence, such
+  as "Your fire and cold resistances are under the cap."
+- The Characters page scores each character again when you change the Build
+  Review priorities.
+- An item history that can't be read is kept as `history.json.unreadable`,
+  rather than being written over.
+- If the app can't start the new version after an update, it stays open and
+  says so, rather than quitting with nothing shown.
+- The autostart entry for an AppImage whose path has `$`, `\`, quotes, backticks
+  or `%` in it now starts the app.
 
 ## [0.6.0] - 2026-11-10
 
