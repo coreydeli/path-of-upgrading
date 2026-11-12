@@ -73,19 +73,6 @@ QStringList excludedKeys(const QList<IgnoreRule> &rules)
     return out;
 }
 
-QStringList describe(const QList<IgnoreRule> &rules)
-{
-    QStringList out;
-    for (const IgnoreRule &rule : rules) {
-        const IgnorePreset *p = findPreset(rule.preset);
-        QString line = p ? p->label : rule.key;
-        if (rule.mode == IgnoreRule::Mode::Exclude)
-            line += u" (excluded)"_s;
-        out << line;
-    }
-    return out;
-}
-
 QList<IgnoreRule> ignoreRulesFromJson(const QJsonArray &array)
 {
     QList<IgnoreRule> rules;
