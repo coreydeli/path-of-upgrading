@@ -57,10 +57,6 @@ inline constexpr double resistFloor = 3;
 WeighedProfile weighedProfile(const QList<SlotWeighing> &weighings, const BuildProfile &start,
                               const SlotMods &mods = SlotMods::builtIn());
 
-// The start profile's stats that aren't mods ("[Base] Armour"), which
-// weighings don't cover, so they rate the weighed groups as before.
-QList<ProfileStat> itemPropertyStats(const BuildProfile &start);
-
 // The stats that rate the gear, as the Gear Score page lists them: the
 // weighed ones for the groups that were weighed, and the start profile's for
 // the rest and for item properties. Just the start when nothing was weighed.
