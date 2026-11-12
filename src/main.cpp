@@ -90,9 +90,12 @@ int main(int argc, char *argv[])
     root.setUpdateInstaller(pou::createPackageInstaller(pou::installedKind(qEnvironmentVariable("APPIMAGE")),
                                                         qEnvironmentVariable("APPIMAGE")),
                             [](pou::PackageInstaller::After after) {
-                                if (after == pou::PackageInstaller::After::Restart)
-                                    pou::startAgainAfterExit();
+                                // and it stays, to say so
+                                if (after == pou::PackageInstaller::After::Restart &&
+                                    !pou::startAgainAfterExit())
+                                    return false;
                                 QCoreApplication::quit();
+                                return true;
                             });
     root.updateChecker().start();
 
