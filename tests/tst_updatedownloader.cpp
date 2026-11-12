@@ -82,6 +82,18 @@ private Q_SLOTS:
                     .startsWith("PathOfUpgrading/"));
     }
 
+    void aStalledDownloadGivesUp()
+    {
+        Setup s;
+        s.network.answers = {sums(s.name(), package), {.never = true}};
+        s.downloader.start(release(), InstallKind::Debian);
+        QVERIFY(QTest::qWaitFor([&] { return s.network.sent.size() == 2; }, 5000));
+        // the network ends both with a timeout when nothing comes
+        for (const auto &sent : s.network.sent)
+            QVERIFY(sent.request.transferTimeout() > 0);
+        s.downloader.cancel();
+    }
+
     void theFolderIsYoursAlone()
     {
 #ifdef Q_OS_WIN
