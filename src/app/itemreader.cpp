@@ -11,6 +11,9 @@ namespace {
 
 // how long the game copies before you're told it's still at it
 constexpr auto slowAfter = 250ms;
+// and when it's taken too long, by far, as an answer that never comes would
+// leave the hotkey doing nothing
+constexpr auto giveUpAfter = 10s;
 
 QString whyNothing(GameInput::Failure why, const QString &detail, const QString &hotkey)
 {
@@ -28,7 +31,8 @@ QString whyNothing(GameInput::Failure why, const QString &detail, const QString 
         return u"A key was still down after %1, so the game wasn't asked to copy. Let go of the other "
                "keys, then press %1 again."_s.arg(hotkey);
     case GameInput::Failure::NotOverGame:
-        return u"Your mouse wasn't over the game. Hover over the item in the game, then press %1."_s.arg(hotkey);
+        return u"Your mouse wasn't over the game. Hover over the item in the game, then press %1."_s.arg(
+            hotkey);
     case GameInput::Failure::NothingCopied:
         return u"No item under the mouse. Hover an item until its tooltip shows, then press %1."_s.arg(
             hotkey);
@@ -45,6 +49,9 @@ ItemReader::ItemReader(GameInput *input, QObject *parent)
     m_slow.setSingleShot(true);
     m_slow.setInterval(slowAfter);
     connect(&m_slow, &QTimer::timeout, this, &ItemReader::slow);
+    m_giveUp.setSingleShot(true);
+    m_giveUp.setInterval(giveUpAfter);
+    connect(&m_giveUp, &QTimer::timeout, this, &ItemReader::giveUp);
     connect(input, &GameInput::itemCopied, this, &ItemReader::copied);
     connect(input, &GameInput::copyFailed, this, &ItemReader::notCopied);
     connect(input, &GameInput::textCopied, this, &ItemReader::copiedByHand);
@@ -70,12 +77,18 @@ void ItemReader::setPaused(bool paused)
     m_paused = paused;
 }
 
+void ItemReader::setGiveUpAfter(std::chrono::milliseconds wait)
+{
+    m_giveUp.setInterval(wait);
+}
+
 void ItemReader::read(bool nudge)
 {
     if (!canRead())
         return;
     m_reading = true;
     m_slow.start();
+    m_giveUp.start();
     // which can fail before it returns
     m_input->copyItem({.advanced = m_advanced, .nudge = nudge});
 }
@@ -110,10 +123,18 @@ void ItemReader::copiedByHand(const QString &text)
         Q_EMIT itemRead(*item, m_input->mouse());
 }
 
+void ItemReader::giveUp()
+{
+    finish();
+    Q_EMIT failed(u"The game didn't copy the item in time. Press %1 again."_s.arg(hotkey()),
+                  m_input->mouse());
+}
+
 void ItemReader::finish()
 {
     m_reading = false;
     m_slow.stop();
+    m_giveUp.stop();
 }
 
 QString ItemReader::hotkey() const
