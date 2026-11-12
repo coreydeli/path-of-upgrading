@@ -174,6 +174,48 @@ private Q_SLOTS:
         QTRY_COMPARE_WITH_TIMEOUT(w.active.character().weighed->damageWeight, 0.9, 5000);
     }
 
+    void anotherBalanceMidWeighStartsOver()
+    {
+        Weighing w;
+        // holds it after the first group
+        bool hold = true;
+        w.weigher.setBusy([&w, &hold] { return hold && w.pob.weighings() >= 1; });
+        w.weigher.setSettings({});
+        w.active.setId(w.add(u"Torvald"_s));
+        QTRY_COMPARE_WITH_TIMEOUT(w.pob.weighings(), 1, 20000);
+        QVERIFY(w.weigher.isWeighing());
+
+        PobSettings settings;
+        settings.damageWeight = 0.9;
+        w.weigher.setSettings(settings);
+        hold = false;
+        // every group by the new balance, the one done already as well
+        QTRY_COMPARE_WITH_TIMEOUT(w.pob.weighings(), 1 + Weighing::askedAbout, 20000);
+        QTRY_VERIFY_WITH_TIMEOUT(!w.weigher.isWeighing(), 5000);
+        QCOMPARE(w.active.character().weighed->damageWeight, 0.9);
+        QTest::qWait(500);
+        QCOMPARE(w.pob.weighings(), 1 + Weighing::askedAbout);
+    }
+
+    void turnedOffMidWeighStops()
+    {
+        Weighing w;
+        bool hold = true;
+        w.weigher.setBusy([&w, &hold] { return hold && w.pob.weighings() >= 1; });
+        w.weigher.setSettings({});
+        w.active.setId(w.add(u"Torvald"_s));
+        QTRY_COMPARE_WITH_TIMEOUT(w.pob.weighings(), 1, 20000);
+
+        PobSettings settings;
+        settings.enabled = false;
+        w.weigher.setSettings(settings);
+        QVERIFY(!w.weigher.isWeighing());
+        hold = false;
+        QTest::qWait(1000);
+        QCOMPARE(w.pob.weighings(), 1);
+        QVERIFY(!w.active.character().weighed);
+    }
+
     void weighsAgainWhenAsked()
     {
         Weighing w;

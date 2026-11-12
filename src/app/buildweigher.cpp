@@ -45,6 +45,9 @@ BuildWeigher::BuildWeigher(ActiveCharacter *character, PobEngine *pob, QObject *
 
 void BuildWeigher::setSettings(const PobSettings &settings)
 {
+    // what it has weighed by the old balance doesn't go with the rest
+    if (m_running && settings.damageWeight != m_settings.damageWeight)
+        cancel();
     m_settings = settings;
     consider();
 }
@@ -95,8 +98,9 @@ bool BuildWeigher::needed() const
 void BuildWeigher::consider()
 {
     if (m_running) {
-        // for another character or another build, what it's doing is no use
-        if (m_character->id() != m_for || buildFingerprint(m_character->pobXml()) != m_build) {
+        // for another character or another build, or with Path of Building
+        // off, what it's doing is no use
+        if (!canWeigh() || m_character->id() != m_for || buildFingerprint(m_character->pobXml()) != m_build) {
             cancel();
         } else {
             return;
