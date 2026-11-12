@@ -20,8 +20,8 @@ class ItemHistory : public QObject
     Q_OBJECT
 
 public:
-    // Reads the file. When it can't, it starts again with nothing, which is
-    // saved over it.
+    // Reads the file. When it can't, it starts again with nothing, and the file
+    // is kept aside with ".unreadable" on its name.
     explicit ItemHistory(const QString &path, QObject *parent = nullptr);
     ~ItemHistory() override;
 
@@ -40,6 +40,7 @@ public:
     bool save();
     // Why the file couldn't be read, or last saved.
     QString errorString() const { return m_error; }
+    QString keptAsidePath() const;
 
 Q_SIGNALS:
     void changed();
