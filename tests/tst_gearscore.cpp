@@ -680,7 +680,7 @@ private Q_SLOTS:
         GearScore g;
         QCOMPARE(missingNote(g), QString());
         QCOMPARE(notScoredNote(g), QString());
-        QCOMPARE(weakRollsNote(g), QString());
+        QCOMPARE(weakRolls(g), QStringList());
 
         g.missing = {u"Life"_s, u"Fire Resistance"_s};
         g.notScored = {u"#% increased Rarity of Items found"_s};
@@ -702,13 +702,6 @@ private Q_SLOTS:
                            part(u"Mana"_s, 10, StatOrigin::Socket), part(u"Lightning Resistance"_s, 45),
                            // and not under, only up to
                            part(u"Strength"_s, 50)};
-        QCOMPARE(
-            weakRollsNote(g),
-            u"Weak rolls: Spirit 20% of an excellent roll, Cold Resistance 35% of an excellent roll, Life 40% of an excellent roll."_s);
-        QCOMPARE(weakRollsNote(g, 25), u"Weak rolls: Spirit 20% of an excellent roll."_s);
-        QCOMPARE(weakRollsNote(g, 20), QString());
-
-        // the same stats, one to a string
         QCOMPARE(weakRolls(g), (QStringList{u"Spirit 20% of an excellent roll"_s,
                                             u"Cold Resistance 35% of an excellent roll"_s,
                                             u"Life 40% of an excellent roll"_s}));
@@ -736,13 +729,15 @@ private Q_SLOTS:
             missingNote(*bare),
             u"Missing what your build wants: Armour or Evasion Rating, Energy Shield, Life (up to 214)."_s);
         QCOMPARE(notScoredNote(*bare), QString());
-        QCOMPARE(weakRollsNote(*bare), QString());
+        QCOMPARE(weakRolls(*bare), QStringList());
 
         // and a roll of a tenth of an excellent one
         const auto weak = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB\n--------\n"
                                          "+10 to maximum Life\n10% increased Rarity of Items found"_s));
         QVERIFY(weak->contributions.first().quality < 50);
-        QVERIFY(weakRollsNote(*weak).startsWith(u"Weak rolls: Life "_s));
+        const QStringList rolls = weakRolls(*weak);
+        QCOMPARE(rolls.size(), 1);
+        QVERIFY(rolls.first().startsWith(u"Life "_s));
         QCOMPARE(notScoredNote(*weak), u"Not in the gear score: #% increased Rarity of Items found."_s);
     }
 
