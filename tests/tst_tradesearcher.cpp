@@ -46,10 +46,11 @@ QJsonObject searchBody(ListingStatus status = ListingStatus::Available)
 {
     const TradeData data{StatIndex::fromJson(tradefixtures::stats()),
                          TradeCategories::fromJson(tradefixtures::filters())};
-    CustomSearchOptions options;
+    PobSearchOptions options;
     options.status = status;
     options.itemClass = u"Helmets"_s;
-    return customSearch({{.key = u"+# to maximum Life"_s, .min = 60}}, data, options).body;
+    options.min = 60;
+    return pobSearch({{.id = u"explicit.stat_life"_s, .weight = 1}}, data, options).body;
 }
 
 // The listing status a search went out with.
