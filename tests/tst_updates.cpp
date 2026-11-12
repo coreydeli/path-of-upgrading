@@ -100,6 +100,11 @@ private Q_SLOTS:
             << u"https://github.com/coreydeli/path-of-upgrading/raw/main/a"_s << false;
         QTest::newRow("another port")
             << u"https://github.com:8443/coreydeli/path-of-upgrading/releases/a"_s << false;
+        QTest::newRow("out of releases a folder at a time")
+            << releaseBase + u"/../../../someone/else/releases/download/v1/a"_s << false;
+        QTest::newRow("out of releases, encoded")
+            << releaseBase + u"/%2e%2e/%2E%2E/%2e%2e/someone/else/releases/a"_s << false;
+        QTest::newRow("a dot folder") << releaseBase + u"/./download/v1.0.0/a"_s << false;
         QTest::newRow("nothing") << u""_s << false;
     }
 
