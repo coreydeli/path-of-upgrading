@@ -9,6 +9,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <algorithm>
+#include <chrono>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -17,6 +18,9 @@ namespace {
 
 // The biggest file it will take, as the packages are far smaller
 constexpr qint64 mostBytes = qint64(1) << 30;
+
+// How long it waits with nothing coming
+constexpr std::chrono::milliseconds stallTimeout = std::chrono::seconds(30);
 
 } // namespace
 
@@ -107,6 +111,9 @@ void UpdateDownloader::fetch(const ReleaseAsset &asset)
     request.setHeader(QNetworkRequest::UserAgentHeader, userAgent());
     // the files are sent from another host of GitHub's
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    // gives up once nothing has come for a while, or a stalled download would
+    // hold the update until the app restarts
+    request.setTransferTimeout(stallTimeout);
     m_reply = m_network->get(request);
     if (m_stage == Stage::File) {
         m_received = 0;
