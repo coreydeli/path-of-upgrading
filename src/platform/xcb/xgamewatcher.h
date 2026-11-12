@@ -5,6 +5,8 @@
 #include "platform/xcb/xconnection.h"
 
 #include <QSocketNotifier>
+#include <QTimer>
+#include <memory>
 
 namespace pou {
 
@@ -21,17 +23,21 @@ public:
     explicit XGameWatcher(QObject *parent = nullptr);
 
     // Whether there's an X server to watch.
-    bool isValid() const { return m_x.isValid(); }
+    bool isValid() const { return m_x->isValid(); }
     bool isRunning() const override { return m_running; }
 
 private:
+    void watch();
     void readEvents();
+    void reconnect();
     void look();
+    void setRunning(bool running);
 
-    XConnection m_x;
+    std::unique_ptr<XConnection> m_x;
     bool m_running = false;
+    QTimer m_reconnect;
     // after the connection, so it goes first
-    QSocketNotifier m_notifier{QSocketNotifier::Read};
+    QSocketNotifier m_notifier{QSocketNotifier::Read, this};
 };
 
 } // namespace pou
