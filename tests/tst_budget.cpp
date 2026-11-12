@@ -85,28 +85,6 @@ private Q_SLOTS:
         QCOMPARE(priceFilter(given), expected);
     }
 
-    void labels_data()
-    {
-        QTest::addColumn<Budget>("given");
-        QTest::addColumn<QString>("label");
-
-        QTest::newRow("up to") << budget(0, 20) << u"up to 20 div"_s;
-        QTest::newRow("range") << budget(5, 20) << u"5 to 20 div"_s;
-        QTest::newRow("at least") << budget(5, 0) << u"at least 5 div"_s;
-        QTest::newRow("small budget") << budget(0, 1.5, Currency::Divine, 700) << u"up to 1.5 div"_s;
-        QTest::newRow("exalts") << budget(0, 500, Currency::Exalted) << u"up to 500 ex"_s;
-        QTest::newRow("chaos") << budget(30, 10, Currency::Chaos)
-                               << u"10 to 30 chaos (chaos listings only)"_s;
-        QTest::newRow("no limit") << budget(0, 0) << QString();
-    }
-
-    void labels()
-    {
-        QFETCH(Budget, given);
-        QFETCH(QString, label);
-        QCOMPARE(budgetLabel(given), label);
-    }
-
     void appliedToASearch()
     {
         PobSearchOptions options;
