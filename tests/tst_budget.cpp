@@ -109,11 +109,11 @@ private Q_SLOTS:
 
     void appliedToASearch()
     {
-        CustomSearchOptions options;
+        PobSearchOptions options;
         options.itemClass = u"Helmets"_s;
         const TradeData data{StatIndex::fromJson(tradefixtures::stats()),
                              TradeCategories::fromJson(tradefixtures::filters())};
-        TradeQuery q = customSearch({}, data, options);
+        PobSearch q = pobSearch({}, data, options);
         applyBudget(q.body, budget(0, 20));
         QCOMPARE(filtersOf(q.body, u"trade_filters"), QJsonObject({{u"price"_s, price(0, 20, u"divine"_s)}}));
         QCOMPARE(filtersOf(q.body, u"type_filters").value(u"category").toObject().value(u"option").toString(),
