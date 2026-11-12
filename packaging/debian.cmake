@@ -25,8 +25,10 @@ set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
 set(CPACK_DEBIAN_PACKAGE_SECTION games)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+# qt6-svg-plugins draws the icons, which are SVG, as the AppImage's does,
+# and ca-certificates lets it trust the trade site, poe.ninja and GitHub
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "qt6-wayland, layer-shell-qt, \
+    "qt6-wayland, layer-shell-qt, qt6-svg-plugins, ca-certificates, \
 qml6-module-qtqml, qml6-module-qtqml-models, qml6-module-qtqml-workerscript, \
 qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-dialogs, \
 qml6-module-qtquick-layouts, qml6-module-qtquick-shapes, qml6-module-qtquick-templates, qml6-module-qtquick-window, \
