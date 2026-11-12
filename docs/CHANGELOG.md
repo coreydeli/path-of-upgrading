@@ -23,7 +23,8 @@ version that comes out.
   its build.
 - An About page in the sidebar's Settings group. It shows the version and edition, the
   license, the Qt and KDE Frameworks versions, where Path of Building was found, links to the
-  source, the releases and the issue tracker, and the credits.
+  source, the releases and the issue tracker, and the credits, with the fonts the
+  app carries.
 - A Help page in the sidebar's Settings group. It opens the wiki, or one of its pages, in
   your browser.
 - The app looks on GitHub for a newer release when it starts, and about once a
@@ -80,7 +81,6 @@ version that comes out.
 
 ### Fixed
 
-- The About page credits the fonts the app carries, Spectral and Big Shoulders.
 - A weapon's damage is no longer listed as missing in a slot's gear notes.
 - With a two-handed weapon in the main hand, the off hand no longer counts
   toward the gear score, and the popup no longer offers to wear an off-hand

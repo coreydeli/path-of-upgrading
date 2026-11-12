@@ -41,8 +41,8 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   your character, so the score works without Path of Building running. Until
   then, and for jewels, a start profile picked from the build is used: life and
   resistances, Energy Shield spellcaster, Energy Shield attacker, or minion
-  summoner. You can change how much each stat adds under Affix Impact, from Not
-  at all (0x) to Three times (3x). Stat weights can be edited or suggested from
+  summoner on Energy Shield. You can change how much each stat adds under
+  Affix Impact, from Not at all (0x) to Three times (3x). Stat weights can be edited or suggested from
   the gear you have equipped, and "Judge by my stat weights alone" judges items
   by them with no gear score. Stats you don't care about can be ignored or left
   out of searches.
@@ -121,10 +121,10 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   release's checksums. Nothing is installed until you press Update Now. Turn the
   check off, or include betas, under Updates on the Settings page.
 - Has the app's own controls, colors and fonts, so it looks the same on every
-  desktop. Its colors are dark, as a KDE color scheme of its own, or follow your
-  desktop's, from the Appearance page in the same group. It also picks the
-  heading font (Big Shoulders Display by default), the text font (Spectral by
-  default) and the text size. The text size follows your desktop's unless you
+  desktop. Its colors are the app's own dark ones, or your desktop's, which the
+  Appearance page in the same group picks. It also picks the heading font
+  (Big Shoulders Display by default), the text font (Spectral by default) and
+  the text size. The text size follows your desktop's unless you
   set one, from 6 to 32 points. The font list only shows fonts that scale
   smoothly, each in its own face. Decorations there can be set to Full, the
   default, or Plain. Plain squares off the cut corners, leaves out the popup's
@@ -325,9 +325,9 @@ To build it:
 - a C++20 compiler, CMake 3.21 and Ninja
 - Qt 6.8 or newer, with Core, Gui, Network, Widgets, Qml, Quick, Quick
   Controls 2, DBus, Test and QuickTest
-- KDE Frameworks 6.13 or newer: Kirigami, Declarative, I18n, GlobalAccel,
-  Notifications, StatusNotifierItem, WindowSystem and DBusAddons, and Config
-  for the tests
+- KDE Frameworks 6.13 or newer: Kirigami, Declarative, ColorScheme, I18n,
+  GlobalAccel, Notifications, StatusNotifierItem, WindowSystem and
+  DBusAddons, and Config for the tests
 - Kirigami Addons 1.7 or newer
 - LayerShellQt 6
 - Qt6Keychain
