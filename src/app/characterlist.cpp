@@ -38,6 +38,7 @@ CharacterList::CharacterList(CharacterStore *store, ActiveCharacter *active, Set
     , m_active(active)
     , m_settings(settings)
     , m_current(settings->settings().character)
+    , m_priorities(settings->settings().pob.priorities)
 {
     connect(settings, &SettingsStore::changed, this, &CharacterList::followSettings);
     // the build of the one you play is read off the rows
@@ -138,7 +139,7 @@ QHash<int, QByteArray> CharacterList::roleNames() const
 
 std::pair<QString, QString> CharacterList::rating(const Character &character) const
 {
-    const PobPriorities &priorities = m_settings->settings().pob.priorities;
+    const PobPriorities &priorities = m_priorities;
     // each slot is scored on its own, and the average is over the rated ones
     const GearScoreFn slotScore = [&](const Item &item, const QString &slot) -> std::optional<double> {
         const std::optional<GearScore> score = gearScore(item, gearScoreOptions(character, slot, priorities));
@@ -240,10 +241,16 @@ std::optional<BuildImport> CharacterList::importBuild(const QString &id, const Q
 
 void CharacterList::followSettings()
 {
-    const QString current = m_settings->settings().character;
-    if (current == m_current)
+    const Settings &settings = m_settings->settings();
+    // which rate resistances higher when they come first, for every character
+    if (settings.pob.priorities != m_priorities) {
+        m_priorities = settings.pob.priorities;
+        if (!m_ids.isEmpty())
+            Q_EMIT dataChanged(index(0), index(int(m_ids.size()) - 1), {ScoreRole, GradeRole});
+    }
+    if (settings.character == m_current)
         return;
-    m_current = current;
+    m_current = settings.character;
     Q_EMIT currentChanged();
 }
 
