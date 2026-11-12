@@ -346,6 +346,12 @@ To use it:
 - the LayerShellQt Wayland plugin, `layer-shell-qt`, which the popup needs to
   show over the game. The Arch, Debian and Fedora packages depend on it, and
   the AppImage includes it.
+- the Qt SVG icon plugin, which draws the app's icons. On Debian 13 it's
+  `qt6-svg-plugins`. The Debian package depends on it, so a plain install gets
+  it too.
+- CA certificates, for the HTTPS requests to the trade site, poe.ninja and
+  GitHub. On Debian 13 it's `ca-certificates`, which the Debian package depends
+  on as well.
 - [Path of Building Community (PoE2)](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2)
   for Path of Exile 2, if you want to import builds. The easiest way is the
   Flatpak: `flatpak install flathub community.pathofbuilding.PathOfBuilding`.
@@ -410,7 +416,8 @@ an X server of their own from `xvfb-run`.
 
 - `~/.config/path-of-upgradingrc` has the settings
 - `~/.local/share/path-of-upgrading` has your characters and the items you
-  checked
+  checked. A `history.json` that can't be read is kept beside it as
+  `history.json.unreadable`, and a new one is started.
 - `~/.cache/path-of-upgrading` has what it learned from the trade site and
   poe.ninja, and any update it downloaded, in `updates`
 

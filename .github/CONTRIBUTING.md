@@ -58,6 +58,9 @@ stages that each wait for the one before:
    clean container of their distribution with its own tool, to see that they
    start, the AppImage is started in clean Fedora, Arch Linux and Ubuntu
    containers, and the Windows setup program is installed and uninstalled.
+   The Debian package is installed without its recommended packages, so what it
+   needs has to be in its own dependencies, and each package has to bring the
+   Qt SVG icon engine.
 5. CI passes once everything before it has passed or been skipped. It's the
    check `beta` requires before a pull request can merge.
 6. Release passes once CI has, and makes the release when there's one to make.
