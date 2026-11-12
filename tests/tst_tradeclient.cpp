@@ -392,6 +392,9 @@ private Q_SLOTS:
             // which the network's cookie jar would send its own in place of
             QCOMPARE(sent.request.attribute(QNetworkRequest::CookieLoadControlAttribute).toInt(),
                      int(QNetworkRequest::Manual));
+            // nor keep the one the site sends back after you sign out
+            QCOMPARE(sent.request.attribute(QNetworkRequest::CookieSaveControlAttribute).toInt(),
+                     int(QNetworkRequest::Manual));
             // and a redirect elsewhere would send it there as well
             QCOMPARE(sent.request.attribute(QNetworkRequest::RedirectPolicyAttribute).toInt(),
                      int(QNetworkRequest::SameOriginRedirectPolicy));
@@ -404,6 +407,7 @@ private Q_SLOTS:
         for (const FakeNetwork::Sent &sent : network.sent.mid(3)) {
             QVERIFY(!sent.request.hasRawHeader("Cookie"));
             QVERIFY(!sent.request.attribute(QNetworkRequest::CookieLoadControlAttribute).isValid());
+            QVERIFY(!sent.request.attribute(QNetworkRequest::CookieSaveControlAttribute).isValid());
             QVERIFY(!sent.request.attribute(QNetworkRequest::RedirectPolicyAttribute).isValid());
         }
     }
