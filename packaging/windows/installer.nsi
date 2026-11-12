@@ -18,7 +18,8 @@ Unicode true
 Name "${NAME}"
 OutFile "${OUTFILE}"
 ; always its own folder, which the uninstaller removes as a whole
-InstallDir "$LOCALAPPDATA\Programs\${NAME}"
+!define FOLDER "$LOCALAPPDATA\Programs\${NAME}"
+InstallDir "${FOLDER}"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 
@@ -44,6 +45,9 @@ VIAddVersionKey "LegalCopyright" "Corey Deli, MIT license"
 ; The app updates itself by running this with /S /START: no pages, and it
 ; starts the new version at the end.
 Function .onInit
+    ; /D= could name any folder, and installing empties the folder first, as
+    ; uninstalling does, so it stays the program's own
+    StrCpy $INSTDIR "${FOLDER}"
     ${GetParameters} $0
     ${GetOptions} $0 "/START" $1
     IfErrors done
