@@ -311,14 +311,6 @@ QStringList weakRolls(const GearScore &gear, int underPercent)
     return out;
 }
 
-QString weakRollsNote(const GearScore &gear, int underPercent)
-{
-    const QStringList parts = weakRolls(gear, underPercent);
-    if (parts.isEmpty())
-        return {};
-    return u"Weak rolls: "_s + parts.join(u", "_s) + u'.';
-}
-
 double usefulness(const QString &slot, const QString &key, const GearScoreOptions &options)
 {
     const QString group = groupOf(slot);

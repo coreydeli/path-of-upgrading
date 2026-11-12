@@ -37,8 +37,4 @@ QJsonObject priceFilter(const Budget &budget);
 // Adds the budget's price filter to a search body.
 void applyBudget(QJsonObject &body, const Budget &budget);
 
-// What the budget asks for, for a search's summary: "5 to 20 div",
-// "up to 20 div", "at least 5 div". Empty when there's no limit.
-QString budgetLabel(const Budget &budget);
-
 } // namespace pou

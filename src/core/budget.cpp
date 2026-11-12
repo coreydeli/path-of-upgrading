@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "core/budget.h"
 
-#include "core/numbers.h"
-
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -29,19 +27,6 @@ std::pair<double, double> limitsOf(const Budget &budget)
     if (min > 0 && max > 0 && min > max)
         std::swap(min, max);
     return {min, max};
-}
-
-QString shortName(Currency currency)
-{
-    switch (currency) {
-    case Currency::Divine:
-        break;
-    case Currency::Exalted:
-        return u"ex"_s;
-    case Currency::Chaos:
-        return u"chaos"_s;
-    }
-    return u"div"_s;
 }
 
 } // namespace
@@ -108,25 +93,6 @@ void applyBudget(QJsonObject &body, const Budget &budget)
     filters.insert(u"trade_filters"_s, trade);
     query.insert(u"filters"_s, filters);
     body.insert(u"query"_s, query);
-}
-
-QString budgetLabel(const Budget &budget)
-{
-    const auto [min, max] = limitsOf(budget);
-    const QString name = shortName(budget.currency);
-    QString label;
-    if (min > 0 && max > 0)
-        label = formatNumber(min) + u" to "_s + formatNumber(max) + u' ' + name;
-    else if (max > 0)
-        label = u"up to "_s + formatNumber(max) + u' ' + name;
-    else if (min > 0)
-        label = u"at least "_s + formatNumber(min) + u' ' + name;
-    else
-        return {};
-    // hardly anything is priced in chaos, so it's worth saying
-    if (budget.currency == Currency::Chaos)
-        label += u" (chaos listings only)"_s;
-    return label;
 }
 
 } // namespace pou
