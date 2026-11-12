@@ -1,16 +1,16 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
 #
-# Says, as a line for GITHUB_OUTPUT, whether a change touches anything the app
-# is built from, as code=true or code=false. Docs and the issue forms don't
-# change the build, so CI leaves it out for those. Beta and the packages are
-# always built. A branch is compared with where it left beta, not with its last
-# push, so a docs-only push on top of a code change is built too. A push to main
-# that releases nothing is compared with what main had before it. Run it in a
+# Says, as lines for GITHUB_OUTPUT, whether a change touches anything the app
+# is built from (code=true or code=false), and whether it touches how the
+# packages are made (packages=true or packages=false). Docs and the issue forms
+# don't change the build, so the pipeline leaves it out for those. Run it in a
 # checkout with all of its history.
 #
-# PACKAGE is set when the packages are wanted, BASE is the commit a pull request
-# is into, and BEFORE is what a pushed branch pointed at before the push.
+# BASE is the commit the change is compared with: the branch a pull request is
+# into, or what main had before a push. Without one, or when it isn't a commit
+# here, everything counts as changed. PACKAGE is set when the packages are
+# wanted anyway, for a release, which builds everything.
 set -eu
 
 # whether the build reads the file
@@ -22,43 +22,34 @@ is_code() {
     return 0
 }
 
-# whether none of the files on stdin are
-only_docs() {
-    while IFS= read -r file; do
-        ! is_code "$file" || return 1
-    done
-}
-
-# where the change starts from, if it can be found
-start() {
-    if [ -n "${BASE:-}" ]; then
-        echo "$BASE"
-    else
-        git merge-base HEAD origin/beta 2> /dev/null
-    fi
-}
-
-# whether everything from the commit given to HEAD is docs. With renames off,
-# the old path of a moved file counts too. Anything that fails counts as code.
-docs_since() {
-    files=$(git diff --name-only --no-renames "$1" HEAD) || return 1
-    printf '%s\n' "$files" | only_docs
+# whether the file is part of making the packages
+is_packaging() {
+    case $1 in
+    .github/workflows/* | .github/scripts/* | packaging/*) return 0 ;;
+    esac
+    return 1
 }
 
 code=true
-case ${GITHUB_REF:-} in
-refs/heads/beta) ;;
-refs/heads/main)
-    # a new branch's push has no commit before it
-    if [ "${PACKAGE:-}" != true ] && [ -n "${BEFORE:-}" ] \
-        && git cat-file -e "$BEFORE^{commit}" 2> /dev/null && docs_since "$BEFORE"; then
-        code=false
-    fi
-    ;;
-*)
-    if [ "${PACKAGE:-}" != true ] && base=$(start) && docs_since "$base"; then
-        code=false
-    fi
-    ;;
-esac
+packages=false
+if [ "${PACKAGE:-}" = true ]; then
+    packages=true
+# With renames off, the old path of a moved file counts too. Anything that
+# fails counts as code.
+elif [ -n "${BASE:-}" ] && git cat-file -e "$BASE^{commit}" 2> /dev/null \
+    && files=$(git diff --name-only --no-renames "$BASE" HEAD); then
+    code=false
+    while IFS= read -r file; do
+        [ -n "$file" ] || continue
+        if is_code "$file"; then
+            code=true
+        fi
+        if is_packaging "$file"; then
+            packages=true
+        fi
+    done << EOF
+$files
+EOF
+fi
 echo "code=$code"
+echo "packages=$packages"

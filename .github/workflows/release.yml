@@ -1,20 +1,34 @@
 # SPDX-License-Identifier: MIT
 #
-# Makes a release on GitHub, with the source, an Arch Linux package, a Debian 13
-# package, a Fedora package, an AppImage, a Windows installer and zip, and the
-# changes since the last one.
-# Each push to main releases the version in CMakeLists.txt as the latest
-# release, once. A beta is only made when it's asked for: by hand (Run workflow
-# on beta), or each night when beta has code the last release or beta lacked.
-# It releases the version as a pre-release, v0.1.0-beta.1 and on, until that
-# version is out. Merges into beta are checked on their pull requests, so they
-# don't build again. The source comes first, then CI's build of each platform, which tests
-# it and makes its package, then the release, each once the stages before it
-# have passed. Pull requests that change how they're made build the packages
-# too, without releasing anything.
+# Checks every change, and makes the releases, in one run of stages, each once
+# the one before it has passed:
+#
+# 1. Plan: what changed, and whether this run releases, and what as.
+# 2. Format.
+# 3. Build and test on Arch Linux for the newest Qt and KDE Frameworks, on
+#    Debian 13 for the oldest the app supports, on Fedora, and on Windows in
+#    MSYS2, with no warnings, each making its packages when they're wanted.
+# 4. Install the packages on clean systems, run the AppImage, and install the
+#    Windows setup.
+# 5. CI, the check that all of it passed, which beta's rule requires.
+# 6. Release, which main's rule requires: it passes once CI has, and makes the
+#    release on GitHub when there's one to make.
+#
+# A pull request is checked once, with the packages made when it changes how
+# they're made. A change to nothing but the docs skips the builds. Each push to
+# main releases the version in CMakeLists.txt as the latest release, once. A
+# beta is only made when it's asked for: by hand (Run workflow on beta), or each
+# night when beta has code the last release or beta lacked. It releases the
+# version as a pre-release, v0.1.0-beta.1 and on, until that version is out.
+# Merges into beta were checked on their pull requests, so they don't build
+# again. Run by hand on any other branch, it checks the branch.
+#
+# GitHub only starts the nightly and runs by hand from a workflow on main, so
+# this one keeps the name main's has.
 name: Release
 
 on:
+  pull_request:
   push:
     branches: [main]
   # GitHub runs these from the default branch, so the nightly asks for a run
@@ -22,20 +36,16 @@ on:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
-  pull_request:
-    paths:
-      - .github/workflows/release.yml
-      - .github/workflows/ci.yml
-      - .github/scripts/**
-      - packaging/**
 
 permissions:
   contents: read
 
-# One at a time, so two betas can't take the same number. A pull request only
-# needs its latest push.
+# One at a time on a branch, so two betas can't take the same number. A pull
+# request only needs its latest push.
 concurrency:
-  group: packages-${{ github.ref }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name == 'schedule' && 'nightly'
+    || github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -61,87 +71,512 @@ jobs:
               gh workflow run release.yml --ref beta
           fi
 
-  source:
-    name: Source
+  # Main and beta say what they release, and anything else releases nothing.
+  # A release builds everything. Otherwise a pull request is compared with
+  # the branch it's into, and a push to main with what main had.
+  plan:
+    name: Plan
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      tag: ${{ steps.version.outputs.tag }}
-      release: ${{ steps.version.outputs.release }}
-      arch-version: ${{ steps.version.outputs.arch-version }}
-      debian-version: ${{ steps.version.outputs.debian-version }}
-      rpm-version: ${{ steps.version.outputs.rpm-version }}
-      beta: ${{ steps.version.outputs.beta }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      release: ${{ steps.release.outputs.release }}
+      arch-version: ${{ steps.release.outputs.arch-version }}
+      debian-version: ${{ steps.release.outputs.debian-version }}
+      rpm-version: ${{ steps.release.outputs.rpm-version }}
+      beta: ${{ steps.release.outputs.beta }}
+      code: ${{ steps.changes.outputs.code }}
+      packages: ${{ steps.changes.outputs.packages }}
     steps:
       - uses: actions/checkout@v7
         with:
-          # for the tags
+          # for the tags, and what changed
           fetch-depth: 0
       - name: Check the version
-        id: version
-        run: |
-          if [ "$GITHUB_EVENT_NAME" = push ] || [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
-              sh .github/scripts/release-tag.sh "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
-          else
-              sh .github/scripts/release-tag.sh >> "$GITHUB_OUTPUT"
-          fi
-      - name: Make the tarball
+        id: release
+        run: sh .github/scripts/release-tag.sh "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+      - name: Check what changed
+        id: changes
         env:
-          TAG: ${{ steps.version.outputs.tag }}
+          PACKAGE: ${{ steps.release.outputs.release }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: sh .github/scripts/changed-code.sh >> "$GITHUB_OUTPUT"
+      - name: Make the source tarball
+        if: steps.release.outputs.release == 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
         run: |
           name=path-of-upgrading-${TAG#v}
           git archive --prefix="$name/" -o "$name.tar.gz" HEAD
       - uses: actions/upload-artifact@v7
+        if: steps.release.outputs.release == 'true'
         with:
           name: dist-source
           path: path-of-upgrading-*.tar.gz
           if-no-files-found: error
 
-  build:
-    name: Build
-    needs: source
-    # The packages come from the build the tests ran on. Without anything to
-    # release, a push is only checked.
-    uses: ./.github/workflows/ci.yml
-    with:
-      package: ${{ github.event_name == 'pull_request' || needs.source.outputs.release == 'true' }}
-      version: ${{ needs.source.outputs.version }}
-      tag: ${{ needs.source.outputs.tag }}
-      arch-version: ${{ needs.source.outputs.arch-version }}
-      debian-version: ${{ needs.source.outputs.debian-version }}
-      rpm-version: ${{ needs.source.outputs.rpm-version }}
-      beta: ${{ needs.source.outputs.beta == 'true' }}
+  format:
+    name: Format
+    needs: plan
+    if: needs.plan.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install clang-format
+        run: pacman -Syu --noconfirm --needed clang git
+      - uses: actions/checkout@v7
+      - name: Check the format
+        run: git ls-files -z '*.cpp' '*.h' | xargs -0 clang-format --dry-run -Werror
 
+  # The package is made by makepkg, which builds it from the tarball of the
+  # source, tests it and packs it in one go. The libraries aren't cached here
+  # or on Debian: the runners download them in seconds, and it's unpacking
+  # them that takes the time.
+  arch:
+    name: Arch Linux
+    needs: [plan, format]
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 100M
+    steps:
+      # so the checkout is a repository, which the tarball is made from
+      - name: Install git
+        run: pacman -Syu --noconfirm --needed git
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-arch.sh
+      # where makepkg looks for the PKGBUILD's source before downloading it
+      - name: Make the source tarball
+        env:
+          ARCH_VERSION: ${{ needs.plan.outputs.arch-version }}
+        run: |
+          pkgver=$ARCH_VERSION
+          sed -i "s/^pkgver=.*/pkgver=$pkgver/" packaging/arch/PKGBUILD
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git archive --prefix="path-of-upgrading-${pkgver%%beta*}/" \
+              -o "packaging/arch/path-of-upgrading-$pkgver.tar.gz" HEAD
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-arch-${{ github.sha }}
+          restore-keys: ccache-arch-
+      # makepkg won't run as root. It compiles with ccache, the debug package
+      # isn't released, and a warning fails the build.
+      - name: Set up makepkg
+        run: |
+          useradd -m builder
+          mkdir -p /ccache
+          chown -R builder packaging/arch /ccache
+          cat > /home/builder/.makepkg.conf << 'CONF'
+          BUILDENV=("${BUILDENV[@]/!ccache/ccache}")
+          OPTIONS+=(!debug)
+          CXXFLAGS+=" -Werror"
+          CONF
+      - name: Build, test and package
+        working-directory: packaging/arch
+        run: |
+          runuser -u builder -- ccache --zero-stats
+          runuser -u builder -- makepkg
+          runuser -u builder -- ccache --show-stats
+      - name: Lint the QML
+        working-directory: packaging/arch
+        run: runuser -u builder -- cmake --build src/build --target pou_app_qmllint
+      - uses: actions/upload-artifact@v7
+        if: needs.plan.outputs.packages == 'true'
+        with:
+          name: dist-arch
+          # not the debug package
+          path: packaging/arch/path-of-upgrading-[0-9]*.pkg.tar.zst
+          if-no-files-found: error
+
+  debian:
+    name: Debian 13
+    needs: [plan, format]
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    env:
+      LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 100M
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-debian.sh
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-debian-${{ github.sha }}
+          restore-keys: ccache-debian-
+      # Arch, Fedora and Windows build a release when nothing is released,
+      # so a pull request gets a beta on this one, as the tests have to pass
+      # in both. A release builds what it releases.
+      - name: Configure
+        env:
+          DEBIAN_VERSION: ${{ needs.plan.outputs.debian-version }}
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: >-
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DPOU_BETA=${{ (needs.plan.outputs.release != 'true' || needs.plan.outputs.beta == 'true') && 'ON' || 'OFF' }}
+          ${DEBIAN_VERSION:+"-DPOU_PACKAGE_VERSION=$DEBIAN_VERSION"}
+          ${TAG:+"-DPOU_BUILD_VERSION=${TAG#v}"}
+          -DPOU_INSTALL_KIND=deb
+      - name: Build
+        run: |
+          ccache --zero-stats
+          cmake --build build
+          ccache --show-stats
+      - name: Lint the QML
+        run: cmake --build build --target pou_app_qmllint
+      - name: Test
+        working-directory: build
+        run: sh ../.github/scripts/run-tests.sh
+      - name: Make the package
+        if: needs.plan.outputs.packages == 'true'
+        working-directory: build
+        run: cpack
+      - uses: actions/upload-artifact@v7
+        if: needs.plan.outputs.packages == 'true'
+        with:
+          name: dist-debian
+          path: build/path-of-upgrading_*.deb
+          if-no-files-found: error
+      # The AppImage is made from this build, as Debian 13 is the oldest
+      # system it can run on. The Wayland plugins, the SVG icon engine and
+      # LayerShellQt's plugin are only found when they're installed.
+      - name: Make the AppImage
+        if: needs.plan.outputs.packages == 'true'
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          apt-get install -y --no-install-recommends curl file binutils \
+              qt6-wayland qt6-svg-plugins layer-shell-qt
+          mkdir dist
+          cd dist
+          sh ../.github/scripts/package-appimage.sh ../build "${TAG#v}"
+          rm -rf AppDir
+      - uses: actions/upload-artifact@v7
+        if: needs.plan.outputs.packages == 'true'
+        with:
+          name: dist-appimage
+          path: dist/PathOfUpgrading-*-x86_64.AppImage
+          if-no-files-found: error
+
+  # The package is made by rpmbuild, which builds it from the tarball of the
+  # source, tests it and packs it in one go, as makepkg does on Arch. LTO is
+  # left out as it only slows the build down here, and a warning fails it.
+  fedora:
+    name: Fedora
+    needs: [plan, format]
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      LANG: C.UTF-8
+      CCACHE_DIR: /ccache
+      CCACHE_MAXSIZE: 100M
+    steps:
+      # so the checkout is a repository, which the tarball is made from
+      - name: Install git
+        run: dnf -y install git
+      - uses: actions/checkout@v7
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-fedora.sh
+      - uses: actions/cache@v6
+        with:
+          path: /ccache
+          key: ccache-fedora-${{ github.sha }}
+          restore-keys: ccache-fedora-
+      # where rpmbuild looks for the source. A beta's tarball unpacks to the
+      # release's folder, so the paths stay the same from one beta to the next.
+      - name: Make the source tarball
+        env:
+          RPM_VERSION: ${{ needs.plan.outputs.rpm-version }}
+        run: |
+          spec=packaging/rpm/path-of-upgrading.spec
+          version=$RPM_VERSION
+          sed -i -e "s/^Version:.*/Version:        $version/" \
+              -e "s/^\(\* .* - \).*-1\$/\1$version-1/" $spec
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p ~/rpmbuild/SOURCES
+          git archive --prefix="path-of-upgrading-${version%%~*}/" \
+              -o ~/rpmbuild/SOURCES/"path-of-upgrading-$version.tar.gz" HEAD
+      - name: Build, test and package
+        env:
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        run: |
+          ccache --zero-stats
+          rpmbuild -bb packaging/rpm/path-of-upgrading.spec --with werror \
+              -D "build_cxxflags %{optflags} -g1" -D "_lto_cflags %{nil}"
+          ccache --show-stats
+      - name: Check the package
+        run: >-
+          rpmlint -r packaging/rpm/path-of-upgrading.rpmlintrc
+          ~/rpmbuild/RPMS/x86_64/path-of-upgrading-[0-9]*.rpm packaging/rpm/path-of-upgrading.spec
+      # not the debug packages
+      - name: Collect the package
+        if: needs.plan.outputs.packages == 'true'
+        run: |
+          mkdir dist
+          cp ~/rpmbuild/RPMS/x86_64/path-of-upgrading-[0-9]*.rpm dist
+      - uses: actions/upload-artifact@v7
+        if: needs.plan.outputs.packages == 'true'
+        with:
+          name: dist-fedora
+          path: dist/*.rpm
+          if-no-files-found: error
+
+  # Each package in a container with nothing else, with its own tool, to see
+  # that it finds everything the package needs, and that the program starts.
+  install:
+    name: Install the packages
+    if: needs.plan.outputs.packages == 'true'
+    needs: [plan, arch, debian, fedora]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: arch
+            image: archlinux:latest
+            file: path-of-upgrading-[0-9]*.pkg.tar.zst
+          - distro: debian
+            image: debian:trixie
+            file: path-of-upgrading_*.deb
+          - distro: fedora
+            image: fedora:latest
+            file: path-of-upgrading-[0-9]*.rpm
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-${{ matrix.distro }}
+          path: dist
+      - name: Install it and start it
+        run: sh .github/scripts/check-install.sh ${{ matrix.distro }} dist/${{ matrix.file }}
+
+  # On other distributions with nothing else, to see that the AppImage has
+  # the QML modules and plugins it needs, and starts.
+  appimage-check:
+    name: Run the AppImage
+    if: needs.plan.outputs.packages == 'true'
+    needs: [plan, debian]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [fedora:latest, archlinux:latest, ubuntu:latest]
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-appimage
+          path: dist
+      - name: Start it
+        run: sh .github/scripts/check-appimage.sh dist/PathOfUpgrading-*-x86_64.AppImage
+
+  windows:
+    name: Windows
+    needs: [plan, format]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 100M
+    steps:
+      # the test files as they are in the repository, not with Windows' line ends
+      - name: Keep the line ends
+        shell: pwsh
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+      # The download is the slowest part of installing here, so the packages
+      # are kept for the week, and a new week takes the old ones and updates
+      # them. setup-msys2 empties its package folder after its own cache, so
+      # this one is the install's.
+      - name: Find the week
+        id: week
+        shell: bash
+        run: echo "week=$(date +%G-%V)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/msys64/var/cache/pacman/pkg
+          key: msys2-packages-${{ hashFiles('.github/scripts/install-msys2.sh') }}-${{ steps.week.outputs.week }}
+          restore-keys: |
+            msys2-packages-${{ hashFiles('.github/scripts/install-msys2.sh') }}-
+            msys2-packages-
+      - name: Install the build tools and libraries
+        run: sh .github/scripts/install-msys2.sh
+      # so a new week's cache doesn't keep last week's versions as well
+      - name: Drop the old package versions
+        run: paccache -r -f -k1
+      - uses: actions/cache@v6
+        with:
+          path: .ccache
+          key: ccache-windows-${{ github.sha }}
+          restore-keys: ccache-windows-
+      - name: Configure
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: >-
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DPOU_BETA=${{ needs.plan.outputs.beta == 'true' && 'ON' || 'OFF' }}
+          ${TAG:+"-DPOU_BUILD_VERSION=${TAG#v}"}
+      # going on past an error, so each run shows them all
+      - name: Build
+        run: |
+          ccache --zero-stats
+          cmake --build build -- -k 0
+          ccache --show-stats
+      - name: Test
+        working-directory: build
+        env:
+          QT_QPA_PLATFORM: offscreen
+        # ctest shows nothing of what a failed test said here, so they run
+        # again with their logs in files
+        run: |
+          ctest --output-on-failure -j4 && exit 0
+          # in the folder ctest runs them in, from the top of the build folder,
+          # where qt_standard_project_setup puts the programs on Windows
+          cd tests
+          for name in $(sed 's/^[0-9]*://' ../Testing/Temporary/LastTestsFailed.log); do
+              echo "::group::$name"
+              ../$name.exe -o "$name.txt,txt" || echo "It ended with $?"
+              cat "$name.txt" || true
+              echo "::endgroup::"
+          done
+          exit 1
+      - name: Make the installer and the zip
+        if: needs.plan.outputs.packages == 'true'
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          mkdir dist
+          cd dist
+          sh ../.github/scripts/package-windows.sh ../build "$VERSION" "${TAG#v}"
+      # They aren't signed yet, so Windows warns about them when they're
+      # opened. Signing them would go here.
+      - uses: actions/upload-artifact@v7
+        if: needs.plan.outputs.packages == 'true'
+        with:
+          name: dist-windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+          if-no-files-found: error
+
+  # The setup program, silently, as a person would run it: it has to put the
+  # program in its folder, which has to start, and the uninstaller has to take
+  # the folder away again.
+  windows-install:
+    name: Install on Windows
+    if: needs.plan.outputs.packages == 'true'
+    needs: [plan, windows]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-windows
+          path: dist
+      - name: Install it
+        run: |
+          $setup = Get-ChildItem dist/path-of-upgrading-*-setup.exe
+          Start-Process -Wait -FilePath $setup.FullName -ArgumentList '/S'
+          $folder = "$env:LOCALAPPDATA\Programs\Path of Upgrading"
+          if (-not (Test-Path "$folder\path-of-upgrading.exe")) { throw "It isn't in $folder" }
+          if (-not (Test-Path "$folder\uninstall.exe")) { throw "There's no uninstaller in $folder" }
+      # It's a program with a window, so it may print nothing here, and the
+      # exit code is what counts.
+      - name: Run it
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $folder = "$env:LOCALAPPDATA\Programs\Path of Upgrading"
+          $run = Start-Process -Wait -PassThru -FilePath "$folder\path-of-upgrading.exe" -ArgumentList '--version' -RedirectStandardOutput version.txt
+          Get-Content version.txt
+          if ($run.ExitCode -ne 0) { throw "It ended with $($run.ExitCode)" }
+      # The uninstaller copies itself away and returns at once, so wait for
+      # the folder to go.
+      - name: Uninstall it
+        run: |
+          $folder = "$env:LOCALAPPDATA\Programs\Path of Upgrading"
+          Start-Process -Wait -FilePath "$folder\uninstall.exe" -ArgumentList '/S'
+          for ($i = 0; $i -lt 60 -and (Test-Path $folder); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path $folder) { throw "$folder is still there" }
+
+  # The rule on beta waits for a check called CI, so this is it. It passes
+  # once every stage has passed or been left out, as they are for the docs.
+  ci:
+    name: CI
+    needs: [plan, format, arch, debian, fedora, windows, install, appimage-check, windows-install]
+    if: always() && github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every stage passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          case " $RESULTS " in
+          *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
+
+  # The rule on main waits for a check called Release, so it runs on every
+  # pull request too, and passes there once CI has.
   release:
     name: Release
-    if: needs.source.outputs.release == 'true' && github.event_name != 'pull_request'
-    needs: [source, build]
+    needs: [plan, ci]
+    if: always() && github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Check CI passed
+        env:
+          CI_RESULT: ${{ needs.ci.result }}
+        run: |
+          echo "CI: $CI_RESULT"
+          [ "$CI_RESULT" = success ]
       - uses: actions/checkout@v7
+        if: needs.plan.outputs.release == 'true'
         with:
           # for the commits since the last release
           fetch-depth: 0
       - uses: actions/download-artifact@v8
+        if: needs.plan.outputs.release == 'true'
         with:
           pattern: dist-*
           path: dist
           merge-multiple: true
       - name: Write the release notes
+        if: needs.plan.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.source.outputs.tag }}
+          TAG: ${{ needs.plan.outputs.tag }}
         run: sh .github/scripts/release-notes.sh "$TAG" "$GITHUB_SHA" > notes.md
       - name: Make the release
+        if: needs.plan.outputs.release == 'true'
         working-directory: dist
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ needs.source.outputs.tag }}
-          VERSION: ${{ needs.source.outputs.version }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
         run: |
           sha256sum -- * > SHA256SUMS
           if [ "$GITHUB_REF_NAME" = beta ]; then
