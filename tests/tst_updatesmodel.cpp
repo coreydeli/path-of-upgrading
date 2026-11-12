@@ -261,7 +261,10 @@ private Q_SLOTS:
         auto installer = std::make_unique<FakeInstaller>();
         FakeInstaller *fake = installer.get();
         QList<PackageInstaller::After> finished;
-        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) { finished << a; });
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) {
+            finished << a;
+            return true;
+        });
         s.look({u"0.7.0"_s});
         s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
         s.updates.updateNow();
@@ -279,7 +282,10 @@ private Q_SLOTS:
         auto installer = std::make_unique<FakeInstaller>();
         installer->error = u"Couldn't replace it."_s;
         bool finished = false;
-        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After) { finished = true; });
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After) {
+            finished = true;
+            return true;
+        });
         s.look({u"0.7.0"_s});
         s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
         s.updates.updateNow();
@@ -298,7 +304,10 @@ private Q_SLOTS:
         installer->fallback = true;
         installer->m_after = PackageInstaller::After::Offer;
         QList<PackageInstaller::After> finished;
-        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) { finished << a; });
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) {
+            finished << a;
+            return true;
+        });
         s.look({u"0.7.0"_s});
         s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = package}};
         s.updates.updateNow();
@@ -310,6 +319,37 @@ private Q_SLOTS:
         QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
     }
 
+    void aRestartThatFailsSaysSoAndKeepsRunning()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->m_after = PackageInstaller::After::Offer;
+        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return false; });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Installed; }, 5000));
+        s.updates.restart();
+        QCOMPARE(s.updates.stage(), UpdateStage::Failed);
+        QCOMPARE(s.updates.installError(),
+                 u"Version 0.7.0 is installed, but the app couldn't restart by itself. Quit it from the tray "
+                 "icon, then start it again."_s);
+    }
+
+    void anAppImageThatCantStartAgainSaysSo()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        s.updates.setInstaller(std::make_unique<FakeInstaller>(),
+                               [](PackageInstaller::After) { return false; });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
+        QVERIFY(s.updates.installError().startsWith(u"Version 0.7.0 is installed"_s));
+    }
+
     void aPackageThatWontInstallShowsTheCommandAndWhy()
     {
         Setup s;
@@ -317,7 +357,7 @@ private Q_SLOTS:
         auto installer = std::make_unique<FakeInstaller>();
         installer->fallback = true;
         installer->error = u"The install was cancelled."_s;
-        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) {});
+        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return true; });
         s.look({u"0.7.0"_s});
         s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Fedora), {.body = package}};
         s.updates.updateNow();
