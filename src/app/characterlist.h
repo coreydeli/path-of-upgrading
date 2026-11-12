@@ -3,6 +3,7 @@
 
 #include "core/buildimport.h"
 #include "core/characterstore.h"
+#include "core/pobverdict.h"
 
 #include <QAbstractListModel>
 #include <QHash>
@@ -108,6 +109,8 @@ private:
     QStringList m_ids;
     QHash<QString, QString> m_builds; // what each id's build is, see BuildRole
     QString m_current;
+    // what the scores were worked out with
+    PobPriorities m_priorities;
     QString m_error;
 };
 

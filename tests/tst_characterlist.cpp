@@ -5,6 +5,7 @@
 #include "core/buildprofiles.h"
 #include "core/gearscore.h"
 #include "core/parser.h"
+#include "core/resists.h"
 #include "core/weighedprofile.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
@@ -190,6 +191,37 @@ private Q_SLOTS:
         QVERIFY(c.active.wear(u"Helmet"_s, parseItem(itemtexts::helmetNew).value()));
         QVERIFY(!changed.isEmpty());
         QVERIFY(!c.list.index(0).data(CharacterList::ScoreRole).toString().isEmpty());
+    }
+
+    void ratingFollowsYourPriorities()
+    {
+        // short of fire resistance only, which counts more with resistances first
+        Characters c;
+        Character wren = named(u"Wren"_s);
+        wren.gear.insert(u"Helmet"_s, parseItem(itemtexts::helmetNew).value());
+        ResistEntry entry;
+        for (const Element e : allElements)
+            entry.values[e] = 75.0;
+        entry.values[Element::Fire] = 30.0;
+        wren.resists = snapshotResists(entry, wren.gear, ResistSource::Manual);
+        QVERIFY(!c.store.add(wren).value_or(QString()).isEmpty());
+        c.list.load();
+        const QString before = c.list.index(0).data(CharacterList::ScoreRole).toString();
+
+        QSignalSpy changed(&c.list, &CharacterList::dataChanged);
+        Settings s = c.settings.settings();
+        s.pob.priorities.resistsFirst = !s.pob.priorities.resistsFirst;
+        c.settings.set(s);
+        QCOMPARE(changed.size(), 1);
+        const auto roles = changed.first().at(2).value<QList<int>>();
+        QVERIFY(roles.contains(CharacterList::ScoreRole));
+        QVERIFY(roles.contains(CharacterList::GradeRole));
+        QCOMPARE_NE(c.list.index(0).data(CharacterList::ScoreRole).toString(), before);
+
+        // and not for another setting
+        s.pob.damageWeight = 0.9;
+        c.settings.set(s);
+        QCOMPARE(changed.size(), 1);
     }
 
     void saySourceOfTheGearScore()
