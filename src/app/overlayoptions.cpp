@@ -88,6 +88,11 @@ void OverlayOptions::setWatchClipboard(bool watch)
     change([&](OverlaySettings &overlay) { overlay.watchClipboard = watch; });
 }
 
+void OverlayOptions::setPutBackClipboard(bool putBack)
+{
+    change([&](OverlaySettings &overlay) { overlay.putBackClipboard = putBack; });
+}
+
 QString OverlayOptions::position() const
 {
     return popupPositionId(overlay().position);
