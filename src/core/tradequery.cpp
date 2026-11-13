@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <numeric>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -194,8 +195,15 @@ WeightedSearch weightedSearch(const Item &item, const Weights &weights, const Tr
             natural[x.key] += x.value;
     }
 
+    struct Weighted
+    {
+        QString id;
+        double weight = 0;
+        double own = 0; // what your item adds to the sum
+    };
+
     WeightedSearch result;
-    QJsonArray weighted;
+    QList<Weighted> weighted;
     QJsonObject equipment;
     // sorted, so the same weights always make the same search
     QStringList keys = weights.keys();
@@ -216,8 +224,26 @@ WeightedSearch weightedSearch(const Item &item, const Weights &weights, const Tr
                 result.unmatched << key;
             continue;
         }
-        weighted.append(statFilter(m->id, {{u"weight"_s, w}}));
-        result.current += natural.value(key) * w;
+        weighted.append({m->id, w, natural.value(key) * w});
+    }
+
+    // the trade site limits how many filters a group can have, so keep the
+    // heaviest, in the order they came, and only those count towards your sum
+    QList<qsizetype> heaviest(weighted.size());
+    std::iota(heaviest.begin(), heaviest.end(), 0);
+    std::stable_sort(heaviest.begin(), heaviest.end(), [&](qsizetype a, qsizetype b) {
+        return std::abs(weighted[a].weight) > std::abs(weighted[b].weight);
+    });
+    const qsizetype maxFilters = options.maxFilters > 0 ? options.maxFilters : 40;
+    if (heaviest.size() > maxFilters) {
+        result.dropped = int(heaviest.size() - maxFilters);
+        heaviest.resize(maxFilters);
+    }
+    std::sort(heaviest.begin(), heaviest.end());
+    QJsonArray group;
+    for (qsizetype i : std::as_const(heaviest)) {
+        group.append(statFilter(weighted[i].id, {{u"weight"_s, weighted[i].weight}}));
+        result.current += weighted[i].own;
     }
 
     QJsonObject filters;
@@ -228,8 +254,8 @@ WeightedSearch weightedSearch(const Item &item, const Weights &weights, const Tr
     result.groupMin = std::floor(result.current * (1 + options.minGainPercent / 100)) + 1;
     QJsonObject query = newQuery(options.status);
     QJsonArray stats;
-    if (!weighted.isEmpty())
-        stats.append(statGroup(u"weight"_s, weighted, {{u"min"_s, result.groupMin}}));
+    if (!group.isEmpty())
+        stats.append(statGroup(u"weight"_s, group, {{u"min"_s, result.groupMin}}));
     query.insert(u"stats"_s, stats);
     query.insert(u"filters"_s, filters);
     result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
