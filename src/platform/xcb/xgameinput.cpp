@@ -111,8 +111,13 @@ void XGameInput::copyItem(const CopyOptions &options)
     if (m_step != Step::Idle || m_keys->isBusy())
         return;
     // the server can be back since it went
-    if (!isAvailable())
+    if (!isAvailable()) {
+        const bool retrying = m_reconnect.isActive();
         connectToServer();
+        // or gear copied by hand isn't heard until the next press
+        if (retrying && !m_x->isValid())
+            m_reconnect.start();
+    }
     if (!isAvailable()) {
         m_mouse.reset();
         fail(Failure::Unavailable, errorString());

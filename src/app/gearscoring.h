@@ -53,7 +53,7 @@ class GearScoring : public QAbstractListModel
 public:
     enum Role {
         LabelRole = Qt::UserRole + 1, // "Life"
-        WhereRole,                    // "Counts on Boots"
+        WhereRole,                    // "Counts on Boots."
         LevelRole,                    // one of levels()
     };
 

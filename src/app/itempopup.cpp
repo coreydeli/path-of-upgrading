@@ -3,6 +3,7 @@
 
 #include "core/placement.h"
 #include "platform/logging.h"
+#include "platform/opener.h"
 #include "platform/overlay.h"
 
 #include <QQmlComponent>
@@ -23,7 +24,11 @@ ItemPopup::ItemPopup(QQmlEngine *engine, GameInput *input, QObject *parent)
     setSettings({});
 }
 
-ItemPopup::~ItemPopup() = default;
+ItemPopup::~ItemPopup()
+{
+    // first, while what its bindings read is still here
+    m_window.reset();
+}
 
 void ItemPopup::setSettings(const OverlaySettings &settings)
 {
@@ -110,6 +115,12 @@ void ItemPopup::findOnTrade(TradeFinder::Kind kind)
 void ItemPopup::showResults()
 {
     Q_EMIT resultsAsked(m_mouse ? m_mouse->screen : QString());
+}
+
+void ItemPopup::openTradeSite()
+{
+    if (m_opener && !m_trade.url.isEmpty())
+        m_opener->open(m_trade.url);
 }
 
 void ItemPopup::wear(const QString &slot)
