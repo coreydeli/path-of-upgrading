@@ -135,6 +135,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_results.judge().setPob(&m_pob);
     m_results.judge().setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
+    m_checker.popup().setOpener(m_opener.get());
+    m_resultsPanel.setOpener(m_opener.get());
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
     connect(&m_checker, &ItemChecker::resultsAsked, &m_resultsPanel, &ResultsPanel::show);
     connect(&m_upgrades, &RecommendedUpgrades::resultsAsked, &m_resultsPanel,
