@@ -541,6 +541,19 @@ private Q_SLOTS:
         QCOMPARE(c.list.error(), QString());
     }
 
+    void removeOneGoneFromTheStore()
+    {
+        Characters c;
+        const QString wren = c.saved(u"Wren"_s);
+        const QString ash = c.saved(u"Ash"_s);
+        c.list.load();
+        QVERIFY(c.store.remove(wren));
+        QVERIFY(c.list.remove(wren));
+        QCOMPARE(c.names(), QStringList{u"Ash"_s});
+        QCOMPARE(c.list.error(), QString());
+        QVERIFY(c.inFolder(ash));
+    }
+
     // what the sidebar says the character you play is built as
     void currentBuildNamesTheOneYouPlay()
     {

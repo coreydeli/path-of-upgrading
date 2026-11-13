@@ -38,6 +38,8 @@ public:
     void setPob(PobEngine *pob);
     // What the popup's buttons search with, once.
     void setFinder(TradeFinder *finder);
+    // Which what you had copied is put back on after the hotkey's copy.
+    void setClipboard(SystemClipboard *clipboard) { m_reader.setClipboard(clipboard); }
 
     // For the hotkey.
     void check();

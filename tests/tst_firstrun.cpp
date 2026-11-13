@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "core/firstrun.h"
+#include "services/settingsfile.h"
 
 #include <QSettings>
 #include <QTemporaryDir>
