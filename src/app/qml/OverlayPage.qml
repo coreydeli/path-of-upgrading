@@ -113,6 +113,16 @@ ColumnsPage {
         RowRule {}
 
         SwitchRow {
+            objectName: "putBackSwitch"
+            text: qsTr("Put back what you had copied")
+            description: qsTr("Once the hotkey has copied the item, so you can still paste what you copied before.")
+            checked: overlayPage.options.putBackClipboard
+            onToggled: overlayPage.options.putBackClipboard = checked
+        }
+
+        RowRule {}
+
+        SwitchRow {
             objectName: "clipboardSwitch"
             text: qsTr("Also check gear you copy yourself")
             description: qsTr("When you press Ctrl+C over it in the game.")
