@@ -491,6 +491,22 @@ private Q_SLOTS:
         QCOMPARE(pobItemClass(slot, baseType), itemClass);
     }
 
+    void tooMuchXml()
+    {
+        const qsizetype limit = 32 * 1024 * 1024;
+        // elements it skips, to make it as long as asked
+        const auto padded = [](qsizetype size) -> QString {
+            const QString open = u"<PathOfBuilding2>"_s;
+            const QString close = u"<Build level=\"92\"/></PathOfBuilding2>"_s;
+            const qsizetype room = size - open.size() - close.size();
+            return open + u"<a/>"_s.repeated(room / 4) + QString(room % 4, u' ') + close;
+        };
+        QCOMPARE(decodeBuildCode(padded(limit))->size(), limit);
+        QCOMPARE(parsePobBuild(padded(limit))->level, 92);
+        QVERIFY(!decodeBuildCode(padded(limit + 1)));
+        QVERIFY(!parsePobBuild(padded(limit + 1)));
+    }
+
     void readsABuild()
     {
         const auto build = parsePobBuild(decoded(codeFor(zlibData(pobfixtures::build))));

@@ -60,12 +60,16 @@ struct WeightedSearchOptions : SearchOptions
 {
     QString itemClass;         // the item's own when empty
     double minGainPercent = 0; // how far above your item's sum, in percent
+    // How many weights it searches with at most, as the trade site limits
+    // them. The heaviest are kept.
+    int maxFilters = 40;
 };
 
 struct WeightedSearch : TradeQuery
 {
     double current = 0;  // your item's weighted sum, without rune and enchant bonuses
     double groupMin = 0; // what a listing's sum has to reach
+    int dropped = 0;     // weights left out for the site's limit
 };
 
 // Your stat weights as the trade site's weighted sum: items whose weighted

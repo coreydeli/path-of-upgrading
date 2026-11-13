@@ -25,6 +25,14 @@ class TestParser : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void tooLongToBeAnItem()
+    {
+        const QString item = u"Item Class: Rings\nRarity: Rare\nA\nB\n--------\n+20 to maximum Life\n"_s;
+        const qsizetype limit = 1024 * 1024;
+        QVERIFY(parseItem(item + QString(limit - item.size(), u' ')));
+        QVERIFY(!parseItem(item + QString(limit - item.size() + 1, u' ')));
+    }
+
     void headerSlotAndProperties()
     {
         const auto it = parseItem(itemtexts::helmetNew);
