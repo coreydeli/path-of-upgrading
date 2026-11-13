@@ -76,6 +76,25 @@ private Q_SLOTS:
         QVERIFY(!options.ignore(u"# to maximum Life"_s));
         // without resistances there's no telling what you need
         QVERIFY(!options.resistNeed[Element::Fire]);
+        QVERIFY(!options.weighed);
+
+        c.weighed = WeighedProfile{
+            .profile = {}, .slots = {u"Helmet"_s}, .pobVersion = u"0.3.3"_s, .date = {}, .damageWeight = 0.5};
+        QCOMPARE(gearScoreOptions(c, u"Helmet"_s).weighed->pobVersion, u"0.3.3"_s);
+    }
+
+    void eachResistanceNeedsToReachItsOwnMaximum()
+    {
+        Character c;
+        c.gear = {{u"Amulet"_s, amulet(u"+20% to Fire Resistance"_s)}};
+        c.resists = resists(c.gear, 60, 90, std::nullopt, 0);
+        c.resists->cap[Element::Cold] = 85;
+        c.resists->cap[Element::Chaos] = 70;
+
+        const GearScoreOptions options = gearScoreOptions(c, u"Amulet"_s, {.resistsFirst = false});
+        QCOMPARE(options.resistNeed[Element::Fire], 45.0);
+        QCOMPARE(options.resistNeed[Element::Cold], 5.0);
+        QCOMPARE(options.resistNeed[Element::Chaos], 80.0);
     }
 
     void resistancesYouStillNeed()
@@ -96,17 +115,18 @@ private Q_SLOTS:
     void resistancesFirst()
     {
         Character c;
-        c.tweaks = {{u"Cold res"_s, 0.5}};
+        c.tweaks = {{u"Cold Resistance"_s, 0.5}};
         // lightning is right on the cap
         c.resists = resists({}, 60, 60, 75, 0);
 
         // those you're short of, unless you tuned them yourself
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks,
-                 (ProfileTweaks{{u"Fire res"_s, 2}, {u"Cold res"_s, 0.5}}));
+                 (ProfileTweaks{{u"Fire Resistance"_s, 2}, {u"Cold Resistance"_s, 0.5}}));
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.chaos = true}).tweaks,
-                 (ProfileTweaks{{u"Fire res"_s, 2}, {u"Cold res"_s, 0.5}, {u"Chaos res"_s, 2}}));
+                 (ProfileTweaks{
+                     {u"Fire Resistance"_s, 2}, {u"Cold Resistance"_s, 0.5}, {u"Chaos Resistance"_s, 2}}));
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.resistsFirst = false}).tweaks,
-                 (ProfileTweaks{{u"Cold res"_s, 0.5}}));
+                 (ProfileTweaks{{u"Cold Resistance"_s, 0.5}}));
     }
 
     void gearThatRaisesTheCap()
@@ -120,7 +140,7 @@ private Q_SLOTS:
         QCOMPARE(options.resistNeed[Element::Fire], 12.0);
         QCOMPARE(options.resistNeed[Element::Cold], 9.0);
         // so only fire is short
-        QCOMPARE(options.tweaks, (ProfileTweaks{{u"Fire res"_s, 2}}));
+        QCOMPARE(options.tweaks, (ProfileTweaks{{u"Fire Resistance"_s, 2}}));
     }
 
     void chaosInoculation()
@@ -129,10 +149,10 @@ private Q_SLOTS:
         c.chaosInoculation = true;
         c.resists = resists({}, 80, 80, 80, 0);
         QCOMPARE(gearScoreOptions(c, u"Ring 1"_s, {.chaos = true}).tweaks,
-                 (ProfileTweaks{{u"Chaos res"_s, 0}}));
+                 (ProfileTweaks{{u"Chaos Resistance"_s, 0}}));
 
-        c.tweaks = {{u"Chaos res"_s, 1}};
-        QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks, (ProfileTweaks{{u"Chaos res"_s, 1}}));
+        c.tweaks = {{u"Chaos Resistance"_s, 1}};
+        QCOMPARE(gearScoreOptions(c, u"Ring 1"_s).tweaks, (ProfileTweaks{{u"Chaos Resistance"_s, 1}}));
     }
 
     void byGearScore_data()
@@ -338,6 +358,14 @@ private Q_SLOTS:
         QCOMPARE(byWeight.at(1).key, u"# to maximum Mana"_s);
         QCOMPARE(byWeight.at(1).usefulness, byWeight.at(1).weight);
         QCOMPARE(byWeight.at(2).key, u"#% increased Rarity of Items found"_s);
+
+        // as when you ask for it, whatever the start profile is
+        Character weightsOnly = c;
+        weightsOnly.weightsOnly = true;
+        QCOMPARE(evaluate(better, weightsOnly).mode, ScoreMode::StatWeights);
+        const QList<StatRow> asked = evaluate(better, weightsOnly).comparison.rows;
+        QCOMPARE(asked.at(0).key, u"# to maximum Life"_s);
+        QCOMPARE(asked.at(2).key, u"#% increased Rarity of Items found"_s);
     }
 
     void whatEquippingChanges()
@@ -389,6 +417,34 @@ private Q_SLOTS:
                  "Physical Damage: 12-24\nAttacks per Second: 1.50\n--------\n+50 to maximum Life"_s);
         QCOMPARE(evaluate(club, wearing({{u"Weapon"_s, mace}, {u"Offhand"_s, shield}})).change->targets,
                  QStringList{u"Weapon"_s});
+    }
+
+    void twoHanderKeepsTheOffhandWhenBothAreInUse()
+    {
+        const Item mace =
+            item(u"Item Class: One Hand Maces\nRarity: Rare\nDoom Knell\nTorment Club\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.50\n--------\n+30 to maximum Life"_s);
+        const Item shield = item(u"Item Class: Shields\nRarity: Rare\nWoe Guard\nPainted Tower Shield\n"
+                                 "--------\nArmour: 200\n--------\n+50 to maximum Life"_s);
+        const Item maul =
+            item(u"Item Class: Two Hand Maces\nRarity: Rare\nBrute Knell\nForge Maul\n--------\n"
+                 "Physical Damage: 100-160\nAttacks per Second: 1.10\n--------\n+40 to Strength"_s);
+        Character c = wearing({{u"Weapon"_s, mace}, {u"Offhand"_s, shield}});
+        c.wielding.twoHandedInOne = true;
+        QCOMPARE(evaluate(maul, c).change->targets, QStringList{u"Weapon"_s});
+    }
+
+    void noOffhandToWearBesideATwoHander()
+    {
+        const Item staff =
+            item(u"Item Class: Staves\nRarity: Rare\nDoom Pillar\nAshen Staff\n--------\n"
+                 "Physical Damage: 10-20\nAttacks per Second: 1.20\n--------\n+30 to maximum Life"_s);
+        const Item focus =
+            item(u"Item Class: Foci\nRarity: Rare\nGlow Lens\nTwig Focus\n--------\n+30 to maximum Life"_s);
+        Character c = wearing({{u"Weapon"_s, staff}});
+        QCOMPARE(evaluate(focus, c).wearIn, QStringList{u"Offhand 2"_s});
+        c.wielding.focusWithStaff = true;
+        QCOMPARE(evaluate(focus, c).wearIn, (QStringList{u"Offhand"_s, u"Offhand 2"_s}));
     }
 
     void losingSpiritIsARisk_data()
@@ -447,7 +503,7 @@ private Q_SLOTS:
         c.resists = resists(gear, 90, {}, {}, {});
         const Evaluation e = evaluate(lifeAmulet(64), c);
         QCOMPARE(e.risks.size(), 1);
-        QVERIFY(e.risks.at(0).startsWith(u"Fire res would be only 5% over the cap"));
+        QVERIFY(e.risks.at(0).startsWith(u"Fire Resistance would be only 5% over the cap"));
         QVERIFY(e.losses.isEmpty());
         QCOMPARE(e.comparison.verdict, Verdict::Risky);
     }
@@ -463,7 +519,7 @@ private Q_SLOTS:
         QCOMPARE(e.resistLosses.at(0).element, Element::Fire);
         QCOMPARE(e.resistLosses.at(0).to, 60.0);
         QCOMPARE(e.resistRank, -1);
-        QCOMPARE(e.risks, QStringList{u"Fire res drops below the cap (60% of 75%)"_s});
+        QCOMPARE(e.risks, QStringList{u"Fire Resistance drops below the cap (60% of 75%)"_s});
         QCOMPARE(e.losses, e.risks);
     }
 
@@ -569,7 +625,7 @@ private Q_SLOTS:
         const Evaluation resist = evaluate(lifeAmulet(40), c);
         QCOMPARE(resist.comparison.verdict, Verdict::ResistLoss);
         QCOMPARE(resist.losses.size(), 2);
-        QVERIFY(resist.losses.first().startsWith(u"Fire res"_s));
+        QVERIFY(resist.losses.first().startsWith(u"Fire Resistance"_s));
         QVERIFY(resist.losses.last().startsWith(u"Life drops"_s));
         QCOMPARE(resist.risks, resist.losses);
 
@@ -581,7 +637,7 @@ private Q_SLOTS:
         QCOMPARE(health.comparison.verdict, Verdict::DefenceLoss);
         QCOMPARE(health.losses.size(), 2);
         QVERIFY(health.losses.first().startsWith(u"Life drops"_s));
-        QVERIFY(health.losses.last().startsWith(u"Fire res"_s));
+        QVERIFY(health.losses.last().startsWith(u"Fire Resistance"_s));
     }
 
     void aTieGoesToResistanceWithoutPathOfBuilding()
@@ -593,7 +649,7 @@ private Q_SLOTS:
         const Evaluation e = evaluate(lifeAmulet(110), c);
         QCOMPARE(e.losses.size(), 2);
         QCOMPARE(e.comparison.verdict, Verdict::ResistLoss);
-        QVERIFY(e.losses.first().startsWith(u"Fire res"_s));
+        QVERIFY(e.losses.first().startsWith(u"Fire Resistance"_s));
     }
 
     void pathOfBuildingsJudgement()

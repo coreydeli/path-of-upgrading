@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-#include "core/datafiles.h"
-#include "core/pobinstall.h"
+#include "services/datafiles.h"
+#include "services/pobfinder.h"
 
 #include <QDir>
 #include <QFile>
@@ -117,7 +117,7 @@ private Q_SLOTS:
                        u"/.var/app/community.pathofbuilding.PathOfBuilding/data/RustyPathOfBuilding1"_s));
         QString why;
         QVERIFY(!findPob(computer.places, {}, &why));
-        QCOMPARE(why, u"Open Path of Building PoE 2 once, so it downloads what it needs."_s);
+        QCOMPARE(why, u"Open Path of Building Community (PoE2) once, so it downloads what it needs."_s);
     }
 
     void notInstalled()

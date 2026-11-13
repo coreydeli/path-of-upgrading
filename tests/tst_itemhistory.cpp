@@ -4,6 +4,9 @@
 #include "itemtexts.h"
 
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -74,6 +77,25 @@ private Q_SLOTS:
         QCOMPARE(history.recent().size(), 30);
         QCOMPARE(history.recent().first().name, u"Ring 31"_s);
         QCOMPARE(history.recent().last().name, u"Ring 2"_s);
+    }
+
+    void readsNoMoreThanItKeeps()
+    {
+        // as from a file put together by hand
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        QJsonArray recent;
+        for (int n = 1; n <= 40; ++n)
+            recent << ring(n).raw;
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(QJsonDocument(QJsonObject{{u"version"_s, 1}, {u"recent"_s, recent}}).toJson());
+        file.close();
+
+        const ItemHistory history(path);
+        QCOMPARE(history.recent().size(), ItemHistory::recentLimit);
+        QCOMPARE(history.recent().first().name, u"Ring 1"_s);
+        QCOMPARE(history.recent().last().name, u"Ring 30"_s);
     }
 
     void countsStats()
@@ -220,6 +242,54 @@ private Q_SLOTS:
         history.add(helmetNew);
         QVERIFY(history.save());
         QCOMPARE(names(ItemHistory(path).recent()), QStringList{u"Doom Visage"_s});
+    }
+
+    void unreadableIsKept()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("{ not quite");
+        file.close();
+
+        ItemHistory history(path);
+        QCOMPARE(history.keptAsidePath(), path + u".unreadable"_s);
+        history.add(helmetNew);
+        QVERIFY(history.save());
+        QFile kept(history.keptAsidePath());
+        QVERIFY(kept.open(QIODevice::ReadOnly));
+        QCOMPARE(kept.readAll(), QByteArray("{ not quite"));
+    }
+
+    void unreadableAgain()
+    {
+        // the newest one it couldn't read is kept
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        for (const QByteArray &text : {QByteArray("first"), QByteArray("second")}) {
+            QFile file(path);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            file.write(text);
+            file.close();
+            const ItemHistory history(path);
+        }
+        QFile kept(path + u".unreadable"_s);
+        QVERIFY(kept.open(QIODevice::ReadOnly));
+        QCOMPARE(kept.readAll(), QByteArray("second"));
+    }
+
+    void readableIsntKept()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        {
+            ItemHistory history(path);
+            history.add(helmetNew);
+        }
+        const ItemHistory again(path);
+        QVERIFY(!QFile::exists(again.keptAsidePath()));
+        QVERIFY(QFile::exists(path));
     }
 
     void cantSave()

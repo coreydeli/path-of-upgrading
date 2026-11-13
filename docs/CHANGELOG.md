@@ -11,6 +11,134 @@ version that comes out.
 
 Nothing yet.
 
+## [0.7.0] - 2026-11-13
+
+[Release notes](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.7.0)
+
+### Added
+
+- After the hotkey copies an item, what you had copied before is put back on the
+  clipboard, so you can still paste it. "Put back what you had copied" on the
+  General page turns it off.
+- The gear notes say the most each slot can roll, such as "Life (up to 149)" in
+  the missing stats, and "Look for" gives it too, as "Life 55 or more (up to
+  149)". An empty slot's "Wants most" shows it the same way. The figures come
+  from Path of Building's data for Path of Exile 2.
+- The slot panel on a wide gear page has a Can roll line under Look for. It lists up
+  to six stats the build wants most in that slot, each with the top tier's range and its
+  item level, such as "Life 100 to 149, item level 82". It's left out for weapons,
+  off hands, jewels, flasks and charms.
+- The character you play is picked in a Character box at the top of Your Gear, which shows
+  its build.
+- An About page in the sidebar's Settings group. It shows the version and edition, the
+  license, the Qt and KDE Frameworks versions, where Path of Building was found, links to the
+  source, the releases and the issue tracker, and the credits, with the fonts the
+  app carries.
+- A Help page in the sidebar's Settings group. It opens the wiki, or one of its pages, in
+  your browser.
+- The app looks on GitHub for a newer release when it starts, and about once a
+  day while it runs. A dialog called "A New Version Is Out" offers Update Now,
+  Later or Skip This Version. With the window hidden, a notification says so
+  instead. Turn the check off, or include betas, in the Updates card on the
+  General page.
+- Update Now downloads the file for how you installed the app and checks it
+  against the release's checksums before anything else happens. The AppImage
+  replaces itself and restarts, and the Windows setup runs quietly. Debian and
+  Fedora packages go through PackageKit, and show the command to run when it
+  isn't there or fails. Arch shows the command to run. A build from source opens
+  the release page.
+
+### Changed
+
+- The app has a new look, drawn by the app itself, so it looks the same on
+  every desktop: its own controls, colors and fonts, with cut-corner cards. The
+  text is in Spectral and the headings in Big Shoulders Display. The popup, the
+  results window, the pages and the sidebar all have it.
+- The app uses the game's words. It says equip, Unequip, Equipped by and Equip as in place
+  of wear, Take Off and Worn, and Off Hand for the off hand. The gear score's stats are spelled
+  out, such as Fire Resistance, Energy Shield Recharge and Movement Speed, and the tweaks you
+  saved move to the new names. Prices converted in the results are in full, such as "about 3
+  Divine Orbs". The Gear Grade page is Gear Score again.
+- The gear page's "Your Resistances" card is now called "Resistances". A line
+  under its heading says where the numbers come from, and the line of values
+  stays hidden until they are known.
+- "Typed in off your character sheet" is now "Type them in from your character
+  sheet", with the numbers the game's sheet shows, over the maximum too.
+- "Margin over the maximum" is now "Safety buffer". An item that leaves a
+  resistance closer to its maximum than this gets a warning.
+- "Maximum resistance" is now four rows: Fire, Cold, Lightning and Chaos
+  maximum, each from 1 to 100. An imported build's maximums are used until you
+  change one, and a single maximum saved by an earlier version is used for all
+  four.
+- On the Trade page, "Update poe.ninja's prices every" is now "Update poe.ninja's
+  prices automatically", with minutes beside the number.
+- A beta is no longer made on every merge into beta. It comes out when it's
+  made by hand, or each night when there's new code. Changes to the docs alone
+  don't count.
+- In the gear score profiles, "Weapon DPS" is now "Weapon damage per second".
+- The sidebar's Gear group is now called Gear Settings.
+- The Settings page is now called General. It's in the sidebar's Settings group,
+  beside Appearance, and its settings are the same.
+- The Debian package has the copyright file Debian asks for, at
+  `/usr/share/doc/path-of-upgrading/copyright`, with the app's license and the
+  licenses of its fonts.
+- The Characters page is now called Import Character, and it is in Gear Settings. The window
+  opens on Your Gear rather than on the Characters page.
+- Build Review's "Look Again" is now "Update", and it also reads the builds
+  you've saved in Path of Building since.
+- The gear score is now weighed by Path of Building for your build, and kept with
+  the character. The Gear Score page has no build profile list. "Judge by my stat
+  weights alone" is a switch in place of the None profile, and Weigh Again weighs
+  the build again.
+  The popup, the Characters page, the import message and the upgrade search no
+  longer name a build profile.
+
+### Fixed
+
+- A weapon's damage is no longer listed as missing in a slot's gear notes.
+- With a two-handed weapon in the main hand, the off hand no longer counts
+  toward the gear score, and the popup no longer offers to wear an off-hand
+  item there, unless the character can hold one beside it.
+- An update download that gets no data for 30 seconds now gives up with a
+  message, rather than leaving Update Now stuck until you restart the app.
+- Update Now can install a beta's Debian and Fedora packages. Their checksums
+  now name the files as GitHub stores them, with a dot where the version has a
+  `~`.
+- If PackageKit stops partway through an install, the update dialog says so and
+  shows the command to run, rather than refusing later installs until you
+  restart the app.
+- After you press Forget, searches no longer send the trade site's session
+  cookie.
+- When Xwayland restarts, the app connects to it again, and the hotkeys go back
+  to being taken only while the game runs. Before, they stayed taken until you
+  restarted the app.
+- The Debian package depends on the Qt SVG icon plugin and the CA certificates,
+  so a plain install shows its icons and can reach the trade site and poe.ninja.
+- The Windows setup always installs to its own folder, even when it's given one
+  with `/D=`, so it no longer empties that folder.
+- The waystone check's note on elemental penetration reads as a sentence, such
+  as "Your fire and cold resistances are under the cap."
+- The Characters page scores each character again when you change the Build
+  Review priorities.
+- An item history that can't be read is kept as `history.json.unreadable`,
+  rather than being written over.
+- If the app can't start the new version after an update, it stays open and
+  says so, rather than quitting with nothing shown.
+- The autostart entry for an AppImage whose path has `$`, `\`, quotes, backticks
+  or `%` in it now starts the app.
+- After an update, the new copy waits up to a minute for the old one to quit.
+  Then it starts anyway.
+- If Xwayland is down when you press a hotkey, the app keeps trying to connect
+  to it until it's back.
+- Currency prices from poe.ninja that can't be right, such as zero or more than
+  a billion Exalted Orbs, are left out.
+- Item History loads no more items than it keeps, which is the last 30, even
+  when the saved file has more.
+- A search by your stat weights uses the 40 heaviest weights, as the trade site
+  limits how many filters a search can have. The others are left out.
+- An item's text over 1 MB isn't read, and a build code or Path of Building XML
+  over 32 MB is refused.
+
 ## [0.6.0] - 2026-11-10
 
 [Release notes](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0)
@@ -136,5 +264,6 @@ The 0.1.0 betas (v0.1.0-beta.1 to v0.1.0-beta.33, from 2026-11-03 to
   checks do.
 
 [Unreleased]: https://github.com/coreydeli/path-of-upgrading/commits/beta
+[0.7.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.7.0
 [0.6.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0
 [0.5.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.5.0

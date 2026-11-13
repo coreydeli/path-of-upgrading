@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: MIT
 #include "app/itemchecker.h"
 #include "app/tradereport.h"
-#include "core/datafiles.h"
 #include "core/parser.h"
 #include "core/placement.h"
+#include "fakeclipboard.h"
 #include "fakegameinput.h"
 #include "fakenetwork.h"
 #include "fakepob.h"
 #include "itemtexts.h"
+#include "services/datafiles.h"
 #include "services/pobengine.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
+#include "stylefortests.h"
 #include "tradefixtures.h"
 
 #include <QGuiApplication>
@@ -150,11 +152,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
-        // Fusion, as on Linux, as Windows' own style can't draw offscreen
-        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
-        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
-        // platform plugin of its own
-        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
+        // the app's own controls, as the program has
+        useStyleInTests();
     }
 
 private Q_SLOTS:
@@ -739,6 +738,33 @@ private Q_SLOTS:
         checker.setSettings(settings);
         Q_EMIT input.textCopied(itemtexts::helmetNew);
         QVERIFY(!checker.popup().isVisible());
+    }
+
+    void putsBackWhatYouHadCopied_data()
+    {
+        QTest::addColumn<bool>("putBack");
+        QTest::newRow("on") << true;
+        QTest::newRow("off") << false;
+    }
+
+    void putsBackWhatYouHadCopied()
+    {
+        QFETCH(bool, putBack);
+        QQmlEngine qml;
+        FakeGameInput input;
+        FakeClipboard clipboard;
+        clipboard.copy(u"mine"_s, false);
+        ItemChecker checker(&qml, &input);
+        checker.setClipboard(&clipboard);
+        Settings settings;
+        settings.overlay.putBackClipboard = putBack;
+        checker.setSettings(settings);
+
+        checker.check();
+        clipboard.copy(itemtexts::helmetNew);
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QTest::qWait(20);
+        QCOMPARE(clipboard.text(), putBack ? u"mine"_s : itemtexts::helmetNew);
     }
 
     void popupSettings()

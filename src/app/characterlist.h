@@ -2,7 +2,8 @@
 #pragma once
 
 #include "core/buildimport.h"
-#include "core/characterstore.h"
+#include "core/pobverdict.h"
+#include "services/characterstore.h"
 
 #include <QAbstractListModel>
 #include <QHash>
@@ -31,6 +32,9 @@ class CharacterList : public QAbstractListModel
 
     // The id of the one you play, empty when there's none.
     Q_PROPERTY(QString current READ current WRITE setCurrent NOTIFY currentChanged)
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
+    // Where it is in the list, -1 when there's none, for a picker.
+    Q_PROPERTY(int currentRow READ currentRow NOTIFY currentRowChanged)
     // What it's built as, "Level 92 Stormweaver", empty without a build or a character.
     Q_PROPERTY(QString currentBuild READ currentBuild NOTIFY currentBuildChanged)
     // The files that couldn't be read, with why, see CharacterStore::problems().
@@ -42,10 +46,10 @@ public:
     enum Role {
         IdRole = Qt::UserRole + 1, // "characterId", as QML has its own id
         NameRole,
-        BuildRole,   // "Level 92 Stormweaver", empty without a build
-        ProfileRole, // what the gear score goes by, "Life and resistances"
-        ScoreRole,   // the overall gear score as text, empty when no gear is rated
-        GradeRole,   // its letter
+        BuildRole,  // "Level 92 Stormweaver", empty without a build
+        SourceRole, // where the gear score comes from, as a sentence
+        ScoreRole,  // the overall gear score as text, empty when no gear is rated
+        GradeRole,  // its letter
     };
 
     // They have to outlive it. It's empty until it's loaded.
@@ -63,6 +67,8 @@ public:
     QString current() const { return m_current; }
     void setCurrent(const QString &id);
     QString currentBuild() const { return m_builds.value(m_current); }
+    int count() const { return int(m_ids.size()); }
+    int currentRow() const { return int(m_ids.indexOf(m_current)); }
 
     // A new character wearing nothing, which you then play. Its id, or empty
     // when it couldn't be saved.
@@ -83,6 +89,8 @@ public:
 Q_SIGNALS:
     void currentChanged();
     void currentBuildChanged();
+    void currentRowChanged();
+    void countChanged();
     void errorChanged();
     void loaded();
 
@@ -101,6 +109,8 @@ private:
     QStringList m_ids;
     QHash<QString, QString> m_builds; // what each id's build is, see BuildRole
     QString m_current;
+    // what the scores were worked out with
+    PobPriorities m_priorities;
     QString m_error;
 };
 

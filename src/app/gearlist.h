@@ -25,7 +25,7 @@ struct GearNote
 
 public:
     QString label; // "Weak rolls"
-    QString text;  // "Mana 13%, Fire res 33%"
+    QString text;  // "Mana 13%, Fire Resistance 33%"
 
     friend bool operator==(const GearNote &, const GearNote &) = default;
 };

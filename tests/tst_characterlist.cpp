@@ -5,6 +5,8 @@
 #include "core/buildprofiles.h"
 #include "core/gearscore.h"
 #include "core/parser.h"
+#include "core/resists.h"
+#include "core/weighedprofile.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
 
@@ -175,7 +177,7 @@ private Q_SLOTS:
         const QHash<int, QByteArray> names = c.list.roleNames();
         QCOMPARE(names.value(CharacterList::ScoreRole), "score"_ba);
         QCOMPARE(names.value(CharacterList::GradeRole), "grade"_ba);
-        QCOMPARE(names.value(CharacterList::ProfileRole), "profile"_ba);
+        QCOMPARE(names.value(CharacterList::SourceRole), "source"_ba);
     }
 
     void ratingFollowsWhatYouWear()
@@ -191,27 +193,58 @@ private Q_SLOTS:
         QVERIFY(!c.list.index(0).data(CharacterList::ScoreRole).toString().isEmpty());
     }
 
-    void sayWhatTheGearScoreGoesBy()
+    void ratingFollowsYourPriorities()
+    {
+        // short of fire resistance only, which counts more with resistances first
+        Characters c;
+        Character wren = named(u"Wren"_s);
+        wren.gear.insert(u"Helmet"_s, parseItem(itemtexts::helmetNew).value());
+        ResistEntry entry;
+        for (const Element e : allElements)
+            entry.values[e] = 75.0;
+        entry.values[Element::Fire] = 30.0;
+        wren.resists = snapshotResists(entry, wren.gear, ResistSource::Manual);
+        QVERIFY(!c.store.add(wren).value_or(QString()).isEmpty());
+        c.list.load();
+        const QString before = c.list.index(0).data(CharacterList::ScoreRole).toString();
+
+        QSignalSpy changed(&c.list, &CharacterList::dataChanged);
+        Settings s = c.settings.settings();
+        s.pob.priorities.resistsFirst = !s.pob.priorities.resistsFirst;
+        c.settings.set(s);
+        QCOMPARE(changed.size(), 1);
+        const auto roles = changed.first().at(2).value<QList<int>>();
+        QVERIFY(roles.contains(CharacterList::ScoreRole));
+        QVERIFY(roles.contains(CharacterList::GradeRole));
+        QCOMPARE_NE(c.list.index(0).data(CharacterList::ScoreRole).toString(), before);
+
+        // and not for another setting
+        s.pob.damageWeight = 0.9;
+        c.settings.set(s);
+        QCOMPARE(changed.size(), 1);
+    }
+
+    void saySourceOfTheGearScore()
     {
         Characters c;
         const QString plain = c.saved(u"Plain"_s);
         Character weights = named(u"Weights"_s);
-        weights.buildProfile = noBuildProfile.toString();
+        weights.weightsOnly = true;
         const QString byWeights = c.store.add(weights).value_or(QString());
-        Character lost = named(u"Lost"_s);
-        lost.buildProfile = u"no-such-profile"_s;
-        const QString unknown = c.store.add(lost).value_or(QString());
+        Character weighed = named(u"Weighed"_s);
+        weighed.weighed = WeighedProfile{};
+        const QString byBuild = c.store.add(weighed).value_or(QString());
         c.list.load();
-        const auto profile = [&](const QString &id) {
+        const auto source = [&](const QString &id) {
             for (int row = 0; row < c.list.rowCount(); ++row) {
                 if (c.list.index(row).data(CharacterList::IdRole).toString() == id)
-                    return c.list.index(row).data(CharacterList::ProfileRole).toString();
+                    return c.list.index(row).data(CharacterList::SourceRole).toString();
             }
             return u"missing"_s;
         };
-        QCOMPARE(profile(plain), u"Life and resistances"_s);
-        QCOMPARE(profile(byWeights), u"Your stat weights"_s);
-        QCOMPARE(profile(unknown), QString());
+        QCOMPARE(source(plain), u"A general start, until Path of Building weighs your build"_s);
+        QCOMPARE(source(byWeights), u"Judged by your stat weights alone"_s);
+        QCOMPARE(source(byBuild), u"Weighed by Path of Building for your build"_s);
     }
 
     void problems()
@@ -274,6 +307,40 @@ private Q_SLOTS:
         list.setCurrent({});
         QCOMPARE(c.settings.settings().character, QString());
         QCOMPARE(list.current(), QString());
+    }
+
+    void rowOfTheOneYouPlay()
+    {
+        Characters c;
+        c.saved(u"Anya"_s);
+        const QString wren = c.saved(u"Wren"_s);
+        c.list.load();
+        QSignalSpy row(&c.list, &CharacterList::currentRowChanged);
+        QSignalSpy count(&c.list, &CharacterList::countChanged);
+        QCOMPARE(c.list.count(), 2);
+        QCOMPARE(c.list.currentRow(), -1);
+
+        c.list.setCurrent(wren);
+        QCOMPARE(c.list.currentRow(), 1);
+        QCOMPARE(row.size(), 1);
+
+        // a new name that sorts first moves it down
+        QVERIFY(c.list.add(u"Aaron"_s) != wren);
+        QCOMPARE(c.list.count(), 3);
+        QCOMPARE(count.size(), 1);
+        c.list.setCurrent(wren);
+        QCOMPARE(c.list.currentRow(), 2);
+        row.clear();
+        QVERIFY(c.list.rename(wren, u"Abel"_s));
+        QCOMPARE(c.list.currentRow(), 1);
+        QVERIFY(row.size() > 0);
+
+        row.clear();
+        QVERIFY(c.list.remove(c.list.current()));
+        QCOMPARE(c.list.count(), 2);
+        QCOMPARE(count.size(), 2);
+        QVERIFY(row.size() > 0);
+        QCOMPARE(c.list.currentRow(), 0);
     }
 
     void add()
@@ -472,6 +539,19 @@ private Q_SLOTS:
         QVERIFY(QDir(c.folder + u'/' + wren + u".xml"_s).removeRecursively());
         QVERIFY(c.list.remove(wren));
         QCOMPARE(c.list.error(), QString());
+    }
+
+    void removeOneGoneFromTheStore()
+    {
+        Characters c;
+        const QString wren = c.saved(u"Wren"_s);
+        const QString ash = c.saved(u"Ash"_s);
+        c.list.load();
+        QVERIFY(c.store.remove(wren));
+        QVERIFY(c.list.remove(wren));
+        QCOMPARE(c.names(), QStringList{u"Ash"_s});
+        QCOMPARE(c.list.error(), QString());
+        QVERIFY(c.inFolder(ash));
     }
 
     // what the sidebar says the character you play is built as

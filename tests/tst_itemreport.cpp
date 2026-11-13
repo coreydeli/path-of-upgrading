@@ -201,7 +201,7 @@ private Q_SLOTS:
         QCOMPARE(report.score, QString());
         QCOMPARE(report.versus, QString());
         QVERIFY(report.notes.contains(
-            u"Nothing saved for Helmet yet. Check the item you wear there and click Wear as Helmet."_s));
+            u"Nothing saved for Helmet yet. Check the item you have equipped there and press Equip as Helmet."_s));
 
         report = reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}}));
         QCOMPARE(report.verdict, u"Equipped"_s);
@@ -261,13 +261,12 @@ private Q_SLOTS:
     {
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
-        e.gear = GearScore{.buildName = u"Minions"_s, .score = 78, .grade = u"A"_s};
-        e.gearEquipped = GearScore{.buildName = u"Minions"_s, .score = 56, .grade = u"B"_s};
+        e.gear = GearScore{.score = 78, .grade = u"A"_s};
+        e.gearEquipped = GearScore{.score = 56, .grade = u"B"_s};
         ItemReport report = reportOf(check);
         QCOMPARE(report.gearScore, u"78"_s);
         QCOMPARE(report.gearGrade, u"A"_s);
         QCOMPARE(report.yourGearScore, u"56"_s);
-        QCOMPARE(report.gearBuild, u"Minions"_s);
 
         e.gearEquipped->unrated = GearScore::Unrated::Unique;
         report = reportOf(check);
@@ -292,19 +291,19 @@ private Q_SLOTS:
         Evaluation &e = check.evaluation;
         e.gear = GearScore{
             .score = 70,
-            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 20, 3.0, StatOrigin::Implicit},
-                              {u"# to maximum Life"_s, u"Life"_s, 90, 80, 7.0, StatOrigin::Mod},
-                              {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, StatOrigin::Mod},
-                              {u"speed"_s, u"Movement speed"_s, 8, 50, 2.0, StatOrigin::Socket},
-                              {u"speed"_s, u"Movement speed"_s, 4, 25, 1.0, StatOrigin::Mod},
+            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 20, 3.0, 0, StatOrigin::Implicit},
+                              {u"# to maximum Life"_s, u"Life"_s, 90, 80, 7.0, 0, StatOrigin::Mod},
+                              {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, 0, StatOrigin::Mod},
+                              {u"speed"_s, u"Movement speed"_s, 8, 50, 2.0, 0, StatOrigin::Socket},
+                              {u"speed"_s, u"Movement speed"_s, 4, 25, 1.0, 0, StatOrigin::Mod},
                               // too little to show
-                              {u"light"_s, u"Light radius"_s, 5, 10, 0.02, StatOrigin::Mod}},
+                              {u"light"_s, u"Light radius"_s, 5, 10, 0.02, 0, StatOrigin::Mod}},
             .ideal = 50};
         e.gearEquipped =
             GearScore{.score = 62,
-                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 80, 90, 8.0, StatOrigin::Mod},
-                                        {u"cold"_s, u"Cold resistance"_s, 20, 100, 2.5, StatOrigin::Mod},
-                                        {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, StatOrigin::Mod}},
+                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 80, 90, 8.0, 0, StatOrigin::Mod},
+                                        {u"cold"_s, u"Cold resistance"_s, 20, 100, 2.5, 0, StatOrigin::Mod},
+                                        {u"fire"_s, u"Fire resistance"_s, 40, 100, 5.0, 0, StatOrigin::Mod}},
                       .ideal = 50};
         const QString excellent = u"100% of an excellent roll"_s;
         // those that change most first, then those that are worth most
@@ -350,9 +349,9 @@ private Q_SLOTS:
     void gearScoreWithoutAnIdeal()
     {
         ItemCheck check = judged(Verdict::Upgrade);
-        check.evaluation.gear =
-            GearScore{.score = 70,
-                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}}};
+        check.evaluation.gear = GearScore{
+            .score = 70,
+            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, 0, StatOrigin::Mod}}};
         QCOMPARE(reportOf(check).gearParts, QList<ReportFigure>());
     }
 
@@ -362,14 +361,14 @@ private Q_SLOTS:
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
         e.gear = GearScore{.score = 1,
-                           .contributions = {{u"b"_s, u"Mana"_s, 4, 100, 0.4, StatOrigin::Mod},
-                                             {u"a"_s, u"Life"_s, 5, 100, 0.5, StatOrigin::Mod}},
+                           .contributions = {{u"b"_s, u"Mana"_s, 4, 100, 0.4, 0, StatOrigin::Mod},
+                                             {u"a"_s, u"Life"_s, 5, 100, 0.5, 0, StatOrigin::Mod}},
                            .ideal = 100};
         e.gearEquipped = GearScore{.score = 0,
-                                   .contributions = {{u"a"_s, u"Life"_s, 2, 100, 0.2, StatOrigin::Mod},
-                                                     {u"b"_s, u"Mana"_s, 1, 100, 0.1, StatOrigin::Mod},
+                                   .contributions = {{u"a"_s, u"Life"_s, 2, 100, 0.2, 0, StatOrigin::Mod},
+                                                     {u"b"_s, u"Mana"_s, 1, 100, 0.1, 0, StatOrigin::Mod},
                                                      // too little to show
-                                                     {u"c"_s, u"Rarity"_s, 1, 100, 0.04, StatOrigin::Mod}},
+                                                     {u"c"_s, u"Rarity"_s, 1, 100, 0.04, 0, StatOrigin::Mod}},
                                    .ideal = 100};
         const QList<ReportFigure> parts = reportOf(check).gearParts;
         QCOMPARE(parts.size(), 2);
@@ -407,7 +406,7 @@ private Q_SLOTS:
     {
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
-        const QString capped = u"Fire res: you're already capped, so it doesn't count."_s;
+        const QString capped = u"Fire Resistance: you're already capped, so it doesn't count."_s;
         e.gear = GearScore{.score = 50,
                            .notScored = {u"#% increased Light Radius"_s, u"[Base] Evasion Rating"_s},
                            .missing = {u"Life"_s, u"Movement speed"_s},
@@ -432,11 +431,11 @@ private Q_SLOTS:
     {
         ItemCheck check = judged(Verdict::Upgrade);
         Evaluation &e = check.evaluation;
-        e.gear =
-            GearScore{.score = 70,
-                      .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, StatOrigin::Mod}},
-                      .notScored = {u"#% increased Light Radius"_s},
-                      .ideal = 50};
+        e.gear = GearScore{
+            .score = 70,
+            .contributions = {{u"# to maximum Life"_s, u"Life"_s, 90, 100, 5.0, 0, StatOrigin::Mod}},
+            .notScored = {u"#% increased Light Radius"_s},
+            .ideal = 50};
         QVERIFY(!reportOf(check).gearParts.isEmpty());
         QVERIFY(!reportOf(check).gearNotes.isEmpty());
 
@@ -454,7 +453,7 @@ private Q_SLOTS:
     void lossesAndRisks()
     {
         ItemCheck check = judged(Verdict::ResistLoss);
-        const QString fire = u"Fire res drops below the cap (60% of 75%)"_s;
+        const QString fire = u"Fire Resistance drops below the cap (60% of 75%)"_s;
         const QString spirit = u"Spirit drops by 10, so check your minions and auras still fit"_s;
         check.evaluation.risks = {fire, spirit};
         check.evaluation.losses = {fire};
@@ -510,7 +509,7 @@ private Q_SLOTS:
                  (QList<ReportFigure>{
                      {.label = u"Minion DPS"_s, .change = u"+10%"_s, .tone = Tone::Good},
                      {.label = u"Effective HP"_s, .change = u"-2.5%"_s, .tone = Tone::Bad},
-                     {.label = u"Resistance toward the caps"_s, .change = u"+12"_s, .tone = Tone::Good},
+                     {.label = u"Resistances toward the caps"_s, .change = u"+12"_s, .tone = Tone::Good},
                  }));
 
         // what it doesn't know or doesn't change
@@ -520,7 +519,7 @@ private Q_SLOTS:
         QCOMPARE(reportOf(judgedByPob(v)).headline,
                  (QList<ReportFigure>{
                      {.label = u"DPS"_s, .change = u"0%"_s},
-                     {.label = u"Resistance toward the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
+                     {.label = u"Resistances toward the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
                  }));
         QVERIFY(reportOf(judgedByPob({})).headline.isEmpty());
         QVERIFY(reportOf(judged(Verdict::Upgrade)).headline.isEmpty());
@@ -556,19 +555,19 @@ private Q_SLOTS:
         QCOMPARE(
             reportOf(check).changes,
             (QList<ReportFigure>{
-                {.label = u"Fire res"_s,
+                {.label = u"Fire Resistance"_s,
                  .change = u"-15%"_s,
                  .from = u"75%"_s,
                  .to = u"60%"_s,
                  .note = u"off the cap"_s,
                  .tone = Tone::Bad},
-                {.label = u"Cold res"_s,
+                {.label = u"Cold Resistance"_s,
                  .change = u"+25%"_s,
                  .from = u"50%"_s,
                  .to = u"75%"_s,
                  .note = u"capped"_s,
                  .tone = Tone::Good},
-                {.label = u"Lightning res"_s,
+                {.label = u"Lightning Resistance"_s,
                  .change = u"+5%"_s,
                  .from = u"40%"_s,
                  .to = u"45%"_s,
@@ -614,7 +613,7 @@ private Q_SLOTS:
                                                  .from = u"40,000"_s,
                                                  .to = u"39,000"_s,
                                                  .tone = Tone::Bad}));
-        QCOMPARE(changes.value(2).label, u"Fire res"_s);
+        QCOMPARE(changes.value(2).label, u"Fire Resistance"_s);
         QCOMPARE(changes.value(3).label, u"Life"_s);
     }
 
@@ -678,12 +677,12 @@ private Q_SLOTS:
             {.element = Element::Cold, .from = 74, .to = 74, .max = 74, .capped = true},
         };
         QCOMPARE(reportOf(judgedByPob(v)).changes, (QList<ReportFigure>{
-                                                       {.label = u"Fire res"_s,
+                                                       {.label = u"Fire Resistance"_s,
                                                         .change = u"0%"_s,
                                                         .from = u"75%"_s,
                                                         .to = u"75%"_s,
                                                         .note = u"under the cap"_s},
-                                                       {.label = u"Cold res"_s,
+                                                       {.label = u"Cold Resistance"_s,
                                                         .change = u"0%"_s,
                                                         .from = u"74%"_s,
                                                         .to = u"74%"_s,
@@ -699,50 +698,50 @@ private Q_SLOTS:
         using enum Element;
         change.resists = {
             {.element = Fire,
-             .label = u"Fire res"_s,
+             .label = u"Fire Resistance"_s,
              .delta = -20,
              .from = 80,
              .to = 60,
              .safe = 85,
              .under = true},
             {.element = Cold,
-             .label = u"Cold res"_s,
+             .label = u"Cold Resistance"_s,
              .delta = -5,
              .from = 85,
              .to = 80,
              .safe = 85,
              .thin = true},
             {.element = Lightning,
-             .label = u"Lightning res"_s,
+             .label = u"Lightning Resistance"_s,
              .delta = 10,
              .from = 70,
              .to = 80,
              .safe = 85,
              .wasUnder = true},
-            {.element = Chaos, .label = u"Chaos res"_s, .delta = 7, .from = 90, .to = 97, .safe = 85},
+            {.element = Chaos, .label = u"Chaos Resistance"_s, .delta = 7, .from = 90, .to = 97, .safe = 85},
         };
         change.totals = {{u"Life"_s, 1200, 1350, 150}, {u"Spirit"_s, 100, 70, -30}};
         change.overall = TotalChange{u"Gear score"_s, 56, 60, 4};
         QCOMPARE(reportOf(check).changes, (QList<ReportFigure>{
-                                              {.label = u"Fire res"_s,
+                                              {.label = u"Fire Resistance"_s,
                                                .change = u"-20%"_s,
                                                .from = u"80%"_s,
                                                .to = u"60%"_s,
                                                .note = u"under the cap"_s,
                                                .tone = Tone::Bad},
-                                              {.label = u"Cold res"_s,
+                                              {.label = u"Cold Resistance"_s,
                                                .change = u"-5%"_s,
                                                .from = u"85%"_s,
                                                .to = u"80%"_s,
                                                .note = u"barely capped, 5 over the cap"_s,
                                                .tone = Tone::Bad},
-                                              {.label = u"Lightning res"_s,
+                                              {.label = u"Lightning Resistance"_s,
                                                .change = u"+10%"_s,
                                                .from = u"70%"_s,
                                                .to = u"80%"_s,
                                                .note = u"5 over the cap"_s,
                                                .tone = Tone::Good},
-                                              {.label = u"Chaos res"_s,
+                                              {.label = u"Chaos Resistance"_s,
                                                .change = u"+7%"_s,
                                                .from = u"90%"_s,
                                                .to = u"97%"_s,
@@ -768,14 +767,14 @@ private Q_SLOTS:
         change = {};
         change.resists = {
             // without your resistances, only the change to them is known
-            {.element = Fire, .label = u"Fire res"_s, .delta = 12},
-            {.element = Cold, .label = u"Cold res"_s, .delta = -7, .from = 97, .to = 90, .safe = 85},
+            {.element = Fire, .label = u"Fire Resistance"_s, .delta = 12},
+            {.element = Cold, .label = u"Cold Resistance"_s, .delta = -7, .from = 97, .to = 90, .safe = 85},
         };
         change.overall = TotalChange{u"Gear score"_s, 56, 56, 0};
         QCOMPARE(reportOf(check).changes,
                  (QList<ReportFigure>{
-                     {.label = u"Fire res"_s, .change = u"+12%"_s, .tone = Tone::Good},
-                     {.label = u"Cold res"_s,
+                     {.label = u"Fire Resistance"_s, .change = u"+12%"_s, .tone = Tone::Good},
+                     {.label = u"Cold Resistance"_s,
                       .change = u"-7%"_s,
                       .from = u"97%"_s,
                       .to = u"90%"_s,
@@ -813,7 +812,7 @@ private Q_SLOTS:
 
         ItemCheck check = judged(Verdict::Upgrade);
         check.evaluation.change = CharacterChange{.resists = {{.element = Element::Fire,
-                                                               .label = u"Fire res"_s,
+                                                               .label = u"Fire Resistance"_s,
                                                                .delta = to - from,
                                                                .cap = cap,
                                                                .from = from,

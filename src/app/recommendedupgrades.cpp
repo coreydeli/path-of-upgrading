@@ -5,6 +5,7 @@
 #include "app/settingsstore.h"
 #include "app/traderesults.h"
 #include "core/evaluation.h"
+#include "core/hands.h"
 #include "core/slots.h"
 #include "services/tradesearcher.h"
 
@@ -108,8 +109,7 @@ QString RecommendedUpgrades::chosenLookFor() const
     const auto worn = character.gear.constFind(m_chosen);
     if (worn == character.gear.cend()) {
         // a two-handed weapon leaves the offhand empty
-        const auto weapon = character.gear.constFind(u"Weapon"_s);
-        if (m_chosen == u"Offhand" && weapon != character.gear.cend() && weapon->twoHanded)
+        if (offhandOutOfUse(character.gear, character.wielding, m_chosen))
             return {};
         return wantedText(wantedStats(m_chosen, nullptr, options));
     }
@@ -118,6 +118,20 @@ QString RecommendedUpgrades::chosenLookFor() const
     if (!score || !score->isRated())
         return {};
     return wantedText(wantedStats(m_chosen, &*worn, options));
+}
+
+QStringList RecommendedUpgrades::chosenCanRoll() const
+{
+    if (m_chosen.isEmpty())
+        return {};
+    const Character &character = m_active->character();
+    const auto worn = character.gear.constFind(m_chosen);
+    const bool isWorn = worn != character.gear.cend();
+    const GearScoreOptions options = gearScoreOptions(character, m_chosen, m_priorities);
+    QStringList lines;
+    for (const RollRange &r : canRoll(m_chosen, isWorn ? &*worn : nullptr, options))
+        lines << rollRangeText(r);
+    return lines;
 }
 
 bool RecommendedUpgrades::chosenWorn() const

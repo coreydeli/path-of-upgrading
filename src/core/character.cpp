@@ -34,12 +34,12 @@ const QList<Tracked> &tracked()
          {u"Amulet"_s, u"Ring 1"_s, u"Ring 2"_s, u"Belt"_s}},
         {u"Life"_s, {u"# to maximum Life"_s}, {}, {}},
         {u"Armour"_s, {u"[Base] Armour"_s}, {}, {}},
-        {u"Evasion"_s, {u"[Base] Evasion Rating"_s}, {}, {}},
+        {u"Evasion Rating"_s, {u"[Base] Evasion Rating"_s}, {}, {}},
         {u"Mana"_s, {u"# to maximum Mana"_s}, {}, {}},
         {u"Intelligence"_s, {u"# to Intelligence"_s}, {}, {}},
         {u"Strength"_s, {u"# to Strength"_s}, {}, {}},
         {u"Dexterity"_s, {u"# to Dexterity"_s}, {}, {}},
-        {u"Movement speed"_s, {u"#% increased Movement Speed"_s}, {}, {}},
+        {u"Movement Speed"_s, {u"#% increased Movement Speed"_s}, {}, {}},
     };
     return list;
 }
@@ -121,7 +121,6 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
             change.totals << TotalChange{t.label, roundTo(a, 1), roundTo(b, 1), delta};
     }
 
-    const double cap = resists && resists->cap != 0 ? resists->cap : 75;
     const double buffer = resists ? resists->buffer : 0;
     const QString source =
         resists && resists->source == ResistSource::Pob ? u"Path of Building's"_s : u"Your"_s;
@@ -133,9 +132,9 @@ std::optional<CharacterChange> changeIfEquipped(const Equipped &equipped, const 
 
         ResistChange r;
         r.element = e;
-        r.label = elementName(e) + u" res"_s;
+        r.label = elementName(e) + u" Resistance"_s;
         r.delta = delta;
-        r.cap = resists && resists->caps[e] != 0 ? resists->caps[e] : cap;
+        r.cap = resists && resists->caps[e] != 0 ? resists->caps[e] : 75;
         r.safe = r.cap + buffer;
         if (resists && resists->values[e]) {
             const double from = *resists->values[e];

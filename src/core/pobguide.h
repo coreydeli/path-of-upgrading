@@ -3,6 +3,7 @@
 
 #include "core/pobinstall.h"
 
+#include <QList>
 #include <QString>
 #include <QStringList>
 #include <optional>
@@ -33,9 +34,22 @@ struct PobGuide
     QStringList places;         // where it looks, one place a line
 };
 
+// What looking in the places found, which surveyPob() in
+// services/pobfinder.h gathers.
+struct PobSurvey
+{
+    QList<PobPlace> places; // each place it looks in, in order
+    // Only when nothing's running: what's there, and what the usual places
+    // have when the folder set is no good.
+    PobLookup lookup;
+    std::optional<PobInstall> usual;
+    QString buildsFolder; // where the one running keeps its builds
+};
+
 // The guide for the folder set (empty for the usual places), with the Path of
 // Building that's running, and why it couldn't start when that's so.
 PobGuide guideToPob(const PobPlaces &places, const QString &location,
-                    const std::optional<PobInstall> &running, const QString &runProblem);
+                    const std::optional<PobInstall> &running, const QString &runProblem,
+                    const PobSurvey &survey);
 
 } // namespace pou

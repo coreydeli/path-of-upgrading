@@ -1,13 +1,19 @@
 add_library(pou_services STATIC
     buildfetcher.cpp buildfetcher.h
+    characterstore.cpp characterstore.h
+    datafiles.cpp datafiles.h
     logging.cpp logging.h
     network.cpp network.h
     pobengine.cpp pobengine.h
+    pobfinder.cpp pobfinder.h
     ratesrefresher.cpp ratesrefresher.h
     ratesstore.cpp ratesstore.h
+    settingsfile.cpp settingsfile.h
     tradeclient.cpp tradeclient.h
     tradedatastore.cpp tradedatastore.h
     tradesearcher.cpp tradesearcher.h
+    updatechecker.cpp updatechecker.h
+    updatedownloader.cpp updatedownloader.h
 )
 
 qt_add_resources(pou_services pobbridge

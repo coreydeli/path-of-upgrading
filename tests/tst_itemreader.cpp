@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/itemreader.h"
+#include "fakeclipboard.h"
 #include "fakegameinput.h"
 #include "itemtexts.h"
 
@@ -7,6 +8,7 @@
 #include <QTest>
 
 using namespace pou;
+using namespace std::chrono_literals;
 
 namespace {
 
@@ -95,6 +97,38 @@ private Q_SLOTS:
         QCOMPARE(game.copies, 2);
     }
 
+    void givesUpWhenTheGameNeverAnswers()
+    {
+        // as when the game's input drops a copy it can't start
+        FakeGameInput game;
+        game.mouseAt = overItem;
+        ItemReader reader(&game);
+        reader.setHotkey(u"F2"_s);
+        reader.setGiveUpAfter(50ms);
+        QSignalSpy failed(&reader, &ItemReader::failed);
+        reader.read();
+        QVERIFY(failed.wait());
+        QCOMPARE(failed.first().at(0).toString(),
+                 u"The game didn't copy the item in time. Press F2 again."_s);
+        QCOMPARE(mouseOf(failed), std::optional(overItem));
+        QVERIFY(reader.canRead());
+
+        reader.read();
+        QCOMPARE(game.copies, 2);
+    }
+
+    void doesntGiveUpOnAnAnswer()
+    {
+        FakeGameInput game;
+        ItemReader reader(&game);
+        reader.setGiveUpAfter(50ms);
+        QSignalSpy failed(&reader, &ItemReader::failed);
+        reader.read();
+        Q_EMIT game.itemCopied(itemtexts::helmetNew, overItem);
+        QTest::qWait(100);
+        QVERIFY(failed.isEmpty());
+    }
+
     void pausedReadsNothing()
     {
         FakeGameInput game;
@@ -162,7 +196,7 @@ private Q_SLOTS:
                                      "Let go of the other keys, then press F2 again."_s;
         QTest::newRow("not over the game")
             << NotOverGame << QString()
-            << u"Your mouse wasn't over the game. Hover the item in game, then press F2."_s;
+            << u"Your mouse wasn't over the game. Hover over the item in the game, then press F2."_s;
         QTest::newRow("nothing copied")
             << NothingCopied << QString()
             << u"No item under the mouse. Hover an item until its tooltip shows, then press F2."_s;
@@ -269,6 +303,91 @@ private Q_SLOTS:
         reader.read();
         Q_EMIT game.textCopied(itemtexts::helmetNew);
         QVERIFY(read.isEmpty());
+    }
+    void putsBackWhatYouHadCopied()
+    {
+        FakeGameInput game;
+        FakeClipboard clipboard;
+        // gear you copied yourself, say
+        clipboard.copy(itemtexts::helmetOld, false);
+        ItemReader reader(&game);
+        reader.setClipboard(&clipboard);
+        QSignalSpy read(&reader, &ItemReader::itemRead);
+        reader.read();
+        QCOMPARE(clipboard.reads, 1);
+
+        clipboard.copy(itemtexts::helmetNew);
+        Q_EMIT game.itemCopied(itemtexts::helmetNew, overItem);
+        QTRY_COMPARE(clipboard.sets, 1);
+        QCOMPARE(clipboard.text(), itemtexts::helmetOld);
+        QCOMPARE(read.size(), 1);
+
+        // which comes in again, and isn't checked
+        Q_EMIT game.textCopied(itemtexts::helmetOld);
+        QCOMPARE(read.size(), 1);
+        // though when you copy it again, it is
+        Q_EMIT game.textCopied(itemtexts::helmetOld);
+        QCOMPARE(read.size(), 2);
+    }
+
+    void putsBackWhatYouHadOverWhatIsntAnItem()
+    {
+        FakeGameInput game;
+        FakeClipboard clipboard;
+        clipboard.copy(u"mine"_s, false);
+        ItemReader reader(&game);
+        reader.setClipboard(&clipboard);
+        reader.read();
+        clipboard.copy(u"Hello"_s);
+        Q_EMIT game.itemCopied(u"Hello"_s, overItem);
+        QTRY_COMPARE(clipboard.text(), u"mine"_s);
+    }
+
+    void putsNothingBackWhenOff()
+    {
+        FakeGameInput game;
+        FakeClipboard clipboard;
+        clipboard.copy(u"mine"_s, false);
+        ItemReader reader(&game);
+        reader.setClipboard(&clipboard);
+        reader.setPutBackClipboard(false);
+        reader.read();
+        clipboard.copy(itemtexts::helmetNew);
+        Q_EMIT game.itemCopied(itemtexts::helmetNew, overItem);
+        QTest::qWait(20);
+        QCOMPARE(clipboard.sets, 0);
+    }
+
+    void putsNothingBackForGearYouCopy()
+    {
+        FakeGameInput game;
+        FakeClipboard clipboard;
+        clipboard.copy(u"mine"_s, false);
+        ItemReader reader(&game);
+        reader.setClipboard(&clipboard);
+        QSignalSpy read(&reader, &ItemReader::itemRead);
+        clipboard.copy(itemtexts::helmetNew);
+        Q_EMIT game.textCopied(itemtexts::helmetNew);
+        QTest::qWait(20);
+        QCOMPARE(read.size(), 1);
+        QCOMPARE(clipboard.reads, 0);
+        QCOMPARE(clipboard.sets, 0);
+    }
+
+    void putsNothingBackAfterAFailedCopy()
+    {
+        FakeGameInput game;
+        FakeClipboard clipboard;
+        clipboard.copy(u"mine"_s, false);
+        ItemReader reader(&game);
+        reader.setClipboard(&clipboard);
+        reader.read();
+        Q_EMIT game.copyFailed(GameInput::Failure::NothingCopied, {}, overItem);
+        // and it came after all
+        clipboard.copy(itemtexts::helmetNew);
+        Q_EMIT game.itemCopied(itemtexts::helmetNew, overItem);
+        QTest::qWait(20);
+        QCOMPARE(clipboard.sets, 0);
     }
 };
 

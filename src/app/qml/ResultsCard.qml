@@ -57,7 +57,7 @@ Rectangle {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     font: Style.titleFont(Kirigami.Theme.defaultFont, 1.35)
-                    color: Style.gold(Kirigami.Theme)
+                    color: Style.accent(Kirigami.Theme)
                     text: card.results.searched ? card.results.title : qsTr("Trade Results")
                 }
 
@@ -82,9 +82,6 @@ Rectangle {
             }
         }
 
-        Ornament {
-            Layout.fillWidth: true
-        }
 
         // before there's a search to show
         QQC2.Label {
@@ -175,12 +172,15 @@ Rectangle {
                 text: qsTr("Open on the Trade Site")
                 icon.name: "internet-web-browser"
                 // in your browser, where you can sign in to buy
-                onClicked: Qt.openUrlExternally(card.results.url)
+                onClicked: card.panel.openTradeSite()
             }
         }
     }
 
-    OrnateFrame {
+    Plate {
         anchors.fill: parent
+        z: -1
+        line: Style.frame(Kirigami.Theme)
+        lineWidth: 1
     }
 }

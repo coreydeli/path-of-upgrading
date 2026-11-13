@@ -5,7 +5,9 @@
 #include "core/item.h"
 #include "core/resists.h"
 #include "core/scorer.h"
+#include "core/slotmods.h"
 #include "core/statsources.h"
+#include "core/weighedprofile.h"
 
 #include <QHash>
 #include <QList>
@@ -30,11 +32,16 @@ using ProfileTweaks = QHash<QString, double>;
 struct GearScoreOptions
 {
     QString build; // profile id, empty for the default profile
+    // What Path of Building weighed for the build. It rates the slot groups it
+    // covers, and the profile above the others.
+    std::optional<WeighedProfile> weighed;
     ProfileTweaks tweaks;
     StatFilter ignore;
     // How much more of each resistance you need to be capped, where known.
     // A resistance only counts up to that, and not at all once you're capped.
     PerElement<std::optional<double>> resistNeed;
+    // What items can roll, for the notes. The shipped table when null.
+    const SlotMods *mods = nullptr;
 };
 
 struct GearContribution
@@ -44,6 +51,7 @@ struct GearContribution
     double value = 0;
     int quality = 0;   // percent of an excellent roll, up to 115
     double points = 0; // rounded to one decimal
+    double best = 0;   // the most the item's class rolls of it, 0 when that's not known
     StatOrigin origin = StatOrigin::Mod;
 };
 
@@ -52,7 +60,6 @@ struct GearScore
     enum class Unrated { No, FlaskOrCharm, Unidentified, Unique };
 
     QString build;
-    QString buildName;
     QString slot; // slot group
     Unrated unrated = Unrated::No;
     int score = 0;
@@ -60,6 +67,7 @@ struct GearScore
     QList<GearContribution> contributions; // most points first
     QStringList notScored;                 // mods the profile doesn't rate
     QStringList missing;                   // up to three important stats the item doesn't have
+    QHash<QString, double> missingBest;    // for each of those, the most its class rolls of it
     double ideal = 0;                      // points of an excellent item for the slot
     QString resistNote;                    // why some resistance counted for less
 
@@ -75,19 +83,19 @@ QString gearGrade(int score);
 // built on them.
 //   the mods the profile doesn't rate, by name: "#% increased Rarity of Items found"
 QStringList notScoredStats(const GearScore &gear);
-//   the weakest rolls, "Life 40%", under that share of an excellent roll
+//   the missing ones, with the most the item can roll: "Life (up to 149)"
+QStringList missingStats(const GearScore &gear);
+//   the weakest three rolls under that share of an excellent roll, "Life 62 of
+//   up to 149", or "Life 40% of an excellent roll" when it isn't known what
+//   the item can roll. Runes aren't rolls, so they're left out.
 QStringList weakRolls(const GearScore &gear, int underPercent = 50);
 
 // What would raise a gear score, in the words the popup uses. Each is empty
 // when there's nothing to say.
-//   "Missing what your build wants: Life, Fire res."
+//   "Missing what your build wants: Life (up to 149), Fire Resistance (up to 45)."
 QString missingNote(const GearScore &gear);
 //   "Not in the gear score: #% increased Rarity of Items found."
 QString notScoredNote(const GearScore &gear);
-// The stats rolled under a share of an excellent roll, the weakest first and
-// three at most, "Weak rolls: Life 40%, Cold res 35% of an excellent roll."
-// Runes aren't rolls, so they're left out.
-QString weakRollsNote(const GearScore &gear, int underPercent = 50);
 
 // Points per unit of a stat for the build in that slot, with your tweaks; 0
 // when the build doesn't want it there.

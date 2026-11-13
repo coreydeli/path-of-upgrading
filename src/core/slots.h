@@ -36,6 +36,10 @@ bool comparesWithWeakest(const QString &group);
 // "Ring 2" -> "Ring", "Weapon 2" -> "Weapon", "Helmet" -> "Helmet".
 QString groupOf(const QString &slot);
 
+// How a slot is written for the user. The names above are what's saved and
+// matched, so "Offhand" stays as it is there and reads "Off Hand" here.
+QString slotLabel(const QString &slot);
+
 // The other hand of the same weapon set, "Weapon 2" -> "Offhand 2" and
 // "Offhand" -> "Weapon". Empty for a slot that isn't a hand's.
 QString otherHand(const QString &slot);

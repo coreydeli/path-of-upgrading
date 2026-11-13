@@ -121,7 +121,16 @@ ResistRecord snapshotResists(const ResistEntry &entry, const Equipped &equipped,
 {
     ResistRecord r;
     r.entered = entry.values;
-    r.cap = entry.cap.value_or(0) != 0 ? *entry.cap : previous ? previous->cap : 75;
+    for (Element e : allElements) {
+        if (previous && previous->capSet[e]) {
+            r.cap[e] = previous->cap[e];
+            r.capSet[e] = true;
+        } else if (entry.cap[e].value_or(0) > 0) {
+            r.cap[e] = *entry.cap[e];
+        } else if (previous) {
+            r.cap[e] = previous->cap[e];
+        }
+    }
     r.source = source;
     r.at = QDateTime::currentDateTimeUtc();
     r.gear = gearResists(equipped);
@@ -151,7 +160,6 @@ ResistRecord rebaseResists(ResistRecord record, const Item &oldItem, const Item 
 std::optional<LiveResists> liveResists(const ResistRecord &record, const Equipped &equipped)
 {
     LiveResists out;
-    out.cap = record.cap > 0 ? record.cap : 75;
     out.buffer = record.buffer;
     out.source = record.source;
     out.at = record.at;
@@ -160,7 +168,7 @@ std::optional<LiveResists> liveResists(const ResistRecord &record, const Equippe
     const PerElement<double> max = gearMaxResists(equipped);
     bool any = false;
     for (Element e : allElements) {
-        out.caps[e] = out.cap + max[e];
+        out.caps[e] = (record.cap[e] > 0 ? record.cap[e] : 75) + max[e];
         if (const std::optional<double> v = record.entered[e]) {
             out.values[e] = roundHalfUp(*v - record.gear[e] + now[e]);
             any = true;
@@ -178,7 +186,11 @@ QJsonObject toJson(const ResistRecord &record)
         if (record.entered[e])
             o.insert(elementId(e), *record.entered[e]);
     }
-    o.insert(u"cap", record.cap);
+    o.insert(u"cap", perElementJson(record.cap));
+    QJsonObject set;
+    for (Element e : allElements)
+        set.insert(elementId(e), record.capSet[e]);
+    o.insert(u"capSet", set);
     o.insert(u"buffer", record.buffer);
     o.insert(u"bufferSet", record.bufferSet);
     o.insert(u"source", sourceId(record.source));
@@ -197,7 +209,21 @@ ResistRecord resistRecordFromJson(const QJsonObject &o)
         r.gear[e] = gear.value(elementId(e)).toDouble();
     }
     r.source = sourceFromId(o.value(u"source").toString());
-    r.cap = o.value(u"cap").toDouble(75);
+    const QJsonValue cap = o.value(u"cap");
+    if (cap.isDouble()) {
+        // saved with one maximum for all of them, which they all take
+        for (Element e : allElements) {
+            r.cap[e] = cap.toDouble();
+            r.capSet[e] = cap.toDouble() != 75;
+        }
+    } else {
+        const QJsonObject caps = cap.toObject();
+        const QJsonObject set = o.value(u"capSet").toObject();
+        for (Element e : allElements) {
+            r.cap[e] = caps.value(elementId(e)).toDouble(75);
+            r.capSet[e] = set.value(elementId(e)).toBool();
+        }
+    }
     r.bufferSet = o.value(u"bufferSet").toBool();
     r.buffer = o.value(u"buffer").toDouble(defaultBuffer(r.source));
     r.at = QDateTime::fromString(o.value(u"at").toString(), Qt::ISODateWithMs);

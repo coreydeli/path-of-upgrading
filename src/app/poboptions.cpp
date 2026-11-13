@@ -4,6 +4,7 @@
 #include "app/settingsstore.h"
 #include "platform/opener.h"
 #include "services/pobengine.h"
+#include "services/pobfinder.h"
 
 #include <algorithm>
 #include <cmath>
@@ -96,7 +97,9 @@ const PobGuide &PobOptions::guide() const
     if (!m_guide) {
         const PobEngine::State state = m_pob->state();
         const QString runProblem = state == PobEngine::State::Failed ? m_pob->errorString() : QString();
-        m_guide = guideToPob(m_places, pob().location, m_pob->install(), runProblem);
+        const std::optional<PobInstall> &running = m_pob->install();
+        m_guide = guideToPob(m_places, pob().location, running, runProblem,
+                             surveyPob(m_places, pob().location, running));
     }
     return *m_guide;
 }

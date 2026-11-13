@@ -6,7 +6,7 @@ import org.kde.kirigamiaddons.formcard as FormCard
 
 // The slots to upgrade first, each with what to look for and a trade search.
 // It's a card of its own to put on any page.
-FormCard.FormCard {
+Sheet {
     id: card
 
     required property RecommendedUpgrades upgrades

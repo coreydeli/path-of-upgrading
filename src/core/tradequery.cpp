@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <numeric>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -20,16 +21,6 @@ namespace {
 QJsonObject option(const QString &value)
 {
     return {{u"option"_s, value}};
-}
-
-QJsonObject minMax(std::optional<double> min, std::optional<double> max)
-{
-    QJsonObject value;
-    if (min)
-        value.insert(u"min"_s, *min);
-    if (max)
-        value.insert(u"max"_s, *max);
-    return value;
 }
 
 QJsonObject statFilter(const QString &id, const QJsonObject &value)
@@ -89,20 +80,6 @@ int addExcludeGroup(QJsonObject &query, const QList<IgnoreRule> &rules, const St
     stats.append(statGroup(u"not"_s, filters));
     query.insert(u"stats"_s, stats);
     return int(ids.size());
-}
-
-QString modTypeFor(StatOrigin origin)
-{
-    switch (origin) {
-    case StatOrigin::Implicit:
-        return u"implicit"_s;
-    case StatOrigin::Socket:
-        return u"augment"_s;
-    case StatOrigin::Mod:
-    case StatOrigin::Base:
-        break;
-    }
-    return u"explicit"_s;
 }
 
 struct Looseness
@@ -177,6 +154,11 @@ bool isDamageMod(const QString &key)
 
 } // namespace
 
+QString statKeyOf(const QString &tradeText)
+{
+    return keyForm(tradeText);
+}
+
 QString listingStatusId(ListingStatus status)
 {
     switch (status) {
@@ -203,55 +185,6 @@ ListingStatus listingStatusFromId(QStringView id)
     return ListingStatus::Available;
 }
 
-TradeQuery customSearch(const QList<StatPick> &picks, const TradeData &data,
-                        const CustomSearchOptions &options)
-{
-    TradeQuery result;
-    QJsonArray statFilters;
-    QJsonObject equipment;
-    for (const StatPick &pick : picks) {
-        std::optional<StatMatch> m;
-        if (!pick.id.isEmpty()) {
-            m = StatMatch{StatMatch::Kind::Stat, pick.id, {}, pick.idType};
-        } else {
-            m = data.stats.match(pick.key, {.preferLocal = options.preferLocal});
-            // the same kind of mod as on your item, unless a pseudo total covers them all
-            if (m && m->kind == StatMatch::Kind::Stat && m->type != u"pseudo" && pick.origin) {
-                const MatchOptions sameKind{.preferLocal = options.preferLocal,
-                                            .type = modTypeFor(*pick.origin)};
-                if (auto typed = data.stats.match(pick.key, sameKind))
-                    m = typed;
-            }
-        }
-        if (!m) {
-            result.unmatched << pick.key;
-            continue;
-        }
-        if (m->kind == StatMatch::Kind::Equipment)
-            equipment.insert(m->id, minMax(pick.min, pick.max));
-        else
-            statFilters.append(statFilter(m->id, minMax(pick.min, pick.max)));
-    }
-
-    QJsonObject filters;
-    if (!options.matchBase)
-        addCategory(filters, data, options.itemClass);
-    if (!equipment.isEmpty())
-        filters.insert(u"equipment_filters"_s, filterGroup(equipment));
-
-    QJsonObject query = newQuery(options.status);
-    QJsonArray stats;
-    if (!statFilters.isEmpty())
-        stats.append(statGroup(u"and"_s, statFilters));
-    query.insert(u"stats"_s, stats);
-    query.insert(u"filters"_s, filters);
-    if (options.matchBase && !options.baseType.isEmpty())
-        query.insert(u"type"_s, options.baseType);
-    result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);
-    result.body = searchBody(query, u"price"_s, u"asc"_s);
-    return result;
-}
-
 WeightedSearch weightedSearch(const Item &item, const Weights &weights, const TradeData &data,
                               const WeightedSearchOptions &options)
 {
@@ -262,8 +195,15 @@ WeightedSearch weightedSearch(const Item &item, const Weights &weights, const Tr
             natural[x.key] += x.value;
     }
 
+    struct Weighted
+    {
+        QString id;
+        double weight = 0;
+        double own = 0; // what your item adds to the sum
+    };
+
     WeightedSearch result;
-    QJsonArray weighted;
+    QList<Weighted> weighted;
     QJsonObject equipment;
     // sorted, so the same weights always make the same search
     QStringList keys = weights.keys();
@@ -284,8 +224,26 @@ WeightedSearch weightedSearch(const Item &item, const Weights &weights, const Tr
                 result.unmatched << key;
             continue;
         }
-        weighted.append(statFilter(m->id, {{u"weight"_s, w}}));
-        result.current += natural.value(key) * w;
+        weighted.append({m->id, w, natural.value(key) * w});
+    }
+
+    // the trade site limits how many filters a group can have, so keep the
+    // heaviest, in the order they came, and only those count towards your sum
+    QList<qsizetype> heaviest(weighted.size());
+    std::iota(heaviest.begin(), heaviest.end(), 0);
+    std::stable_sort(heaviest.begin(), heaviest.end(), [&](qsizetype a, qsizetype b) {
+        return std::abs(weighted[a].weight) > std::abs(weighted[b].weight);
+    });
+    const qsizetype maxFilters = options.maxFilters > 0 ? options.maxFilters : 40;
+    if (heaviest.size() > maxFilters) {
+        result.dropped = int(heaviest.size() - maxFilters);
+        heaviest.resize(maxFilters);
+    }
+    std::sort(heaviest.begin(), heaviest.end());
+    QJsonArray group;
+    for (qsizetype i : std::as_const(heaviest)) {
+        group.append(statFilter(weighted[i].id, {{u"weight"_s, weighted[i].weight}}));
+        result.current += weighted[i].own;
     }
 
     QJsonObject filters;
@@ -296,8 +254,8 @@ WeightedSearch weightedSearch(const Item &item, const Weights &weights, const Tr
     result.groupMin = std::floor(result.current * (1 + options.minGainPercent / 100)) + 1;
     QJsonObject query = newQuery(options.status);
     QJsonArray stats;
-    if (!weighted.isEmpty())
-        stats.append(statGroup(u"weight"_s, weighted, {{u"min"_s, result.groupMin}}));
+    if (!group.isEmpty())
+        stats.append(statGroup(u"weight"_s, group, {{u"min"_s, result.groupMin}}));
     query.insert(u"stats"_s, stats);
     query.insert(u"filters"_s, filters);
     result.excluded = addExcludeGroup(query, options.ignoreRules, data.stats);

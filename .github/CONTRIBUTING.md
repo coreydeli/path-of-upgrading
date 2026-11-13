@@ -45,22 +45,34 @@ Run the tests on the private bus the README describes:
 cd build && dbus-run-session --config-file=../tests/bus.conf -- ctest -j8
 ```
 
-CI builds on Arch Linux, on Debian 13, on Fedora and on Windows in MSYS2,
-checks the formatting, treats warnings as errors and runs every test. The
-Fedora job also builds the RPM and checks it with rpmlint, and for a release
-another job installs it in a clean Fedora container to see that it starts.
-The Debian job makes the AppImage, and for a release another job starts it in
-clean Fedora and Arch Linux containers. A change has to pass all of it. The
-steps are in `.github/workflows/ci.yml`.
+Each pull request runs one pipeline, in `.github/workflows/release.yml`, in
+stages that each wait for the one before:
 
-The check named CI is the one `beta` requires before a pull request can merge.
-It passes once every other job has passed or been skipped.
+1. Plan works out what changed, and whether the run releases.
+2. Format checks the formatting.
+3. The builds, on Arch Linux, Debian 13, Fedora and Windows in MSYS2, treat
+   warnings as errors and run every test. The Fedora job also checks the RPM
+   with rpmlint, and the Debian job makes the AppImage.
+4. When packages are made, for a release or a pull request that changes how
+   they're made, the Arch, Debian and Fedora packages are each installed in a
+   clean container of their distribution with its own tool, to see that they
+   start, the AppImage is started in clean Fedora, Arch Linux and Ubuntu
+   containers, and the Windows setup program is installed and uninstalled.
+   The Debian package is installed without its recommended packages, so what it
+   needs has to be in its own dependencies, and each package has to bring the
+   Qt SVG icon engine.
+5. CI passes once everything before it has passed or been skipped. It's the
+   check `beta` requires before a pull request can merge.
+6. Release passes once CI has, and makes the release when there's one to make.
+   It's the check `main` requires.
 
-A change to nothing but Markdown files, the `docs` folder or the issue forms
-skips those builds, and they show as skipped, which counts as a pass. Pushes
-to `main` always build. A merge into `beta` doesn't build again, as its pull
-request was checked. A beta release is made by hand, or each night when `beta`
-has new code.
+A change to nothing but Markdown files, the `docs` folder, `.gitignore` or the
+issue forms skips the builds, and they show as skipped, which counts as a
+pass. A push to `main` releases the version once, and otherwise builds only
+when it changes more than the docs. A merge into `beta` doesn't build again,
+as its pull request was checked. A beta release is made by hand (Run workflow
+on `beta`), or each night when `beta` has new code. Run by hand on another
+branch, the pipeline checks that branch.
 
 ## Branches and pull requests
 
@@ -109,10 +121,25 @@ The folders split the code like this:
 
 | Folder | What goes there |
 | --- | --- |
-| `src/core` | Pure logic with no I/O: parsing items, scoring, trade queries, settings and characters |
-| `src/services` | Network and processes: the trade site, poe.ninja and Path of Building |
-| `src/platform` | The operating system: overlay windows, global shortcuts and reading the game, through XWayland on Linux |
+| `src/core` | Pure logic with no I/O: parsing items, scoring, trade queries, the settings keys and the character data |
+| `src/services` | Network, processes and files: the trade site, poe.ninja, Path of Building, and reading and saving your settings, characters and kept data |
+| `src/platform` | The operating system: overlay windows, global shortcuts, the clipboard and reading the game, through XWayland on Linux |
 | `src/app` | The QML app, its models in C++ and the QML in `src/app/qml` |
+
+`data/slotmods.json` lists the mods each slot can roll, with their tiers, and
+the gear notes read it. It comes from Path of Building's Path of Exile 2 data,
+so make it again by hand after a game patch. Point `tools/slot-mods.py` at the
+Path of Building folder that has `Data/ModItem.lua` and `Data/Bases/` in it,
+and at the file to write:
+
+```bash
+python3 -I tools/slot-mods.py <PathOfBuilding2 folder> data/slotmods.json
+```
+
+The Flatpak keeps that folder under
+`~/.var/app/community.pathofbuilding.PathOfBuilding/data/`. Nothing is
+downloaded, so the folder must be there already. Commit the new file like any
+other change.
 
 Keep comments short and plain. Explain what isn't obvious from the code, and
 don't narrate it or make up a reason for it.

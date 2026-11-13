@@ -42,9 +42,6 @@ inline bool isIgnored(const QList<IgnoreRule> &rules, const QString &key)
 // Stats a trade listing must not have.
 QStringList excludedKeys(const QList<IgnoreRule> &rules);
 
-// One line per rule for the popup: "All resistances (excluded)".
-QStringList describe(const QList<IgnoreRule> &rules);
-
 // Rules for unknown presets or without a stat are dropped.
 QList<IgnoreRule> ignoreRulesFromJson(const QJsonArray &array);
 QJsonArray toJson(const QList<IgnoreRule> &rules);

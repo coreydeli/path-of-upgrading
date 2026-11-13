@@ -8,8 +8,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Your characters, the one you play, and the Path of Building builds you
-// import for them.
+// Adding, renaming and removing your characters, picking the one you play,
+// and the Path of Building builds you import for them.
 ColumnsPage {
     id: charactersPage
 
@@ -20,8 +20,8 @@ ColumnsPage {
     // for the window to show the gear page
     signal gearAsked
 
-    title: qsTr("Characters")
-    description: qsTr("The characters you play, and the builds that give them gear.")
+    title: qsTr("Import Character")
+    description: qsTr("Add a character and import a build that gives it gear. Rename or remove the ones you have here too.")
     // On a wide window the list is on the left, with the one you play beside
     // it and the builds you can import for it. Narrower, it's one column.
     maxColumns: wide ? 2 : 3
@@ -37,7 +37,7 @@ ColumnsPage {
         title: qsTr("Your Characters")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "noCharactersText"
             visible: characterRows.count === 0
@@ -56,14 +56,14 @@ ColumnsPage {
                 required property string characterId
                 required property string name
                 required property string build
-                required property string profile
+                required property string source
                 required property string score
                 required property string grade
 
                 objectName: "character:" + name
                 text: name
                 description: build !== "" ? build : qsTr("No build imported")
-                detail: score !== "" ? qsTr("Gear score goes by %1").arg(profile) : ""
+                detail: score !== "" ? source : ""
                 // the list says which it is, so it stays right when that
                 // changes some other way
                 checked: characterId === charactersPage.characters.current
@@ -94,12 +94,13 @@ ColumnsPage {
                         }
                     }
 
-                    // the one you play is framed in gold
-                    OrnateFrame {
+                    // the one you play is framed in the accent
+                    Plate {
                         objectName: "playedFrame"
                         anchors.fill: parent
                         visible: characterRow.checked
-                        lit: true
+                        line: Style.accent(Kirigami.Theme)
+                        lineWidth: 2
                     }
                 }
 
@@ -167,7 +168,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: charactersError.visible
         }
 
@@ -180,7 +181,7 @@ ColumnsPage {
             textItem.color: Kirigami.Theme.negativeTextColor
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: problemsText.visible
         }
 
@@ -200,7 +201,7 @@ ColumnsPage {
         title: qsTr("Add a Character")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: nameField
             objectName: "nameField"
@@ -209,13 +210,13 @@ ColumnsPage {
             onAccepted: addButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: addButton
             objectName: "addButton"
             text: qsTr("Add")
-            description: qsTr("You then play it.")
+            description: qsTr("It becomes the character you play.")
             icon.name: "list-add"
             enabled: nameField.text.trim() !== ""
             onClicked: {
@@ -248,7 +249,7 @@ ColumnsPage {
         title: qsTr("Import a Build")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: codeField
             objectName: "codeField"
@@ -257,22 +258,22 @@ ColumnsPage {
             onAccepted: importButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: importButton
             objectName: "importButton"
             // the main thing on the page
-            icon.color: Style.gold(charactersPage.Kirigami.Theme)
+            icon.color: Style.accent(charactersPage.Kirigami.Theme)
             font.weight: Font.DemiBold
             text: charactersPage.importer.busy ? qsTr("Downloading the Build") : qsTr("Import")
-            description: qsTr("Its gear goes on the character you play, or on a new one when you have none. Items you copied in the game stay, as they say more.")
+            description: qsTr("Its gear goes on the character you play, or on a new one when you have none. Items you copied in the game are kept, as they show more than a build does.")
             icon.name: "document-import"
             enabled: !charactersPage.importer.busy
             onClicked: charactersPage.importer.importText(codeField.text)
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "fileButton"
@@ -282,7 +283,7 @@ ColumnsPage {
             onClicked: fileDialog.open()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: importMessage.visible
         }
 
@@ -302,7 +303,7 @@ ColumnsPage {
         title: qsTr("Saved in Path of Building")
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: savedBuilds
         objectName: "savedBuilds"
         visible: charactersPage.importer.buildsFolder !== ""
@@ -330,7 +331,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "refreshBuildsButton"

@@ -38,6 +38,8 @@ public:
     void setPob(PobEngine *pob);
     // What the popup's buttons search with, once.
     void setFinder(TradeFinder *finder);
+    // Which what you had copied is put back on after the hotkey's copy.
+    void setClipboard(SystemClipboard *clipboard) { m_reader.setClipboard(clipboard); }
 
     // For the hotkey.
     void check();
@@ -47,6 +49,8 @@ public:
     void checkItem(const Item &item);
 
     ItemPopup &popup() { return m_popup; }
+    // That Path of Building is working on the item.
+    bool isChecking() const { return m_judge.isWaiting(); }
 
 Q_SIGNALS:
     // Each item read, gear or not.

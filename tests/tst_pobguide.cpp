@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-#include "core/datafiles.h"
 #include "core/pobguide.h"
+#include "services/datafiles.h"
+#include "services/pobfinder.h"
 
 #include <QDir>
 #include <QTemporaryDir>
@@ -57,10 +58,17 @@ bool addPob(const QString &folder, const QByteArray &manifest = {})
            (manifest.isEmpty() || writeFile(folder + u"/manifest.xml"_s, manifest));
 }
 
+// What the page shows with that one running, as it looks now
+PobGuide guideRunning(const PobPlaces &places, const QString &location,
+                      const std::optional<PobInstall> &running, const QString &runProblem = {})
+{
+    return guideToPob(places, location, running, runProblem, surveyPob(places, location, running));
+}
+
 // What the page is given when the app found it
 PobGuide guideFor(const PobPlaces &places, const QString &location = {}, const QString &runProblem = {})
 {
-    return guideToPob(places, location, findPob(places, location), runProblem);
+    return guideRunning(places, location, findPob(places, location), runProblem);
 }
 
 QString text(const PobGuide &guide)
@@ -111,7 +119,7 @@ private Q_SLOTS:
     void noBuildsFolderToShow()
     {
         Computer computer;
-        const PobGuide guide = guideToPob(computer.places, {}, PobInstall{.folder = u"/pob"_s}, {});
+        const PobGuide guide = guideRunning(computer.places, {}, PobInstall{.folder = u"/pob"_s});
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(u"/pob"_s));
         QVERIFY(guide.buildsAt.isEmpty());
     }
@@ -150,8 +158,8 @@ private Q_SLOTS:
         QVERIFY(guide.installedAt.isEmpty());
         QCOMPARE(guide.steps.size(), 3);
         QVERIFY(guide.steps[0].startsWith(u"1. Install \"Path of Building\" from Flathub, in Discover"));
-        QVERIFY(guide.steps[1].startsWith(u"2. Open \"Path of Building PoE 2\" once"));
-        QCOMPARE(guide.steps[2], u"3. Press Look Again."_s);
+        QVERIFY(guide.steps[1].startsWith(u"2. Open \"Path of Building Community (PoE2)\" once"));
+        QCOMPARE(guide.steps[2], u"3. Press Update."_s);
         QVERIFY(guide.getFlatpak);
         QVERIFY(!guide.getInstaller);
     }
@@ -174,8 +182,8 @@ private Q_SLOTS:
         QVERIFY(computer.installFlatpak());
         const PobGuide guide = guideFor(computer.places);
         QVERIFY(guide.headline.contains(u"not set up for Path of Exile 2"));
-        QVERIFY(guide.steps[0].contains(u"Open \"Path of Building PoE 2\""));
-        QVERIFY(guide.steps.last().contains(u"Look Again"));
+        QVERIFY(guide.steps[0].contains(u"Open \"Path of Building Community (PoE2)\""));
+        QVERIFY(guide.steps.last().contains(u"Update"));
         // it's installed already
         QVERIFY(!guide.getFlatpak);
     }
@@ -243,7 +251,7 @@ private Q_SLOTS:
         QCOMPARE(guide.headline, u"Path of Building was found, but it wouldn't start."_s);
         QVERIFY(guide.details.contains(u"Path of Building didn't start in time."_s));
         QCOMPARE(guide.steps.size(), 2);
-        QVERIFY(guide.steps[1].contains(u"open Path of Building PoE 2 yourself"));
+        QVERIFY(guide.steps[1].contains(u"open Path of Building Community (PoE2) yourself"));
         // it's still where it was found
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(computer.flatpakFolder()));
     }
@@ -253,9 +261,9 @@ private Q_SLOTS:
         Computer computer;
         QVERIFY(computer.installFlatpak());
         QVERIFY(addPob(computer.flatpakFolder()));
-        const PobGuide guide = guideToPob(computer.places, {}, std::nullopt, {});
+        const PobGuide guide = guideRunning(computer.places, {}, std::nullopt);
         QCOMPARE(guide.headline, u"Path of Building is there now."_s);
-        QCOMPARE(guide.steps, QStringList{u"1. Press Look Again."_s});
+        QCOMPARE(guide.steps, QStringList{u"1. Press Update."_s});
     }
 
     void placesItLooks()

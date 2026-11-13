@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(path-of-upgrading
-    VERSION 0.6.0
+    VERSION 0.7.0
     DESCRIPTION "Path of Exile 2 item overlay that checks items against your build"
     HOMEPAGE_URL "https://github.com/coreydeli/path-of-upgrading"
     LANGUAGES CXX)
@@ -44,6 +44,7 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Widgets Qml Quick Quic
 # The window is Kirigami, which is only loaded at run time, as is the key
 # recorder from KDeclarative. Debian 13 has these.
 find_package(KF6Kirigami 6.13 REQUIRED)
+find_package(KF6KirigamiPlatform 6.13 REQUIRED)
 find_package(KF6KirigamiAddons 1.7 REQUIRED)
 find_package(KF6Declarative 6.13 REQUIRED)
 # The colors of the app are a KDE color scheme, which this applies
@@ -59,6 +60,19 @@ option(BUILD_TESTING "Build the unit tests" ON)
 # The release builds of a beta turn this on. Trade searches start on in a beta,
 # and off in a release until they've been tested more, see isBetaBuild().
 option(POU_BETA "Build a beta, which has trade searches on until you turn them off" OFF)
+
+# The version this build says it is, as the release tag does: 0.7.0 or
+# 0.7.0-beta.4. The updater compares it with the releases on GitHub, and a
+# beta's number isn't in the project version. The release builds set it.
+set(POU_BUILD_VERSION "" CACHE STRING "The version, with a beta's number")
+if(NOT POU_BUILD_VERSION)
+    set(POU_BUILD_VERSION "${PROJECT_VERSION}")
+endif()
+
+# How this build is installed, so the updater knows what it can do:
+# source (the default), arch, deb or rpm. The AppImage and Windows are known
+# when it runs. The package builds set it.
+set(POU_INSTALL_KIND "source" CACHE STRING "How the build is installed")
 
 add_subdirectory(src)
 add_subdirectory(data)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "core/characterstore.h"
+#include "core/characterdata.h"
 #include "core/evaluation.h"
 #include "core/item.h"
 #include "core/mapcheck.h"
@@ -98,6 +98,8 @@ public:
     // straight away, and again once Path of Building has answered.
     void check(const Item &item);
     const ItemCheck &current() const { return m_check; }
+    // That Path of Building hasn't answered for the item yet.
+    bool isWaiting() const { return !m_reply.isNull(); }
 
 Q_SIGNALS:
     void checked(const ItemCheck &check);

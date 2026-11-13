@@ -21,8 +21,10 @@ Item {
     implicitWidth: Kirigami.Units.gridUnit * 20
     implicitHeight: contentHeight + 2 * Kirigami.Units.gridUnit
 
-    OrnateFrame {
+    Plate {
         anchors.fill: parent
+        line: Style.frame(Kirigami.Theme)
+        lineWidth: 1
     }
 
     // just the picked slot
@@ -86,8 +88,8 @@ Item {
                     QQC2.Label {
                         objectName: "panelSlot"
                         Layout.fillWidth: true
-                        text: content.slot
-                        color: Style.gold(Kirigami.Theme)
+                        text: Words.slot(content.slot)
+                        color: Style.accent(Kirigami.Theme)
                         font: Style.sectionFont(Kirigami.Theme.defaultFont)
                         elide: Text.ElideRight
                         Accessible.role: Accessible.Heading
@@ -96,7 +98,7 @@ Item {
                     QQC2.Label {
                         objectName: "panelItem"
                         Layout.fillWidth: true
-                        text: content.name !== "" ? content.name : qsTr("Nothing saved")
+                        text: content.name !== "" ? content.name : qsTr("Not saved yet")
                         color: content.name !== "" ? Style.rarity(content.rarity, Kirigami.Theme) : Kirigami.Theme.disabledTextColor
                         font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
                         wrapMode: Text.Wrap
@@ -130,10 +132,7 @@ Item {
                 }
             }
 
-            Ornament {
-                Layout.fillWidth: true
-                diamond: !Style.plain
-            }
+            RowRule {}
 
             SlotNotes {
                 objectName: "panelNotes"
@@ -160,6 +159,26 @@ Item {
                     objectName: "panelLookFor"
                     Layout.fillWidth: true
                     text: panel.upgrades.chosenLookFor
+                    wrapMode: Text.Wrap
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                visible: panel.upgrades.chosenCanRoll.length > 0
+                spacing: Kirigami.Units.largeSpacing
+
+                QQC2.Label {
+                    Layout.alignment: Qt.AlignTop
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+                    text: qsTr("Can roll")
+                    color: Kirigami.Theme.disabledTextColor
+                }
+
+                QQC2.Label {
+                    objectName: "panelCanRoll"
+                    Layout.fillWidth: true
+                    text: panel.upgrades.chosenCanRoll.join("\n")
                     wrapMode: Text.Wrap
                 }
             }
@@ -199,9 +218,9 @@ Item {
                 QQC2.Button {
                     objectName: "panelTakeOff"
                     visible: content.name !== ""
-                    text: qsTr("Take Off")
+                    text: qsTr("Unequip")
                     icon.name: "list-remove"
-                    Accessible.name: qsTr("Take Off %1").arg(content.slot)
+                    Accessible.name: qsTr("Unequip %1").arg(Words.slot(content.slot))
                     onClicked: panel.gear.takeOff(content.slot)
                 }
             }

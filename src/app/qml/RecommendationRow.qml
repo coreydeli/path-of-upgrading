@@ -17,7 +17,7 @@ FormCard.AbstractFormDelegate {
     required property string base
     required property string score
     required property string grade
-    // "Life 55 or more, Fire res 24 or more"
+    // "Life 55 or more, Fire Resistance 24 or more"
     required property string lookFor
     // what its trade search is up to
     required property tradeReport trade
@@ -38,7 +38,7 @@ FormCard.AbstractFormDelegate {
     topPadding: Kirigami.Units.largeSpacing
     bottomPadding: Kirigami.Units.largeSpacing
     Accessible.name: slot
-    Accessible.description: name !== "" ? qsTr("%1, look for %2").arg(name).arg(lookFor) : qsTr("Nothing saved, look for %1").arg(lookFor)
+    Accessible.description: name !== "" ? qsTr("%1, look for %2").arg(name).arg(lookFor) : qsTr("Not saved yet, look for %1").arg(lookFor)
 
     Kirigami.Separator {
         visible: !row.first
@@ -69,7 +69,7 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "slotName"
                 Layout.fillWidth: true
-                text: row.slot
+                text: Words.slot(row.slot)
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
                 Accessible.ignored: true
@@ -78,7 +78,7 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "itemName"
                 Layout.fillWidth: true
-                text: row.name !== "" ? row.name : qsTr("Nothing saved")
+                text: row.name !== "" ? row.name : qsTr("Not saved yet")
                 color: row.name !== "" ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
                 wrapMode: Text.Wrap
                 Accessible.ignored: true

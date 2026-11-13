@@ -2,7 +2,10 @@
 #include "app/gearscoring.h"
 
 #include "app/activecharacter.h"
+#include "app/buildweigher.h"
+#include "core/weighedprofile.h"
 
+#include <QDate>
 #include <QLocale>
 #include <algorithm>
 #include <array>
@@ -26,20 +29,20 @@ QString listed(const QStringList &items)
     return QLocale(QLocale::English).createSeparatedList(items);
 }
 
-// "Counts on Boots", or "Counts in every slot but Weapon and Jewel".
+// "Counts on Boots.", or "Counts in every slot but Weapon and Jewel."
 QString whereItCounts(const QStringList &groups)
 {
     const QStringList &all = ratedGroups();
     if (groups.size() == all.size())
-        return u"Counts in every slot"_s;
+        return u"Counts in every slot."_s;
     if (groups.size() * 2 <= all.size())
-        return u"Counts on %1"_s.arg(listed(groups));
+        return u"Counts on %1."_s.arg(listed(groups));
     QStringList others;
     for (const QString &group : all) {
         if (!groups.contains(group))
             others << group;
     }
-    return u"Counts in every slot but %1"_s.arg(listed(others));
+    return u"Counts in every slot but %1."_s.arg(listed(others));
 }
 
 // The default one for none.
@@ -50,11 +53,13 @@ QString idOf(const Character &character)
 
 } // namespace
 
-GearScoring::GearScoring(ActiveCharacter *active, QObject *parent)
+GearScoring::GearScoring(ActiveCharacter *active, BuildWeigher *weigher, QObject *parent)
     : QAbstractListModel(parent)
     , m_active(active)
+    , m_weigher(weigher)
 {
     connect(active, &ActiveCharacter::changed, this, &GearScoring::refresh);
+    connect(weigher, &BuildWeigher::weighingChanged, this, &GearScoring::changed);
     refresh();
 }
 
@@ -75,7 +80,7 @@ QVariant GearScoring::data(const QModelIndex &index, int role) const
     case WhereRole:
         if (untweaked(stat.label) == 0)
             return QString(whereItCounts(stat.groups) +
-                           u". Not at all to start with, as your build has Chaos Inoculation"_s);
+                           u" Not at all to start with, as your build has Chaos Inoculation."_s);
         return whereItCounts(stat.groups);
     case LevelRole:
         return levelOf(stat.label);
@@ -93,40 +98,65 @@ QString GearScoring::character() const
     return m_active->character().name;
 }
 
-QStringList GearScoring::profiles() const
+QString GearScoring::state() const
 {
-    QStringList names;
-    for (const BuildProfile &p : buildProfiles())
-        names << p.name;
-    return names << u"None, by my stat weights alone"_s;
-}
-
-int GearScoring::profile() const
-{
-    // none, after the profiles, when no profile has the id
-    const QList<BuildProfile> &all = buildProfiles();
-    return int(std::ranges::find(all, idOf(m_active->character()), &BuildProfile::id) - all.begin());
-}
-
-void GearScoring::setProfile(int profile)
-{
-    const QList<BuildProfile> &all = buildProfiles();
-    if (profile < 0 || profile > all.size())
-        return;
-    // choosing the one you have is a choice too, but only the first time
-    if (profile == this->profile() && m_active->character().profilePicked)
-        return;
-    const QString id = profile < all.size() ? all.at(profile).id : noBuildProfile.toString();
-    change([&id](Character &character) {
-        character.buildProfile = id;
-        character.profilePicked = true;
-    });
+    const Character &character = m_active->character();
+    if (character.weightsOnly)
+        return u"Judged by your stat weights alone"_s;
+    if (m_weigher->isWeighing())
+        return u"Weighing your build with Path of Building"_s;
+    if (character.weighed)
+        return u"Weighed by Path of Building for your build on %1."_s.arg(weighedOn());
+    return u"A general start, until Path of Building weighs your build."_s;
 }
 
 QString GearScoring::summary() const
 {
-    const BuildProfile *p = buildProfile(m_active->character().buildProfile);
-    return p ? p->summary : u"Items are judged by your stat weights alone, with no gear score."_s;
+    const Character &character = m_active->character();
+    if (character.weightsOnly)
+        return u"Items are judged by your stat weights alone, with no gear score."_s;
+    const BuildProfile *p = buildProfile(character.buildProfile);
+    if (!p)
+        return {};
+    if (character.weighed)
+        return u"Slots Path of Building didn't weigh go by the %1 profile: %2"_s.arg(p->name, p->summary);
+    return p->summary;
+}
+
+QString GearScoring::weighedOn() const
+{
+    const std::optional<WeighedProfile> &weighed = m_active->character().weighed;
+    if (!weighed)
+        return {};
+    const QDate date = QDate::fromString(weighed->date, Qt::ISODate);
+    return date.isValid() ? QLocale().toString(date, QLocale::LongFormat) : weighed->date;
+}
+
+bool GearScoring::isWeighing() const
+{
+    return m_weigher->isWeighing();
+}
+
+bool GearScoring::canWeigh() const
+{
+    return m_weigher->canWeigh();
+}
+
+bool GearScoring::weightsOnly() const
+{
+    return m_active->character().weightsOnly;
+}
+
+void GearScoring::setWeightsOnly(bool on)
+{
+    if (on == weightsOnly())
+        return;
+    change([on](Character &character) { character.weightsOnly = on; });
+}
+
+void GearScoring::weighAgain()
+{
+    m_weigher->weighAgain();
 }
 
 QStringList GearScoring::levels() const
@@ -171,15 +201,24 @@ void GearScoring::reset()
 
 void GearScoring::refresh()
 {
-    const QString id = idOf(m_active->character());
-    if (id == m_profile) {
+    const Character &character = m_active->character();
+    QList<TweakableStat> stats;
+    // none with your weights alone, as the profile isn't used
+    if (const BuildProfile *start = character.weightsOnly ? nullptr : buildProfile(idOf(character))) {
+        stats = tweakableStats(ratedProfile(*start, character.weighed));
+        // a stat the start profile counts only where the weighing took over
+        if (character.weighed)
+            stats.removeIf([](const TweakableStat &s) { return s.groups.isEmpty(); });
+    }
+    const bool same = std::ranges::equal(stats, m_stats, [](const TweakableStat &a, const TweakableStat &b) {
+        return a.label == b.label && a.groups == b.groups;
+    });
+    if (same) {
         if (!m_stats.isEmpty())
             Q_EMIT dataChanged(index(0), index(int(m_stats.size()) - 1), {WhereRole, LevelRole});
     } else {
         beginResetModel();
-        m_profile = id;
-        const BuildProfile *p = buildProfile(id);
-        m_stats = p ? tweakableStats(*p) : QList<TweakableStat>();
+        m_stats = stats;
         endResetModel();
     }
     Q_EMIT changed();

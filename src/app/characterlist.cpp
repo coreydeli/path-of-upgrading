@@ -38,6 +38,7 @@ CharacterList::CharacterList(CharacterStore *store, ActiveCharacter *active, Set
     , m_active(active)
     , m_settings(settings)
     , m_current(settings->settings().character)
+    , m_priorities(settings->settings().pob.priorities)
 {
     connect(settings, &SettingsStore::changed, this, &CharacterList::followSettings);
     // the build of the one you play is read off the rows
@@ -48,11 +49,26 @@ CharacterList::CharacterList(CharacterStore *store, ActiveCharacter *active, Set
     connect(this, &QAbstractItemModel::dataChanged, this, follow);
     connect(this, &QAbstractItemModel::modelReset, this, follow);
     connect(this, &QAbstractItemModel::rowsRemoved, this, follow);
+    // and so does where it is, as rows come and go
+    const auto followRow = [this] {
+        Q_EMIT currentRowChanged();
+    };
+    connect(this, &CharacterList::currentChanged, this, followRow);
+    connect(this, &QAbstractItemModel::modelReset, this, followRow);
+    connect(this, &QAbstractItemModel::rowsInserted, this, followRow);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, followRow);
+
+    const auto followCount = [this] {
+        Q_EMIT countChanged();
+    };
+    connect(this, &QAbstractItemModel::modelReset, this, followCount);
+    connect(this, &QAbstractItemModel::rowsInserted, this, followCount);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, followCount);
     // wearing something or tuning the gear score changes the one you play
     connect(active, &ActiveCharacter::changed, this, [this] {
         const int row = int(m_ids.indexOf(m_active->id()));
         if (row >= 0)
-            Q_EMIT dataChanged(index(row), index(row), {ProfileRole, ScoreRole, GradeRole});
+            Q_EMIT dataChanged(index(row), index(row), {SourceRole, ScoreRole, GradeRole});
     });
 }
 
@@ -91,14 +107,15 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
         return {};
     case BuildRole:
         return m_builds.value(id);
-    case ProfileRole: {
+    case SourceRole: {
         const Character *character = m_store->find(id);
         if (!character)
             return {};
-        if (character->buildProfile == noBuildProfile)
-            return u"Your stat weights"_s;
-        const BuildProfile *profile = buildProfile(character->buildProfile);
-        return profile ? profile->name : QString();
+        if (character->weightsOnly)
+            return u"Judged by your stat weights alone"_s;
+        if (character->weighed)
+            return u"Weighed by Path of Building for your build"_s;
+        return u"A general start, until Path of Building weighs your build"_s;
     }
     case ScoreRole:
     case GradeRole: {
@@ -115,14 +132,14 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> CharacterList::roleNames() const
 {
     return {
-        {IdRole, "characterId"},  {NameRole, "name"},   {BuildRole, "build"},
-        {ProfileRole, "profile"}, {ScoreRole, "score"}, {GradeRole, "grade"},
+        {IdRole, "characterId"}, {NameRole, "name"},   {BuildRole, "build"},
+        {SourceRole, "source"},  {ScoreRole, "score"}, {GradeRole, "grade"},
     };
 }
 
 std::pair<QString, QString> CharacterList::rating(const Character &character) const
 {
-    const PobPriorities &priorities = m_settings->settings().pob.priorities;
+    const PobPriorities &priorities = m_priorities;
     // each slot is scored on its own, and the average is over the rated ones
     const GearScoreFn slotScore = [&](const Item &item, const QString &slot) -> std::optional<double> {
         const std::optional<GearScore> score = gearScore(item, gearScoreOptions(character, slot, priorities));
@@ -191,9 +208,12 @@ bool CharacterList::remove(const QString &id)
     const int row = int(m_ids.indexOf(id));
     if (row < 0)
         return false;
-    const QString name = m_store->find(id)->name;
-    if (!m_store->remove(id))
-        return fail(u"Couldn't delete %1: %2"_s.arg(name, m_store->errorString()));
+    // none when it's gone from the store already, and only its row is left
+    if (const Character *character = m_store->find(id)) {
+        const QString name = character->name;
+        if (!m_store->remove(id))
+            return fail(u"Couldn't delete %1: %2"_s.arg(name, m_store->errorString()));
+    }
     beginRemoveRows({}, row, row);
     m_ids.removeAt(row);
     m_builds.remove(id);
@@ -224,10 +244,16 @@ std::optional<BuildImport> CharacterList::importBuild(const QString &id, const Q
 
 void CharacterList::followSettings()
 {
-    const QString current = m_settings->settings().character;
-    if (current == m_current)
+    const Settings &settings = m_settings->settings();
+    // which rate resistances higher when they come first, for every character
+    if (settings.pob.priorities != m_priorities) {
+        m_priorities = settings.pob.priorities;
+        if (!m_ids.isEmpty())
+            Q_EMIT dataChanged(index(0), index(int(m_ids.size()) - 1), {ScoreRole, GradeRole});
+    }
+    if (settings.character == m_current)
         return;
-    m_current = current;
+    m_current = settings.character;
     Q_EMIT currentChanged();
 }
 
@@ -258,6 +284,8 @@ void CharacterList::changed(const QString &id)
         beginMoveRows({}, from, from, {}, to > from ? to + 1 : to);
         m_ids = ids;
         endMoveRows();
+        // a move can shift where the one you play is
+        Q_EMIT currentRowChanged();
     }
     const QModelIndex row = index(to);
     Q_EMIT dataChanged(row, row);

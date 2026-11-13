@@ -7,8 +7,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// What each stat is worth to the character you play, for judging items
-// without a build profile and searching the trade site by your weights.
+// What each stat is worth to the character you play, for judging items by
+// them alone and searching the trade site by your weights.
 ColumnsPage {
     id: weightsPage
 
@@ -81,12 +81,12 @@ ColumnsPage {
         title: weightsPage.weights.character !== "" ? qsTr("For %1").arg(weightsPage.weights.character) : qsTr("Stat Weights")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: weightsPage.weights.character === ""
-            text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+            text: qsTr("You haven't picked a character yet.")
+            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
         TableHeader {
@@ -99,7 +99,7 @@ ColumnsPage {
             controlsWidth: weightsPage.boxWidth
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: weightsPage.wide && weightRows.count > 0
         }
 
@@ -114,17 +114,17 @@ ColumnsPage {
             objectName: "noWeightsText"
             visible: weightRows.count === 0
             text: qsTr("You have no weights.")
-            description: qsTr("Every item comes to 0 by them. Add some, suggest some from your gear, or go back to the defaults.")
+            description: qsTr("Every item scores 0 by them. Add some, suggest some from your gear, or go back to the defaults.")
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
         }
 
         FormCard.FormButtonDelegate {
             objectName: "addStatButton"
             // the main thing on the page
-            icon.color: Style.gold(weightsPage.Kirigami.Theme)
+            icon.color: Style.accent(weightsPage.Kirigami.Theme)
             font.weight: Font.DemiBold
             text: qsTr("Add a Stat")
             icon.name: "list-add"
@@ -148,7 +148,7 @@ ColumnsPage {
             onClicked: weightsPage.weights.reset()
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: weightsError.visible
         }
 
@@ -164,7 +164,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "weightsHelp"
-        text: qsTr("A weight is what one of a stat is worth to you, in points. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 life. The popup judges items by them when the gear score has no build profile, and so does searching the trade site by your weights.")
+        text: qsTr("A weight is what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges items by them when you turn on Judge by my stat weights alone on the Gear Score page, and so does searching the trade site by your weights.")
     }
 
     StatPickerDialog {
@@ -211,7 +211,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         QQC2.ScrollView {
             id: suggestionsView

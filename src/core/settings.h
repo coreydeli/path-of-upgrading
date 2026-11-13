@@ -9,11 +9,10 @@
 
 #include <QString>
 
-class QSettings;
-
 namespace pou {
 
-// What you choose in the settings window, kept between runs.
+// What you choose in the settings window, kept between runs in the file
+// services/settingsfile.h reads and writes.
 
 // The limits on how often the rate is asked for again.
 constexpr int minRateMinutes = 1;
@@ -57,8 +56,9 @@ struct OverlaySettings
 {
     QString hotkey = QStringLiteral("F2");
     QString resultsHotkey = QStringLiteral("Ctrl+Shift+D");
-    bool advancedCopy = false;  // copy with Ctrl+Alt+C, which tells prefixes from suffixes
-    bool watchClipboard = true; // also check gear you copy yourself
+    bool advancedCopy = false;    // copy with Ctrl+Alt+C, which tells prefixes from suffixes
+    bool watchClipboard = true;   // also check gear you copy yourself
+    bool putBackClipboard = true; // what you had copied, after the hotkey's copy
     PopupPosition position = PopupPosition::Cursor;
     double scale = 1;         // popup size
     bool compact = true;      // the rest of the popup behind More
@@ -72,6 +72,19 @@ struct OverlaySettings
     friend bool operator==(const OverlaySettings &, const OverlaySettings &) = default;
 };
 
+struct UpdateSettings
+{
+    bool checkOnLaunch = true; // and about once a day, asking GitHub for a newer release
+    // Betas count as newer releases. A beta starts with this on, and a release
+    // with it off, until you choose.
+    bool includeBetas = isBetaBuild();
+    // The version you chose to skip, like "0.7.0-beta.5", which isn't offered
+    // again. A newer one is.
+    QString skipped;
+
+    friend bool operator==(const UpdateSettings &, const UpdateSettings &) = default;
+};
+
 // Whose colors the app uses.
 enum class ColorTheme {
     App,    // its own, from the color scheme that comes with it
@@ -82,7 +95,7 @@ ColorTheme colorThemeFromId(QStringView id);
 
 // How much is drawn besides the colors.
 enum class Decorations {
-    Full, // corner pieces, the glow, gauges and the popup's animation
+    Full, // cut corners and the popup's animation
     Plain
 };
 QString decorationsId(Decorations decorations);
@@ -102,7 +115,7 @@ struct AppearanceSettings
     // Empty is the app's own heading font, "text" is the text font, and else
     // a font family.
     QString headingFont;
-    QString textFont;    // a font family, empty is the desktop's
+    QString textFont;    // a font family, empty is the app's own
     double textSize = 0; // in points, 0 is the desktop's
 
     friend bool operator==(const AppearanceSettings &, const AppearanceSettings &) = default;
@@ -116,18 +129,10 @@ struct Settings
     TradeSettings trade;
     PobSettings pob;
     OverlaySettings overlay;
+    UpdateSettings updates;
     AppearanceSettings appearance;
 
     friend bool operator==(const Settings &, const Settings &) = default;
 };
-
-// Anything missing or unreadable reads as its default, and numbers are held
-// to their limits. Trade searches are on or off as a beta or a release starts
-// them, until the file says what you chose.
-Settings loadSettings(const QSettings &store, bool beta = isBetaBuild());
-// Leaves out whether trade searches are on while it's what a beta or a release
-// starts with and you haven't chosen, so a later version still starts them its
-// own way.
-void saveSettings(QSettings &store, const Settings &settings, bool beta = isBetaBuild());
 
 } // namespace pou

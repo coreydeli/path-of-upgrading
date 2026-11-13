@@ -18,14 +18,6 @@ Item {
     implicitHeight: content.implicitHeight + 6 * Kirigami.Units.largeSpacing
     implicitWidth: Kirigami.Units.gridUnit * 14
 
-    OrnateFrame {
-        anchors {
-            fill: parent
-            margins: Kirigami.Units.largeSpacing
-        }
-    }
-
-    // the frame's ornaments are laid over this, so it sits inside them
     ColumnLayout {
         id: content
 
@@ -41,14 +33,15 @@ Item {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
             font: Style.titleFont(Kirigami.Theme.defaultFont, 1.15)
-            color: Style.gold(Kirigami.Theme)
+            // the name is a slab of paper
+            color: Style.ink
+            topPadding: 4
+            bottomPadding: 4
+            background: Rectangle {
+                color: Style.paper
+            }
             text: qsTr("Path of Upgrading")
             wrapMode: Text.WordWrap
-        }
-
-        Ornament {
-            Layout.fillWidth: true
-            diamond: !Style.plain
         }
 
         ScoreGauge {

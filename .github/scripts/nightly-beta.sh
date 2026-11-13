@@ -23,7 +23,7 @@ if git diff --quiet "$last" HEAD; then
     echo "Nothing has changed since $last."
     exit 1
 fi
-if BASE=$last GITHUB_REF='' PACKAGE='' sh .github/scripts/changed-code.sh | grep -qx 'code=true'; then
+if BASE=$last PACKAGE='' sh .github/scripts/changed-code.sh | grep -qx 'code=true'; then
     echo "There's new code since $last."
     exit 0
 fi

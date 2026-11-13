@@ -144,7 +144,7 @@ QList<ReportFigure> headlineOf(const PobVerdict &v)
             .label = u"Effective HP"_s, .change = signedNumber(*ehp) + u'%', .tone = toneOf(*ehp)};
     }
     if (v.resistGain != 0) {
-        headline << ReportFigure{.label = u"Resistance toward the caps"_s,
+        headline << ReportFigure{.label = u"Resistances toward the caps"_s,
                                  .change = signedNumber(v.resistGain),
                                  .tone = toneOf(v.resistGain)};
     }
@@ -209,7 +209,7 @@ QList<ReportFigure> pobChanges(const PobVerdict &v)
         // past the cap only the cap counts
         if (r.capped && r.wasCapped && change == 0)
             continue;
-        ReportFigure f{.label = elementName(r.element) + u" res"_s,
+        ReportFigure f{.label = elementName(r.element) + u" Resistance"_s,
                        .change = (change > 0 ? u"+"_s : QString()) + percent(change),
                        .from = percent(r.from),
                        .to = percent(r.to)};
@@ -498,7 +498,7 @@ void putMap(ItemReport &report, const MapCheck &map)
                               : u"Checked against your character. Nothing here is worse for it."_s;
     }
     report.mapExperimental =
-        u"Experimental: checking maps is still being tested, and is only in beta versions."_s;
+        u"Experimental: checking waystones and tablets is still being tested, and is only in beta versions."_s;
 }
 
 } // namespace
@@ -514,7 +514,7 @@ ItemReport reportOf(const ItemCheck &check)
     report.rarity = item.rarity;
     report.gear = !item.slot.isEmpty();
     if (!r.isEquipped)
-        report.wearIn = slotsFor(item);
+        report.wearIn = e.wearIn;
     for (const PlaceChange &place : check.places)
         report.placements << placementOf(place);
     if (!item.baseType.isEmpty() && item.baseType != item.name)
@@ -571,7 +571,6 @@ ItemReport reportOf(const ItemCheck &check)
     if (e.gear && e.gear->isRated() && e.mode != ScoreMode::PathOfBuilding) {
         report.gearScore = QString::number(e.gear->score);
         report.gearGrade = e.gear->grade;
-        report.gearBuild = e.gear->buildName;
         const GearScore *yours = e.gearEquipped && e.gearEquipped->isRated() ? &*e.gearEquipped : nullptr;
         if (yours)
             report.yourGearScore = QString::number(yours->score);

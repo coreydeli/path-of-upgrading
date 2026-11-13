@@ -14,7 +14,9 @@
 #include "fakesecretstore.h"
 #include "itemtexts.h"
 #include "maptexts.h"
+#include "stylefortests.h"
 #include "tradefixtures.h"
+#include "updatetexts.h"
 
 #include <QDir>
 #include <QGuiApplication>
@@ -167,6 +169,7 @@ struct Running
     FakeGameInput *input = new FakeGameInput;
     FakeGlobalShortcuts *shortcuts;
     FakeSecretStore *keyring;
+    FakeOpener *opener = new FakeOpener;
     FakeNetwork *network;
     App app;
 
@@ -177,7 +180,7 @@ struct Running
         , keyring(theirKeyring)
         , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
-              std::unique_ptr<SecretStore>(keyring), std::make_unique<FakeOpener>(),
+              std::unique_ptr<SecretStore>(keyring), std::unique_ptr<Opener>(opener),
               std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths,
               std::unique_ptr<GameWatcher>(theGame))
     {}
@@ -231,11 +234,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
-        // Fusion, as on Linux, as Windows' own style can't draw offscreen
-        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
-        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
-        // platform plugin of its own
-        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
+        // the app's own controls, as the program has
+        useStyleInTests();
     }
 
 private Q_SLOTS:
@@ -310,6 +310,33 @@ private Q_SLOTS:
         QCOMPARE(r.app.checker().popup().scale(), 0.75);
     }
 
+    void updatesFollowTheSettings()
+    {
+        Folders folders;
+        Settings settings;
+        settings.trade.enabled = false;
+        settings.updates.includeBetas = true;
+        folders.set(settings);
+        auto *network = new FakeNetwork;
+        network->answers = {{.body = fakeReleases({fakeRelease(u"99.0.0-beta.1"_s, true)})}};
+        Running r(folders, desktop(), network);
+        // main() starts the checks, so a program under test asks nothing
+        QCOMPARE(network->sent.size(), 0);
+
+        r.app.updateChecker().check();
+        QVERIFY(QTest::qWaitFor([&] { return !r.app.updateChecker().isChecking(); }, 1000));
+        QCOMPARE(r.app.updateChecker().newest()->tag, u"v99.0.0-beta.1"_s);
+        QVERIFY(r.app.updateChecker().isOffered());
+
+        settings.updates.skipped = u"99.0.0-beta.1"_s;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(r.app.updateChecker().isSkipped());
+
+        settings.updates.includeBetas = false;
+        QVERIFY(r.app.settings().set(settings));
+        QVERIFY(!r.app.updateChecker().newest());
+    }
+
     void pobFound()
     {
         Folders folders;
@@ -353,6 +380,32 @@ private Q_SLOTS:
         wrapper.close();
         r.app.lookForPob();
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
+    }
+
+    void updateReadsSavedBuilds()
+    {
+        Folders folders;
+        QTemporaryDir later;
+        Settings settings;
+        settings.pob.location = later.path();
+        folders.set(settings);
+        Running r(folders);
+        QFile wrapper(later.filePath(u"HeadlessWrapper.lua"_s));
+        QVERIFY(wrapper.open(QIODevice::WriteOnly));
+        wrapper.close();
+        r.app.updatePob();
+        QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
+        QVERIFY(r.app.buildImporter()->builds().isEmpty());
+
+        // a build saved since
+        const QString saved = r.app.buildImporter()->buildsFolder() + u"/Witch.xml"_s;
+        QVERIFY(QDir().mkpath(QFileInfo(saved).path()));
+        QFile build(saved);
+        QVERIFY(build.open(QIODevice::WriteOnly));
+        build.close();
+        QVERIFY(r.app.buildImporter()->builds().isEmpty());
+        r.app.updatePob();
+        QCOMPARE(r.app.buildImporter()->builds().size(), 1);
     }
 
     void settingsPages()
@@ -767,11 +820,11 @@ private Q_SLOTS:
         // changing how items are judged makes one too
         Folders folders;
         Running r(folders);
-        r.app.gearScoring()->setProfile(1);
+        r.app.gearScoring()->setWeightsOnly(true);
         QCOMPARE(r.app.characters().ids().size(), 1);
         QCOMPARE(r.app.character().character().name, u"My character"_s);
-        QCOMPARE(r.app.character().character().buildProfile, u"es-caster"_s);
-        QCOMPARE(r.app.gearScoring()->profile(), 1);
+        QVERIFY(r.app.character().character().weightsOnly);
+        QVERIFY(r.app.gearScoring()->weightsOnly());
         QCOMPARE(r.app.gearScoring()->error(), QString());
     }
 
@@ -783,10 +836,12 @@ private Q_SLOTS:
         settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
         folders.set(settings);
         Running r(folders);
-        QCOMPARE(r.checked().gearBuild, u"Life and resistances"_s);
-        r.app.gearScoring()->setProfile(1);
-        QCOMPARE(r.app.characters().find(settings.character)->buildProfile, u"es-caster"_s);
-        QCOMPARE(r.app.checker().popup().report().gearBuild, u"Energy Shield spellcaster"_s);
+        QVERIFY(!r.checked().gearScore.isEmpty());
+        r.app.gearScoring()->setWeightsOnly(true);
+        QVERIFY(r.app.characters().find(settings.character)->weightsOnly);
+        QVERIFY(r.app.checker().popup().report().scoreLabel.startsWith(u"by your weights"_s));
+        r.app.gearScoring()->setWeightsOnly(false);
+        QVERIFY(!r.checked().gearScore.isEmpty());
     }
 
     void statWeights()
@@ -1215,6 +1270,11 @@ private Q_SLOTS:
         QCOMPARE(results.league(), u"Runes of Aldur"_s);
         QCOMPARE(results.url(), r.app.finder().found()->url);
         QCOMPARE(results.rowCount(), 0);
+        // the popup and the results window open it in the browser through the desktop
+        QVERIFY(r.opener->opened.isEmpty());
+        r.app.checker().popup().openTradeSite();
+        r.app.resultsPanel().openTradeSite();
+        QCOMPARE(r.opener->opened, (QList<QUrl>{results.url(), results.url()}));
         const QUrl fetch = tradeFetchUrl({u"a"_s, u"b"_s}, u"Ab3dE9"_s);
         QVERIFY(!r.asked().contains(fetch));
 
@@ -1224,7 +1284,8 @@ private Q_SLOTS:
         QVERIFY(r.asked().contains(fetch));
         QCOMPARE(results.rowCount(), 2);
         QCOMPARE(results.data(results.index(0), TradeResults::PriceRole).toString(), u"3 div"_s);
-        QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(), u"about 1200 ex"_s);
+        QCOMPARE(results.data(results.index(1), TradeResults::ConvertedRole).toString(),
+                 u"about 1200 Exalted Orbs"_s);
     }
 
     void tradeResultsJudged()
@@ -1292,7 +1353,8 @@ private Q_SLOTS:
         QVERIFY(finished.wait());
         QCOMPARE(r.app.results().total(), 2);
         r.network->answers = {{.status = 400, .body = R"({"error":{"message":"Nope."}})"}};
-        QTest::ignoreMessage(QtWarningMsg, "Couldn't search the trade site: The trade site says: Nope.");
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Couldn't search the trade site: The trade site refused the search: Nope.");
         r.app.checker().popup().findOnTrade(TradeFinder::Kind::Weighted);
         QVERIFY(finished.wait());
         QVERIFY(!r.app.finder().found());

@@ -13,13 +13,14 @@ ColumnsPage {
     required property App app
     readonly property GearList gear: app.gearList
     readonly property Resistances resists: app.resistances
+    readonly property CharacterList characters: app.characterList
 
     // On a wide window the slots are laid out like the character's equipment
     // screen, which wants the page to itself. Narrower, they're a list.
     readonly property bool equipment: wide
 
     title: qsTr("Your Gear")
-    description: qsTr("What your character wears, and where an upgrade would help most.")
+    description: qsTr("What your character has equipped, and where to upgrade first.")
     // the slots need room to put their notes beside them
     minColumnWidth: Kirigami.Units.gridUnit * 44
     maxColumnWidth: Kirigami.Units.gridUnit * (equipment ? 66 : 60)
@@ -30,6 +31,13 @@ ColumnsPage {
         visible: gearPage.resists.fromSheet
         minimum: -200
         maximum: 500
+    }
+
+    // The most one resistance can be.
+    component MaximumField: NumberField {
+        visible: gearPage.resists.known
+        minimum: 1
+        maximum: 100
     }
 
     // A slot, which takes itself off when asked.
@@ -53,10 +61,27 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: gearPage.gear.character !== "" ? qsTr("Worn by %1").arg(gearPage.gear.character) : qsTr("Worn")
+        title: gearPage.gear.character !== "" ? qsTr("Equipped by %1").arg(gearPage.gear.character) : qsTr("Equipped")
     }
 
-    FormCard.FormCard {
+    Sheet {
+        FormCard.FormComboBoxDelegate {
+            id: characterBox
+            objectName: "characterBox"
+            visible: gearPage.characters.count > 0
+            text: qsTr("Character")
+            description: gearPage.characters.currentBuild !== "" ? gearPage.characters.currentBuild : qsTr("No build imported")
+            textRole: "name"
+            valueRole: "characterId"
+            model: gearPage.characters
+            currentIndex: gearPage.characters.currentRow
+            onActivated: gearPage.characters.current = currentValue
+        }
+
+        RowRule {
+            visible: characterBox.visible
+        }
+
         FormCard.FormTextDelegate {
             id: overall
             objectName: "overallScore"
@@ -71,11 +96,11 @@ ColumnsPage {
             id: nobody
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
-            text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+            text: qsTr("You haven't picked a character yet.")
+            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: overall.visible || nobody.visible
         }
 
@@ -97,7 +122,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: gearError.visible
         }
 
@@ -113,34 +138,42 @@ ColumnsPage {
 
     SectionText {
         objectName: "gearHelp"
-        text: qsTr("To save what you wear, hover each item you have on in the game and press the hotkey, then pick its slot under Wear as in the popup. What you save takes the place of what came with the build.")
+        text: qsTr("To save what you have equipped, hover each item you have on in the game and press the hotkey, then pick its slot under Equip as in the popup. What you save takes the place of what came with the build.")
     }
 
     SectionHeader {
-        title: qsTr("Your Resistances")
+        objectName: "resistancesHeader"
+        title: qsTr("Resistances")
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: resistances
         objectName: "resistances"
 
         FormCard.FormTextDelegate {
-            id: resistSummary
-            objectName: "resistSummary"
-            visible: !gearPage.resists.fromSheet
-            text: gearPage.resists.known ? gearPage.resists.summary : qsTr("Not known yet")
-            description: gearPage.resists.known ? qsTr("From your build in Path of Building, with what you wear now.") : qsTr("Import a build, or type them in off your character sheet.")
+            objectName: "resistSource"
+            text: gearPage.resists.sourceNote
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {}
+
+        FormCard.FormTextDelegate {
+            id: resistSummary
+            objectName: "resistSummary"
+            visible: !gearPage.resists.fromSheet && gearPage.resists.known
+            text: gearPage.resists.summary
+            textItem.wrapMode: Text.Wrap
+        }
+
+        RowRule {
             visible: resistSummary.visible
         }
 
         SwitchRow {
             objectName: "fromSheetSwitch"
-            text: qsTr("Typed in off your character sheet")
-            description: qsTr("As the sheet shows them, over the maximum too. They follow your gear from then on.")
+            text: qsTr("Type them in from your character sheet")
+            description: qsTr("Use the numbers on the game's character sheet in place of your build's, as it shows them, over the maximum too. They follow your gear from then on.")
             checked: gearPage.resists.fromSheet
             onToggled: gearPage.resists.fromSheet = checked
         }
@@ -173,33 +206,51 @@ ColumnsPage {
             onEdited: value => gearPage.resists.chaos = value
         }
 
-        FormCard.FormDelegateSeparator {
-            visible: maximumResist.visible
+        RowRule {
+            visible: fireMaximum.visible
         }
 
-        NumberField {
-            id: maximumResist
-            objectName: "maximumResist"
-            visible: gearPage.resists.known
-            label: qsTr("Maximum resistance")
-            description: qsTr("75 unless your passive tree raises it. What your gear adds is counted for you.")
-            minimum: 1
-            maximum: 100
-            value: gearPage.resists.maximum
-            onEdited: value => gearPage.resists.maximum = value
+        MaximumField {
+            id: fireMaximum
+            objectName: "fireMaximum"
+            label: qsTr("Maximum Fire Resistance")
+            description: qsTr("The most each resistance can be: 75% unless your passive skill tree raises it. What your gear adds is counted for you, and your build's maximums are used until you change one.")
+            value: gearPage.resists.fireMaximum
+            onEdited: value => gearPage.resists.fireMaximum = value
+        }
+
+        MaximumField {
+            objectName: "coldMaximum"
+            label: qsTr("Maximum Cold Resistance")
+            value: gearPage.resists.coldMaximum
+            onEdited: value => gearPage.resists.coldMaximum = value
+        }
+
+        MaximumField {
+            objectName: "lightningMaximum"
+            label: qsTr("Maximum Lightning Resistance")
+            value: gearPage.resists.lightningMaximum
+            onEdited: value => gearPage.resists.lightningMaximum = value
+        }
+
+        MaximumField {
+            objectName: "chaosMaximum"
+            label: qsTr("Maximum Chaos Resistance")
+            value: gearPage.resists.chaosMaximum
+            onEdited: value => gearPage.resists.chaosMaximum = value
         }
 
         NumberField {
             objectName: "resistMargin"
             visible: gearPage.resists.known
-            label: qsTr("Margin over the maximum")
-            description: qsTr("How far over it a resistance has to be to count as capped, for what isn't always on, like a charm.")
+            label: qsTr("Safety buffer")
+            description: qsTr("How far over the maximum you want each resistance to stay. Some of what counts towards them, like a charm, isn't always on, so an item that leaves you closer than this gets a warning.")
             maximum: 100
             value: gearPage.resists.margin
             onEdited: value => gearPage.resists.margin = value
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: resistError.visible
         }
 
@@ -219,7 +270,7 @@ ColumnsPage {
     }
 
     // on the equipment screen they're under the rest
-    FormCard.FormCard {
+    Sheet {
         id: extras
         objectName: "extras"
         visible: gearPage.gear.hasExtras && !gearPage.equipment

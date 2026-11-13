@@ -15,8 +15,8 @@ in QML.
   sentences.
 - Title Case for the window title, the sidebar entries, page titles, the
   section headers of a settings page, buttons and dialog titles:
-  - `title: qsTr("Build Analysis")` on a page
-  - `FormCard.FormHeader { title: qsTr("What Matters Most") }`
+  - `title: qsTr("Build Review")` on a page
+  - `SectionHeader { title: qsTr("What Matters Most") }`
   - `text: qsTr("Open on the Trade Site")` and `text: qsTr("Show More")` on buttons
   - `title: qsTr("Add a Stat")` on a dialog
 - Sentence case for switch and row labels, field labels, descriptions, status
@@ -42,9 +42,9 @@ in QML.
   - `u"Path of Building's answer couldn't be read."_s`
   - `u"Searches need the trade site's list of stats, and it sent an empty one."_s`
 - When the message can't say the fix, the control beside it can. On the Build
-  Analysis page, `Path of Building wasn't found.` sits above the Look Again
-  button, whose description says `Use it after you install Path of Building, or
-  open it for Path of Exile 2 for the first time.`
+  Review page, `Path of Building wasn't found.` sits above the Update button,
+  whose description says `Use it after you install Path of Building, or open
+  it for Path of Exile 2 for the first time.`
 - Log text is short and plain too. Pass a `QString` to `%s` through
   `qPrintable()`, as `ItemPopup::makeWindow` does.
 
@@ -68,7 +68,7 @@ in QML.
   Spirit, Effective HP, DPS, Minion DPS.
 - Keep the `#` in stat lines, because the trade site uses it. A range is
   `"# to #"`, and the code tests for it with `row.key.contains(u"# to #")`.
-- Element names start with a capital on a label, as `Fire res`, and are lower
+- Element names start with a capital on a label, as `Fire Resistance`, and are lower
   case inside a sentence, as `Caps your fire resistance`.
 - Keep the league names as the trade site has them, such as "Standard", and
   name the modes as the settings page does: "Hardcore", "Solo self-found".
@@ -291,11 +291,11 @@ QT_NO_URL_CAST_FROM_STRING  QT_USE_QSTRINGBUILDER  QT_NO_FOREACH  QT_NO_KEYWORDS
   import org.kde.kirigamiaddons.formcard as FormCard
   ```
 
-- A settings page is a `ColumnsPage` with a `title`. `ColumnsPage.qml` is a
+- A page is a `ColumnsPage` with a `title`. `ColumnsPage.qml` is a
   `FormCard.FormCardPage` that flows its cards into up to three columns on a
-  wide window, and stacks them on a narrow one. Its rows sit in
-  `FormCard.FormCard` cards, a card with a title gets a `FormCard.FormHeader`,
-  and a `FormCard.FormDelegateSeparator {}` goes between rows in a card. Set
+  wide window, and stacks them on a narrow one. Its cards are `Sheet`s, the
+  app's own cut-corner plate, and a `Sheet` with a title has a `SectionHeader`
+  before it. Rows inside a `Sheet` are separated with `RowRule {}`. Set
   `minColumnWidth` and `maxColumnWidth` when a page's cards need more or less
   room. See `TradePage.qml`.
 - Help text under a card is `SectionText`, which is as wide as the card it goes

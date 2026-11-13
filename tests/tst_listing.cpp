@@ -425,6 +425,15 @@ private Q_SLOTS:
         QVERIFY(ring.baseType.isEmpty());
     }
 
+    void bracesArentHeaders()
+    {
+        QJsonObject item = rareItem({}, u"Sorcerer Gloves"_s, 81);
+        item.insert(u"explicitMods"_s, QJsonArray{u"{ +40% to [Fire|Fire] [Resistances|Resistance]"_s});
+        const Item gloves = listingToItem(result(u"x"_s, {}, item), u"Gloves"_s);
+        QCOMPARE(gloves.stats.value(u"#% to Fire Resistance"_s), 40.0);
+        QVERIFY(!gloves.affixes.known);
+    }
+
     void unidentifiedAndCorrupted()
     {
         QJsonObject item = rareItem({}, u"Sorcerer Gloves"_s, 81);
@@ -507,17 +516,21 @@ private Q_SLOTS:
         QTest::addColumn<double>("divineRate");
         QTest::addColumn<QString>("expected");
 
-        QTest::newRow("divines in exalts") << 3.0 << u"divine"_s << 2100.0 << 700.0 << u"about 2100 ex"_s;
+        QTest::newRow("divines in exalts")
+            << 3.0 << u"divine"_s << 2100.0 << 700.0 << u"about 2100 Exalted Orbs"_s;
         QTest::newRow("a divine's worth on")
-            << 1000.0 << u"exalted"_s << 1000.0 << 700.0 << u"about 1.4 div"_s;
-        QTest::newRow("exactly a divine") << 700.0 << u"exalted"_s << 700.0 << 700.0 << u"about 1 div"_s;
-        QTest::newRow("chaos in exalts") << 4.0 << u"chaos"_s << 40.0 << 700.0 << u"about 40 ex"_s;
-        QTest::newRow("chaos in divines") << 100.0 << u"chaos"_s << 1000.0 << 700.0 << u"about 1.4 div"_s;
-        QTest::newRow("under ten keeps a decimal") << 1.0 << u"chaos"_s << 2.5 << 700.0 << u"about 2.5 ex"_s;
+            << 1000.0 << u"exalted"_s << 1000.0 << 700.0 << u"about 1.4 Divine Orbs"_s;
+        QTest::newRow("exactly a divine")
+            << 700.0 << u"exalted"_s << 700.0 << 700.0 << u"about 1 Divine Orb"_s;
+        QTest::newRow("chaos in exalts") << 4.0 << u"chaos"_s << 40.0 << 700.0 << u"about 40 Exalted Orbs"_s;
+        QTest::newRow("chaos in divines")
+            << 100.0 << u"chaos"_s << 1000.0 << 700.0 << u"about 1.4 Divine Orbs"_s;
+        QTest::newRow("under ten keeps a decimal")
+            << 1.0 << u"chaos"_s << 2.5 << 700.0 << u"about 2.5 Exalted Orbs"_s;
         QTest::newRow("exalts say no more") << 50.0 << u"exalted"_s << 50.0 << 700.0 << QString();
-        QTest::newRow("no divine rate") << 3.0 << u"chaos"_s << 30.0 << 0.0 << u"about 30 ex"_s;
+        QTest::newRow("no divine rate") << 3.0 << u"chaos"_s << 30.0 << 0.0 << u"about 30 Exalted Orbs"_s;
         QTest::newRow("exalts without a rate") << 5000.0 << u"exalted"_s << 5000.0 << 0.0 << QString();
-        QTest::newRow("capitals") << 2.0 << u"Divine"_s << 1400.0 << 700.0 << u"about 1400 ex"_s;
+        QTest::newRow("capitals") << 2.0 << u"Divine"_s << 1400.0 << 700.0 << u"about 1400 Exalted Orbs"_s;
     }
 
     void convertedPrices()

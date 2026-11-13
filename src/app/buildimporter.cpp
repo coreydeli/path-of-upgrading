@@ -3,9 +3,10 @@
 
 #include "app/characterlist.h"
 #include "core/buildprofiles.h"
-#include "core/datafiles.h"
 #include "core/pobbuild.h"
+#include "services/datafiles.h"
 #include "services/pobengine.h"
+#include "services/pobfinder.h"
 
 #include <QFileInfo>
 #include <QVariantMap>
@@ -25,22 +26,21 @@ QString imported(const BuildImport &done, const PobBuild &build)
     QStringList said = {what.isEmpty() ? u"Imported the build for %1."_s.arg(name)
                                        : u"Imported the %1 build for %2."_s.arg(what, name)};
     if (done.items == 1)
-        said << u"%1 now wears 1 item from it."_s.arg(name);
+        said << u"%1 now has 1 item equipped from it."_s.arg(name);
     else if (done.items > 1)
-        said << u"%1 now wears %2 items from it."_s.arg(name, QString::number(done.items));
+        said << u"%1 now has %2 items equipped from it."_s.arg(name, QString::number(done.items));
     else if (done.kept == 0)
-        said << u"It has no items on."_s;
+        said << u"It has no items equipped."_s;
     if (done.kept == 1)
         said << u"Kept 1 item you copied in the game, which says more."_s;
     else if (done.kept > 1)
         said << u"Kept %1 items you copied in the game, which say more."_s.arg(done.kept);
     if (done.withoutDamage == 1)
-        said << u"Copy your weapon in the game once, as the build doesn't say its damage."_s;
+        said << u"Copy your weapon in the game once, as the build doesn't include its damage."_s;
     else if (done.withoutDamage > 1)
-        said << u"Copy your weapons in the game once, as the build doesn't say their damage."_s;
-    if (done.profileChanged)
-        said << u"Chose the %1 gear score profile for it."_s.arg(
-            buildProfile(done.character.buildProfile)->name);
+        said << u"Copy your weapons in the game once, as the build doesn't include their damage."_s;
+    if (done.profileChanged && !done.character.weighed)
+        said << u"The gear score is a general start until Path of Building weighs the build."_s;
     return said.join(u' ');
 }
 

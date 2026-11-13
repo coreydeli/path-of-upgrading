@@ -15,7 +15,7 @@ XSelectionWatcher::XSelectionWatcher(QByteArrayView selection, QObject *parent)
     xcb_connection_t *c = m_x.xcb();
     const xcb_query_extension_reply_t *xfixes = xcb_get_extension_data(c, &xcb_xfixes_id);
     if (!xfixes || !xfixes->present) {
-        m_errorString = u"The X server has no XFixes, which it needs to say when something is copied."_s;
+        m_errorString = u"The X server has no XFixes, which Path of Upgrading needs to tell when something is copied."_s;
         return;
     }
     // XFixes won't take requests from a client that hasn't said which

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "core/firstrun.h"
+#include "services/settingsfile.h"
 
 #include <QSettings>
 #include <QTemporaryDir>
@@ -17,6 +18,7 @@ Settings firstStart(bool beta)
 {
     Settings s;
     s.trade.enabled = beta;
+    s.updates.includeBetas = beta;
     return s;
 }
 

@@ -182,8 +182,12 @@ Item listingToItem(const QJsonObject &result, const QString &itemClass)
         QStringList lines = modTexts(item, group.field);
         if (lines.isEmpty())
             continue;
-        if (!group.tag.isEmpty()) {
-            for (QString &line : lines)
+        for (QString &line : lines) {
+            // the item text reads a line starting with a brace as an advanced
+            // copy's header, which the site never sends
+            while (line.startsWith(u'{'))
+                line = line.mid(1).trimmed();
+            if (!group.tag.isEmpty())
                 line = u"%1 (%2)"_s.arg(line, group.tag);
         }
         blocks << lines.join(u'\n');
@@ -221,16 +225,22 @@ QString formatPrice(const std::optional<ListingPrice> &price)
     return formatNumber(price->amount) + u' ' + currency;
 }
 
+// "about 3 Divine Orbs", or "about 1 Divine Orb".
+static QString orbs(double amount, const QString &name)
+{
+    return u"about %1 %2 Orb%3"_s.arg(formatNumber(amount), name, amount == 1 ? QString() : u"s"_s);
+}
+
 QString formatConvertedPrice(const ListingPrice &price, double exalts, double divineRate)
 {
     if (!std::isfinite(exalts))
         return {};
     const QString currency = price.currency.toLower();
     if (currency != u"divine" && divineRate > 0 && exalts >= divineRate)
-        return u"about %1 div"_s.arg(formatNumber(roundTo(exalts / divineRate, 1)));
+        return orbs(roundTo(exalts / divineRate, 1), u"Divine"_s);
     if (currency == u"exalted")
         return {};
-    return u"about %1 ex"_s.arg(formatNumber(roundTo(exalts, exalts < 10 ? 1 : 0)));
+    return orbs(roundTo(exalts, exalts < 10 ? 1 : 0), u"Exalted"_s);
 }
 
 QString listedAgo(const QDateTime &indexed, const QDateTime &now)

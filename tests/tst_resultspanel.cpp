@@ -4,13 +4,14 @@
 #include "core/placement.h"
 #include "core/resists.h"
 #include "fakegameinput.h"
+#include "fakeopener.h"
 #include "fakepob.h"
 #include "resultsite.h"
 #include "services/pobengine.h"
+#include "stylefortests.h"
 
 #include <QColor>
 #include <QDateTime>
-#include <QDesktopServices>
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QQmlEngine>
@@ -90,29 +91,18 @@ bool click(QQuickWindow *window, const QString &text)
     return true;
 }
 
-// Takes the links the window opens, in place of the browser.
-class Browser : public QObject
-{
-    Q_OBJECT
-
-public:
-    Browser() { QDesktopServices::setUrlHandler(u"https"_s, this, "open"); }
-    ~Browser() override { QDesktopServices::unsetUrlHandler(u"https"_s); }
-
-    QList<QUrl> opened;
-
-public Q_SLOTS:
-    void open(const QUrl &url) { opened << url; }
-};
-
 // The results, the window for them over a game that doesn't say where the
-// mouse is, and the trade site that has the listings.
+// mouse is, the trade site that has the listings, and the browser that would
+// open it.
 struct Panel
 {
     Site site;
     QQmlEngine qml;
     FakeGameInput input;
+    FakeOpener browser;
     ResultsPanel panel{&qml, &input, &site.results};
+
+    Panel() { panel.setOpener(&browser); }
 
     // after the window has asked for the listings and got them
     bool loaded() { return site.waitsForIt(); }
@@ -153,11 +143,8 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
-        // Fusion, as on Linux, as Windows' own style can't draw offscreen
-        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
-        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
-        // platform plugin of its own
-        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
+        // the app's own controls, as the program has
+        useStyleInTests();
     }
 
 private Q_SLOTS:
@@ -252,7 +239,7 @@ private Q_SLOTS:
         QVERIFY(shown(p.window(), u"Iron Hat"_s));
         QVERIFY(shown(p.window(), u"Item level 80"_s));
         QVERIFY(shown(p.window(), u"3 div"_s));
-        QVERIFY(shown(p.window(), u"about 2100 ex"_s));
+        QVERIFY(shown(p.window(), u"about 2100 Exalted Orbs"_s));
         QVERIFY(shown(p.window(), u"+80 to maximum Life"_s));
         QVERIFY(shown(p.window(), u"Cannot be Frozen"_s));
         QVERIFY(shown(p.window(), u"Sellerx1#1234"_s));
@@ -385,7 +372,7 @@ private Q_SLOTS:
         // there are more rows than fit
         QVERIFY(bar != items.end());
         const qreal barLeft = (*bar)->mapToScene(QPointF(0, 0)).x();
-        for (const QString &text : {u"3 div"_s, u"about 2100 ex"_s, u"5 minutes ago"_s}) {
+        for (const QString &text : {u"3 div"_s, u"about 2100 Exalted Orbs"_s, u"5 minutes ago"_s}) {
             const QQuickItem *label = shown(p.window(), text);
             QVERIFY2(label, qPrintable(text));
             const qreal right = label->mapToScene(QPointF(label->width(), 0)).x();
@@ -405,9 +392,9 @@ private Q_SLOTS:
         QTRY_COMPARE(rows(p.window()), 1);
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
         QVERIFY(shown(p.window(), u"3 div"_s));
-        QVERIFY(!shown(p.window(), u"about 2100 ex"_s));
+        QVERIFY(!shown(p.window(), u"about 2100 Exalted Orbs"_s));
         QVERIFY(p.site.hasRates(700));
-        QTRY_VERIFY(shown(p.window(), u"about 2100 ex"_s));
+        QTRY_VERIFY(shown(p.window(), u"about 2100 Exalted Orbs"_s));
     }
 
     void loadsMore()
@@ -442,24 +429,23 @@ private Q_SLOTS:
 
     void opensTheTradeSite()
     {
-        Browser browser;
         Panel p;
         p.site.network.answers = {fetched(listingIds(1))};
         const TradeFinder::Found found = foundBy(1);
         p.site.results.setSearch(found);
         p.panel.show();
         QVERIFY(p.loaded());
+        QVERIFY(p.browser.opened.isEmpty());
         QVERIFY(click(p.window(), u"Open on the Trade Site"_s));
-        QCOMPARE(browser.opened, (QList<QUrl>{found.url}));
+        QCOMPARE(p.browser.opened, (QList<QUrl>{found.url}));
     }
 
     void noSearchNoLink()
     {
         // and it isn't opened by showing the results
-        Browser browser;
         Panel p;
         p.panel.show();
-        QVERIFY(browser.opened.isEmpty());
+        QVERIFY(p.browser.opened.isEmpty());
     }
 
     void closesAndOpens()
@@ -773,12 +759,12 @@ private Q_SLOTS:
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
 
         QCOMPARE(toneOf(shown(p.window(), u"Loses resistance"_s)), int(Tone::Bad));
-        const QQuickItem *loss = shown(p.window(), u"Cold res drops below the cap (40% of 75%)"_s);
+        const QQuickItem *loss = shown(p.window(), u"Cold Resistance drops below the cap (40% of 75%)"_s);
         QVERIFY(loss);
         QCOMPARE(toneOf(loss), int(Tone::Bad));
         const auto verdict = p.site.results.data(p.site.results.index(0), TradeResults::VerdictRole);
         const QString risk = verdict.value<ResultVerdict>().risks.value(0);
-        QVERIFY(risk.startsWith(u"Fire res would be only 5% over the cap"));
+        QVERIFY(risk.startsWith(u"Fire Resistance would be only 5% over the cap"));
         const QQuickItem *risky = shown(p.window(), risk);
         QVERIFY(risky);
         QCOMPARE(toneOf(risky), int(Tone::Warning));

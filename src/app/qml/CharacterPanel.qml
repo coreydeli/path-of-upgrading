@@ -23,8 +23,10 @@ Item {
 
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.gridUnit
 
-    OrnateFrame {
+    Plate {
         anchors.fill: parent
+        line: Style.frame(Kirigami.Theme)
+        lineWidth: 1
     }
 
     ColumnLayout {
@@ -50,7 +52,7 @@ Item {
                     objectName: "panelCharacter"
                     Layout.fillWidth: true
                     text: panel.character
-                    color: Style.gold(Kirigami.Theme)
+                    color: Style.accent(Kirigami.Theme)
                     font: Style.titleFont(Kirigami.Theme.defaultFont, 1.4)
                     wrapMode: Text.Wrap
                     Accessible.role: Accessible.Heading
@@ -75,10 +77,7 @@ Item {
             }
         }
 
-        Ornament {
-            Layout.fillWidth: true
-            diamond: !Style.plain
-        }
+        RowRule {}
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -87,7 +86,7 @@ Item {
             QQC2.Label {
                 objectName: "panelProfile"
                 Layout.fillWidth: true
-                text: qsTr("Build profile: %1").arg(panel.app.gearScoring.profiles[panel.app.gearScoring.profile])
+                text: panel.app.gearScoring.state
                 font.bold: true
                 wrapMode: Text.Wrap
             }

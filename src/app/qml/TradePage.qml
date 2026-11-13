@@ -49,9 +49,9 @@ ColumnsPage {
     ]
 
     title: qsTr("Trade")
-    description: qsTr("Searching the trade site from the popup, the league and what you will pay.")
+    description: qsTr("Trade searches from the popup, the league, and what you'll pay.")
 
-    FormCard.FormCard {
+    Sheet {
         Layout.topMargin: Kirigami.Units.largeSpacing
 
         SwitchRow {
@@ -62,7 +62,7 @@ ColumnsPage {
             onToggled: tradePage.options.enabled = checked
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: unavailableText.visible
         }
 
@@ -82,7 +82,7 @@ ColumnsPage {
     LeagueCard {
         options: tradePage.options
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: searchedText.visible
         }
 
@@ -99,7 +99,7 @@ ColumnsPage {
         title: qsTr("Listings")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "sellersBox"
             text: qsTr("Sellers")
@@ -115,7 +115,7 @@ ColumnsPage {
         title: qsTr("Budget")
     }
 
-    FormCard.FormCard {
+    Sheet {
         NumberField {
             objectName: "budgetMin"
             label: qsTr("Lowest price")
@@ -127,7 +127,7 @@ ColumnsPage {
             onEdited: value => tradePage.options.budgetMin = value
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "budgetMax"
@@ -140,7 +140,7 @@ ColumnsPage {
             onEdited: value => tradePage.options.budgetMax = value
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormComboBoxDelegate {
             objectName: "currencyBox"
@@ -153,7 +153,7 @@ ColumnsPage {
             onActivated: tradePage.options.currency = currentValue
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "autoRateSwitch"
@@ -163,12 +163,13 @@ ColumnsPage {
             onToggled: tradePage.options.autoRate = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "rateMinutes"
-            label: qsTr("Update poe.ninja's prices every")
-            description: tradePage.options.ratesStatus === "" ? qsTr("How many minutes to wait between updates.") : qsTr("How many minutes to wait between updates. %1").arg(tradePage.options.ratesStatus)
+            label: qsTr("Update poe.ninja's prices automatically")
+            description: tradePage.options.ratesStatus === "" ? qsTr("Asks poe.ninja again after this many minutes, from 1 to 60.") : qsTr("Asks poe.ninja again after this many minutes, from 1 to 60. %1").arg(tradePage.options.ratesStatus)
+            unit: tradePage.options.rateMinutes === 1 ? qsTr("minute") : qsTr("minutes")
             minimum: 1
             maximum: 60
             enabled: tradePage.options.autoRate
@@ -176,7 +177,7 @@ ColumnsPage {
             onEdited: value => tradePage.options.rateMinutes = value
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "divineRate"
@@ -195,14 +196,14 @@ ColumnsPage {
         title: qsTr("Signed In")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "sessionStatus"
             text: tradePage.session.status
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormRow {
             text: qsTr("Session ID")
@@ -245,7 +246,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: sessionError.visible
         }
 
@@ -258,7 +259,7 @@ ColumnsPage {
             textItem.color: Kirigami.Theme.negativeTextColor
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "findSessionButton"
@@ -268,7 +269,7 @@ ColumnsPage {
             onClicked: tradePage.showFindSession = !tradePage.showFindSession
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: findSessionSteps.visible
         }
 
@@ -281,7 +282,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: signInButton.visible
         }
 
@@ -298,6 +299,6 @@ ColumnsPage {
 
     SectionText {
         objectName: "sessionHelp"
-        text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. Signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
+        text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. When you're signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
     }
 }

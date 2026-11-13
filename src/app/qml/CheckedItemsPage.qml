@@ -62,7 +62,7 @@ ColumnsPage {
         Accessible.selected: checkedPage.wide && index === checkedPage.picked
         background: Rectangle {
             visible: checkedPage.wide
-            color: itemRow.index === checkedPage.picked ? Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.18)
+            color: itemRow.index === checkedPage.picked ? Style.tint(Kirigami.Theme.backgroundColor, Style.accent(Kirigami.Theme), 0.18)
                                                          : itemRow.hovered || itemRow.visualFocus ? Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.08)
                                                                                                   : "transparent"
         }
@@ -103,7 +103,7 @@ ColumnsPage {
         text: qsTr("The items you check in the game are kept here, the newest first, up to the last %1: those you check with the hotkey, and gear you copy yourself while \"Also check gear you copy yourself\" is on. When the list is full, the oldest drops off.").arg(checkedPage.checkedItems.limit)
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: itemList
 
         Repeater {
@@ -117,12 +117,12 @@ ColumnsPage {
             objectName: "noItemsText"
             visible: itemRows.count === 0
             text: qsTr("You haven't checked any items yet.")
-            description: checkedPage.key !== "" ? qsTr("Hover over an item in the game and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in the game and press the hotkey for checking one. You can set it on the Settings page.")
+            description: checkedPage.key !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on the General page.")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             objectName: "forgetSeparator"
             visible: itemRows.count > 0
         }
@@ -175,7 +175,7 @@ ColumnsPage {
         }
 
         FormCard.FormTextDelegate {
-            text: qsTr("The list will be empty. You can check an item again in the game.")
+            text: qsTr("The list will be empty. You can check the items in the game again.")
             textItem.wrapMode: Text.Wrap
         }
     }

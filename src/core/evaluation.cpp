@@ -3,6 +3,7 @@
 
 #include "core/numbers.h"
 #include "core/slots.h"
+#include "core/wearing.h"
 
 #include <algorithm>
 
@@ -36,7 +37,7 @@ Verdict gearVerdict(int delta)
 
 double capOf(const LiveResists &resists, Element e)
 {
-    return resists.caps[e] != 0 ? resists.caps[e] : resists.cap;
+    return resists.caps[e] != 0 ? resists.caps[e] : 75;
 }
 
 // Chaos resistance counts when you say so or you had it capped, and never
@@ -118,7 +119,8 @@ GearScoreOptions gearScoreOptions(const Character &character, const QString &slo
                                   const PobPriorities &priorities)
 {
     GearScoreOptions options;
-    options.build = character.buildProfile;
+    options.build = character.weightsOnly ? noBuildProfile.toString() : character.buildProfile;
+    options.weighed = character.weighed;
     options.tweaks = character.tweaks;
     options.ignore = [rules = character.ignored](const QString &key) {
         return isIgnored(rules, key);
@@ -155,7 +157,8 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         return isIgnored(character.ignored, key);
     };
     Evaluation e;
-    e.comparison = compare(item, character.gear, character.weights, ignore, slot);
+    e.wearIn = slotsFor(item, character);
+    e.comparison = compare(item, character.gear, character.weights, ignore, slot, character.wielding);
     Comparison &r = e.comparison;
     if (!r.ok)
         return e;
@@ -167,7 +170,7 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
     if (e.gear && e.gear->isRated() && slot.isEmpty() && !r.isEquipped && comparesWithWeakest(item.slot)) {
         const std::optional<QString> weakest = weakestByGearScore(item, character, priorities);
         if (weakest && *weakest != r.targetSlot) {
-            r = compare(item, character.gear, character.weights, ignore, *weakest);
+            r = compare(item, character.gear, character.weights, ignore, *weakest, character.wielding);
             e.gear = gearIn(item, r.targetSlot);
         }
     }
@@ -199,7 +202,10 @@ Evaluation evaluate(const Item &item, const Character &character, const PobPrior
         return e;
 
     QStringList targets = {r.targetSlot};
-    if (const QString offhand = otherHand(r.targetSlot); item.twoHanded && character.gear.contains(offhand))
+    const QString offhand = otherHand(r.targetSlot);
+    if (const auto there = character.gear.constFind(offhand);
+        item.twoHanded && there != character.gear.cend() &&
+        !twoHandedWithOffhand(item, &*there, character.gear, character.wielding))
         targets << offhand;
     const std::optional<LiveResists> resists =
         character.resists ? liveResists(*character.resists, character.gear) : std::nullopt;

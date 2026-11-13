@@ -1,17 +1,21 @@
 # The app itself: the windows in QML and what they show in C++
 qt_add_library(pou_app STATIC
+    about.cpp about.h
     activecharacter.cpp activecharacter.h
     app.cpp app.h
     appearance.cpp appearance.h
     buildimporter.cpp buildimporter.h
+    buildweigher.cpp buildweigher.h
     characterlist.cpp characterlist.h
     checkeditems.cpp checkeditems.h
+    clipboardkeeper.cpp clipboardkeeper.h
     commandline.cpp commandline.h
     desktop.cpp desktop.h
     equipmentlist.cpp equipmentlist.h
     fonts.cpp fonts.h
     gearlist.cpp gearlist.h
     gearscoring.cpp gearscoring.h
+    help.cpp help.h
     hotkeys.cpp hotkeys.h
     ignoredstats.cpp ignoredstats.h
     itemchecker.cpp itemchecker.h
@@ -22,6 +26,7 @@ qt_add_library(pou_app STATIC
     itemreport.cpp itemreport.h
     listingjudge.cpp listingjudge.h
     onboarding.cpp onboarding.h
+    ownstyle.cpp ownstyle.h
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
     popuphider.cpp popuphider.h
@@ -36,6 +41,8 @@ qt_add_library(pou_app STATIC
     tradereport.cpp tradereport.h
     traderesults.cpp traderesults.h
     tradesession.cpp tradesession.h
+    updates.cpp updates.h
+    words.h
 )
 
 # a singleton, so the windows share its colors
@@ -44,6 +51,9 @@ set_source_files_properties(qml/Style.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
+        qml/AboutPage.qml
+        qml/UpdateDialog.qml
+        qml/InstallDialog.qml
         qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml
@@ -54,6 +64,7 @@ qt_add_qml_module(pou_app
         qml/EquipmentTile.qml
         qml/FontPickerDialog.qml
     qml/FormRow.qml
+        qml/HelpPage.qml
         qml/GearPage.qml
         qml/GearScorePage.qml
         qml/IgnoredStatsPage.qml
@@ -63,8 +74,6 @@ qt_add_qml_module(pou_app
         qml/Main.qml
         qml/NumberBox.qml
         qml/NumberField.qml
-        qml/Ornament.qml
-        qml/OrnateFrame.qml
         qml/OverlayPage.qml
         qml/PageHeader.qml
         qml/PlacementsTable.qml
@@ -76,6 +85,10 @@ qt_add_qml_module(pou_app
         qml/ResultRow.qml
         qml/ResultsCard.qml
         qml/ResultsWindow.qml
+        qml/Notice.qml
+        qml/Plate.qml
+        qml/RowRule.qml
+        qml/Sheet.qml
         qml/ScoreGauge.qml
         qml/StatPickerDialog.qml
         qml/StatWeightsPage.qml
@@ -96,20 +109,37 @@ qt_add_qml_module(pou_app
         qml/TonePill.qml
         qml/TradePage.qml
         qml/TradeStatus.qml
-        qml/WindowGlow.qml
 )
 
-# the heading font, which the program carries
+# the fonts the program carries
+set(POU_FONTS
+    BigShouldersDisplay-Black.ttf
+    BigShouldersDisplay-Bold.ttf
+    BigShouldersDisplay-ExtraBold.ttf
+    BigShouldersText-Bold.ttf
+    BigShouldersText-ExtraBold.ttf
+    BigShouldersText-Medium.ttf
+    BigShouldersText-Regular.ttf
+    BigShouldersText-SemiBold.ttf
+    Spectral-Bold.ttf
+    Spectral-Italic.ttf
+    Spectral-Medium.ttf
+    Spectral-Regular.ttf
+    Spectral-SemiBold.ttf
+)
+list(TRANSFORM POU_FONTS PREPEND ${PROJECT_SOURCE_DIR}/data/fonts/ OUTPUT_VARIABLE POU_FONT_FILES)
 qt_add_resources(pou_app fonts
     PREFIX /fonts
     BASE ${PROJECT_SOURCE_DIR}/data/fonts
-    FILES ${PROJECT_SOURCE_DIR}/data/fonts/Cinzel.ttf
+    FILES ${POU_FONT_FILES}
 )
 
 target_link_libraries(pou_app PUBLIC
     pou_core
     pou_platform
     pou_services
+    pou_style
+    pou_styleplugin
     Qt6::Qml
     Qt6::Quick
     KF6::ColorScheme

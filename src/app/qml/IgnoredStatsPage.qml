@@ -20,7 +20,7 @@ ColumnsPage {
     readonly property real modeWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Ignored Stats")
-    description: qsTr("Stats your character does not want counted.")
+    description: qsTr("Stats you don't want counted.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
@@ -89,12 +89,12 @@ ColumnsPage {
         title: ignoredPage.ignored.character !== "" ? qsTr("For %1").arg(ignoredPage.ignored.character) : qsTr("Ignored Stats")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextDelegate {
             objectName: "nobodyText"
             visible: ignoredPage.ignored.character === ""
-            text: qsTr("You play nobody yet.")
-            description: qsTr("A character is made for you when you change something here. Or add one, or import a build, on the Characters page.")
+            text: qsTr("You haven't picked a character yet.")
+            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
         }
 
         TableHeader {
@@ -107,7 +107,7 @@ ColumnsPage {
             controlsWidth: ignoredPage.modeWidth
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: ignoredPage.wide
         }
 
@@ -117,7 +117,7 @@ ColumnsPage {
             delegate: GroupRow {}
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: ignoredError.visible
         }
 
@@ -141,7 +141,7 @@ ColumnsPage {
         title: qsTr("One by One")
     }
 
-    FormCard.FormCard {
+    Sheet {
         id: singleStats
         objectName: "singleStats"
 
@@ -155,7 +155,7 @@ ColumnsPage {
             controlsWidth: ignoredPage.modeWidth
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: ignoredPage.wide && statRows.count > 0
         }
 
@@ -172,7 +172,7 @@ ColumnsPage {
             text: qsTr("You ignore no stat by itself.")
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "ignoreStatButton"

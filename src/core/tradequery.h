@@ -26,6 +26,10 @@ namespace pou {
 enum class ListingStatus { Available, Securable, Online, Any };
 
 QString listingStatusId(ListingStatus status);
+
+// A trade stat's text as one of our stat keys: "+# to maximum Life" is
+// "# to maximum Life", and "(local)" is dropped.
+QString statKeyOf(const QString &tradeText);
 // Available for anything unknown.
 ListingStatus listingStatusFromId(QStringView id);
 
@@ -52,40 +56,20 @@ struct TradeQuery
     int excluded = 0;      // stats listings must not have
 };
 
-// One stat you want, with the values you want it at.
-struct StatPick
-{
-    QString key;
-    std::optional<double> min;
-    std::optional<double> max;
-    // A trade stat picked by hand. When empty, it's matched from the key.
-    QString id;
-    QString idType;
-    // Where the stat is on your item, to search for the same kind of mod.
-    std::optional<StatOrigin> origin;
-};
-
-struct CustomSearchOptions : SearchOptions
-{
-    QString itemClass;
-    QString baseType;
-    bool matchBase = false; // only this base type, rather than anything of its category
-};
-
-// Items with all of the picked stats, cheapest first.
-TradeQuery customSearch(const QList<StatPick> &picks, const TradeData &data,
-                        const CustomSearchOptions &options);
-
 struct WeightedSearchOptions : SearchOptions
 {
     QString itemClass;         // the item's own when empty
     double minGainPercent = 0; // how far above your item's sum, in percent
+    // How many weights it searches with at most, as the trade site limits
+    // them. The heaviest are kept.
+    int maxFilters = 40;
 };
 
 struct WeightedSearch : TradeQuery
 {
     double current = 0;  // your item's weighted sum, without rune and enchant bonuses
     double groupMin = 0; // what a listing's sum has to reach
+    int dropped = 0;     // weights left out for the site's limit
 };
 
 // Your stat weights as the trade site's weighted sum: items whose weighted

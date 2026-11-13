@@ -2,7 +2,7 @@
 #pragma once
 
 #include "core/character.h"
-#include "core/characterstore.h"
+#include "core/characterdata.h"
 #include "core/gearscore.h"
 #include "core/pobeval.h"
 #include "core/pobverdict.h"
@@ -41,6 +41,9 @@ struct Evaluation
     // scores, delta and verdict of the mode.
     Comparison comparison;
     ScoreMode mode = ScoreMode::StatWeights;
+    // The slots the item can be worn in, which leave out an offhand the
+    // character's two-handed weapon doesn't let it use.
+    QStringList wearIn;
     // The item's gear score in that slot, and the one of what you wear there.
     // Empty without a build profile.
     std::optional<GearScore> gear;

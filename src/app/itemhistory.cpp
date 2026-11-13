@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/itemhistory.h"
 
-#include "core/datafiles.h"
 #include "core/parser.h"
+#include "services/datafiles.h"
 
 #include <QFile>
 #include <QJsonArray>
@@ -59,6 +59,11 @@ void ItemHistory::clearRecent()
     Q_EMIT changed();
 }
 
+QString ItemHistory::keptAsidePath() const
+{
+    return m_path + u".unreadable"_s;
+}
+
 bool ItemHistory::save()
 {
     m_saveTimer.stop();
@@ -78,10 +83,17 @@ void ItemHistory::load()
     if (!QFile::exists(m_path))
         return;
     const std::optional<QJsonObject> o = readJsonFile(m_path, &m_error);
-    if (!o)
+    if (!o) {
+        // put by, as the next save goes over it
+        QFile::remove(keptAsidePath());
+        QFile::rename(m_path, keptAsidePath());
         return;
-    // as the game's text, which is read again with what the parser knows now
+    }
+    // as the game's text, which is read again with what the parser knows now,
+    // and no more than it keeps, whatever the file holds
     for (const QJsonValue &text : o->value(u"recent").toArray()) {
+        if (m_recent.size() == recentLimit)
+            break;
         if (std::optional<Item> item = parseItem(text.toString()))
             m_recent << std::move(*item);
     }

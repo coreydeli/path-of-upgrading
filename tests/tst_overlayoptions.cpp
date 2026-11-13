@@ -56,6 +56,7 @@ private Q_SLOTS:
         OverlaySettings &overlay = settings.overlay;
         overlay.advancedCopy = true;
         overlay.watchClipboard = false;
+        overlay.putBackClipboard = false;
         overlay.position = PopupPosition::Right;
         overlay.scale = 1.5;
         overlay.compact = false;
@@ -66,6 +67,7 @@ private Q_SLOTS:
 
         QCOMPARE(o.options.isAdvancedCopy(), true);
         QCOMPARE(o.options.isWatchingClipboard(), false);
+        QCOMPARE(o.options.putsBackClipboard(), false);
         QCOMPARE(o.options.position(), u"right"_s);
         QCOMPARE(o.options.scale(), 1.5);
         QCOMPARE(o.options.isCompact(), false);
@@ -80,17 +82,19 @@ private Q_SLOTS:
         QSignalSpy changed(&o.options, &OverlayOptions::changed);
         o.options.setAdvancedCopy(true);
         o.options.setWatchClipboard(false);
+        o.options.setPutBackClipboard(false);
         o.options.setPosition(u"top"_s);
         o.options.setScale(0.75);
         o.options.setCompact(false);
         o.options.setColorblind(true);
         o.options.setAutoHideSeconds(45);
         o.options.setPaused(true);
-        QCOMPARE(changed.size(), 8);
+        QCOMPARE(changed.size(), 9);
 
         OverlaySettings overlay;
         overlay.advancedCopy = true;
         overlay.watchClipboard = false;
+        overlay.putBackClipboard = false;
         overlay.position = PopupPosition::Top;
         overlay.scale = 0.75;
         overlay.compact = false;
@@ -101,7 +105,7 @@ private Q_SLOTS:
         QCOMPARE(SettingsStore(o.dir.filePath(u"settings.conf"_s)).settings().overlay, overlay);
 
         o.options.setColorblind(true);
-        QCOMPARE(changed.size(), 8);
+        QCOMPARE(changed.size(), 9);
     }
 
     void andBack()
@@ -109,12 +113,14 @@ private Q_SLOTS:
         Options o;
         o.options.setAdvancedCopy(true);
         o.options.setWatchClipboard(false);
+        o.options.setPutBackClipboard(false);
         o.options.setPosition(u"left"_s);
         o.options.setCompact(false);
         o.options.setColorblind(true);
         o.options.setPaused(true);
         o.options.setAdvancedCopy(false);
         o.options.setWatchClipboard(true);
+        o.options.setPutBackClipboard(true);
         o.options.setPosition(u"cursor"_s);
         o.options.setCompact(true);
         o.options.setColorblind(false);

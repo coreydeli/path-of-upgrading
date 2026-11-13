@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "app/fonts.h"
 #include "app/itemreport.h"
+#include "stylefortests.h"
 
 #include <QAccessible>
 #include <QColor>
@@ -13,6 +14,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTest>
+#include <cmath>
 #include <memory>
 
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
@@ -40,7 +42,9 @@ const char *probe = "import QtQuick\n"
                     "    function frame() { return Style.frame(Kirigami.Theme); }\n"
                     "    function inner() { return Style.inner(Kirigami.Theme); }\n"
                     "    function title(font) { return Style.titleFont(font); }\n"
-                    "    function gold() { return Style.gold(Kirigami.Theme); }\n"
+                    "    function label(font) { return Style.labelFont(font); }\n"
+                    "    function figure(font) { return Style.figureFont(font); }\n"
+                    "    function step(grade) { return Style.gradeStep(grade); }\n"
                     "    function clear(c) { return Style.clear(c); }\n"
                     "    function bigTitle(font) { return Style.titleFont(font, 2); }\n"
                     "    function section(font) { return Style.sectionFont(font); }\n"
@@ -68,9 +72,9 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
-        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
+        // the app's own controls, as the program has
+        useStyleInTests();
         qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1");
-        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
     }
 
 private Q_SLOTS:
@@ -91,7 +95,7 @@ private Q_SLOTS:
     {
         m_style->setProperty("plain", false);
         m_style->setProperty("appColors", false);
-        m_style->setProperty("headingFamily", u"Cinzel"_s);
+        m_style->setProperty("headingFamily", u"Big Shoulders Display"_s);
     }
 
     void rarityColorsAreTheGames()
@@ -117,26 +121,24 @@ private Q_SLOTS:
         QCOMPARE(rarity(QString()), color(u"text"_s));
     }
 
-    void gradesHaveColorsOfTheirOwn()
+    void gradesTakeTheSchemesColors()
     {
-        m_style->setProperty("appColors", true);
-        QCOMPARE(grade(u"S"_s), hex("#d4b06a"));
-        QCOMPARE(grade(u"A"_s), hex("#7fb069"));
-        QCOMPARE(grade(u"B"_s), hex("#8fb3c9"));
-        QCOMPARE(grade(u"C"_s), hex("#c9b48f"));
-        QCOMPARE(grade(u"D"_s), hex("#948776"));
-        QCOMPARE(grade(QString()), color(u"text"_s));
-    }
-
-    void gradesTakeTheDesktopsColors()
-    {
-        // nothing gold is left on the desktop's colors
         QCOMPARE(grade(u"S"_s), color(u"highlight"_s));
         QCOMPARE(grade(u"A"_s), color(u"positive"_s));
         QCOMPARE(grade(u"B"_s), color(u"text"_s));
         QCOMPARE(grade(u"C"_s), color(u"neutral"_s));
         QCOMPARE(grade(u"D"_s), color(u"disabled"_s));
         QCOMPARE(grade(QString()), color(u"text"_s));
+    }
+
+    void gradesClimbFiveSteps()
+    {
+        QCOMPARE(step(u"D"_s), 1);
+        QCOMPARE(step(u"C"_s), 2);
+        QCOMPARE(step(u"B"_s), 3);
+        QCOMPARE(step(u"A"_s), 4);
+        QCOMPARE(step(u"S"_s), 5);
+        QCOMPARE(step(QString()), 0);
     }
 
     void tonesFollowTheTheme()
@@ -155,68 +157,64 @@ private Q_SLOTS:
         QCOMPARE(tone(plain, true), color(u"text"_s));
     }
 
-    void framesAreGoldBrownWithTheAppsColors()
+    void framesAreBetweenTheBackgroundAndTheText()
     {
-        m_style->setProperty("appColors", true);
-        QCOMPARE(call(u"frame"_s).value<QColor>(), hex("#5c4a32"));
-        QCOMPARE(call(u"inner"_s).value<QColor>(), hex("#2b241c"));
-    }
-
-    void framesAreMixedFromTheThemeWithTheDesktops()
-    {
-        const QColor text = color(u"text"_s);
-        const QColor background = color(u"background"_s);
-        const auto mixed = [&](double part) {
-            return QColor::fromRgbF(background.redF() + (text.redF() - background.redF()) * part,
-                                    background.greenF() + (text.greenF() - background.greenF()) * part,
-                                    background.blueF() + (text.blueF() - background.blueF()) * part);
-        };
         const QColor frame = call(u"frame"_s).value<QColor>();
         const QColor inner = call(u"inner"_s).value<QColor>();
-        QCOMPARE(frame.name(), mixed(0.2).name());
-        QCOMPARE(inner.name(), mixed(0.1).name());
-        QVERIFY(frame != inner);
+        const QColor background = color(u"background"_s);
+        const QColor text = color(u"text"_s);
+        // whichever way round the scheme is, they step from the background toward the text
+        const auto away = [&](const QColor &c) {
+            return std::abs(c.lightnessF() - background.lightnessF());
+        };
+        QVERIFY(away(inner) > 0);
+        QVERIFY(away(inner) < away(frame));
+        QVERIFY(away(frame) < away(text));
     }
 
-    void titlesAreInCinzel()
+    void titlesAreInCapitalsInTheHeadingFamily()
     {
         QVERIFY(addBundledFonts());
         QFont base;
-        base.setPointSizeF(11);
+        base.setPointSizeF(10);
         const QFont font = call(u"title"_s, {base}).value<QFont>();
         QCOMPARE(font.family(), headingFontFamily());
-        QCOMPARE(font.weight(), QFont::Bold);
-        QCOMPARE(font.pointSizeF(), 11.0);
-        QCOMPARE(font.letterSpacing(), 0.5);
-        QCOMPARE(font.capitalization(), QFont::MixedCase);
+        QCOMPARE(font.weight(), QFont::ExtraBold);
+        QCOMPARE(font.capitalization(), QFont::AllUppercase);
+        QCOMPARE(font.pointSizeF(), 14.0);
+        m_style->setProperty("headingFamily", u"Made Up Serif"_s);
+        QCOMPARE(call(u"title"_s, {base}).value<QFont>().family(), u"Made Up Serif"_s);
     }
 
-    void titlesAreInTheHeadingFamily()
+    void labelsAreSmallCapitalsInTheTextFace()
     {
         QFont base;
         base.setPointSizeF(10);
-        m_style->setProperty("headingFamily", u"Made Up Serif"_s);
-        const QFont font = call(u"title"_s, {base}).value<QFont>();
-        QCOMPARE(font.family(), u"Made Up Serif"_s);
-        QCOMPARE(font.pointSizeF(), 10.0);
+        const QFont font = call(u"label"_s, {base}).value<QFont>();
+        QCOMPARE(font.family(), u"Big Shoulders Text"_s);
         QCOMPARE(font.weight(), QFont::Bold);
+        QCOMPARE(font.capitalization(), QFont::AllUppercase);
+        QCOMPARE(call(u"section"_s, {base}).value<QFont>().family(), u"Big Shoulders Text"_s);
+        QVERIFY(call(u"section"_s, {base}).value<QFont>().pointSizeF() > font.pointSizeF());
     }
 
-    void cinzelIsInTheProgram()
+    void figuresAreSetBigAndBlack()
+    {
+        QFont base;
+        base.setPointSizeF(10);
+        const QFont font = call(u"figure"_s, {base}).value<QFont>();
+        QCOMPARE(font.family(), u"Big Shoulders Display"_s);
+        QCOMPARE(font.weight(), QFont::Black);
+        QCOMPARE(font.pointSizeF(), 15.0);
+    }
+
+    void theFacesAreInTheProgram()
     {
         QVERIFY(addBundledFonts());
-        QVERIFY(QFontDatabase::families().contains(u"Cinzel"_s));
-        QCOMPARE(QFontInfo(QFont(u"Cinzel"_s)).family(), u"Cinzel"_s);
-        // one file for every weight
-        QVERIFY(QFontDatabase::isSmoothlyScalable(u"Cinzel"_s, QFontDatabase::styles(u"Cinzel"_s).value(0)));
-    }
-
-    void goldIsTheAppsOrTheDesktops()
-    {
-        m_style->setProperty("appColors", true);
-        QCOMPARE(call(u"gold"_s).value<QColor>(), hex("#d4b06a"));
-        m_style->setProperty("appColors", false);
-        QCOMPARE(call(u"gold"_s).value<QColor>(), color(u"highlight"_s));
+        const QStringList families = QFontDatabase::families();
+        for (const QString &family : {u"Big Shoulders Display"_s, u"Big Shoulders Text"_s, u"Spectral"_s})
+            QVERIFY2(families.contains(family), qPrintable(family));
+        QCOMPARE(QFontInfo(QFont(u"Big Shoulders Display"_s)).family(), u"Big Shoulders Display"_s);
     }
 
     void clearKeepsTheColorAndLosesItsAlpha()
@@ -233,27 +231,7 @@ private Q_SLOTS:
     {
         QFont base;
         base.setPointSizeF(10);
-        QCOMPARE(call(u"title"_s, {base}).value<QFont>().pointSizeF(), 10.0);
-        QCOMPARE(call(u"bigTitle"_s, {base}).value<QFont>().pointSizeF(), 20.0);
-    }
-
-    // Cinzel's lower case are small capitals already, so other fonts are made them
-    void sectionTitlesAreSmallCapitalsUnlessCinzel()
-    {
-        QFont base;
-        base.setPointSizeF(10);
-        m_style->setProperty("headingFamily", u"Cinzel"_s);
-        QFont font = call(u"section"_s, {base}).value<QFont>();
-        QCOMPARE(font.family(), u"Cinzel"_s);
-        QCOMPARE(font.weight(), QFont::Bold);
-        QCOMPARE(font.letterSpacing(), 0.5);
-        QCOMPARE(font.capitalization(), QFont::MixedCase);
-        QCOMPARE(font.pointSizeF(), 9.0);
-
-        m_style->setProperty("headingFamily", u"Made Up Serif"_s);
-        font = call(u"section"_s, {base}).value<QFont>();
-        QCOMPARE(font.family(), u"Made Up Serif"_s);
-        QCOMPARE(font.capitalization(), QFont::SmallCaps);
+        QCOMPARE(call(u"bigTitle"_s, {base}).value<QFont>().pointSizeF(), 29.0);
     }
 
     void decorationsAreOnUnlessPlain() { QCOMPARE(m_style->property("plain").toBool(), false); }
@@ -264,10 +242,15 @@ private Q_SLOTS:
         QVERIFY(gauge);
         QCOMPARE(gauge->property("fraction").toDouble(), 0.72);
         QCOMPARE(gauge->property("tint").value<QColor>(), grade(u"A"_s));
-        QCOMPARE(gauge->property("ring").toBool(), true);
         QCOMPARE(gauge->property("text").toString(), u"72 A"_s);
         QVERIFY(gauge->implicitWidth() > 0);
-        QCOMPARE(gauge->implicitWidth(), gauge->implicitHeight());
+    }
+
+    void aGaugeLightsPipsToItsGrade()
+    {
+        QCOMPARE(make("ScoreGauge { score: \"72\"; grade: \"A\" }")->property("lit").toInt(), 4);
+        QCOMPARE(make("ScoreGauge { score: \"10\"; grade: \"D\" }")->property("lit").toInt(), 1);
+        QCOMPARE(make("ScoreGauge { score: \"\"; grade: \"\" }")->property("lit").toInt(), 0);
     }
 
     void aGaugeStaysWithinTheRing()
@@ -296,38 +279,32 @@ private Q_SLOTS:
         QCOMPARE(read->text(QAccessible::Name), u"Gear score 72, grade A"_s);
     }
 
-    void plainDrawsAGaugeAsText()
+    void aPlateIsSquareWhenPlain()
     {
+        std::unique_ptr<QQuickItem> plate = make("Plate { width: 100; height: 50 }");
+        QCOMPARE(plate->property("notch").toDouble(), 12.0);
         m_style->setProperty("plain", true);
-        std::unique_ptr<QQuickItem> gauge = make("ScoreGauge { score: \"72\"; grade: \"A\" }");
-        QCOMPARE(gauge->property("ring").toBool(), false);
-        // the size of a line of text, not of a ring
-        QVERIFY(gauge->implicitHeight() < 3 * 16);
+        std::unique_ptr<QQuickItem> square = make("Plate { width: 100; height: 50 }");
+        QCOMPARE(square->property("notch").toDouble(), 0.0);
     }
 
-    void aFrameHasFourCorners() { QCOMPARE(corners(), 4); }
-
-    void plainLeavesOutTheCorners()
+    void aSheetHoldsItsRowsToTheMaximumWidth()
     {
-        m_style->setProperty("plain", true);
-        QCOMPARE(corners(), 0);
+        std::unique_ptr<QQuickItem> sheet = make("Sheet { width: 1000; maximumWidth: 400 }");
+        QVERIFY(sheet);
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 400.0);
+        sheet->setWidth(300);
+        const double side = sheet->property("side").toDouble();
+        QCOMPARE(sheet->property("panelWidth").toDouble(), 300.0 - 2 * side);
     }
 
-    void aFrameLightsInGold()
+    void aNoticeShowsOneLineEach()
     {
-        m_style->setProperty("appColors", true);
-        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
-        const auto outline = [&] {
-            return frame->childItems()
-                .at(0)
-                ->property("border")
-                .value<QObject *>()
-                ->property("color")
-                .value<QColor>();
-        };
-        QCOMPARE(outline(), hex("#5c4a32"));
-        frame->setProperty("lit", true);
-        QCOMPARE(outline(), hex("#d4b06a"));
+        std::unique_ptr<QQuickItem> none = make("Notice { }");
+        QCOMPARE(none->isVisible(), false);
+        std::unique_ptr<QQuickItem> two = make("Notice { lines: [\"Loses life\", \"Loses speed\"] }");
+        QCOMPARE(two->isVisible(), true);
+        QCOMPARE(two->property("tint").value<QColor>(), tone(3, false));
     }
 
     void aTableMeasuresItsChangesAgainstTheBiggest()
@@ -373,18 +350,6 @@ private:
         return item;
     }
 
-    // the corner pieces are the children that are ten by ten
-    int corners()
-    {
-        std::unique_ptr<QQuickItem> frame = make("OrnateFrame { width: 100; height: 100 }");
-        int count = 0;
-        for (QQuickItem *child : frame->childItems()) {
-            if (child->width() == 10 && child->height() == 10)
-                ++count;
-        }
-        return count;
-    }
-
     QVariant call(const QString &name, const QVariantList &args = {}) const
     {
         QVariant result;
@@ -413,6 +378,7 @@ private:
     {
         return call(u"tone"_s, {tone, colorblind}).value<QColor>();
     }
+    int step(const QString &name) const { return call(u"step"_s, {name}).toInt(); }
     QColor color(const QString &property) const
     {
         return m_probe->property(property.toLatin1().constData()).value<QColor>();

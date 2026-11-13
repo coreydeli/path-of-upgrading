@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 #include "app/itemhistory.h"
 #include "app/statpicker.h"
-#include "core/datafiles.h"
 #include "core/parser.h"
 #include "fakenetwork.h"
+#include "services/datafiles.h"
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
 #include "tradefixtures.h"

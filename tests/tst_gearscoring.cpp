@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 #include "app/activecharacter.h"
-#include "app/characterlist.h"
+#include "app/buildweigher.h"
 #include "app/gearscoring.h"
-#include "app/settingsstore.h"
 #include "core/buildprofiles.h"
+#include "core/weighedprofile.h"
 #include "services/pobengine.h"
 
 #include <QAbstractItemModelTester>
+#include <QDate>
 #include <QDir>
 #include <QFile>
+#include <QLocale>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -25,7 +27,8 @@ struct Scoring
     CharacterStore store{dir.filePath(u"characters"_s)};
     PobEngine engine;
     ActiveCharacter active{&store, &engine};
-    GearScoring scoring{&active};
+    BuildWeigher weigher{&active, &engine};
+    GearScoring scoring{&active, &weigher};
     QAbstractItemModelTester tester{&scoring, QAbstractItemModelTester::FailureReportingMode::QtTest};
 
     QString play(const Character &character)
@@ -52,36 +55,6 @@ struct Scoring
     const Character &saved() const { return *store.find(active.id()); }
 };
 
-// Importing builds for the character you play.
-struct Importing
-{
-    QTemporaryDir dir;
-    SettingsStore settings{dir.filePath(u"settings.conf"_s)};
-    CharacterStore store{dir.filePath(u"characters"_s)};
-    PobEngine engine;
-    ActiveCharacter active{&store, &engine};
-    CharacterList list{&store, &active, &settings};
-    GearScoring scoring{&active};
-    QString id;
-
-    Importing()
-    {
-        Character c;
-        c.name = u"Tester"_s;
-        id = store.add(c).value_or(QString());
-        active.setId(id);
-    }
-
-    // a build with this much Energy Shield and a thousand Life
-    bool import(double energyShield)
-    {
-        PobBuild build;
-        build.life = 1000;
-        build.energyShield = energyShield;
-        return list.importBuild(id, u"<PathOfBuilding2/>"_s, build).has_value();
-    }
-};
-
 Character tester(const QString &profile = {})
 {
     Character c;
@@ -98,6 +71,17 @@ QStringList labelsOf(QStringView profile)
     return labels;
 }
 
+// Path of Building's weighing of boots, for the build on this date.
+WeighedProfile weighedBoots()
+{
+    WeighedProfile weighed = weighedProfile(
+        {{u"Boots"_s, {{u"#% increased Movement Speed"_s, 1, 30}, {u"# to maximum Life"_s, 0.2, 100}}}},
+        *buildProfile(defaultBuildProfile));
+    weighed.pobVersion = u"0.3.3"_s;
+    weighed.date = u"2026-03-14"_s;
+    return weighed;
+}
+
 constexpr int asUsual = 2;
 
 } // namespace
@@ -112,13 +96,8 @@ private Q_SLOTS:
         // which has the default profile's stats to change
         Scoring s;
         QCOMPARE(s.scoring.rowCount(), int(tweakableStats(*buildProfile(defaultBuildProfile)).size()));
-        QCOMPARE(s.scoring.profile(), 0);
         QCOMPARE(s.scoring.character(), QString());
         QVERIFY(!s.scoring.isTweaked());
-        QCOMPARE(s.scoring.profiles(),
-                 QStringList({u"Life and resistances"_s, u"Energy Shield spellcaster"_s,
-                              u"Energy Shield attacker"_s, u"Minion summoner on Energy Shield"_s,
-                              u"None, by my stat weights alone"_s}));
         QCOMPARE(s.scoring.levels().size(), 6);
         QCOMPARE(s.scoring.levels(),
                  QStringList({u"Not at all (0x)"_s, u"Half (0.5x)"_s, u"Normal (1x)"_s,
@@ -131,7 +110,6 @@ private Q_SLOTS:
         QSignalSpy changed(&s.scoring, &GearScoring::changed);
         s.play(tester());
         QCOMPARE(s.scoring.character(), u"Tester"_s);
-        QCOMPARE(s.scoring.profile(), 0);
         QCOMPARE(s.scoring.summary(), buildProfile(defaultBuildProfile)->summary);
         QCOMPARE(s.labels(), labelsOf(defaultBuildProfile));
         QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), asUsual);
@@ -143,7 +121,7 @@ private Q_SLOTS:
     {
         Scoring s;
         s.play(tester(u"es-caster"_s));
-        GearScoring later(&s.active);
+        GearScoring later(&s.active, &s.weigher);
         QCOMPARE(later.character(), u"Tester"_s);
         QCOMPARE(later.rowCount(), s.scoring.rowCount());
         QVERIFY(later.rowCount() > 0);
@@ -151,112 +129,102 @@ private Q_SLOTS:
                  s.scoring.index(0).data(GearScoring::LabelRole));
     }
 
-    void pickProfile()
-    {
-        Scoring s;
-        s.play(tester());
-        QSignalSpy reset(&s.scoring, &GearScoring::modelReset);
-        s.scoring.setProfile(1);
-        QCOMPARE(s.saved().buildProfile, u"es-caster"_s);
-        QCOMPARE(s.scoring.profile(), 1);
-        QCOMPARE(s.labels(), labelsOf(u"es-caster"));
-        QCOMPARE(s.scoring.summary(), buildProfile(u"es-caster")->summary);
-        QCOMPARE(reset.size(), 1);
-
-        // and back to the first, saved by its id
-        s.scoring.setProfile(0);
-        QCOMPARE(s.saved().buildProfile, u"life-res"_s);
-        QVERIFY(s.saved().profilePicked);
-        QCOMPARE(s.labels(), labelsOf(defaultBuildProfile));
-        QCOMPARE(reset.size(), 2);
-    }
-
-    void pickingTheOneYouHave()
-    {
-        // is a choice too, and keeps the profile as it is
-        Scoring s;
-        s.play(tester());
-        QSignalSpy reset(&s.scoring, &GearScoring::modelReset);
-        s.scoring.setProfile(0);
-        QVERIFY(s.saved().profilePicked);
-        QCOMPARE(s.saved().buildProfile, u"life-res"_s);
-        QCOMPARE(s.scoring.profile(), 0);
-        QCOMPARE(reset.size(), 0);
-
-        // once is enough
-        QSignalSpy changed(&s.active, &ActiveCharacter::changed);
-        s.scoring.setProfile(0);
-        QCOMPARE(changed.size(), 0);
-    }
-
-    void pickingNoneAgain()
-    {
-        // a profile saved by a newer version shows as none, and picking none
-        // replaces it
-        Scoring s;
-        s.play(tester(u"glass-cannon"_s));
-        s.scoring.setProfile(int(s.scoring.profiles().size()) - 1);
-        QCOMPARE(s.saved().buildProfile, noBuildProfile.toString());
-        QVERIFY(s.saved().profilePicked);
-    }
-
-    void followsTheBuild()
-    {
-        Importing i;
-        QSignalSpy reset(&i.scoring, &GearScoring::modelReset);
-        QCOMPARE(i.scoring.profile(), 0);
-        QVERIFY(i.import(5000));
-        QCOMPARE(i.scoring.profile(), 1);
-        QCOMPARE(reset.size(), 1);
-        QVERIFY(i.import(100));
-        QCOMPARE(i.scoring.profile(), 0);
-    }
-
-    void keepsWhatYouPicked()
-    {
-        Importing i;
-        QVERIFY(i.import(5000));
-        QCOMPARE(i.scoring.profile(), 1);
-        i.scoring.setProfile(2);
-        QVERIFY(i.import(5000));
-        QVERIFY(i.import(100));
-        QCOMPARE(i.scoring.profile(), 2);
-    }
-
-    void keepsTheOneYouPickedAgain()
-    {
-        // it was the one you had, and you chose it anyway
-        Importing i;
-        QVERIFY(i.import(5000));
-        i.scoring.setProfile(1);
-        QVERIFY(i.import(100));
-        QCOMPARE(i.scoring.profile(), 1);
-    }
-
-    void noProfile()
-    {
-        Scoring s;
-        s.play(tester());
-        const int none = int(s.scoring.profiles().size()) - 1;
-        s.scoring.setProfile(none);
-        QCOMPARE(s.saved().buildProfile, noBuildProfile.toString());
-        QCOMPARE(s.scoring.profile(), none);
-        QCOMPARE(s.scoring.rowCount(), 0);
-        QCOMPARE(s.scoring.summary(), u"Items are judged by your stat weights alone, with no gear score."_s);
-
-        // with no rows to change
-        QSignalSpy changed(&s.scoring, &GearScoring::changed);
-        s.active.reload();
-        QCOMPARE(changed.size(), 1);
-    }
-
     void unknownProfile()
     {
-        // as for none, saved by a newer version maybe
+        // saved by a newer version maybe, so nothing to rate by
         Scoring s;
         s.play(tester(u"glass-cannon"_s));
-        QCOMPARE(s.scoring.profile(), int(s.scoring.profiles().size()) - 1);
         QCOMPARE(s.scoring.rowCount(), 0);
+    }
+
+    void aGeneralStart()
+    {
+        Scoring s;
+        s.play(tester());
+        QCOMPARE(s.scoring.state(), u"A general start, until Path of Building weighs your build."_s);
+        QCOMPARE(s.scoring.weighedOn(), QString());
+        QVERIFY(!s.scoring.weightsOnly());
+        QVERIFY(!s.scoring.isWeighing());
+        QVERIFY(!s.scoring.canWeigh());
+    }
+
+    void weighedForTheBuild()
+    {
+        Scoring s;
+        Character c = tester();
+        c.weighed = weighedBoots();
+        s.play(c);
+        const QString date = QLocale().toString(QDate(2026, 3, 14), QLocale::LongFormat);
+        QCOMPARE(s.scoring.weighedOn(), date);
+        QCOMPARE(s.scoring.state(), u"Weighed by Path of Building for your build on "_s + date + u"."_s);
+        QVERIFY(s.scoring.summary().startsWith(u"Slots Path of Building didn't weigh go by the "_s));
+
+        // the weighed stats are the rows, with the start's for the other slots
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);
+        QVERIFY(s.labels().contains(u"Rarity"_s));
+    }
+
+    void weighingChangesTheRows()
+    {
+        // the start profile counts life on boots, and the weighing took over there
+        Scoring s;
+        const QString id = s.play(tester());
+        const QStringList before = s.labels();
+        QSignalSpy reset(&s.scoring, &GearScoring::modelReset);
+        QSignalSpy changed(&s.scoring, &GearScoring::changed);
+        Character weighed = *s.store.find(id);
+        weighed.weighed = weighedBoots();
+        QVERIFY(s.store.save(id, weighed));
+        s.active.reload();
+        QVERIFY(s.labels() != before);
+        QCOMPARE(reset.size(), 1);
+        QVERIFY(changed.size() >= 1);
+        QVERIFY(s.of(u"Movement Speed"_s, GearScoring::LevelRole).isValid());
+    }
+
+    void weightsOnly()
+    {
+        Scoring s;
+        Character c = tester();
+        c.weighed = weighedBoots();
+        s.play(c);
+        QSignalSpy changed(&s.scoring, &GearScoring::changed);
+        s.scoring.setWeightsOnly(true);
+        QVERIFY(s.saved().weightsOnly);
+        QVERIFY(s.scoring.weightsOnly());
+        QCOMPARE(s.scoring.rowCount(), 0);
+        QCOMPARE(s.scoring.state(), u"Judged by your stat weights alone"_s);
+        QCOMPARE(s.scoring.summary(), u"Items are judged by your stat weights alone, with no gear score."_s);
+        QVERIFY(changed.size() >= 1);
+        // the start and the weighing are kept
+        QCOMPARE(s.saved().buildProfile, QString());
+        QVERIFY(s.saved().weighed);
+
+        // once is enough
+        QSignalSpy active(&s.active, &ActiveCharacter::changed);
+        s.scoring.setWeightsOnly(true);
+        QCOMPARE(active.size(), 0);
+
+        s.scoring.setWeightsOnly(false);
+        QVERIFY(!s.saved().weightsOnly);
+        QVERIFY(s.scoring.rowCount() > 0);
+    }
+
+    void tweaksOfVanishedStatsAreKept()
+    {
+        Scoring s;
+        Character c = tester();
+        c.tweaks = {{u"Movement Speed"_s, 3}};
+        c.weighed = weighedBoots();
+        const QString id = s.play(c);
+        // weighing it again drops the stat, and the tweak stays, unused
+        Character again = *s.store.find(id);
+        again.weighed = weighedProfile({{u"Boots"_s, {{u"# to maximum Life"_s, 1, 100}}}},
+                                       *buildProfile(defaultBuildProfile));
+        QVERIFY(s.store.save(id, again));
+        s.active.reload();
+        QVERIFY(!s.labels().contains(u"Movement Speed"_s));
+        QCOMPARE(s.saved().tweaks, ProfileTweaks({{u"Movement Speed"_s, 3.0}}));
     }
 
     void outOfRange()
@@ -264,44 +232,41 @@ private Q_SLOTS:
         Scoring s;
         s.play(tester());
         QSignalSpy changed(&s.active, &ActiveCharacter::changed);
-        s.scoring.setProfile(-1);
-        s.scoring.setProfile(int(s.scoring.profiles().size()));
         s.scoring.setLevel(u"Life"_s, -1);
         s.scoring.setLevel(u"Life"_s, int(s.scoring.levels().size()));
         s.scoring.setLevel(u"Life"_s, asUsual);
         QCOMPARE(changed.size(), 0);
-        QCOMPARE(s.saved().buildProfile, QString());
-        QVERIFY(!s.saved().profilePicked);
     }
 
     void where()
     {
         Scoring s;
         s.play(tester(u"es-caster"_s));
-        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);
         QCOMPARE(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString(),
-                 u"Counts on Weapon, Offhand, and Amulet"_s);
+                 u"Counts on Weapon, Offhand, and Amulet."_s);
         QCOMPARE(s.of(u"Life"_s, GearScoring::WhereRole).toString(),
-                 u"Counts in every slot but Weapon and Jewel"_s);
-        QCOMPARE(s.of(u"Mana"_s, GearScoring::WhereRole).toString(), u"Counts in every slot but Jewel"_s);
+                 u"Counts in every slot but Weapon and Jewel."_s);
+        QCOMPARE(s.of(u"Mana"_s, GearScoring::WhereRole).toString(), u"Counts in every slot but Jewel."_s);
         // half of them
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::WhereRole).toString(),
-                 u"Counts on Helmet, Gloves, Boots, Amulet, and Ring"_s);
+                 u"Counts on Helmet, Gloves, Boots, Amulet, and Ring."_s);
 
-        s.scoring.setProfile(3);
-        QCOMPARE(s.of(u"Intelligence"_s, GearScoring::WhereRole).toString(), u"Counts in every slot"_s);
+        Scoring minions;
+        minions.play(tester(u"minion-es"_s));
+        QCOMPARE(minions.of(u"Intelligence"_s, GearScoring::WhereRole).toString(),
+                 u"Counts in every slot."_s);
     }
 
     void theAttackersStats()
     {
         Scoring s;
         s.play(tester(u"es-attacker"_s));
-        QCOMPARE(s.scoring.profile(), 2);
-        QCOMPARE(s.scoring.profiles().at(2), u"Energy Shield attacker"_s);
-        QCOMPARE(s.of(u"Weapon DPS"_s, GearScoring::WhereRole).toString(), u"Counts on Weapon"_s);
-        QCOMPARE(s.of(u"Attack speed"_s, GearScoring::WhereRole).toString(),
-                 u"Counts in every slot but Helmet, Body Armour, Boots, and Belt"_s);
-        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QCOMPARE(s.of(u"Weapon damage per second"_s, GearScoring::WhereRole).toString(),
+                 u"Counts on Weapon."_s);
+        QCOMPARE(s.of(u"Attack Speed"_s, GearScoring::WhereRole).toString(),
+                 u"Counts in every slot but Helmet, Body Armour, Boots, and Belt."_s);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);
         QVERIFY(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString().isEmpty());
     }
 
@@ -348,16 +313,16 @@ private Q_SLOTS:
         // tweaks are saved as factors, whatever the levels are called
         Scoring s;
         Character c = tester(u"es-caster"_s);
-        c.tweaks = {{u"Life"_s, 0}, {u"Movement speed"_s, 0.5}, {u"Rarity"_s, 1.5}, {u"Mana"_s, 2}};
+        c.tweaks = {{u"Life"_s, 0}, {u"Movement Speed"_s, 0.5}, {u"Rarity"_s, 1.5}, {u"Mana"_s, 2}};
         const QString id = s.play(c);
         QCOMPARE(s.of(u"Life"_s, GearScoring::LevelRole).toInt(), 0);
-        QCOMPARE(s.of(u"Movement speed"_s, GearScoring::LevelRole).toInt(), 1);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::LevelRole).toInt(), 1);
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::LevelRole).toInt(), 3);
         QCOMPARE(s.of(u"Mana"_s, GearScoring::LevelRole).toInt(), 4);
 
         // and picking a level saves the factor
-        s.scoring.setLevel(u"Movement speed"_s, 5);
-        QCOMPARE(s.store.find(id)->tweaks.value(u"Movement speed"_s), 3.0);
+        s.scoring.setLevel(u"Movement Speed"_s, 5);
+        QCOMPARE(s.store.find(id)->tweaks.value(u"Movement Speed"_s), 3.0);
     }
 
     void chaosInoculation()
@@ -371,7 +336,7 @@ private Q_SLOTS:
         QCOMPARE(s.of(chaos, GearScoring::LevelRole).toInt(), 0);
         QVERIFY(s.of(chaos, GearScoring::WhereRole)
                     .toString()
-                    .endsWith(u". Not at all to start with, as your build has Chaos Inoculation"_s));
+                    .endsWith(u". Not at all to start with, as your build has Chaos Inoculation."_s));
         QVERIFY(!s.of(u"Life"_s, GearScoring::WhereRole).toString().contains(u"Chaos"_s));
         QVERIFY(!s.scoring.isTweaked());
 

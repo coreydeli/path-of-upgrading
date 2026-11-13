@@ -5,6 +5,7 @@
 #include "core/pobweighing.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
+#include "services/pobfinder.h"
 
 #include <QJsonArray>
 #include <QSignalSpy>
@@ -120,6 +121,10 @@ private Q_SLOTS:
         // life adds the most to a helmet for effective HP
         QVERIFY(!weighing.mods.isEmpty());
         QCOMPARE(weighing.mods.first().id, u"explicit.stat_3299347043"_s);
+        // and says what it is and the most a helmet rolls of it
+        const PobModAbout life = weighing.about.value(weighing.mods.first().id);
+        QCOMPARE(statKeyOf(life.text), u"# to maximum Life"_s);
+        QCOMPARE_GT(life.top, 0.0);
     }
 
 private:

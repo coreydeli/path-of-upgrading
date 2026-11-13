@@ -6,11 +6,20 @@
 # style is what the window tests load when it's there, and LuaJIT runs the
 # bridge to Path of Building in its test.
 set -eu
-pacman -Syu --noconfirm --needed \
+# Arch's mirrors drop a download now and then, so pacman gets three tries
+pacman_retry() {
+    for try in 1 2 3; do
+        pacman "$@" && return 0
+        [ "$try" = 3 ] || sleep 15
+    done
+    return 1
+}
+
+pacman_retry -Syu --noconfirm --needed \
     base-devel cmake ninja git ccache \
     qt6-base qt6-declarative \
     kirigami kirigami-addons kdeclarative ki18n kdbusaddons kconfig kcolorscheme \
-    kglobalaccel knotifications kstatusnotifieritem kwindowsystem \
+    kglobalaccel kguiaddons knotifications kstatusnotifieritem kwindowsystem \
     layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib \
     qqc2-desktop-style qt6-wayland hicolor-icon-theme \
     desktop-file-utils appstream dbus xorg-server-xvfb xorg-xauth luajit

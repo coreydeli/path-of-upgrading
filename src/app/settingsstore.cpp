@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/settingsstore.h"
 
+#include "services/settingsfile.h"
+
 namespace pou {
 
 SettingsStore::SettingsStore(const QString &path, QObject *parent)

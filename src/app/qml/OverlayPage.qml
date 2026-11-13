@@ -10,6 +10,7 @@ ColumnsPage {
     id: overlayPage
 
     required property OverlayOptions options
+    required property Updates updates
     // the results key is for trade searches
     property bool tradeOffered: true
     // the league, which has no page of its own without trade
@@ -35,14 +36,14 @@ ColumnsPage {
         }
     ]
 
-    title: qsTr("Settings")
+    title: qsTr("General")
     description: qsTr("The hotkeys, and how the popup over the game looks.")
 
     SectionHeader {
         title: qsTr("Hotkeys")
     }
 
-    FormCard.FormCard {
+    Sheet {
         KeyField {
             objectName: "checkKey"
             label: qsTr("Check an item")
@@ -51,7 +52,7 @@ ColumnsPage {
             onChosen: key => overlayPage.refused = !overlayPage.options.setCheckKey(key)
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: overlayPage.tradeOffered
         }
 
@@ -64,7 +65,7 @@ ColumnsPage {
             onChosen: key => overlayPage.refused = !overlayPage.options.setResultsKey(key)
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: gameOnlyText.visible
         }
 
@@ -76,7 +77,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: refusedText.visible
         }
 
@@ -87,7 +88,7 @@ ColumnsPage {
             text: qsTr("That key is already taken.")
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: errorText.visible
         }
 
@@ -99,7 +100,7 @@ ColumnsPage {
             textItem.wrapMode: Text.Wrap
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "advancedCopySwitch"
@@ -109,7 +110,17 @@ ColumnsPage {
             onToggled: overlayPage.options.advancedCopy = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
+
+        SwitchRow {
+            objectName: "putBackSwitch"
+            text: qsTr("Put back what you had copied")
+            description: qsTr("Once the hotkey has copied the item, so you can still paste what you copied before.")
+            checked: overlayPage.options.putBackClipboard
+            onToggled: overlayPage.options.putBackClipboard = checked
+        }
+
+        RowRule {}
 
         SwitchRow {
             objectName: "clipboardSwitch"
@@ -119,12 +130,12 @@ ColumnsPage {
             onToggled: overlayPage.options.watchClipboard = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "pausedSwitch"
             text: qsTr("Pause")
-            description: qsTr("The hotkeys and the clipboard are ignored until you turn this off.")
+            description: qsTr("The hotkeys and copied items are ignored until you turn this off.")
             checked: overlayPage.options.paused
             onToggled: overlayPage.options.paused = checked
         }
@@ -134,7 +145,7 @@ ColumnsPage {
         title: qsTr("Popup")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "positionBox"
             text: qsTr("Where it shows")
@@ -145,7 +156,7 @@ ColumnsPage {
             onActivated: overlayPage.options.position = currentValue
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.AbstractFormDelegate {
             background: null
@@ -180,7 +191,7 @@ ColumnsPage {
             }
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "compactSwitch"
@@ -190,17 +201,17 @@ ColumnsPage {
             onToggled: overlayPage.options.compact = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         SwitchRow {
             objectName: "colorblindSwitch"
-            text: qsTr("Colorblind friendly colors")
+            text: qsTr("Colorblind-friendly colors")
             description: qsTr("Blue for better and orange for worse, in place of green and red.")
             checked: overlayPage.options.colorblind
             onToggled: overlayPage.options.colorblind = checked
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         NumberField {
             objectName: "autoHide"
@@ -226,19 +237,57 @@ ColumnsPage {
     }
 
     SectionHeader {
+        title: qsTr("Updates")
+    }
+
+    Sheet {
+        SwitchRow {
+            objectName: "checkForUpdatesSwitch"
+            text: qsTr("Check for updates when the app starts")
+            description: qsTr("Asks GitHub once a day while it runs. Nothing is installed without you saying so.")
+            checked: overlayPage.updates.checkOnLaunch
+            onToggled: overlayPage.updates.checkOnLaunch = checked
+        }
+
+        RowRule {}
+
+        SwitchRow {
+            objectName: "includeBetasSwitch"
+            text: qsTr("Include beta builds")
+            description: qsTr("Betas come out often and may have bugs.")
+            checked: overlayPage.updates.includeBetas
+            onToggled: overlayPage.updates.includeBetas = checked
+        }
+
+        RowRule {}
+
+        FormRow {
+            text: qsTr("You have version %1").arg(overlayPage.updates.version)
+            description: overlayPage.updates.status
+
+            QQC2.Button {
+                objectName: "checkNowButton"
+                text: qsTr("Check Now")
+                enabled: !overlayPage.updates.checking
+                onClicked: overlayPage.updates.checkNow()
+            }
+        }
+    }
+
+    SectionHeader {
         title: qsTr("General")
     }
 
-    FormCard.FormCard {
+    Sheet {
         SwitchRow {
             objectName: "startSwitch"
-            text: qsTr("Start with the desktop")
+            text: qsTr("Start with your desktop")
             description: qsTr("Waits in the tray when you log in, without the window.")
             checked: overlayPage.options.startWithDesktop
             onToggled: overlayPage.options.startWithDesktop = checked
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             objectName: "startErrorSeparator"
             visible: startError.visible
         }

@@ -15,6 +15,7 @@ bool setupWanted(const Settings &settings, bool charactersSaved, bool beta)
     untouched.overlay.resultsHotkey = OverlaySettings().resultsHotkey;
     Settings first;
     first.trade.enabled = beta;
+    first.updates.includeBetas = beta;
     return untouched == first;
 }
 

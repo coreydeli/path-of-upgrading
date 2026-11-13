@@ -65,7 +65,12 @@ QString quoted(const QString &path)
             text += u'\\';
         text += c;
     }
-    return text + u'"';
+    text += u'"';
+    // The value is unescaped as a string before the quotes are read, so each
+    // backslash is doubled again, and a percent sign would be a field code.
+    text.replace(u"\\"_s, u"\\\\"_s);
+    text.replace(u"%"_s, u"%%"_s);
+    return text;
 }
 
 } // namespace

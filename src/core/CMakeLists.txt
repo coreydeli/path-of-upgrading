@@ -7,14 +7,15 @@ add_library(pou_core STATIC
     buildprofiles.cpp buildprofiles.h
     catalog.cpp catalog.h
     character.cpp character.h
-    characterstore.cpp characterstore.h
-    datafiles.cpp datafiles.h
+    characterdata.cpp characterdata.h
     evaluation.cpp evaluation.h
     firstrun.cpp firstrun.h
     gearscore.cpp gearscore.h
+    hands.cpp hands.h
     ignore.cpp ignore.h
     item.h
     league.cpp league.h
+    links.cpp links.h
     listing.cpp listing.h
     mapcheck.cpp mapcheck.h
     numbers.cpp numbers.h
@@ -35,6 +36,7 @@ add_library(pou_core STATIC
     sessionguide.cpp sessionguide.h
     seenstats.cpp seenstats.h
     settings.cpp settings.h
+    slotmods.cpp slotmods.h
     slots.cpp slots.h
     statmap.cpp statmap.h
     statnorm.cpp statnorm.h
@@ -42,11 +44,24 @@ add_library(pou_core STATIC
     tradedata.cpp tradedata.h
     tradequery.cpp tradequery.h
     tradesite.cpp tradesite.h
+    updates.cpp updates.h
     verdict.h
+    weighedprofile.cpp weighedprofile.h
     weights.cpp weights.h
     wearing.cpp wearing.h
 )
 
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
-target_compile_definitions(pou_core PRIVATE POU_BETA_BUILD=$<BOOL:${POU_BETA}>)
+target_compile_definitions(pou_core PRIVATE
+    POU_BETA_BUILD=$<BOOL:${POU_BETA}>
+    POU_BUILD_VERSION="${POU_BUILD_VERSION}"
+    POU_INSTALL_KIND="${POU_INSTALL_KIND}"
+)
 target_link_libraries(pou_core PUBLIC Qt6::Core PRIVATE ZLIB::ZLIB)
+
+# what each kind of item can roll, from tools/slot-mods.py
+qt_add_resources(pou_core slotmods
+    PREFIX /pou
+    BASE ${PROJECT_SOURCE_DIR}/data
+    FILES ${PROJECT_SOURCE_DIR}/data/slotmods.json
+)

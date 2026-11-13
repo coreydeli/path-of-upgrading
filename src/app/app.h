@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "app/about.h"
 #include "app/activecharacter.h"
 #include "app/appearance.h"
 #include "app/buildimporter.h"
+#include "app/buildweigher.h"
 #include "app/characterlist.h"
 #include "app/checkeditems.h"
 #include "app/gearlist.h"
 #include "app/gearscoring.h"
+#include "app/help.h"
 #include "app/hotkeys.h"
 #include "app/ignoredstats.h"
 #include "app/itemchecker.h"
@@ -25,16 +28,19 @@
 #include "app/tradeoptions.h"
 #include "app/traderesults.h"
 #include "app/tradesession.h"
-#include "core/characterstore.h"
+#include "app/updates.h"
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
 #include "platform/gamewatcher.h"
+#include "services/characterstore.h"
 #include "services/pobengine.h"
 #include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
 #include "services/tradedatastore.h"
 #include "services/tradesearcher.h"
+#include "services/updatechecker.h"
+#include "services/updatedownloader.h"
 
 #include <QObject>
 #include <QString>
@@ -50,6 +56,7 @@ class GameInput;
 class GlobalShortcuts;
 class Opener;
 class SecretStore;
+class SystemClipboard;
 
 // What the app runs while it's open: the hotkeys, the item checker with its
 // popup and the items you've checked, your characters, Path of Building and
@@ -77,8 +84,11 @@ class App : public QObject
     Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
+    Q_PROPERTY(pou::Updates *updates READ updates CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
+    Q_PROPERTY(pou::About *about READ about CONSTANT)
+    Q_PROPERTY(pou::Help *help READ help CONSTANT)
 
 public:
     // Where it keeps what it has between runs.
@@ -108,12 +118,18 @@ public:
 
     // Looks for Path of Building again, as once you've installed it.
     Q_INVOKABLE void lookForPob();
+    // The Update button: looks again, and reads the builds saved in Path of
+    // Building's folder again too.
+    Q_INVOKABLE void updatePob();
 
     SettingsStore &settings() { return m_settings; }
     CharacterStore &characters() { return m_characters; }
     ActiveCharacter &character() { return m_character; }
     PobEngine &pob() { return m_pob; }
     ItemChecker &checker() { return m_checker; }
+    // The desktop's clipboard, which what you had copied is put back on after
+    // the hotkey's copy. Tests leave it out.
+    void setClipboard(std::unique_ptr<SystemClipboard> clipboard);
     // Their keys are changed here rather than in the settings, which have the
     // keys the desktop gave them.
     Hotkeys &hotkeys() { return m_hotkeys; }
@@ -129,6 +145,16 @@ public:
     // The listings of the last search, and the window that shows them.
     TradeResults &results() { return m_results; }
     ResultsPanel &resultsPanel() { return m_resultsPanel; }
+    // Looks for a newer release on GitHub, which main() starts once the
+    // program is up.
+    UpdateChecker &updateChecker() { return m_updates; }
+    // What installs an update by itself, for the kinds of install that can,
+    // and what to do once it has: restart or quit.
+    void setUpdateInstaller(std::unique_ptr<PackageInstaller> installer, const Updates::Finish &finish)
+    {
+        m_updatesModel.setInstaller(std::move(installer), finish);
+    }
+    Updates *updates() { return &m_updatesModel; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -148,6 +174,8 @@ public:
     PobOptions *pobOptions() { return &m_pobOptions; }
     Appearance *appearance() { return &m_appearance; }
     Onboarding *onboarding() { return &m_onboarding; }
+    About *about() { return &m_about; }
+    Help *help() { return &m_help; }
 
 private:
     void followSettings();
@@ -163,7 +191,10 @@ private:
     PobEngine m_pob;
     ActiveCharacter m_character;
     std::unique_ptr<GameInput> m_input;
+    // which the checker reads, so it goes after it
+    std::unique_ptr<SystemClipboard> m_clipboard;
     ItemChecker m_checker;
+    BuildWeigher m_weigher;
     std::unique_ptr<GlobalShortcuts> m_shortcuts;
     std::unique_ptr<GameWatcher> m_game;
     Hotkeys m_hotkeys;
@@ -181,6 +212,9 @@ private:
     TradeFinder m_finder;
     TradeResults m_results;
     ResultsPanel m_resultsPanel;
+    UpdateChecker m_updates;
+    UpdateDownloader m_downloader;
+    Updates m_updatesModel;
     CharacterList m_characterList;
     BuildImporter m_buildImporter;
     GearList m_gearList;
@@ -195,6 +229,8 @@ private:
     Autostart m_autostart;
     OverlayOptions m_overlayOptions;
     PobOptions m_pobOptions;
+    About m_about;
+    Help m_help;
     Appearance m_appearance;
     Onboarding m_onboarding;
 };

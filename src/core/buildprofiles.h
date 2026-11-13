@@ -26,6 +26,14 @@ public:
         , m_elsewhere(elsewhere)
     {}
 
+    // Values for the slot groups listed, and 0 for the rest.
+    static PerSlot of(const QList<std::pair<QString, double>> &overrides, double elsewhere = 0)
+    {
+        PerSlot out(elsewhere);
+        out.m_overrides = overrides;
+        return out;
+    }
+
     double at(const QString &slotGroup) const;
 
     // Slot groups where the value differs from elsewhere().
@@ -52,6 +60,10 @@ struct ProfileStat
     std::optional<Element> resist;
 };
 
+// Whether the stat is one of the item's own, like "[Base] Armour", rather than
+// a mod.
+bool isPropertyStat(const ProfileStat &stat);
+
 // What a kind of character wants from its gear, for the gear score.
 struct BuildProfile
 {
@@ -68,7 +80,7 @@ inline constexpr QStringView minionProfile = u"minion-es";
 // For scoring by your stat weights alone, as no profile has it.
 inline constexpr QStringView noBuildProfile = u"none";
 
-// What the profiles call a resistance, "Fire res".
+// What the profiles call a resistance, "Fire Resistance".
 QString resistLabel(Element e);
 
 const QList<BuildProfile> &buildProfiles();
@@ -95,5 +107,9 @@ QList<TweakableStat> tweakableStats(const BuildProfile &profile);
 // stat in one profile and an attack stat in the other, so it goes by the
 // character's profile. A tweak already under the new label is kept.
 void renameCriticalTweaks(QHash<QString, double> &tweaks, QStringView profileId);
+
+// The same for the labels that were spelled short ("Fire res", "Mana regen")
+// and are written out now.
+void renameShortTweaks(QHash<QString, double> &tweaks);
 
 } // namespace pou

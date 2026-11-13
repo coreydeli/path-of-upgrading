@@ -8,7 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // The setup guide's character: add one, or import a build for one. The
-// same things as the Characters page does.
+// same things as Import Character does.
 ColumnLayout {
     id: step
 
@@ -28,7 +28,7 @@ ColumnLayout {
         title: qsTr("Your Characters")
     }
 
-    FormCard.FormCard {
+    Sheet {
         visible: characterRows.count > 0
 
         Repeater {
@@ -50,7 +50,7 @@ ColumnLayout {
         title: qsTr("Add a Character")
     }
 
-    FormCard.FormCard {
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: nameField
             objectName: "setupNameField"
@@ -59,7 +59,7 @@ ColumnLayout {
             onAccepted: addButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: addButton
@@ -73,7 +73,7 @@ ColumnLayout {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: charactersError.visible
         }
 
@@ -91,16 +91,21 @@ ColumnLayout {
         title: qsTr("Import a Build")
     }
 
-    FormCard.FormCard {
+    SectionText {
+        objectName: "setupScoreNote"
+        text: qsTr("Once Path of Building is set up, the gear score comes from your build.")
+    }
+
+    Sheet {
         FormCard.FormTextFieldDelegate {
             id: codeField
             objectName: "setupCodeField"
             label: qsTr("Code or link")
-            placeholderText: qsTr("From Path of Building or pobb.in")
+            placeholderText: qsTr("From Path of Building, pobb.in or poe.ninja")
             onAccepted: importButton.clicked()
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             id: importButton
@@ -111,7 +116,7 @@ ColumnLayout {
             onClicked: step.importer.importText(codeField.text)
         }
 
-        FormCard.FormDelegateSeparator {}
+        RowRule {}
 
         FormCard.FormButtonDelegate {
             objectName: "setupFileButton"
@@ -136,7 +141,7 @@ ColumnLayout {
             }
         }
 
-        FormCard.FormDelegateSeparator {
+        RowRule {
             visible: importMessage.visible
         }
 

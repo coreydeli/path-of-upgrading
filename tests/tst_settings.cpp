@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "core/settings.h"
+#include "services/settingsfile.h"
 
 #include <QSettings>
 #include <QTemporaryDir>
@@ -20,8 +20,11 @@ private Q_SLOTS:
         const QSettings empty(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
         Settings expected;
         expected.trade.enabled = isBetaBuild();
+        expected.updates.includeBetas = isBetaBuild();
         QCOMPARE(loadSettings(empty), expected);
     }
+
+    void putsBackTheClipboardByDefault() { QVERIFY(OverlaySettings().putBackClipboard); }
 
     void theBuildSaysIfItIsABeta()
     {
@@ -82,6 +85,36 @@ private Q_SLOTS:
         }
     }
 
+    void betasAreOfferedByTheBuild()
+    {
+        QTemporaryDir dir;
+        const QSettings empty(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+        QVERIFY(loadSettings(empty, true).updates.includeBetas);
+        QVERIFY(!loadSettings(empty, false).updates.includeBetas);
+        QVERIFY(loadSettings(empty).updates.checkOnLaunch);
+    }
+
+    void betaChoiceIsKept()
+    {
+        for (const bool beta : {false, true}) {
+            QTemporaryDir dir;
+            QSettings store(dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+            // not chosen, so not saved, and a later build starts its own way
+            Settings s = loadSettings(store, beta);
+            saveSettings(store, s, beta);
+            QVERIFY(!store.contains(u"updates/includeBetas"_s));
+            QCOMPARE(loadSettings(store, !beta).updates.includeBetas, !beta);
+
+            s.updates.includeBetas = !beta;
+            saveSettings(store, s, beta);
+            QCOMPARE(loadSettings(store, beta).updates.includeBetas, !beta);
+            // and going back is a choice too
+            s.updates.includeBetas = beta;
+            saveSettings(store, s, beta);
+            QCOMPARE(loadSettings(store, !beta).updates.includeBetas, beta);
+        }
+    }
+
     void popupStaysAMinuteUnlessSet()
     {
         QTemporaryDir dir;
@@ -110,6 +143,7 @@ private Q_SLOTS:
         s.overlay.resultsHotkey = u"Ctrl+Shift+R"_s;
         s.overlay.advancedCopy = true;
         s.overlay.watchClipboard = false;
+        s.overlay.putBackClipboard = false;
         s.overlay.position = PopupPosition::Top;
         s.overlay.scale = 1.15;
         s.overlay.compact = false;
@@ -122,6 +156,7 @@ private Q_SLOTS:
         s.appearance.textFont = u"Sans Mono"_s;
         s.appearance.textSize = 11.5;
         s.overlay.startChosen = true;
+        s.updates = {.checkOnLaunch = false, .includeBetas = !isBetaBuild(), .skipped = u"0.7.0-beta.5"_s};
         s.setupDone = true;
 
         QTemporaryDir dir;
@@ -141,6 +176,8 @@ private Q_SLOTS:
         QCOMPARE(again.value(u"appearance/headingFont"_s).toString(), u"Palatino"_s);
         QCOMPARE(again.value(u"appearance/textFont"_s).toString(), u"Sans Mono"_s);
         QCOMPARE(again.value(u"appearance/textSize"_s).toDouble(), 11.5);
+        QCOMPARE(again.value(u"updates/checkOnLaunch"_s).toBool(), false);
+        QCOMPARE(again.value(u"updates/skipped"_s).toString(), u"0.7.0-beta.5"_s);
     }
 
     void outOfRange()
@@ -245,6 +282,7 @@ private Q_SLOTS:
             [](Settings &s) { s.overlay.resultsHotkey = u"F6"_s; },
             [](Settings &s) { s.overlay.advancedCopy = true; },
             [](Settings &s) { s.overlay.watchClipboard = false; },
+            [](Settings &s) { s.overlay.putBackClipboard = false; },
             [](Settings &s) { s.overlay.position = PopupPosition::Top; },
             [](Settings &s) { s.overlay.scale = 1.5; },
             [](Settings &s) { s.overlay.compact = false; },
@@ -257,6 +295,9 @@ private Q_SLOTS:
             [](Settings &s) { s.appearance.textFont = u"Sans Mono"_s; },
             [](Settings &s) { s.appearance.textSize = 12; },
             [](Settings &s) { s.overlay.startChosen = true; },
+            [](Settings &s) { s.updates.checkOnLaunch = false; },
+            [](Settings &s) { s.updates.includeBetas = !isBetaBuild(); },
+            [](Settings &s) { s.updates.skipped = u"0.7.0"_s; },
             [](Settings &s) { s.setupDone = true; },
         };
 

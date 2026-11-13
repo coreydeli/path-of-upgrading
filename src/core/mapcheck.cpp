@@ -89,7 +89,7 @@ const QList<CostRule> &costRules()
         {rx(uR"(Monsters? have (\d+)% increased Elemental Ailment Application)"_s),
          u"Monsters freeze, shock and ignite you more easily"_s, Danger::Mild, 100},
         {rx(uR"(Monsters have (\d+)% increased (?:Ailment|Stun) Threshold)"_s),
-         u"Monsters are harder to stun and to ail"_s},
+         u"Monsters are harder to stun and to inflict ailments on"_s},
         {rx(uR"(Monsters are (?:Armoured|Evasive))"_s), u"Monsters are tougher to hit or to hurt"_s},
         {rx(uR"(Monsters gain (\d+)% of maximum Life as Extra maximum Energy Shield)"_s),
          u"Monsters have extra energy shield"_s},
@@ -143,8 +143,8 @@ const QList<CostRule> &costRules()
         {rx(uR"(Natural Rare Monsters in Area have (\d+) extra Abyssal Modifiers)"_s),
          u"Rare monsters get an abyssal mod"_s, Danger::Mild},
         // tablets
-        {rx(uR"((\d+)% reduced Pack Size in Map)"_s), u"Fewer monsters in the map"_s},
-        {rx(uR"(Map has (\d+) additional random Modifiers)"_s), u"The map gets extra random mods"_s,
+        {rx(uR"((\d+)% reduced Pack Size in Map)"_s), u"Fewer monsters in the area"_s},
+        {rx(uR"(Map has (\d+) additional random Modifiers)"_s), u"The area gets extra random mods"_s,
          Danger::Risky},
         {rx(uR"(Unique Monsters have (\d+) additional Rare Modifiers)"_s),
          u"Unique monsters get extra mods"_s, Danger::Risky},
@@ -317,7 +317,10 @@ QString buildNoteFor(Need need, const QString &line, const MapBuild &build, int 
         }
         if (names.isEmpty())
             return {};
-        return u"Your %1 resistance is under the cap."_s.arg(names.join(u", "_s));
+        if (names.size() == 1)
+            return u"Your %1 resistance is under the cap."_s.arg(names.first());
+        const QString last = names.takeLast();
+        return u"Your %1 and %2 resistances are under the cap."_s.arg(names.join(u", "_s), last);
     }
     case Need::ChaosRes:
         if (const auto have = under(Element::Chaos))

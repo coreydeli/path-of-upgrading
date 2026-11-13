@@ -63,6 +63,18 @@ private Q_SLOTS:
         QCOMPARE(done.character.gear.value(u"Weapon"_s).baseType, u"Crude Bow"_s);
     }
 
+    void takesWhatItsHandsCanDo()
+    {
+        PobBuild build = buildWith({{u"Helmet"_s, {.text = helmet}}});
+        build.wielding = {.twoHandedInOne = true, .focusWithStaff = true};
+        const BuildImport done = importBuild(Character{.name = u"Tester"_s}, build);
+        QCOMPARE(done.character.wielding, build.wielding);
+
+        // another build can't do it
+        build.wielding = {};
+        QCOMPARE(importBuild(done.character, build).character.wielding, Wielding{});
+    }
+
     void keepsWhatYouCopied()
     {
         Character character;
@@ -155,7 +167,7 @@ private Q_SLOTS:
         Character character;
         // what you wear where the build has nothing counts as a change from it
         character.gear.insert(u"Boots"_s, item(boots));
-        character.resists = ResistRecord{.cap = 76, .source = ResistSource::Pob};
+        character.resists = ResistRecord{.cap = PerElement<double>::filled(76), .source = ResistSource::Pob};
 
         const BuildImport done = importBuild(character, build);
         QVERIFY(done.resists);
@@ -164,7 +176,7 @@ private Q_SLOTS:
         QCOMPARE(r.entered[Element::Fire], 80);
         QCOMPARE(r.entered[Element::Cold], 70);
         QCOMPARE(r.entered[Element::Lightning], std::nullopt);
-        QCOMPARE(r.cap, 76);
+        QCOMPARE(r.cap[Element::Fire], 76);
         // with the build's gear, not yours
         QCOMPARE(r.gear[Element::Fire], 20);
         QCOMPARE(r.gear[Element::Cold], 30);
@@ -177,7 +189,7 @@ private Q_SLOTS:
         PobBuild build = buildWith({{u"Helmet"_s, {.text = helmet}}});
         build.resists[Element::Fire] = 80;
         Character character;
-        character.resists = ResistRecord{.cap = 75, .source = ResistSource::Game};
+        character.resists = ResistRecord{.cap = PerElement<double>::filled(75), .source = ResistSource::Game};
         character.resists->entered[Element::Fire] = 60;
 
         const BuildImport done = importBuild(character, build);
@@ -188,7 +200,8 @@ private Q_SLOTS:
     void buildWithoutResists()
     {
         Character character;
-        character.resists = ResistRecord{.cap = 75, .source = ResistSource::Manual};
+        character.resists =
+            ResistRecord{.cap = PerElement<double>::filled(75), .source = ResistSource::Manual};
         character.resists->entered[Element::Cold] = 50;
 
         const BuildImport done = importBuild(character, buildWith({{u"Helmet"_s, {.text = helmet}}}));
@@ -326,12 +339,39 @@ private Q_SLOTS:
         build.minionDps = 100;
         build.resists[Element::Fire] = 80;
         Character character;
-        character.resists = ResistRecord{.cap = 75, .source = ResistSource::Game};
+        character.resists = ResistRecord{.cap = PerElement<double>::filled(75), .source = ResistSource::Game};
 
         const BuildImport done = importBuild(character, build);
         QVERIFY(!done.resists);
         QCOMPARE(done.character.buildProfile, u"minion-es"_s);
         QVERIFY(done.profileChanged);
+    }
+
+    void maximumsOfTheBuild()
+    {
+        // the build's include what its gear adds, which is counted again for the gear
+        const QString amulet =
+            rare(u"Amulets"_s, u"Dusk Charm"_s, u"Jade Amulet"_s, u"+2% to Maximum Fire Resistance"_s);
+        PobBuild build = buildWith({{u"Amulet"_s, {.text = amulet}}});
+        build.resists[Element::Fire] = 80;
+        build.resists[Element::Cold] = 70;
+        build.resistMax[Element::Fire] = 77;
+        build.resistMax[Element::Cold] = 80;
+
+        const std::optional<ResistRecord> r = buildResists(build);
+        QVERIFY(r);
+        QCOMPARE(r->cap, (PerElement<double>{{75, 80, 75, 75}}));
+        QCOMPARE(r->capSet, PerElement<bool>());
+        QCOMPARE(liveResists(*r, {})->caps[Element::Fire], 75.0);
+        QCOMPARE(liveResists(*r, {{u"Amulet"_s, item(amulet)}})->caps[Element::Fire], 77.0);
+
+        // a maximum you set stays
+        ResistRecord before;
+        before.cap[Element::Cold] = 78;
+        before.capSet[Element::Cold] = true;
+        const std::optional<ResistRecord> kept = buildResists(build, &before);
+        QCOMPARE(kept->cap, (PerElement<double>{{75, 78, 75, 75}}));
+        QVERIFY(kept->capSet[Element::Cold]);
     }
 
     void theBuildsResists()
@@ -341,7 +381,11 @@ private Q_SLOTS:
         build.jewels << PobItemText{
             .text = rare(u"Jewels"_s, u"Glint"_s, u"Ruby"_s, u"+8% to Fire Resistance"_s)};
         build.resists[Element::Fire] = 80;
-        ResistRecord before{.cap = 76, .buffer = 3, .bufferSet = true, .source = ResistSource::Game};
+        ResistRecord before{.cap = PerElement<double>::filled(76),
+                            .capSet = {},
+                            .buffer = 3,
+                            .bufferSet = true,
+                            .source = ResistSource::Game};
         before.entered[Element::Cold] = 50;
 
         const std::optional<ResistRecord> r = buildResists(build, &before);
@@ -349,7 +393,7 @@ private Q_SLOTS:
         QCOMPARE(r->source, ResistSource::Pob);
         QCOMPARE(r->entered[Element::Fire], 80);
         QCOMPARE(r->entered[Element::Cold], std::nullopt);
-        QCOMPARE(r->cap, 76);
+        QCOMPARE(r->cap[Element::Fire], 76);
         QCOMPARE(r->buffer, 3);
         // jewels don't add to your resistances
         QCOMPARE(r->gear[Element::Fire], 20);

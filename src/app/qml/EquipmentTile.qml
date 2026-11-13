@@ -26,7 +26,7 @@ QQC2.AbstractButton {
     // what's in it in one line, for the screen reader and the tests
     readonly property string description: {
         if (empty)
-            return qsTr("Nothing saved");
+            return qsTr("Not saved yet");
         const parts = [name];
         if (base !== "")
             parts.push(base);
@@ -36,7 +36,7 @@ QQC2.AbstractButton {
     }
     // the frame is lit when it's the one picked, or it's about to be
     readonly property bool lit: chosen || hovered || visualFocus
-    readonly property color edge: lit ? Style.gold(Kirigami.Theme) : Style.frame(Kirigami.Theme)
+    readonly property color edge: lit ? Style.accent(Kirigami.Theme) : Style.frame(Kirigami.Theme)
 
     objectName: "tile:" + slot
     implicitWidth: Kirigami.Units.gridUnit * 10
@@ -54,8 +54,8 @@ QQC2.AbstractButton {
         Rectangle {
             anchors.fill: parent
             visible: !tile.empty
-            color: tile.chosen ? Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.12)
-                               : tile.hovered ? Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.06)
+            color: tile.chosen ? Style.tint(Kirigami.Theme.backgroundColor, Style.accent(Kirigami.Theme), 0.12)
+                               : tile.hovered ? Style.tint(Kirigami.Theme.backgroundColor, Style.accent(Kirigami.Theme), 0.06)
                                               : Kirigami.Theme.backgroundColor
             border {
                 width: 1
@@ -78,7 +78,7 @@ QQC2.AbstractButton {
             preferredRendererType: Shape.CurveRenderer
 
             ShapePath {
-                fillColor: tile.chosen ? Style.tint(Kirigami.Theme.backgroundColor, Style.gold(Kirigami.Theme), 0.08)
+                fillColor: tile.chosen ? Style.tint(Kirigami.Theme.backgroundColor, Style.accent(Kirigami.Theme), 0.08)
                                        : "transparent"
                 strokeColor: tile.edge
                 strokeWidth: 1
@@ -135,7 +135,7 @@ QQC2.AbstractButton {
             QQC2.Label {
                 objectName: "slotName"
                 Layout.fillWidth: true
-                text: tile.slot
+                text: Words.slot(tile.slot)
                 color: Kirigami.Theme.disabledTextColor
                 font: Kirigami.Theme.smallFont
                 elide: Text.ElideRight

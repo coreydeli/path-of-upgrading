@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-#include "core/characterstore.h"
 #include "core/parser.h"
 #include "itemtexts.h"
+#include "services/characterstore.h"
 
 #include <QDir>
 #include <QFile>
@@ -36,12 +36,14 @@ private Q_SLOTS:
         ember.ignored = {{u"chaosres"_s, {}, IgnoreRule::Mode::Exclude}};
         ember.buildProfile = u"minion-es"_s;
         ember.profilePicked = true;
+        ember.weightsOnly = true;
         ember.tweaks = {{u"Spirit"_s, 2}};
         ResistEntry entry;
         entry.values[Element::Fire] = 78;
         entry.values[Element::Chaos] = -12;
         ember.resists = snapshotResists(entry, ember.gear, ResistSource::Pob);
         ember.chaosInoculation = true;
+        ember.wielding = {.twoHandedInOne = true, .focusWithStaff = true};
 
         const QJsonObject saved = toJson(ember);
         QCOMPARE(saved.value(u"version").toInt(), 1);
@@ -57,9 +59,43 @@ private Q_SLOTS:
         QCOMPARE(back.ignored, ember.ignored);
         QCOMPARE(back.buildProfile, ember.buildProfile);
         QVERIFY(back.profilePicked);
+        QVERIFY(back.weightsOnly);
         QCOMPARE(back.tweaks, ember.tweaks);
         QCOMPARE(back.resists, ember.resists);
         QVERIFY(back.chaosInoculation);
+        QCOMPARE(back.wielding, ember.wielding);
+    }
+
+    void weighedProfileKept()
+    {
+        Character c;
+        QVERIFY(!characterFromJson(toJson(c))->weighed);
+        QVERIFY(!toJson(c).contains(u"weighed"));
+
+        WeighedProfile w;
+        w.pobVersion = u"0.3.3"_s;
+        w.date = u"2026-11-11"_s;
+        w.damageWeight = 0.7;
+        w.slots = {u"Boots"_s};
+        w.profile.stats.append({.label = u"Life"_s,
+                                .pattern = QRegularExpression(u"^# to maximum Life$"_s),
+                                .importance = PerSlot::of({{u"Boots"_s, 9}}),
+                                .cap = PerSlot::of({{u"Boots"_s, 100}}),
+                                .key = u"# to maximum Life"_s,
+                                .resist = std::nullopt});
+        c.weighed = w;
+        const Character back = characterFromJson(toJson(c)).value();
+        QVERIFY(back.weighed);
+        QCOMPARE(back.weighed->pobVersion, u"0.3.3"_s);
+        QCOMPARE(back.weighed->slots, w.slots);
+        QCOMPARE(back.weighed->profile.stats.size(), 1);
+        QCOMPARE(back.weighed->profile.stats.first().importance.at(u"Boots"_s), 9);
+    }
+
+    void aWeighedProfileItCantReadIsNone()
+    {
+        const Character c = characterFromJson({{u"weighed"_s, QJsonObject{{u"slots"_s, 3}}}}).value();
+        QVERIFY(!c.weighed);
     }
 
     void nothingSaved()
@@ -69,7 +105,9 @@ private Q_SLOTS:
         QCOMPARE(fresh.weights, defaultWeights());
         QVERIFY(!fresh.resists);
         QVERIFY(!fresh.chaosInoculation);
+        QCOMPARE(fresh.wielding, Wielding{});
         QVERIFY(!fresh.profilePicked);
+        QVERIFY(!fresh.weightsOnly);
         QVERIFY(!toJson(fresh).contains(u"resists"));
     }
 
@@ -125,6 +163,29 @@ private Q_SLOTS:
                  (ProfileTweaks{{u"Minion critical hit chance and damage bonus"_s, 1.5}}));
         // already under the new label, so that one stays
         QCOMPARE(load(u"es-caster"_s, {{u"Crit"_s, 2}, {spells, 0}}), (ProfileTweaks{{spells, 0}}));
+        // the weapon one was spelled out too
+        QCOMPARE(load(u"life-res"_s, {{u"Weapon DPS"_s, 2}}),
+                 (ProfileTweaks{{u"Weapon damage per second"_s, 2}}));
+    }
+
+    void oldShortLabelsKeepTheirLevel()
+    {
+        // the profile labels were spelled out later, and tweaks go by label
+        const auto load = [](const QJsonObject &tweaks) {
+            return characterFromJson({{u"tweaks"_s, tweaks}}).value().tweaks;
+        };
+        QCOMPARE(load({{u"Fire res"_s, 2}, {u"ES recharge"_s, 0.5}, {u"Str/Dex"_s, 3}, {u"Spirit"_s, 1.5}}),
+                 (ProfileTweaks{{u"Fire Resistance"_s, 2},
+                                {u"Energy Shield Recharge"_s, 0.5},
+                                {u"Strength and Dexterity"_s, 3},
+                                {u"Spirit"_s, 1.5}}));
+        QCOMPARE(load({{u"% Life"_s, 2}, {u"Movement speed"_s, 0}, {u"Spirit efficiency"_s, 3}}),
+                 (ProfileTweaks{{u"Increased Life"_s, 2},
+                                {u"Movement Speed"_s, 0},
+                                {u"Spirit Reservation Efficiency"_s, 3}}));
+        // already under the new label, so that one stays
+        QCOMPARE(load({{u"Cold res"_s, 2}, {u"Cold Resistance"_s, 0}}),
+                 (ProfileTweaks{{u"Cold Resistance"_s, 0}}));
     }
 
     void noWeightsAtAll()

@@ -171,6 +171,9 @@ void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
         request.setRawHeader(QByteArrayLiteral("Cookie"), QByteArrayLiteral("POESESSID=") + m_sessionId);
         // or the network's cookie jar sends its own in place of it
         request.setAttribute(QNetworkRequest::CookieLoadControlAttribute, QNetworkRequest::Manual);
+        // nor keeps one the site sends back, which would still go out once
+        // you've signed out
+        request.setAttribute(QNetworkRequest::CookieSaveControlAttribute, QNetworkRequest::Manual);
         // and a redirect to another site doesn't get it
         request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                              QNetworkRequest::SameOriginRedirectPolicy);
@@ -207,7 +210,7 @@ void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply
     } else if (message.contains(u"too complex", Qt::CaseInsensitive)) {
         trade->fail(Error::TooComplex, u"The trade site says the search has too many filters."_s);
     } else if (!message.isEmpty()) {
-        trade->fail(Error::Rejected, u"The trade site says: %1"_s.arg(message));
+        trade->fail(Error::Rejected, u"The trade site refused the search: %1"_s.arg(message));
     } else if (status != 200 || !json.isObject()) {
         trade->fail(Error::BadAnswer, u"The trade site's answer couldn't be read (HTTP %1)."_s.arg(status));
     } else {

@@ -7,6 +7,8 @@
 #include "platform/globalshortcuts.h"
 #include "platform/opener.h"
 #include "platform/secretstore.h"
+#include "platform/systemclipboard.h"
+#include "services/pobfinder.h"
 
 #include <QCoreApplication>
 #include <QGuiApplication>
@@ -57,6 +59,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_character(&m_characters, &m_pob)
     , m_input(std::move(input))
     , m_checker(qml, m_input.get())
+    , m_weigher(&m_character, &m_pob)
     , m_shortcuts(std::move(shortcuts))
     , m_game(std::move(game))
     , m_hotkeys(m_shortcuts.get(), m_game.get())
@@ -73,12 +76,15 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_finder(&m_trade, &m_tradeData, &m_rates)
     , m_results(&m_trade, &m_rates)
     , m_resultsPanel(qml, m_input.get(), &m_results)
+    , m_updates(m_network.get())
+    , m_downloader(m_network.get(), paths.cache + u"/updates"_s)
+    , m_updatesModel(&m_updates, &m_settings, m_opener.get(), &m_downloader)
     , m_characterList(&m_characters, &m_character, &m_settings)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)
     , m_upgrades(&m_character, &m_settings, &m_trade, &m_tradeData, &m_rates, &m_results)
     , m_resistances(&m_character)
-    , m_gearScoring(&m_character)
+    , m_gearScoring(&m_character, &m_weigher)
     , m_statWeights(&m_character)
     , m_statPicker(&m_tradeData, &m_history)
     , m_ignoredStats(&m_character)
@@ -89,6 +95,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
                                     .icon = QGuiApplication::desktopFileName()})
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
     , m_pobOptions(&m_settings, &m_pob, m_places, m_opener.get())
+    , m_about(&m_pobOptions, m_opener.get())
+    , m_help(m_opener.get(), paths.tradeOffered)
     , m_appearance(&m_settings, paths.colors)
     , m_onboarding(&m_settings, &m_characterList, &m_overlayOptions)
 {
@@ -114,6 +122,9 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     connect(&m_settings, &SettingsStore::changed, this, &App::followSettings);
 
     const Settings &settings = m_settings.settings();
+    // checks go first
+    m_weigher.setBusy([this] { return m_checker.isChecking(); });
+    m_weigher.setSettings(settings.pob);
     m_character.setId(settings.character);
     lookForPob();
     m_checker.setPob(&m_pob);
@@ -125,6 +136,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     m_results.judge().setPob(&m_pob);
     m_results.judge().setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
+    m_checker.popup().setOpener(m_opener.get());
+    m_resultsPanel.setOpener(m_opener.get());
     connect(&m_checker, &ItemChecker::itemRead, &m_history, &ItemHistory::add);
     connect(&m_checker, &ItemChecker::resultsAsked, &m_resultsPanel, &ResultsPanel::show);
     connect(&m_upgrades, &RecommendedUpgrades::resultsAsked, &m_resultsPanel,
@@ -156,6 +169,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
         m_upgrades.finder().setSignedIn(m_tradeSession.isSaved());
     });
     followTrade();
+    m_updates.follow(settings.updates);
 
     connect(&m_hotkeys, &Hotkeys::pressed, this, [this](Hotkeys::Hotkey hotkey) {
         if (hotkey == Hotkeys::Hotkey::Check)
@@ -174,6 +188,12 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
 
 App::~App() = default;
 
+void App::setClipboard(std::unique_ptr<SystemClipboard> clipboard)
+{
+    m_checker.setClipboard(clipboard.get());
+    m_clipboard = std::move(clipboard);
+}
+
 void App::lookForPob()
 {
     m_pobLocation = m_settings.settings().pob.location;
@@ -184,17 +204,25 @@ void App::lookForPob()
         m_pob.setUnavailable(why);
 }
 
+void App::updatePob()
+{
+    lookForPob();
+    m_buildImporter.refreshBuilds();
+}
+
 void App::followSettings()
 {
     const Settings &settings = m_settings.settings();
     m_checker.setSettings(settings);
     m_results.judge().setSettings(settings.pob);
+    m_weigher.setSettings(settings.pob);
     m_resultsPanel.setSettings(settings.overlay);
     if (settings.character != m_character.id())
         m_character.setId(settings.character);
     if (settings.pob.location != m_pobLocation)
         lookForPob();
     followTrade();
+    m_updates.follow(settings.updates);
 }
 
 void App::followKeys()

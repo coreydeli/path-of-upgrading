@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/tradefinder.h"
 #include "core/buildprofiles.h"
-#include "core/datafiles.h"
 #include "core/evaluation.h"
 #include "core/parser.h"
 #include "core/pobweighing.h"
@@ -10,6 +9,7 @@
 #include "fakenetwork.h"
 #include "fakepob.h"
 #include "itemtexts.h"
+#include "services/datafiles.h"
 #include "services/pobengine.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
@@ -359,9 +359,10 @@ private Q_SLOTS:
         QCOMPARE(found.kind, Kind::Upgrades);
         QCOMPARE(found.title, u"Better for your build than Doom Visage (gear score %1)"_s.arg(
                                   evaluate(helmet, character).gear->score));
-        QCOMPARE(found.note, u"Scored by your build's weights for Armour at least 280, Life, and Fire res. "
-                             u"Each has at least 2 of "
-                             u"these at a decent roll: Life, Fire res. Best for your build first."_s);
+        QCOMPARE(found.note,
+                 u"Scored by your build's weights for Armour at least 280, Life, and Fire Resistance. "
+                 u"Each has at least 2 of "
+                 u"these at a decent roll: Life, Fire Resistance. Best for your build first."_s);
         QCOMPARE(found.total, 9);
         QCOMPARE(found.listingIds, QStringList{u"a"_s});
     }
@@ -552,8 +553,9 @@ private Q_SLOTS:
         QCOMPARE(
             site.finder.found()->note,
             u"Scored by your build's weights for Armour at least 108, Evasion Rating at least 99, Energy "
-            u"Shield at least 36, Life, Fire res, and 1 more. Each has at least 2 of these at a decent roll: "
-            u"Movement speed, Life, Fire res. Best for your build first."_s);
+            u"Shield at least 36, Life, Fire Resistance, and 1 more. Each has at least 2 of these at a "
+            u"decent roll: "
+            u"Movement Speed, Life, Fire Resistance. Best for your build first."_s);
 
         // and when yours has none of it
         QVERIFY(site.finds(
@@ -565,7 +567,7 @@ private Q_SLOTS:
         site.network.answers = {found(u"s3"_s, 1)};
         QVERIFY(site.finds(ring(u"Grim Loop"_s, u"+50 to maximum Life"_s), Kind::Upgrades));
         QCOMPARE(site.finder.found()->note, u"Scored by your build's weights for Life. Each has at least 1 "
-                                            u"of these at a decent roll: Life, Fire res. "
+                                            u"of these at a decent roll: Life, Fire Resistance. "
                                             u"Best for your build first."_s);
     }
 
@@ -626,8 +628,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData());
         site.finder.setCharacter(character);
         QVERIFY(site.finds(helmet, Kind::Upgrades));
-        QCOMPARE(site.finder.errorString(),
-                 u"Your build profile wants none of the stats this slot can have."_s);
+        QCOMPARE(site.finder.errorString(), u"Your build wants none of the stats this slot can have."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -805,7 +806,7 @@ private Q_SLOTS:
 
         const TradeFinder::Found &found = *site.finder.found();
         QCOMPARE(found.title, u"Better for your build than Doom Visage, by Path of Building"_s);
-        QCOMPARE(found.note, u"Weighed by Path of Building for your build's damage and effective HP. "
+        QCOMPARE(found.note, u"Weighed by Path of Building for your build's damage and Effective HP. "
                              u"Resistances under the cap count for more. Best for your build first."_s);
         QCOMPARE(found.total, 4);
     }
@@ -909,7 +910,7 @@ private Q_SLOTS:
         QVERIFY(site.finds(helmet, Kind::Upgrades));
         QCOMPARE(site.searched(0), weighed(helmetMods(), site.data.data(), character, 30, true, {}).body);
         QCOMPARE(site.finder.found()->note,
-                 u"Weighed by Path of Building for your build's damage and effective HP. "
+                 u"Weighed by Path of Building for your build's damage and Effective HP. "
                  u"Best for your build first."_s);
     }
 
@@ -929,7 +930,7 @@ private Q_SLOTS:
         QCOMPARE(keeping.needDamage, 1);
         QCOMPARE(site.searched(0), keeping.body);
         QCOMPARE(site.finder.found()->note,
-                 u"Weighed by Path of Building for your build's damage and effective HP. Each has at least "
+                 u"Weighed by Path of Building for your build's damage and Effective HP. Each has at least "
                  u"1 of your build's best damage mods, as yours does. Resistances under the cap count for "
                  u"more. Best for your build first."_s);
 
@@ -939,7 +940,7 @@ private Q_SLOTS:
         QCOMPARE(site.searched(2), weighed(helmetMods(), data, character, 30, false).body);
         QCOMPARE(site.finder.found()->note,
                  u"Nothing listed keeps your damage mods, so these may give up some damage. Weighed by Path "
-                 u"of Building for your build's damage and effective HP. Resistances under the cap count "
+                 u"of Building for your build's damage and Effective HP. Resistances under the cap count "
                  u"for more. Best for your build first."_s);
         QCOMPARE(site.finder.found()->total, 5);
 
@@ -1003,7 +1004,7 @@ private Q_SLOTS:
         QCOMPARE(site.searched(0), weighed(manyMods(), data, character).body);
         QCOMPARE(site.searched(1), weighed(manyMods(), data, character, 15).body);
         QCOMPARE(site.finder.found()->note,
-                 u"Weighed by Path of Building for your build's damage and effective HP. The trade site "
+                 u"Weighed by Path of Building for your build's damage and Effective HP. The trade site "
                  u"limits how many filters a search can have, so it looks at the 15 mods that count most. "
                  u"Best for your build first."_s);
 
@@ -1240,7 +1241,7 @@ private Q_SLOTS:
         QCOMPARE(site.searched(similarSearchLevels() - 1), similarSearch(belt, site.data.data(), last).body);
         QCOMPARE(site.finder.found()->title, u"Same stats or better than Mageblood"_s);
         QCOMPARE(site.finder.found()->note,
-                 u"Nothing matched its stats, so these are all the Mageblood listed."_s);
+                 u"Nothing matched its stats, so these are the Mageblood listed instead."_s);
         QCOMPARE(site.finder.found()->total, 8);
     }
 
@@ -1364,10 +1365,10 @@ private Q_SLOTS:
         site.network.answers = {found(u"s1"_s, 2)};
         QVERIFY(site.finds(boots, Kind::CraftBases));
         QCOMPARE(site.searched(0), craftBases(boots, site.data.data(), {}).body);
-        QCOMPARE(site.finder.found()->title, u"Craftable Boots with Movement speed and Life"_s);
+        QCOMPARE(site.finder.found()->title, u"Craftable Boots with Movement Speed and Life"_s);
         QCOMPARE(
             site.finder.found()->note,
-            u"Each is rare and not corrupted, with Movement speed and Life at a decent roll. The trade site "
+            u"Each is rare and not corrupted, with Movement Speed and Life at a decent roll. The trade site "
             u"can't be asked for room for another prefix or suffix, so look before you buy. Cheapest "
             u"first."_s);
     }
@@ -1388,7 +1389,7 @@ private Q_SLOTS:
         site.finder.setCharacter(caster);
         site.network.answers = {found(u"s1"_s, 2)};
         QVERIFY(site.finds(ring(u"Grim Loop"_s, u"+20 to maximum Energy Shield"_s), Kind::CraftBases));
-        QCOMPARE(site.finder.found()->title, u"Craftable Rings with Cast speed and Energy Shield"_s);
+        QCOMPARE(site.finder.found()->title, u"Craftable Rings with Cast Speed and Energy Shield"_s);
     }
 
     void noKeyStats()
@@ -1401,8 +1402,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData());
         site.finder.setCharacter(character);
         QVERIFY(site.finds(helmet, Kind::CraftBases));
-        QCOMPARE(site.finder.errorString(),
-                 u"Your build profile has no key stats for this slot to look for."_s);
+        QCOMPARE(site.finder.errorString(), u"Your build has no key stats for this slot to look for."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -1588,7 +1588,7 @@ private Q_SLOTS:
             {.status = 400,
              .body = json({{u"error"_s, QJsonObject{{u"message"_s, u"Unknown item base"_s}}}})}};
         QVERIFY(site.finds(helmet));
-        QCOMPARE(site.finder.errorString(), u"The trade site says: Unknown item base"_s);
+        QCOMPARE(site.finder.errorString(), u"The trade site refused the search: Unknown item base"_s);
         QVERIFY(!site.finder.found());
         // the search to try on the site, which fills it in
         QCOMPARE(site.finder.errorUrl(), tradePrefilledUrl(u"Runes of Aldur"_s, site.searched(0)));

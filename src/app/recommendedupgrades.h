@@ -41,6 +41,9 @@ class RecommendedUpgrades : public QAbstractListModel
     Q_PROPERTY(QString chosen READ chosen WRITE choose NOTIFY chosenChanged)
     Q_PROPERTY(QString chosenLookFor READ chosenLookFor NOTIFY chosenChanged)
     Q_PROPERTY(pou::TradeReport chosenTrade READ chosenTrade NOTIFY chosenChanged)
+    // What the slot can roll of those stats, one line each, empty when the
+    // table has nothing for the slot.
+    Q_PROPERTY(QStringList chosenCanRoll READ chosenCanRoll NOTIFY chosenChanged)
     // Whether there's an item in it to search upgrades for.
     Q_PROPERTY(bool chosenWorn READ chosenWorn NOTIFY chosenChanged)
 
@@ -51,7 +54,7 @@ public:
         BaseRole,                    // its base type, empty when that's its name
         ScoreRole,                   // its gear score, "34", empty when nothing is worn
         GradeRole,                   // "D"
-        LookForRole,                 // "Life 55 or more, Fire res 24 or more"
+        LookForRole,                 // "Life 55 or more, Fire Resistance 24 or more"
         TradeRole,                   // a tradeReport, what its search is up to
     };
 
@@ -73,6 +76,7 @@ public:
     QString chosen() const { return m_chosen; }
     void choose(const QString &slot);
     QString chosenLookFor() const;
+    QStringList chosenCanRoll() const;
     TradeReport chosenTrade() const { return m_states.value(m_chosen).report; }
     bool chosenWorn() const;
     // The same as find() and showResults() for the chosen slot.

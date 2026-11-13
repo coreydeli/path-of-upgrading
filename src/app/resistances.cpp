@@ -49,6 +49,21 @@ QString Resistances::summary() const
     return parts.join(u", ");
 }
 
+QString Resistances::sourceNote() const
+{
+    if (!m_live)
+        return u"Not known yet. Import a build, or type them in from your character sheet."_s;
+    switch (m_live->source) {
+    case ResistSource::Pob:
+        return u"From your build in Path of Building, with what you have equipped now."_s;
+    case ResistSource::Game:
+        return u"Typed in from your character sheet, with what you have equipped now."_s;
+    case ResistSource::Manual:
+        break;
+    }
+    return u"Typed in by hand, with what you have equipped now."_s;
+}
+
 double Resistances::value(Element e) const
 {
     return m_live ? m_live->values[e].value_or(0) : 0;
@@ -63,18 +78,21 @@ void Resistances::setValue(Element e, double value)
     typeIn(values);
 }
 
-double Resistances::maximum() const
+double Resistances::maximum(Element e) const
 {
-    return m_live ? m_live->cap : 75;
+    const std::optional<ResistRecord> &resists = m_active->character().resists;
+    return resists ? resists->cap[e] : 75;
 }
 
-void Resistances::setMaximum(double maximum)
+void Resistances::setMaximum(Element e, double maximum)
 {
-    if (!m_live || !std::isfinite(maximum) || maximum <= 0 || maximum == this->maximum())
+    if (!m_live || !std::isfinite(maximum) || maximum <= 0 || maximum == this->maximum(e))
         return;
-    change([maximum](Character &c) {
-        if (c.resists)
-            c.resists->cap = maximum;
+    change([e, maximum](Character &c) {
+        if (c.resists) {
+            c.resists->cap[e] = maximum;
+            c.resists->capSet[e] = true;
+        }
     });
 }
 

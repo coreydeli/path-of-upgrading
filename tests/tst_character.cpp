@@ -66,7 +66,7 @@ private Q_SLOTS:
         QCOMPARE(fire->to.value(), 90.0);
         QVERIFY(!fire->under);
         QVERIFY(!resistFor(*change, Element::Lightning));
-        QCOMPARE(cold->warning, u"Cold res drops below the cap (50% of 75%)"_s);
+        QCOMPARE(cold->warning, u"Cold Resistance drops below the cap (50% of 75%)"_s);
         QCOMPARE(fire->warning, QString());
 
         QCOMPARE(change->totals.size(), 1);
@@ -96,7 +96,7 @@ private Q_SLOTS:
 
         const auto change = changeIfEquipped(worn, withStats({{cold, 29}}), {u"Gloves"_s}, &*live);
         const QString warning = resistFor(*change, Element::Lightning)->warning;
-        QVERIFY(warning.startsWith(u"Lightning res would be only 8% over the cap (-39%)."));
+        QVERIFY(warning.startsWith(u"Lightning Resistance would be only 8% over the cap (-39%)."));
         QVERIFY(warning.contains(u"Path of Building's"));
         // still well over it
         QCOMPARE(resistFor(*change, Element::Cold)->warning, QString());
@@ -114,15 +114,15 @@ private Q_SLOTS:
 
         // a cap of 75 and a buffer of 10
         QTest::newRow("onto the cap")
-            << 90.0 << 15.0 << false << false << true << false << u"Fire res would be only 0% over the cap"_s;
+            << 90.0 << 15.0 << false << false << true << false << u"Fire Resistance would be only 0% over the cap"_s;
         QTest::newRow("off the cap") << 75.0 << 1.0 << true << false << false << true
-                                     << u"Fire res drops below the cap (74% of 75%)"_s;
+                                     << u"Fire Resistance drops below the cap (74% of 75%)"_s;
         QTest::newRow("onto the buffer") << 100.0 << 15.0 << false << false << false << false << QString();
         QTest::newRow("off the buffer")
-            << 85.0 << 5.0 << false << false << true << false << u"Fire res would be only 5% over the cap"_s;
+            << 85.0 << 5.0 << false << false << true << false << u"Fire Resistance would be only 5% over the cap"_s;
         QTest::newRow("within the buffer") << 80.0 << 2.0 << false << false << true << true << QString();
         QTest::newRow("further under") << 60.0 << 5.0 << true << true << false << false
-                                       << u"Fire res goes further under the cap (from 60% to 55%)"_s;
+                                       << u"Fire Resistance goes further under the cap (from 60% to 55%)"_s;
         QTest::newRow("gaining while under") << 60.0 << -5.0 << true << true << false << false << QString();
     }
 
@@ -156,13 +156,10 @@ private Q_SLOTS:
     {
         LiveResists resists;
         resists.values[Element::Cold] = 85;
-        resists.cap = 80;
         const Item item = withStats({{u"#% to Cold Resistance"_s, 10}});
-        QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}, &resists), Element::Cold)->cap, 80.0);
         // the cap for that element, when there is one
         resists.caps[Element::Cold] = 78;
         QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}, &resists), Element::Cold)->cap, 78.0);
-        resists.cap = 0;
         resists.caps[Element::Cold] = 0;
         QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}, &resists), Element::Cold)->cap, 75.0);
         QCOMPARE(resistFor(*changeIfEquipped({}, item, {u"Ring 1"_s}), Element::Cold)->cap, 75.0);
@@ -218,7 +215,7 @@ private Q_SLOTS:
         QCOMPARE(change->totals.size(), 2);
         QCOMPARE(change->totals.at(0).label, u"Armour"_s);
         QCOMPARE(change->totals.at(0).delta, -250.0);
-        QCOMPARE(change->totals.at(1).label, u"Evasion"_s);
+        QCOMPARE(change->totals.at(1).label, u"Evasion Rating"_s);
         QCOMPARE(change->totals.at(1).delta, 200.0);
     }
 

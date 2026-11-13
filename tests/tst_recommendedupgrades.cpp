@@ -4,11 +4,11 @@
 #include "app/settingsstore.h"
 #include "app/tradefinder.h"
 #include "app/traderesults.h"
-#include "core/datafiles.h"
 #include "core/parser.h"
 #include "fakenetwork.h"
 #include "itemtexts.h"
 #include "resultsite.h"
+#include "services/datafiles.h"
 #include "services/pobengine.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
@@ -197,7 +197,8 @@ private Q_SLOTS:
         QVERIFY(!site.in(u"Helmet"_s, RecommendedUpgrades::GradeRole).toString().isEmpty());
         // it has the 55 life asked for, so that's left out
         QCOMPARE(site.in(u"Helmet"_s, RecommendedUpgrades::LookForRole).toString(),
-                 u"Fire res 24 or more, Cold res 24 or more, Lightning res 24 or more"_s);
+                 u"Fire Resistance 24 or more (up to 45), Cold Resistance 24 or more (up to 45), "
+                 u"Lightning Resistance 24 or more (up to 45)"_s);
 
         // and the offhand is covered once there is one, and the list follows
         QSignalSpy reset(&site.upgrades, &QAbstractItemModel::modelReset);
@@ -401,6 +402,34 @@ private Q_SLOTS:
         site.upgrades.showResults(site.rowOf(u"Offhand"_s));
         site.upgrades.showResults(-1);
         QCOMPARE(asked.size(), 2);
+    }
+
+    void aChosenSlotSaysWhatItCanRoll()
+    {
+        Site site;
+        site.play(wearingOldHelmet());
+        QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::chosenChanged);
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
+
+        // a worn slot, even one with nothing left to look for
+        site.upgrades.choose(u"Boots"_s);
+        QVERIFY(site.upgrades.chosenLookFor().isEmpty());
+        const QStringList boots = site.upgrades.chosenCanRoll();
+        QVERIFY(!boots.isEmpty());
+        QVERIFY(boots.first().contains(u", item level "_s));
+
+        // an empty slot with a class
+        site.upgrades.choose(u"Belt"_s);
+        QVERIFY(!site.upgrades.chosenCanRoll().isEmpty());
+        QVERIFY(site.upgrades.chosenCanRoll() != boots);
+
+        // the weapon and the offhand have no class to go by, and nor does nothing
+        site.upgrades.choose(u"Weapon"_s);
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
+        site.upgrades.choose(u"Offhand"_s);
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
+        site.upgrades.choose(QString());
+        QVERIFY(site.upgrades.chosenCanRoll().isEmpty());
     }
 
     void aChosenSlotSaysWhatToLookFor()

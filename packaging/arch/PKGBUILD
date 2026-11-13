@@ -2,7 +2,7 @@
 # Maintainer: Corey Deli <55706677+coreydeli@users.noreply.github.com>
 
 pkgname=path-of-upgrading
-pkgver=0.6.0
+pkgver=0.7.0
 pkgrel=1
 pkgdesc='Path of Exile 2 item overlay that checks items against your build'
 arch=(x86_64)
@@ -11,7 +11,7 @@ license=(MIT OFL-1.1)
 depends=(
   gcc-libs glibc
   qt6-base qt6-declarative qt6-wayland
-  kirigami kirigami-addons kdeclarative ki18n kdbusaddons kcolorscheme kglobalaccel
+  kirigami kirigami-addons kdeclarative ki18n kdbusaddons kcolorscheme kglobalaccel kguiaddons
   knotifications kstatusnotifieritem kwindowsystem
   layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib
   hicolor-icon-theme
@@ -42,7 +42,9 @@ build() {
   cmake -B build -S "$_srcdir" -G Ninja \
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DPOU_BETA=$beta
+    -DPOU_BETA=$beta \
+    -DPOU_BUILD_VERSION=${pkgver/beta/-beta.} \
+    -DPOU_INSTALL_KIND=arch
   cmake --build build
 }
 

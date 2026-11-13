@@ -2,6 +2,7 @@
 #include "app/appearance.h"
 #include "app/fonts.h"
 #include "app/settingsstore.h"
+#include "stylefortests.h"
 
 #include <KColorScheme>
 #include <KConfigGroup>
@@ -52,7 +53,7 @@ QColor window()
     return QGuiApplication::palette().color(QPalette::Active, QPalette::Window);
 }
 
-const QColor appWindow = QColor(u"#100e0c"_s);
+const QColor appWindow = QColor(u"#0c0c0d"_s);
 
 // An installed family that isn't the app's font now, or nothing.
 QString otherFamily()
@@ -80,11 +81,9 @@ public:
     static void initMain()
     {
         qputenv("QT_QPA_PLATFORM", "offscreen");
-        qputenv("QT_QUICK_CONTROLS_STYLE", "Fusion");
+        // the app's own controls, as the program has
+        useStyleInTests();
         qputenv("QT_NO_XDG_DESKTOP_PORTAL", "1");
-        // Kirigami 6.13, as in Debian 13, warns that the Fusion style has no
-        // platform plugin of its own
-        qputenv("QT_LOGGING_RULES", "kf.kirigami.platform.warning=false");
     }
 
 private Q_SLOTS:
@@ -108,9 +107,9 @@ private Q_SLOTS:
         QCOMPARE(look.appearance.colorsError(), QString());
         QCOMPARE(window(), appWindow);
         QCOMPARE(QGuiApplication::palette().color(QPalette::Active, QPalette::Highlight),
-                 QColor(u"#b8924a"_s));
+                 QColor(u"#35b5a8"_s));
         QCOMPARE(QGuiApplication::palette().color(QPalette::Active, QPalette::WindowText),
-                 QColor(u"#ddd2c2"_s));
+                 QColor(u"#ece6da"_s));
     }
 
     void followsTheSetting()
@@ -223,7 +222,7 @@ private Q_SLOTS:
         QCOMPARE(look.appearance.decorations(), u"full"_s);
     }
 
-    void fontsStartAsTheDesktops()
+    void fontsStartAsTheApps()
     {
         const QFont desktop = QGuiApplication::font();
         Look look;
@@ -231,10 +230,11 @@ private Q_SLOTS:
         QCOMPARE(look.appearance.textFont(), QString());
         QCOMPARE(look.appearance.textSize(), 0.0);
         QCOMPARE(look.appearance.headingFamily(), headingFontFamily());
-        QCOMPARE(look.appearance.textFamily(), desktop.family());
+        QCOMPARE(look.appearance.textFamily(), textFontFamily());
+        QCOMPARE(QGuiApplication::font().family(), u"Spectral"_s);
         QCOMPARE(look.appearance.desktopTextSize(), desktop.pointSizeF());
+        QCOMPARE(QGuiApplication::font().pointSizeF(), desktop.pointSizeF());
         QCOMPARE(look.appearance.fontsError(), QString());
-        QCOMPARE(QGuiApplication::font(), desktop);
     }
 
     void listsOnlyFontsThatScale()
@@ -255,7 +255,6 @@ private Q_SLOTS:
         const QString family = otherFamily();
         if (family.isEmpty())
             QSKIP("Only one font is installed.");
-        const QFont desktop = QGuiApplication::font();
         Look look;
         QSignalSpy changed(&look.appearance, &Appearance::changed);
         look.appearance.setTextFont(family);
@@ -264,9 +263,9 @@ private Q_SLOTS:
         QCOMPARE(look.saved().textFont, family);
         QVERIFY(changed.count() >= 1);
 
-        // the desktop's again
+        // the default again
         look.appearance.setTextFont(QString());
-        QCOMPARE(QGuiApplication::font(), desktop);
+        QCOMPARE(QGuiApplication::font().family(), textFontFamily());
         QCOMPARE(look.saved().textFont, QString());
     }
 
@@ -295,13 +294,12 @@ private Q_SLOTS:
         QCOMPARE(look.appearance.textSize(), 0.0);
     }
 
-    void aMissingTextFontLeavesTheDesktopsFont()
+    void aMissingTextFontLeavesTheDefault()
     {
-        const QFont desktop = QGuiApplication::font();
         Look look;
         look.appearance.setTextFont(notInstalled);
-        QCOMPARE(QGuiApplication::font(), desktop);
-        QCOMPARE(look.appearance.textFamily(), desktop.family());
+        QCOMPARE(QGuiApplication::font().family(), textFontFamily());
+        QCOMPARE(look.appearance.textFamily(), textFontFamily());
         QCOMPARE(look.appearance.fontsError(), notInstalled + u" isn't installed, so the default is used."_s);
         // what was chosen stays chosen, for when it's installed
         QCOMPARE(look.appearance.textFont(), notInstalled);
@@ -428,26 +426,26 @@ private Q_SLOTS:
             return KColorScheme(QPalette::Active, KColorScheme::Window, config).decoration(role).color();
         };
 
-        QCOMPARE(background(KColorScheme::Window), QColor(u"#100e0c"_s));
-        QCOMPARE(background(KColorScheme::View), QColor(u"#1a1612"_s));
-        QCOMPARE(background(KColorScheme::View, KColorScheme::AlternateBackground), QColor(u"#211c17"_s));
-        QCOMPARE(background(KColorScheme::Header), QColor(u"#15120f"_s));
-        QCOMPARE(background(KColorScheme::Button), QColor(u"#2a231c"_s));
-        QCOMPARE(background(KColorScheme::Selection), QColor(u"#b8924a"_s));
-        QCOMPARE(background(KColorScheme::Tooltip), QColor(u"#1f1a15"_s));
-        QCOMPARE(background(KColorScheme::Complementary), QColor(u"#0c0a08"_s));
+        QCOMPARE(background(KColorScheme::Window), QColor(u"#0c0c0d"_s));
+        QCOMPARE(background(KColorScheme::View), QColor(u"#161618"_s));
+        QCOMPARE(background(KColorScheme::View, KColorScheme::AlternateBackground), QColor(u"#1e1e21"_s));
+        QCOMPARE(background(KColorScheme::Header), QColor(u"#080809"_s));
+        QCOMPARE(background(KColorScheme::Button), QColor(u"#161618"_s));
+        QCOMPARE(background(KColorScheme::Selection), QColor(u"#35b5a8"_s));
+        QCOMPARE(background(KColorScheme::Tooltip), QColor(u"#ece6da"_s));
+        QCOMPARE(background(KColorScheme::Complementary), QColor(u"#0b0b0c"_s));
 
-        QCOMPARE(foreground(KColorScheme::Window), QColor(u"#ddd2c2"_s));
-        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::InactiveText), QColor(u"#948776"_s));
-        QCOMPARE(foreground(KColorScheme::Selection), QColor(u"#120f0c"_s));
-        QCOMPARE(foreground(KColorScheme::Complementary), QColor(u"#e6dccd"_s));
-        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::LinkText), QColor(u"#d4b06a"_s));
-        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::VisitedText), QColor(u"#a8874a"_s));
-        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::PositiveText), QColor(u"#7fb069"_s));
-        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::NegativeText), QColor(u"#c8553d"_s));
-        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::NeutralText), QColor(u"#d9a441"_s));
-        QCOMPARE(decoration(KColorScheme::FocusColor), QColor(u"#b8924a"_s));
-        QCOMPARE(decoration(KColorScheme::HoverColor), QColor(u"#d4b06a"_s));
+        QCOMPARE(foreground(KColorScheme::Window), QColor(u"#ece6da"_s));
+        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::InactiveText), QColor(u"#969086"_s));
+        QCOMPARE(foreground(KColorScheme::Selection), QColor(u"#0c0c0d"_s));
+        QCOMPARE(foreground(KColorScheme::Complementary), QColor(u"#ece6da"_s));
+        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::LinkText), QColor(u"#35b5a8"_s));
+        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::VisitedText), QColor(u"#969086"_s));
+        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::PositiveText), QColor(u"#70c46c"_s));
+        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::NegativeText), QColor(u"#e84e50"_s));
+        QCOMPARE(foreground(KColorScheme::Window, KColorScheme::NeutralText), QColor(u"#f0b63e"_s));
+        QCOMPARE(decoration(KColorScheme::FocusColor), QColor(u"#35b5a8"_s));
+        QCOMPARE(decoration(KColorScheme::HoverColor), QColor(u"#5acdc0"_s));
     }
 
     void everySetIsFilledIn()
