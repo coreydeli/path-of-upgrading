@@ -40,6 +40,9 @@ on:
 permissions:
   contents: read
 
+# Nothing here pushes or fetches after the checkout (gh has its own token), so
+# no checkout leaves the token in .git/config.
+
 # One at a time on a branch, so two betas can't take the same number. A pull
 # request only needs its latest push.
 concurrency:
@@ -59,6 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           ref: beta
           # for the tags
           fetch-depth: 0
@@ -91,6 +95,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          persist-credentials: false
           # for the tags, and what changed
           fetch-depth: 0
       - name: Check the version
@@ -126,6 +131,8 @@ jobs:
       - name: Install clang-format
         run: pacman -Syu --noconfirm --needed clang git
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Check the format
         run: git ls-files -z '*.cpp' '*.h' | xargs -0 clang-format --dry-run -Werror
 
@@ -147,6 +154,8 @@ jobs:
       - name: Install git
         run: pacman -Syu --noconfirm --needed git
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-arch.sh
       # where makepkg looks for the PKGBUILD's source before downloading it
@@ -204,6 +213,8 @@ jobs:
       CCACHE_MAXSIZE: 100M
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-debian.sh
       - uses: actions/cache@v6
@@ -283,6 +294,8 @@ jobs:
       - name: Install git
         run: dnf -y install git
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Install the build tools and libraries
         run: sh .github/scripts/install-fedora.sh
       - uses: actions/cache@v6
@@ -352,6 +365,8 @@ jobs:
     container: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@v8
         with:
           name: dist-${{ matrix.distro }}
@@ -373,6 +388,8 @@ jobs:
     container: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@v8
         with:
           name: dist-appimage
@@ -396,6 +413,8 @@ jobs:
         shell: pwsh
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       # by commit, as it isn't GitHub's own and it sets up what builds the
       # Windows release
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
@@ -557,6 +576,7 @@ jobs:
       - uses: actions/checkout@v7
         if: needs.plan.outputs.release == 'true'
         with:
+          persist-credentials: false
           # for the commits since the last release
           fetch-depth: 0
       - uses: actions/download-artifact@v8

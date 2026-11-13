@@ -83,6 +83,20 @@ private Q_SLOTS:
         QCOMPARE(baseWithoutSockets(u"[Base] Energy Shield"_s, 280, {}), 280.0);
     }
 
+    void socketsWithEnoughReduced()
+    {
+        const auto source = [](const QString &key, double value, StatOrigin origin) {
+            return StatSource{.key = key, .value = value, .origin = origin};
+        };
+        const QString increased = u"#% increased Energy Shield"_s;
+        // -120 + 20 leaves nothing to divide by, and -150 + 20 less than nothing
+        for (double reduced : {-120.0, -150.0}) {
+            const QList<StatSource> s = {source(increased, reduced, StatOrigin::Mod),
+                                         source(increased, 20, StatOrigin::Socket)};
+            QCOMPARE(baseWithoutSockets(u"[Base] Energy Shield"_s, 50, s), 50.0);
+        }
+    }
+
     void localModsAreInTheBase()
     {
         const Item gloves = parseItem(u"Item Class: Gloves\nRarity: Rare\nA\nSorcerer Gloves\n--------\n"

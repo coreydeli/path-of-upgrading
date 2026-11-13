@@ -11,6 +11,9 @@ version that comes out.
 
 ### Added
 
+- After the hotkey copies an item, what you had copied before is put back on the
+  clipboard, so you can still paste it. "Put back what you had copied" on the
+  General page turns it off.
 - The gear notes say the most each slot can roll, such as "Life (up to 149)" in
   the missing stats, and "Look for" gives it too, as "Life 55 or more (up to
   149)". An empty slot's "Wants most" shows it the same way. The figures come

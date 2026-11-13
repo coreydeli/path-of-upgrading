@@ -169,6 +169,7 @@ struct Running
     FakeGameInput *input = new FakeGameInput;
     FakeGlobalShortcuts *shortcuts;
     FakeSecretStore *keyring;
+    FakeOpener *opener = new FakeOpener;
     FakeNetwork *network;
     App app;
 
@@ -179,7 +180,7 @@ struct Running
         , keyring(theirKeyring)
         , network(sites)
         , app(&qml, std::unique_ptr<GameInput>(input), std::unique_ptr<GlobalShortcuts>(shortcuts),
-              std::unique_ptr<SecretStore>(keyring), std::make_unique<FakeOpener>(),
+              std::unique_ptr<SecretStore>(keyring), std::unique_ptr<Opener>(opener),
               std::unique_ptr<QNetworkAccessManager>(network), folders.places(), folders.paths,
               std::unique_ptr<GameWatcher>(theGame))
     {}
@@ -1269,6 +1270,11 @@ private Q_SLOTS:
         QCOMPARE(results.league(), u"Runes of Aldur"_s);
         QCOMPARE(results.url(), r.app.finder().found()->url);
         QCOMPARE(results.rowCount(), 0);
+        // the popup and the results window open it in the browser through the desktop
+        QVERIFY(r.opener->opened.isEmpty());
+        r.app.checker().popup().openTradeSite();
+        r.app.resultsPanel().openTradeSite();
+        QCOMPARE(r.opener->opened, (QList<QUrl>{results.url(), results.url()}));
         const QUrl fetch = tradeFetchUrl({u"a"_s, u"b"_s}, u"Ab3dE9"_s);
         QVERIFY(!r.asked().contains(fetch));
 

@@ -124,6 +124,20 @@ private Q_SLOTS:
         QCOMPARE(rates, CurrencyRates({{u"exalted"_s, 1}, {u"divine"_s, 700}}));
     }
 
+    void unbelievableRatesAreLeftOut()
+    {
+        // an exalt worth next to nothing makes everything else worth far too much
+        const CurrencyRates tiny = currencyRatesInExalts(
+            overview(primary(u"divine"_s), {line(u"exalted"_s, 1e-300), line(u"chaos"_s, 0.1)}));
+        QCOMPARE(tiny, CurrencyRates({{u"exalted"_s, 1}}));
+        const CurrencyRates huge = currencyRatesInExalts(
+            overview(primary(u"exalted"_s), {line(u"divine"_s, 700), line(u"chaos"_s, 1e300)}));
+        QCOMPARE(huge, CurrencyRates({{u"exalted"_s, 1}, {u"divine"_s, 700}}));
+        const CurrencyRates mirror = currencyRatesInExalts(
+            overview(primary(u"exalted"_s), {line(u"mirror"_s, 1e9), line(u"chaos"_s, 1e9 + 1)}));
+        QCOMPARE(mirror, CurrencyRates({{u"exalted"_s, 1}, {u"mirror"_s, 1e9}}));
+    }
+
     void primaryWithoutALine()
     {
         const QJsonObject data = overview(primary(u"divine"_s), {line(u"exalted"_s, 0.0018)});
