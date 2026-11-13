@@ -105,6 +105,8 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   own trade searches do, or they go by your whole gear score.
 - The popup can be dragged by its title to move it. When you copy an item
   yourself with Ctrl+C, it appears by the mouse.
+- Puts back what you had copied once the hotkey has copied the item, so you
+  can still paste it. The General page can turn this off.
 - Takes the hotkeys only while Path of Exile 2 is running. The rest of the
   time other programs get them, so you can type them as usual.
 - Stays in the system tray when you close the window. The tray icon shows the

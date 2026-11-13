@@ -56,8 +56,9 @@ struct OverlaySettings
 {
     QString hotkey = QStringLiteral("F2");
     QString resultsHotkey = QStringLiteral("Ctrl+Shift+D");
-    bool advancedCopy = false;  // copy with Ctrl+Alt+C, which tells prefixes from suffixes
-    bool watchClipboard = true; // also check gear you copy yourself
+    bool advancedCopy = false;    // copy with Ctrl+Alt+C, which tells prefixes from suffixes
+    bool watchClipboard = true;   // also check gear you copy yourself
+    bool putBackClipboard = true; // what you had copied, after the hotkey's copy
     PopupPosition position = PopupPosition::Cursor;
     double scale = 1;         // popup size
     bool compact = true;      // the rest of the popup behind More
