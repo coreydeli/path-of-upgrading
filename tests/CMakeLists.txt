@@ -110,6 +110,8 @@ pou_add_platform_test(tst_copykeys)
 pou_add_platform_test(tst_gamewindow)
 pou_add_platform_test(tst_keychainsecretstore)
 pou_add_platform_test(tst_localinstance)
+# for a client that isn't a copy of the program
+target_link_libraries(tst_localinstance PRIVATE Qt6::Network)
 pou_add_platform_test(tst_packageinstaller)
 if(NOT WIN32)
     pou_add_platform_test(tst_packagekitinstaller)
