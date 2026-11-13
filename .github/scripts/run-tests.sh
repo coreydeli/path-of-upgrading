@@ -9,6 +9,8 @@ repo=$(cd "$(dirname "$0")/../.." && pwd)
 # Qt wants one only you can use, and warns without it, which fails the tests
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/runtime-$(id -u)}"
 mkdir -p -m 700 "$XDG_RUNTIME_DIR"
-exec xvfb-run -a -s "-screen 0 1920x1080x24" \
+# -noreset, or Xvfb starts over each time its last client goes, and turns away
+# whichever test connects meanwhile
+exec xvfb-run -a -s "-screen 0 1920x1080x24 -noreset" \
     dbus-run-session --config-file="$repo/tests/bus.conf" -- \
     ctest --output-on-failure --timeout 900 -j "$(nproc)"
