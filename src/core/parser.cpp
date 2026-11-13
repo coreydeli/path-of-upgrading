@@ -200,6 +200,11 @@ QList<StatMap::Entry> expandStat(const QString &key, double value)
 
 std::optional<Item> parseItem(const QString &input)
 {
+    // An item's text is a few kB, so this much can only be something else on
+    // the clipboard.
+    constexpr qsizetype maxText = 1024 * 1024;
+    if (input.size() > maxText)
+        return std::nullopt;
     const QString text = QString(input).replace(u"\r\n"_s, u"\n"_s).replace(u'\r', u'\n').trimmed();
     if (!text.startsWith(u"Item Class:", Qt::CaseInsensitive))
         return std::nullopt;
