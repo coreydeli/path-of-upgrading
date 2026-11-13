@@ -40,4 +40,71 @@ set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "qml6-module-org-kde-desktop, flatpak")
 # to run another install of Path of Building
 set(CPACK_DEBIAN_PACKAGE_SUGGESTS "luajit")
 
+# A license's text from where it starts, as the copyright file has it: each
+# line indented a space, and a dot on the empty ones.
+function(pou_debian_license file start out)
+    file(READ "${file}" text)
+    string(FIND "${text}" "${start}" at)
+    if(at EQUAL -1)
+        message(FATAL_ERROR "No \"${start}\" in ${file}")
+    endif()
+    string(SUBSTRING "${text}" ${at} -1 text)
+    string(STRIP "${text}" text)
+    string(REGEX REPLACE "[ \t]+\n" "\n" text "${text}")
+    string(REPLACE "\n" "\n " text " ${text}")
+    # again while there's one left, as two empty lines in a row share a newline
+    string(FIND "${text}" "\n \n" at)
+    while(NOT at EQUAL -1)
+        string(REPLACE "\n \n" "\n .\n" text "${text}")
+        string(FIND "${text}" "\n \n" at)
+    endwhile()
+    set(${out} "${text}" PARENT_SCOPE)
+endfunction()
+
+# The holder from a license's "Copyright" line.
+function(pou_debian_holder file out)
+    file(STRINGS "${file}" line REGEX "^Copyright " LIMIT_COUNT 1)
+    string(REGEX REPLACE "^Copyright (\\(c\\) )?" "" line "${line}")
+    if(line STREQUAL "")
+        message(FATAL_ERROR "No copyright line in ${file}")
+    endif()
+    set(${out} "${line}" PARENT_SCOPE)
+endfunction()
+
+# Debian looks for the licenses in /usr/share/doc/<package>/copyright, in its
+# machine readable format. It's made from the licenses in the source, so they
+# can't differ, and only the deb has it.
+pou_debian_holder("${PROJECT_SOURCE_DIR}/LICENSE" POU_HOLDER)
+pou_debian_holder("${PROJECT_SOURCE_DIR}/data/fonts/OFL-Spectral.txt" SPECTRAL_HOLDER)
+pou_debian_holder("${PROJECT_SOURCE_DIR}/data/fonts/OFL-BigShoulders.txt" BIG_SHOULDERS_HOLDER)
+pou_debian_license("${PROJECT_SOURCE_DIR}/LICENSE" "Permission is hereby granted" EXPAT_TEXT)
+pou_debian_license("${PROJECT_SOURCE_DIR}/data/fonts/OFL-Spectral.txt" "SIL OPEN FONT LICENSE" OFL_TEXT)
+file(CONFIGURE OUTPUT "${PROJECT_BINARY_DIR}/debian/doc/copyright" @ONLY CONTENT
+"Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Path of Upgrading
+Upstream-Contact: https://github.com/coreydeli/path-of-upgrading/issues
+Source: https://github.com/coreydeli/path-of-upgrading
+
+Files: *
+Copyright: @POU_HOLDER@
+License: Expat
+
+Files: data/fonts/Spectral-*
+Copyright: @SPECTRAL_HOLDER@
+License: OFL-1.1
+
+Files: data/fonts/BigShoulders*
+Copyright: @BIG_SHOULDERS_HOLDER@
+License: OFL-1.1
+
+License: Expat
+@EXPAT_TEXT@
+
+License: OFL-1.1
+@OFL_TEXT@
+")
+# Only cpack copies it in, so a plain install, which the AppImage is made
+# from, leaves it out. It goes in /usr/share/doc whatever the prefix.
+set(CPACK_INSTALLED_DIRECTORIES "${PROJECT_BINARY_DIR}/debian/doc;usr/share/doc/${CMAKE_PROJECT_NAME}")
+
 include(CPack)
