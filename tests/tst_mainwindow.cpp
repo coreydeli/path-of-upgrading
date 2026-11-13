@@ -3213,12 +3213,14 @@ private Q_SLOTS:
         QVERIFY(toggle(w.find(u"compactSwitch"_s)));
         QVERIFY(toggle(w.find(u"colorblindSwitch"_s)));
         QVERIFY(toggle(w.find(u"advancedCopySwitch"_s)));
+        QVERIFY(toggle(w.find(u"putBackSwitch"_s)));
         QVERIFY(toggle(w.find(u"clipboardSwitch"_s)));
         QVERIFY(toggle(w.find(u"pausedSwitch"_s)));
         const OverlaySettings &overlay = w.settings().overlay;
         QCOMPARE(overlay.compact, false);
         QCOMPARE(overlay.colorblind, true);
         QCOMPARE(overlay.advancedCopy, true);
+        QCOMPARE(overlay.putBackClipboard, false);
         QCOMPARE(overlay.watchClipboard, false);
         QCOMPARE(overlay.paused, true);
     }
