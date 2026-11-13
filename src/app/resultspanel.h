@@ -15,6 +15,7 @@ class QQuickWindow;
 namespace pou {
 
 class GameInput;
+class Opener;
 class TradeResults;
 
 // The window over the game with the listings of the last trade search, at
@@ -42,6 +43,9 @@ public:
 
     void setSettings(const OverlaySettings &settings);
     void setUnavailable(const QString &why);
+    // What opens the trade site in your browser, see openTradeSite(). It has to
+    // outlive the panel.
+    void setOpener(Opener *opener) { m_opener = opener; }
 
     // Shows it on that screen, or else where the mouse is, or where it last
     // was, and asks for the first listings if it hasn't got them. A search
@@ -50,6 +54,8 @@ public:
     // For the hotkey.
     void toggle();
     Q_INVOKABLE void close();
+    // For the button that opens the search on the trade site, in your browser.
+    Q_INVOKABLE void openTradeSite();
 
     bool isVisible() const;
     // Null until it's first shown, or when it couldn't be made.
@@ -75,6 +81,7 @@ private:
     QQmlEngine *m_engine;
     GameInput *m_input;
     TradeResults *m_results;
+    Opener *m_opener = nullptr;
     std::unique_ptr<QQuickWindow> m_window;
     OverlaySettings m_settings;
     QString m_unavailable;
