@@ -77,7 +77,7 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   Trade page, your choice is kept. A release has no trade at all: no search
   buttons, no Trade page and no results window. It still has the league, with
   the Hardcore and Solo self-found switches, in the setup guide and on the
-  Settings page.
+  General page.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and what each slot needs to score
@@ -114,14 +114,14 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   window that is already running, rather than opening a second one.
 - Starts with your desktop from the first time it runs, with only the tray icon,
   as `path-of-upgrading --background` does. Turn that off with the switch on the
-  Settings page, in the sidebar's Settings group, and it stays off. It tells you
+  General page, in the sidebar's Settings group, and it stays off. It tells you
   with a notification if the hotkeys couldn't be set up.
 - Looks on GitHub for a newer release when it starts, and about once a day while
   it runs. When one is out, a dialog offers to update now, later or skip that
   version. With the window hidden, a notification says so instead. Update Now
   downloads the file for how you installed the app and checks it against the
   release's checksums. Nothing is installed until you press Update Now. Turn the
-  check off, or include betas, under Updates on the Settings page.
+  check off, or include betas, under Updates on the General page.
 - Has the app's own controls, colors and fonts, so it looks the same on every
   desktop. Its colors are the app's own dark ones, or your desktop's, which the
   Appearance page in the same group picks. It also picks the heading font
@@ -457,7 +457,7 @@ the LuaJIT that runs it. A copy you unzipped somewhere else can be picked on
 the Build Review page.
 
 Play in windowed fullscreen, as the popup can't be drawn over the game in
-exclusive fullscreen. The hotkeys are changed in the app, on the Settings page
+exclusive fullscreen. The hotkeys are changed in the app, on the General page
 in the sidebar's Settings group, which also has the switch to start it when
 you sign in. The hotkeys only work while the game runs. In a beta, session
 IDs are kept in the Windows Credential Manager.
