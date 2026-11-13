@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "core/characterstore.h"
+#include "core/characterdata.h"
 #include "core/item.h"
 #include "core/pobbuild.h"
 #include "core/pobweighing.h"

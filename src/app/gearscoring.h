@@ -2,7 +2,7 @@
 #pragma once
 
 #include "core/buildprofiles.h"
-#include "core/characterstore.h"
+#include "core/characterdata.h"
 
 #include <QAbstractListModel>
 #include <QList>
