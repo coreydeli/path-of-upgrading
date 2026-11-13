@@ -28,7 +28,11 @@ ResultsPanel::ResultsPanel(QQmlEngine *engine, GameInput *input, TradeResults *r
     });
 }
 
-ResultsPanel::~ResultsPanel() = default;
+ResultsPanel::~ResultsPanel()
+{
+    // first, while what its bindings read is still here
+    m_window.reset();
+}
 
 void ResultsPanel::setSettings(const OverlaySettings &settings)
 {
