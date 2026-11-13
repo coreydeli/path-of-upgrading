@@ -393,6 +393,9 @@ SavedStats readSavedStats(QXmlStreamReader &reader)
 std::optional<QString> decodeBuildCode(const QString &code)
 {
     const QString trimmed = code.trimmed();
+    // far more than any build, as XML or as a code
+    if (trimmed.size() > maxXmlSize)
+        return std::nullopt;
     if (trimmed.startsWith(u'<'))
         return trimmed;
 
@@ -641,6 +644,8 @@ PobItemText convertPobItem(const QString &raw, const QString &slot)
 
 std::optional<PobBuild> parsePobBuild(const QString &xml)
 {
+    if (xml.size() > maxXmlSize)
+        return std::nullopt;
     QXmlStreamReader reader(xml);
     if (!reader.readNextStartElement() || reader.name() != u"PathOfBuilding2")
         return std::nullopt;
