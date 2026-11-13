@@ -172,7 +172,7 @@ Rectangle {
                 text: qsTr("Open on the Trade Site")
                 icon.name: "internet-web-browser"
                 // in your browser, where you can sign in to buy
-                onClicked: Qt.openUrlExternally(card.results.url)
+                onClicked: card.panel.openTradeSite()
             }
         }
     }
