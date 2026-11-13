@@ -4,6 +4,7 @@
 #include "app/traderesults.h"
 #include "core/placement.h"
 #include "platform/gameinput.h"
+#include "platform/opener.h"
 #include "platform/overlay.h"
 
 #include <QQmlComponent>
@@ -87,6 +88,12 @@ void ResultsPanel::close()
 {
     if (m_window)
         m_window->hide();
+}
+
+void ResultsPanel::openTradeSite()
+{
+    if (m_opener && !m_results->url().isEmpty())
+        m_opener->open(m_results->url());
 }
 
 bool ResultsPanel::isVisible() const

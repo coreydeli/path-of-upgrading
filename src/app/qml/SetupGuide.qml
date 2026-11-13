@@ -146,7 +146,7 @@ FormCard.FormCardDialog {
                 Sheet {
                     FormCard.FormTextDelegate {
                         objectName: "hotkeyText"
-                        text: guide.app.onboarding.hotkey !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(guide.app.onboarding.hotkey) : qsTr("The key to check an item isn't set. Choose one on the Settings page.")
+                        text: guide.app.onboarding.hotkey !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(guide.app.onboarding.hotkey) : qsTr("The key to check an item isn't set. Choose one on the General page.")
                         textItem.wrapMode: Text.Wrap
                     }
 

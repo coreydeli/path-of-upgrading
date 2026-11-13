@@ -1015,7 +1015,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"tradeAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Trade"_s);
         QVERIFY(w.show(u"overlayAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"General"_s);
         QVERIFY(w.show(u"pobAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Build Review"_s);
         QVERIFY(w.show(u"gearAction"_s));
@@ -1955,7 +1955,7 @@ private Q_SLOTS:
 
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s);
         QCOMPARE(text(life), u"Life"_s);
-        QCOMPARE(life->property("description").toString(), u"Counts in every slot but Weapon and Jewel"_s);
+        QCOMPARE(life->property("description").toString(), u"Counts in every slot but Weapon and Jewel."_s);
         QObject *level = life->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(isVisible(level));
         QCOMPARE(level->property("currentText").toString(), u"Normal (1x)"_s);
@@ -2461,18 +2461,18 @@ private Q_SLOTS:
         QCOMPARE(
             w.find(u"noItemsText"_s)->property("description").toString(),
             u"Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on "
-            "the Settings page."_s);
+            "the General page."_s);
     }
 
-    void settingsName()
+    void generalName()
     {
         Window w;
-        // the sidebar entry and the page both say Settings, and the others stay their own pages
-        QCOMPARE(text(w.window->findChild<QObject *>(u"overlayAction"_s)), u"Settings"_s);
+        // the sidebar entry and the page both say General, apart from the Settings group they're in
+        QCOMPARE(text(w.window->findChild<QObject *>(u"overlayAction"_s)), u"General"_s);
         QCOMPARE(text(w.window->findChild<QObject *>(u"tradeAction"_s)), u"Trade"_s);
         QCOMPARE(text(w.window->findChild<QObject *>(u"pobAction"_s)), u"Build Review"_s);
         QVERIFY(w.show(u"overlayAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"General"_s);
     }
 
     void buildReviewName()
@@ -3213,12 +3213,14 @@ private Q_SLOTS:
         QVERIFY(toggle(w.find(u"compactSwitch"_s)));
         QVERIFY(toggle(w.find(u"colorblindSwitch"_s)));
         QVERIFY(toggle(w.find(u"advancedCopySwitch"_s)));
+        QVERIFY(toggle(w.find(u"putBackSwitch"_s)));
         QVERIFY(toggle(w.find(u"clipboardSwitch"_s)));
         QVERIFY(toggle(w.find(u"pausedSwitch"_s)));
         const OverlaySettings &overlay = w.settings().overlay;
         QCOMPARE(overlay.compact, false);
         QCOMPARE(overlay.colorblind, true);
         QCOMPARE(overlay.advancedCopy, true);
+        QCOMPARE(overlay.putBackClipboard, false);
         QCOMPARE(overlay.watchClipboard, false);
         QCOMPARE(overlay.paused, true);
     }
@@ -3529,7 +3531,7 @@ private Q_SLOTS:
         QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
     }
 
-    // Settings and Appearance are one level down, under Settings
+    // General and Appearance are one level down, under Settings
     void settingsPagesAreUnderSettings()
     {
         Window w;
@@ -3637,7 +3639,7 @@ private Q_SLOTS:
         QTRY_VERIFY(w.sidebarRow(u"Item History"_s));
 
         QVERIFY(w.show(u"overlayAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"General"_s);
         QTRY_VERIFY(w.sidebarRow(u"Appearance"_s));
         QTRY_VERIFY(w.sidebarRow(u"Back"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
@@ -3674,7 +3676,7 @@ private Q_SLOTS:
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Back"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
-        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        QCOMPARE(w.focusedRow(), u"General"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Appearance"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Space);
@@ -3683,10 +3685,10 @@ private Q_SLOTS:
         // still on Settings, so the other page is a key press away
         QTest::qWait(500);
         QVERIFY(!w.sidebarRow(u"Item History"_s));
-        w.sidebarRow(u"Settings"_s)->forceActiveFocus(Qt::TabFocusReason);
-        QCOMPARE(w.focusedRow(), u"Settings"_s);
+        w.sidebarRow(u"General"_s)->forceActiveFocus(Qt::TabFocusReason);
+        QCOMPARE(w.focusedRow(), u"General"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Return);
-        QCOMPARE(w.page()->property("title").toString(), u"Settings"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"General"_s);
     }
 
     void sidebarSettingsWorksInANarrowWindow()
@@ -4340,7 +4342,7 @@ private Q_SLOTS:
         for (int i = 0; i < 4; ++i)
             QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
-                 u"The key to check an item isn't set. Choose one on the Settings page."_s);
+                 u"The key to check an item isn't set. Choose one on the General page."_s);
     }
 
     // as --setup asks

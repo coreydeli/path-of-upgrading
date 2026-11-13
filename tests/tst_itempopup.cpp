@@ -3,11 +3,11 @@
 #include "core/parser.h"
 #include "core/placement.h"
 #include "fakegameinput.h"
+#include "fakeopener.h"
 #include "maptexts.h"
 #include "stylefortests.h"
 
 #include <QColor>
-#include <QDesktopServices>
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QQmlEngine>
@@ -107,21 +107,6 @@ bool click(const ItemPopup &popup, const QString &text)
     QTest::mouseClick(popup.window(), Qt::LeftButton, {}, middle);
     return true;
 }
-
-// Takes the links the popup opens, in place of the browser.
-class Browser : public QObject
-{
-    Q_OBJECT
-
-public:
-    Browser() { QDesktopServices::setUrlHandler(u"https"_s, this, "open"); }
-    ~Browser() override { QDesktopServices::unsetUrlHandler(u"https"_s); }
-
-    QList<QUrl> opened;
-
-public Q_SLOTS:
-    void open(const QUrl &url) { opened << url; }
-};
 
 // Somewhere it isn't near the popup.
 ScreenPoint elsewhere()
@@ -367,7 +352,9 @@ private Q_SLOTS:
     {
         QQmlEngine engine;
         FakeGameInput input;
+        FakeOpener browser;
         ItemPopup popup(&engine, &input);
+        popup.setOpener(&browser);
         popup.setTradeAvailable(true);
         popup.showReport(aReport(), mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
@@ -393,8 +380,8 @@ private Q_SLOTS:
         QVERIFY(shown(popup, found.note));
         QVERIFY(button(popup, u"Same or Better"_s)->isEnabled());
 
-        // in your browser
-        Browser browser;
+        // in your browser, and only on a click
+        QVERIFY(browser.opened.isEmpty());
         QVERIFY(click(popup, u"Open on the Trade Site"_s));
         QCOMPARE(browser.opened, QList<QUrl>{found.url});
     }
@@ -466,11 +453,12 @@ private Q_SLOTS:
     {
         QQmlEngine engine;
         FakeGameInput input;
+        FakeOpener browser;
         ItemPopup popup(&engine, &input);
+        popup.setOpener(&browser);
         popup.setTradeAvailable(true);
         popup.showReport(aReport(), mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
-        Browser browser;
         const QUrl url(u"https://www.pathofexile.com/trade2/search/poe2/Standard?q=%7B%7D"_s);
         popup.setTrade(failedReport(u"The trade site couldn't be reached."_s, url));
         QVERIFY(shown(popup, u"The trade site couldn't be reached."_s));

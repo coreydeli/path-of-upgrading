@@ -3,6 +3,7 @@
 
 #include "core/placement.h"
 #include "platform/logging.h"
+#include "platform/opener.h"
 #include "platform/overlay.h"
 
 #include <QQmlComponent>
@@ -114,6 +115,12 @@ void ItemPopup::findOnTrade(TradeFinder::Kind kind)
 void ItemPopup::showResults()
 {
     Q_EMIT resultsAsked(m_mouse ? m_mouse->screen : QString());
+}
+
+void ItemPopup::openTradeSite()
+{
+    if (m_opener && !m_trade.url.isEmpty())
+        m_opener->open(m_trade.url);
 }
 
 void ItemPopup::wear(const QString &slot)
