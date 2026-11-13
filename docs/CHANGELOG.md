@@ -34,7 +34,7 @@ version that comes out.
   day while it runs. A dialog called "A New Version Is Out" offers Update Now,
   Later or Skip This Version. With the window hidden, a notification says so
   instead. Turn the check off, or include betas, in the Updates card on the
-  Settings page.
+  General page.
 - Update Now downloads the file for how you installed the app and checks it
   against the release's checksums before anything else happens. The AppImage
   replaces itself and restarts, and the Windows setup runs quietly. Debian and
@@ -71,6 +71,11 @@ version that comes out.
   don't count.
 - In the gear score profiles, "Weapon DPS" is now "Weapon damage per second".
 - The sidebar's Gear group is now called Gear Settings.
+- The Settings page is now called General. It's in the sidebar's Settings group,
+  beside Appearance, and its settings are the same.
+- The Debian package has the copyright file Debian asks for, at
+  `/usr/share/doc/path-of-upgrading/copyright`, with the app's license and the
+  licenses of its fonts.
 - The Characters page is now called Import Character, and it is in Gear Settings. The window
   opens on Your Gear rather than on the Characters page.
 - Build Review's "Look Again" is now "Update", and it also reads the builds
@@ -115,6 +120,18 @@ version that comes out.
   says so, rather than quitting with nothing shown.
 - The autostart entry for an AppImage whose path has `$`, `\`, quotes, backticks
   or `%` in it now starts the app.
+- After an update, the new copy waits up to a minute for the old one to quit.
+  Then it starts anyway.
+- If Xwayland is down when you press a hotkey, the app keeps trying to connect
+  to it until it's back.
+- Currency prices from poe.ninja that can't be right, such as zero or more than
+  a billion Exalted Orbs, are left out.
+- Item History loads no more items than it keeps, which is the last 30, even
+  when the saved file has more.
+- A search by your stat weights uses the 40 heaviest weights, as the trade site
+  limits how many filters a search can have. The others are left out.
+- An item's text over 1 MB isn't read, and a build code or Path of Building XML
+  over 32 MB is refused.
 
 ## [0.6.0] - 2026-11-10
 
