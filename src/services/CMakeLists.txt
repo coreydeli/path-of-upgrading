@@ -1,5 +1,6 @@
 add_library(pou_services STATIC
     buildfetcher.cpp buildfetcher.h
+    characterstore.cpp characterstore.h
     logging.cpp logging.h
     network.cpp network.h
     pobengine.cpp pobengine.h
