@@ -7,6 +7,7 @@
 #include "platform/globalshortcuts.h"
 #include "platform/opener.h"
 #include "platform/secretstore.h"
+#include "platform/systemclipboard.h"
 
 #include <QCoreApplication>
 #include <QGuiApplication>
@@ -183,6 +184,12 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
 }
 
 App::~App() = default;
+
+void App::setClipboard(std::unique_ptr<SystemClipboard> clipboard)
+{
+    m_checker.setClipboard(clipboard.get());
+    m_clipboard = std::move(clipboard);
+}
 
 void App::lookForPob()
 {
