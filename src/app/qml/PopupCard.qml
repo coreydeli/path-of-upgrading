@@ -710,7 +710,7 @@ Item {
                     text: qsTr("Open on the Trade Site")
                     icon.name: "internet-web-browser"
                     // in your browser, where you can sign in to buy
-                    onClicked: Qt.openUrlExternally(card.trade.url)
+                    onClicked: card.popup.openTradeSite()
                 }
             }
         }
