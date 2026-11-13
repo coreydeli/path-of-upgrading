@@ -113,6 +113,7 @@ Settings loadSettings(const QSettings &store, bool beta)
     read(store, u"overlay/resultsHotkey"_s, overlay.resultsHotkey);
     read(store, u"overlay/advancedCopy"_s, overlay.advancedCopy);
     read(store, u"overlay/watchClipboard"_s, overlay.watchClipboard);
+    read(store, u"overlay/putBackClipboard"_s, overlay.putBackClipboard);
     overlay.position = popupPositionFromId(store.value(u"overlay/position"_s).toString());
     read(store, u"overlay/scale"_s, overlay.scale, 0.5, 2);
     read(store, u"overlay/compact"_s, overlay.compact);
@@ -174,6 +175,7 @@ void saveSettings(QSettings &store, const Settings &s, bool beta)
     store.setValue(u"overlay/resultsHotkey"_s, overlay.resultsHotkey);
     store.setValue(u"overlay/advancedCopy"_s, overlay.advancedCopy);
     store.setValue(u"overlay/watchClipboard"_s, overlay.watchClipboard);
+    store.setValue(u"overlay/putBackClipboard"_s, overlay.putBackClipboard);
     store.setValue(u"overlay/position"_s, popupPositionId(overlay.position));
     store.setValue(u"overlay/scale"_s, overlay.scale);
     store.setValue(u"overlay/compact"_s, overlay.compact);
