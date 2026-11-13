@@ -4,6 +4,7 @@
 #include <QLockFile>
 #include <QObject>
 #include <QStringList>
+#include <chrono>
 
 class QLocalServer;
 class QLocalSocket;
@@ -25,6 +26,9 @@ public:
     // Whether this is the first copy. When it isn't, the first one is handed
     // the arguments, the way QCoreApplication has them.
     bool claim(const QStringList &arguments);
+    // How long a copy that connects gets to hand over its arguments. Tests
+    // wait less.
+    void setReadTime(std::chrono::milliseconds wait);
 
 Q_SIGNALS:
     // Another copy was started, with these arguments.
@@ -38,6 +42,7 @@ private:
     QString m_name;
     QLockFile m_lock;
     QLocalServer *m_server = nullptr;
+    std::chrono::milliseconds m_readTime{5000};
 };
 
 } // namespace pou

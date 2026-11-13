@@ -77,6 +77,16 @@ void ItemReader::setPaused(bool paused)
     m_paused = paused;
 }
 
+void ItemReader::setClipboard(SystemClipboard *clipboard)
+{
+    m_keeper.setClipboard(clipboard);
+}
+
+void ItemReader::setPutBackClipboard(bool putBack)
+{
+    m_keeper.setEnabled(putBack);
+}
+
 void ItemReader::setGiveUpAfter(std::chrono::milliseconds wait)
 {
     m_giveUp.setInterval(wait);
@@ -89,6 +99,8 @@ void ItemReader::read(bool nudge)
     m_reading = true;
     m_slow.start();
     m_giveUp.start();
+    // as the game copies over it
+    m_keeper.keep();
     // which can fail before it returns
     m_input->copyItem({.advanced = m_advanced, .nudge = nudge});
 }
@@ -96,6 +108,8 @@ void ItemReader::read(bool nudge)
 void ItemReader::copied(const QString &text, const std::optional<ScreenPoint> &mouse)
 {
     finish();
+    // an item or not, it's taken the place of yours
+    m_keeper.putBack(text);
     if (const std::optional<Item> item = parseItem(text)) {
         Q_EMIT itemRead(*item, mouse);
         return;
@@ -109,11 +123,15 @@ void ItemReader::notCopied(GameInput::Failure why, const QString &detail,
                            const std::optional<ScreenPoint> &mouse)
 {
     finish();
+    m_keeper.forget();
     Q_EMIT failed(whyNothing(why, detail, hotkey()), mouse);
 }
 
 void ItemReader::copiedByHand(const QString &text)
 {
+    // which you'd copied before, and isn't new
+    if (m_keeper.isPutBack(text))
+        return;
     if (m_paused || !m_watchClipboard || m_reading)
         return;
     // currency, gems and the like, which you copy to paste somewhere
@@ -126,6 +144,7 @@ void ItemReader::copiedByHand(const QString &text)
 void ItemReader::giveUp()
 {
     finish();
+    m_keeper.forget();
     Q_EMIT failed(u"The game didn't copy the item in time. Press %1 again."_s.arg(hotkey()),
                   m_input->mouse());
 }
