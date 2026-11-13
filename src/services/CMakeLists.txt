@@ -5,6 +5,7 @@ add_library(pou_services STATIC
     pobengine.cpp pobengine.h
     ratesrefresher.cpp ratesrefresher.h
     ratesstore.cpp ratesstore.h
+    settingsfile.cpp settingsfile.h
     tradeclient.cpp tradeclient.h
     tradedatastore.cpp tradedatastore.h
     tradesearcher.cpp tradesearcher.h
