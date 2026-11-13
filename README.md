@@ -326,8 +326,8 @@ To build it:
 - Qt 6.8 or newer, with Core, Gui, Network, Widgets, Qml, Quick, Quick
   Controls 2, DBus, Test and QuickTest
 - KDE Frameworks 6.13 or newer: Kirigami, Declarative, ColorScheme, I18n,
-  GlobalAccel, Notifications, StatusNotifierItem, WindowSystem and
-  DBusAddons, and Config for the tests
+  GlobalAccel, GuiAddons, Notifications, StatusNotifierItem, WindowSystem
+  and DBusAddons, and Config for the tests
 - Kirigami Addons 1.7 or newer
 - LayerShellQt 6
 - Qt6Keychain

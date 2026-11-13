@@ -43,6 +43,7 @@ BuildRequires:  cmake(KF6I18n) >= 6.13
 BuildRequires:  cmake(KF6Config)
 BuildRequires:  cmake(KF6DBusAddons)
 BuildRequires:  cmake(KF6GlobalAccel)
+BuildRequires:  cmake(KF6GuiAddons)
 BuildRequires:  cmake(KF6Notifications)
 BuildRequires:  cmake(KF6StatusNotifierItem)
 BuildRequires:  cmake(KF6WindowSystem)
