@@ -6,6 +6,7 @@
 #include "core/datafiles.h"
 #include "core/pobbuild.h"
 #include "services/pobengine.h"
+#include "services/pobfinder.h"
 
 #include <QFileInfo>
 #include <QVariantMap>

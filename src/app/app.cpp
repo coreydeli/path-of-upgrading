@@ -7,6 +7,7 @@
 #include "platform/globalshortcuts.h"
 #include "platform/opener.h"
 #include "platform/secretstore.h"
+#include "services/pobfinder.h"
 
 #include <QCoreApplication>
 #include <QGuiApplication>

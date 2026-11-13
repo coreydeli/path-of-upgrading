@@ -88,18 +88,19 @@ QString pobInstallerUrl()
 }
 
 PobGuide guideToPob(const PobPlaces &places, const QString &location,
-                    const std::optional<PobInstall> &running, const QString &runProblem)
+                    const std::optional<PobInstall> &running, const QString &runProblem,
+                    const PobSurvey &survey)
 {
     PobGuide guide;
     guide.folderNote = folderNoteFor(places);
-    for (const PobPlace &place : searchedPlaces(places, location))
+    for (const PobPlace &place : survey.places)
         guide.places << placeLine(place);
 
     if (running) {
         guide.headline = whichIsUsed(places, location, *running);
         guide.installedAt = shown(running->folder);
-        if (!running->userFolder.isEmpty())
-            guide.buildsAt = shown(pobBuildsFolder(*running));
+        if (!survey.buildsFolder.isEmpty())
+            guide.buildsAt = shown(survey.buildsFolder);
         if (running->flatpak) {
             guide.details << u"It's a Flatpak, which keeps its files in a hidden folder named .var in your "
                              u"home folder."_s;
@@ -111,13 +112,14 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
             guide.details << runProblem;
             guide.steps << u"Press Update to try once more."_s
                         << u"If it keeps failing, open %1 yourself to see whether it works."_s.arg(
-                               onWindows(places) ? u"Path of Building"_s : u"Path of Building Community (PoE2)"_s);
+                               onWindows(places) ? u"Path of Building"_s
+                                                 : u"Path of Building Community (PoE2)"_s);
         }
         guide.steps = numbered(guide.steps);
         return guide;
     }
 
-    const PobLookup lookup = lookForPob(places, location);
+    const PobLookup &lookup = survey.lookup;
     if (lookup.install) {
         // it turned up since the app looked
         guide.headline = u"Path of Building is there now."_s;
@@ -133,9 +135,10 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
                          u"changes your build."_s;
         if (noFlatpak)
             guide.steps << u"Install Flatpak on this computer. See https://flatpak.org/setup/"_s;
-        guide.steps << u"Install \"Path of Building\" from Flathub, in Discover or with the buttons below."_s
-                    << u"Open \"Path of Building Community (PoE2)\" once, and wait while it downloads what it needs."_s
-                    << (noFlatpak ? u"Restart Path of Upgrading."_s : u"Press Update."_s);
+        guide.steps
+            << u"Install \"Path of Building\" from Flathub, in Discover or with the buttons below."_s
+            << u"Open \"Path of Building Community (PoE2)\" once, and wait while it downloads what it needs."_s
+            << (noFlatpak ? u"Restart Path of Upgrading."_s : u"Press Update."_s);
         guide.getFlatpak = true;
         break;
     case PobProblem::NotOpened:
@@ -169,7 +172,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
     case PobProblem::ForPoe1:
     case PobProblem::FolderNoLuajit:
         guide.folderProblem = true;
-        guide.details << usualPlaces(places, findPob(places, {}));
+        guide.details << usualPlaces(places, survey.usual);
         if (lookup.problem == PobProblem::NothingInFolder) {
             guide.headline = u"There's no Path of Building in the folder you chose."_s;
             guide.folderNote = u"Pick the folder with HeadlessWrapper.lua in it, or the folder of its "

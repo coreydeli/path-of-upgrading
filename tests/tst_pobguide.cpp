@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/datafiles.h"
 #include "core/pobguide.h"
+#include "services/pobfinder.h"
 
 #include <QDir>
 #include <QTemporaryDir>
@@ -57,10 +58,17 @@ bool addPob(const QString &folder, const QByteArray &manifest = {})
            (manifest.isEmpty() || writeFile(folder + u"/manifest.xml"_s, manifest));
 }
 
+// What the page shows with that one running, as it looks now
+PobGuide guideRunning(const PobPlaces &places, const QString &location,
+                      const std::optional<PobInstall> &running, const QString &runProblem = {})
+{
+    return guideToPob(places, location, running, runProblem, surveyPob(places, location, running));
+}
+
 // What the page is given when the app found it
 PobGuide guideFor(const PobPlaces &places, const QString &location = {}, const QString &runProblem = {})
 {
-    return guideToPob(places, location, findPob(places, location), runProblem);
+    return guideRunning(places, location, findPob(places, location), runProblem);
 }
 
 QString text(const PobGuide &guide)
@@ -111,7 +119,7 @@ private Q_SLOTS:
     void noBuildsFolderToShow()
     {
         Computer computer;
-        const PobGuide guide = guideToPob(computer.places, {}, PobInstall{.folder = u"/pob"_s}, {});
+        const PobGuide guide = guideRunning(computer.places, {}, PobInstall{.folder = u"/pob"_s});
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(u"/pob"_s));
         QVERIFY(guide.buildsAt.isEmpty());
     }
@@ -253,7 +261,7 @@ private Q_SLOTS:
         Computer computer;
         QVERIFY(computer.installFlatpak());
         QVERIFY(addPob(computer.flatpakFolder()));
-        const PobGuide guide = guideToPob(computer.places, {}, std::nullopt, {});
+        const PobGuide guide = guideRunning(computer.places, {}, std::nullopt);
         QCOMPARE(guide.headline, u"Path of Building is there now."_s);
         QCOMPARE(guide.steps, QStringList{u"1. Press Update."_s});
     }

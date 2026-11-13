@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "core/datafiles.h"
-#include "core/pobinstall.h"
+#include "services/pobfinder.h"
 
 #include <QDir>
 #include <QFile>

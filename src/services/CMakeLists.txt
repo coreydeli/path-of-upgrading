@@ -4,6 +4,7 @@ add_library(pou_services STATIC
     logging.cpp logging.h
     network.cpp network.h
     pobengine.cpp pobengine.h
+    pobfinder.cpp pobfinder.h
     ratesrefresher.cpp ratesrefresher.h
     ratesstore.cpp ratesstore.h
     settingsfile.cpp settingsfile.h

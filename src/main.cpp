@@ -4,7 +4,6 @@
 #include "app/desktop.h"
 #include "app/fonts.h"
 #include "app/ownstyle.h"
-#include "core/pobinstall.h"
 #include "platform/gameinput.h"
 #include "platform/gamewatcher.h"
 #include "platform/globalshortcuts.h"
@@ -15,6 +14,7 @@
 #include "platform/secretstore.h"
 #include "platform/singleinstance.h"
 #include "platform/tray.h"
+#include "services/pobfinder.h"
 
 #include <KLocalizedQmlContext>
 #include <QApplication>

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <QByteArray>
 #include <QDateTime>
-#include <QList>
 #include <QString>
 #include <QStringList>
 #include <QStringView>
@@ -46,9 +46,6 @@ struct PobPlaces
     QString documents;
 };
 
-// The places on this computer.
-PobPlaces pobPlaces();
-
 // Why there's none to run.
 enum class PobProblem {
     NotInstalled,          // no Flatpak, and nothing in the data folder
@@ -70,11 +67,6 @@ struct PobLookup
     QString folder; // the Path of Building that has no LuaJIT to run it, for NoLuajit
 };
 
-// The Path of Building in the location when that's set, or else the
-// Flatpak's, or else one from rusty-path-of-building installed some other
-// way. On Windows it's the installed one.
-PobLookup lookForPob(const PobPlaces &places, const QString &location);
-
 // One of the places it looks.
 struct PobPlace
 {
@@ -82,17 +74,6 @@ struct PobPlace
     QString path;
     bool present = false;
 };
-
-// The places that findPob() looks in for the location, in the order it looks.
-QList<PobPlace> searchedPlaces(const PobPlaces &places, const QString &location);
-
-// The same, as only the install: empty when there's none, with why in
-// words for people when it's given.
-std::optional<PobInstall> findPob(const PobPlaces &places, const QString &location, QString *why = nullptr);
-
-// Where it keeps the builds you save in it: the folder chosen in its
-// options, or else its own.
-QString pobBuildsFolder(const PobInstall &install);
 
 // A build you saved in Path of Building.
 struct SavedBuild
@@ -104,7 +85,9 @@ struct SavedBuild
     friend bool operator==(const SavedBuild &, const SavedBuild &) = default;
 };
 
-// The builds in the folder and the folders in it, the last one saved first.
-QList<SavedBuild> savedBuilds(const QString &folder);
+// The builds folder chosen in Path of Building's options, from its
+// Settings.xml. Empty when none is. Nothing else in its settings is read, as
+// they have your sign in to the trade site too.
+QString chosenBuildsFolder(const QByteArray &settings);
 
 } // namespace pou
