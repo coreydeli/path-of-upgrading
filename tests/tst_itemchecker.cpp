@@ -3,6 +3,7 @@
 #include "app/tradereport.h"
 #include "core/parser.h"
 #include "core/placement.h"
+#include "fakeclipboard.h"
 #include "fakegameinput.h"
 #include "fakenetwork.h"
 #include "fakepob.h"
@@ -737,6 +738,33 @@ private Q_SLOTS:
         checker.setSettings(settings);
         Q_EMIT input.textCopied(itemtexts::helmetNew);
         QVERIFY(!checker.popup().isVisible());
+    }
+
+    void putsBackWhatYouHadCopied_data()
+    {
+        QTest::addColumn<bool>("putBack");
+        QTest::newRow("on") << true;
+        QTest::newRow("off") << false;
+    }
+
+    void putsBackWhatYouHadCopied()
+    {
+        QFETCH(bool, putBack);
+        QQmlEngine qml;
+        FakeGameInput input;
+        FakeClipboard clipboard;
+        clipboard.copy(u"mine"_s, false);
+        ItemChecker checker(&qml, &input);
+        checker.setClipboard(&clipboard);
+        Settings settings;
+        settings.overlay.putBackClipboard = putBack;
+        checker.setSettings(settings);
+
+        checker.check();
+        clipboard.copy(itemtexts::helmetNew);
+        Q_EMIT input.itemCopied(itemtexts::helmetNew, mouseAt(200, 300));
+        QTest::qWait(20);
+        QCOMPARE(clipboard.text(), putBack ? u"mine"_s : itemtexts::helmetNew);
     }
 
     void popupSettings()

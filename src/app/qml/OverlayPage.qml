@@ -36,7 +36,7 @@ ColumnsPage {
         }
     ]
 
-    title: qsTr("Settings")
+    title: qsTr("General")
     description: qsTr("The hotkeys, and how the popup over the game looks.")
 
     SectionHeader {
@@ -108,6 +108,16 @@ ColumnsPage {
             description: qsTr("Copies with Ctrl+Alt+C, which tells prefixes from suffixes, for crafting.")
             checked: overlayPage.options.advancedCopy
             onToggled: overlayPage.options.advancedCopy = checked
+        }
+
+        RowRule {}
+
+        SwitchRow {
+            objectName: "putBackSwitch"
+            text: qsTr("Put back what you had copied")
+            description: qsTr("Once the hotkey has copied the item, so you can still paste what you copied before.")
+            checked: overlayPage.options.putBackClipboard
+            onToggled: overlayPage.options.putBackClipboard = checked
         }
 
         RowRule {}

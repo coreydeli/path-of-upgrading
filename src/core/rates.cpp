@@ -55,6 +55,13 @@ std::optional<double> primaryValue(const QJsonObject &overview, const QString &i
     return std::nullopt;
 }
 
+// A worth in Exalted Orbs that could be real: more than nothing, and at most
+// a billion, far over what a Mirror of Kalandra goes for.
+bool believable(double exalts)
+{
+    return std::isfinite(exalts) && exalts > 0 && exalts <= 1e9;
+}
+
 } // namespace
 
 QUrl ninjaCurrencyUrl(const QString &league)
@@ -93,10 +100,10 @@ CurrencyRates currencyRatesInExalts(const QJsonObject &overview)
         const QJsonObject line = v.toObject();
         const QString id = line.value(u"id").toString();
         const double value = line.value(u"primaryValue").toDouble();
-        if (!id.isEmpty() && value > 0)
+        if (!id.isEmpty() && value > 0 && believable(value / exalted))
             rates.insert(id, roundTo(value / exalted, 4));
     }
-    if (!primary.isEmpty() && !rates.contains(primary))
+    if (!primary.isEmpty() && !rates.contains(primary) && believable(1 / exalted))
         rates.insert(primary, roundTo(1 / exalted, 4));
     return rates;
 }
