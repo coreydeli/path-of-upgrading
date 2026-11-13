@@ -9,6 +9,12 @@ version that comes out.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.7.0] - 2026-11-13
+
+[Release notes](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.7.0)
+
 ### Added
 
 - After the hotkey copies an item, what you had copied before is put back on the
@@ -258,5 +264,6 @@ The 0.1.0 betas (v0.1.0-beta.1 to v0.1.0-beta.33, from 2026-11-03 to
   checks do.
 
 [Unreleased]: https://github.com/coreydeli/path-of-upgrading/commits/beta
+[0.7.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.7.0
 [0.6.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0
 [0.5.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.5.0
