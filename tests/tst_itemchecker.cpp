@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/itemchecker.h"
 #include "app/tradereport.h"
-#include "core/datafiles.h"
 #include "core/parser.h"
 #include "core/placement.h"
 #include "fakeclipboard.h"
@@ -9,6 +8,7 @@
 #include "fakenetwork.h"
 #include "fakepob.h"
 #include "itemtexts.h"
+#include "services/datafiles.h"
 #include "services/pobengine.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"

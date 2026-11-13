@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/app.h"
 #include "app/fonts.h"
-#include "core/datafiles.h"
 #include "core/parser.h"
 #include "core/sessionguide.h"
 #include "core/slots.h"
@@ -14,6 +13,7 @@
 #include "fakepob.h"
 #include "fakesecretstore.h"
 #include "itemtexts.h"
+#include "services/datafiles.h"
 #include "stylefortests.h"
 #include "tradefixtures.h"
 #include "updatetexts.h"

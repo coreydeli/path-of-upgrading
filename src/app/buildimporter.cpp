@@ -3,8 +3,8 @@
 
 #include "app/characterlist.h"
 #include "core/buildprofiles.h"
-#include "core/datafiles.h"
 #include "core/pobbuild.h"
+#include "services/datafiles.h"
 #include "services/pobengine.h"
 #include "services/pobfinder.h"
 

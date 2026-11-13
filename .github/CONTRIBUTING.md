@@ -122,7 +122,7 @@ The folders split the code like this:
 | Folder | What goes there |
 | --- | --- |
 | `src/core` | Pure logic with no I/O: parsing items, scoring, trade queries, settings and characters |
-| `src/services` | Network and processes: the trade site, poe.ninja and Path of Building |
+| `src/services` | Network, processes and files: the trade site, poe.ninja, Path of Building, and reading and saving your settings, characters and kept data |
 | `src/platform` | The operating system: overlay windows, global shortcuts and reading the game, through XWayland on Linux |
 | `src/app` | The QML app, its models in C++ and the QML in `src/app/qml` |
 

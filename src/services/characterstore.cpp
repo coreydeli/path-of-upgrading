@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "services/characterstore.h"
 
-#include "core/datafiles.h"
+#include "services/datafiles.h"
 
 #include <QDir>
 #include <QFile>

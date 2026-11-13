@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "services/tradedatastore.h"
 
-#include "core/datafiles.h"
 #include "core/league.h"
+#include "services/datafiles.h"
 #include "services/logging.h"
 #include "services/tradeclient.h"
 
