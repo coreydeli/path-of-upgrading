@@ -182,8 +182,12 @@ Item listingToItem(const QJsonObject &result, const QString &itemClass)
         QStringList lines = modTexts(item, group.field);
         if (lines.isEmpty())
             continue;
-        if (!group.tag.isEmpty()) {
-            for (QString &line : lines)
+        for (QString &line : lines) {
+            // the item text reads a line starting with a brace as an advanced
+            // copy's header, which the site never sends
+            while (line.startsWith(u'{'))
+                line = line.mid(1).trimmed();
+            if (!group.tag.isEmpty())
                 line = u"%1 (%2)"_s.arg(line, group.tag);
         }
         blocks << lines.join(u'\n');
