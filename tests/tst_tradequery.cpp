@@ -284,6 +284,40 @@ private Q_SLOTS:
         QCOMPARE(q.excluded, 0);
     }
 
+    void weightedSearchKeepsTheHeaviest()
+    {
+        QStringList names;
+        Weights weights;
+        StatMap stats;
+        for (int i = 0; i < 6; ++i) {
+            names << u"S%1"_s.arg(i);
+            const QString key = u"# to "_s + names.last();
+            weights.insert(key, i % 2 ? -(i + 1) : i + 1);
+            stats.set(key, 10);
+        }
+        WeightedSearchOptions options;
+        options.maxFilters = 3;
+        const WeightedSearch q =
+            weightedSearch(withStats(u"Rings"_s, stats), weights, tradeDataFor(names), options);
+        QCOMPARE(filterIds(statGroups(q).at(0).toObject()),
+                 QStringList({u"explicit.s3"_s, u"explicit.s4"_s, u"explicit.s5"_s}));
+        QCOMPARE(q.dropped, 3);
+        // only the kept ones count towards your sum
+        QCOMPARE(q.current, -60.0 + 50 - 40);
+
+        Weights each;
+        names.clear();
+        for (int i = 0; i < 42; ++i) {
+            names << u"S%1"_s.arg(i);
+            each.insert(u"# to "_s + names.last(), 1);
+        }
+        options.maxFilters = 0;
+        const WeightedSearch all =
+            weightedSearch(withStats(u"Rings"_s, {}), each, tradeDataFor(names), options);
+        QCOMPARE(filterIds(statGroups(all).at(0).toObject()).size(), 40);
+        QCOMPARE(all.dropped, 2);
+    }
+
     void similarItems()
     {
         const Item helmet = withStats(u"Helmets"_s, {{u"# to maximum Life"_s, 50},
