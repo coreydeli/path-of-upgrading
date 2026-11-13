@@ -2,7 +2,7 @@
 #pragma once
 
 #include "core/buildprofiles.h"
-#include "core/characterstore.h"
+#include "core/characterdata.h"
 
 #include <QAbstractListModel>
 #include <QList>
@@ -53,7 +53,7 @@ class GearScoring : public QAbstractListModel
 public:
     enum Role {
         LabelRole = Qt::UserRole + 1, // "Life"
-        WhereRole,                    // "Counts on Boots"
+        WhereRole,                    // "Counts on Boots."
         LevelRole,                    // one of levels()
     };
 

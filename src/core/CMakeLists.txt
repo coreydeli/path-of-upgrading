@@ -7,7 +7,7 @@ add_library(pou_core STATIC
     buildprofiles.cpp buildprofiles.h
     catalog.cpp catalog.h
     character.cpp character.h
-    characterstore.cpp characterstore.h
+    characterdata.cpp characterdata.h
     datafiles.cpp datafiles.h
     evaluation.cpp evaluation.h
     firstrun.cpp firstrun.h

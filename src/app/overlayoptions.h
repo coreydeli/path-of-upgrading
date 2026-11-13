@@ -30,6 +30,7 @@ class OverlayOptions : public QObject
     Q_PROPERTY(bool hotkeysFollowGame READ hotkeysFollowGame CONSTANT)
     Q_PROPERTY(bool advancedCopy READ isAdvancedCopy WRITE setAdvancedCopy NOTIFY changed)
     Q_PROPERTY(bool watchClipboard READ isWatchingClipboard WRITE setWatchClipboard NOTIFY changed)
+    Q_PROPERTY(bool putBackClipboard READ putsBackClipboard WRITE setPutBackClipboard NOTIFY changed)
     Q_PROPERTY(QString position READ position WRITE setPosition NOTIFY changed)
     Q_PROPERTY(double scale READ scale WRITE setScale NOTIFY changed)
     Q_PROPERTY(bool compact READ isCompact WRITE setCompact NOTIFY changed)
@@ -60,6 +61,8 @@ public:
     void setAdvancedCopy(bool advanced);
     bool isWatchingClipboard() const { return overlay().watchClipboard; }
     void setWatchClipboard(bool watch);
+    bool putsBackClipboard() const { return overlay().putBackClipboard; }
+    void setPutBackClipboard(bool putBack);
     QString position() const;
     void setPosition(const QString &position);
     // From half the size up to twice it.

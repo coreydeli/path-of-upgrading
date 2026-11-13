@@ -117,7 +117,7 @@ ColumnsPage {
             objectName: "noItemsText"
             visible: itemRows.count === 0
             text: qsTr("You haven't checked any items yet.")
-            description: checkedPage.key !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on the Settings page.")
+            description: checkedPage.key !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on the General page.")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
         }

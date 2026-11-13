@@ -4,6 +4,7 @@
 #include "app/traderesults.h"
 #include "core/placement.h"
 #include "platform/gameinput.h"
+#include "platform/opener.h"
 #include "platform/overlay.h"
 
 #include <QQmlComponent>
@@ -27,7 +28,11 @@ ResultsPanel::ResultsPanel(QQmlEngine *engine, GameInput *input, TradeResults *r
     });
 }
 
-ResultsPanel::~ResultsPanel() = default;
+ResultsPanel::~ResultsPanel()
+{
+    // first, while what its bindings read is still here
+    m_window.reset();
+}
 
 void ResultsPanel::setSettings(const OverlaySettings &settings)
 {
@@ -83,6 +88,12 @@ void ResultsPanel::close()
 {
     if (m_window)
         m_window->hide();
+}
+
+void ResultsPanel::openTradeSite()
+{
+    if (m_opener && !m_results->url().isEmpty())
+        m_opener->open(m_results->url());
 }
 
 bool ResultsPanel::isVisible() const

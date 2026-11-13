@@ -1,10 +1,12 @@
 add_library(pou_services STATIC
     buildfetcher.cpp buildfetcher.h
+    characterstore.cpp characterstore.h
     logging.cpp logging.h
     network.cpp network.h
     pobengine.cpp pobengine.h
     ratesrefresher.cpp ratesrefresher.h
     ratesstore.cpp ratesstore.h
+    settingsfile.cpp settingsfile.h
     tradeclient.cpp tradeclient.h
     tradedatastore.cpp tradedatastore.h
     tradesearcher.cpp tradesearcher.h
