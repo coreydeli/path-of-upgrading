@@ -153,9 +153,9 @@ these files:
 | Any other Linux, to build yourself | `path-of-upgrading-<version>.tar.gz` |
 
 The newest release is at the top of the list. A beta's version is like
-`0.7.0beta2` in the Arch package and `0.7.0.beta.2` in the Debian and Fedora
+`0.8.0beta2` in the Arch package and `0.8.0.beta.2` in the Debian and Fedora
 ones. In the Fedora file name, `<N>` is the Fedora release it was built on.
-The AppImage and the Windows files say `0.7.0-beta.2`.
+The AppImage and the Windows files say `0.8.0-beta.2`.
 
 ### Arch Linux
 
@@ -387,7 +387,7 @@ it has no trade at all.
 ## Releases
 
 Work is done on short branches off `beta` and merged back into it. A
-pre-release, like `v0.7.0-beta.2`, with the packages and the changes since the
+pre-release, like `v0.8.0-beta.2`, with the packages and the changes since the
 last one, is made from `beta` by hand (Run workflow on the Release workflow) or
 each night when `beta` has new code. Docs alone don't count, and a merge into
 `beta` doesn't make one. Merging `beta` into `main` releases the version
