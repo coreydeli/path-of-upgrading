@@ -41,7 +41,7 @@ private:
     xcb_atom_t m_property = XCB_ATOM_NONE;
     xcb_window_t m_window = XCB_WINDOW_NONE;
     // after the connection, so it goes first
-    QSocketNotifier m_notifier{QSocketNotifier::Read};
+    QSocketNotifier m_notifier{QSocketNotifier::Read, this};
 };
 
 } // namespace pou

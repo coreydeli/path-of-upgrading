@@ -4,11 +4,14 @@
 // skipped when there's none, and when the game is open, as it would get the
 // keys.
 #include "platform/xcb/xgameinput.h"
+#include "platform/xcb/xselectionwatcher.h"
 #include "platform/xcb/xwindows.h"
 
 #include <QScopeGuard>
 #include <QSignalSpy>
+#include <QSocketNotifier>
 #include <QTest>
+#include <sys/socket.h>
 
 using namespace Qt::Literals::StringLiterals;
 using namespace pou;
@@ -79,6 +82,39 @@ private Q_SLOTS:
         QCOMPARE(failed.at(0).at(1).toString(),
                  u"DISPLAY isn't set, so there's no X server or Xwayland to connect to."_s);
         QCOMPARE(failed.at(0).at(2).value<std::optional<ScreenPoint>>(), std::nullopt);
+    }
+
+    void keepsTryingAfterACopyWhileTheServerIsGone()
+    {
+        if (!XConnection().isValid())
+            QSKIP("There's no X server.");
+        XGameInput input;
+        QVERIFY2(input.isAvailable(), qPrintable(input.errorString()));
+        const auto *watcher = input.findChild<XSelectionWatcher *>();
+        QVERIFY(watcher);
+        const auto *notifier = watcher->findChild<QSocketNotifier *>();
+        QVERIFY(notifier);
+        QSignalSpy lost(watcher, &XSelectionWatcher::disconnected);
+        // as if Xwayland had crashed, for this connection only
+        QTest::ignoreMessage(QtWarningMsg, "Lost the X server, and will connect to it again in a while");
+        QCOMPARE(::shutdown(int(notifier->socket()), SHUT_RDWR), 0);
+        QVERIFY(lost.wait());
+
+        // and isn't back yet when the hotkey is pressed
+        const QByteArray display = qgetenv("DISPLAY");
+        qunsetenv("DISPLAY");
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Can't copy items out of the game: DISPLAY isn't set, so there's no X "
+                             "server or Xwayland to connect to.");
+        QSignalSpy failed(&input, &GameInput::copyFailed);
+        input.copyItem({});
+        qputenv("DISPLAY", display);
+        QCOMPARE(failed.size(), 1);
+        QCOMPARE(failed.at(0).at(0).value<GameInput::Failure>(), GameInput::Failure::Unavailable);
+        QVERIFY(!input.isAvailable());
+
+        // it's back by the next try, with no other press
+        QTRY_VERIFY_WITH_TIMEOUT(input.isAvailable(), 10000);
     }
 };
 
