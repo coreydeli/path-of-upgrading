@@ -3,11 +3,11 @@
 #include "app/buildimporter.h"
 #include "app/characterlist.h"
 #include "app/settingsstore.h"
-#include "core/datafiles.h"
 #include "core/parser.h"
 #include "core/weighedprofile.h"
 #include "fakenetwork.h"
 #include "pobfixtures.h"
+#include "services/datafiles.h"
 #include "services/pobengine.h"
 
 #include <QDir>

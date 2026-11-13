@@ -15,6 +15,8 @@ namespace pou {
 const SlotMods &SlotMods::builtIn()
 {
     static const SlotMods table = [] {
+        // a resource built into the program, not one of the user's files, so it
+        // can be read here in core
         QFile file(u":/pou/slotmods.json"_s);
         if (!file.open(QIODevice::ReadOnly))
             return SlotMods();
