@@ -88,7 +88,8 @@ double baseWithoutSockets(const QString &key, double value, const QList<StatSour
             continue;
         (s.origin == StatOrigin::Socket ? sockets : mods) += s.value;
     }
-    if (sockets == 0)
+    // with nothing left to scale by, there's no telling what the runes added
+    if (sockets == 0 || 100 + mods + sockets <= 0)
         return value;
     return value * (100 + mods) / (100 + mods + sockets);
 }
