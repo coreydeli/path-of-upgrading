@@ -5,6 +5,7 @@
 #include "core/pobweighing.h"
 #include "itemtexts.h"
 #include "services/pobengine.h"
+#include "services/pobfinder.h"
 
 #include <QJsonArray>
 #include <QSignalSpy>

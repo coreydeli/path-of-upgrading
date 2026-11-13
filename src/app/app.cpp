@@ -8,6 +8,7 @@
 #include "platform/opener.h"
 #include "platform/secretstore.h"
 #include "platform/systemclipboard.h"
+#include "services/pobfinder.h"
 
 #include <QCoreApplication>
 #include <QGuiApplication>
