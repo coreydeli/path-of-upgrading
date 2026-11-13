@@ -2,7 +2,7 @@
 #pragma once
 
 #include "core/character.h"
-#include "core/characterstore.h"
+#include "core/characterdata.h"
 #include "core/gearscore.h"
 #include "core/pobeval.h"
 #include "core/pobverdict.h"

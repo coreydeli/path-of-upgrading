@@ -19,7 +19,7 @@ pacman_retry -Syu --noconfirm --needed \
     base-devel cmake ninja git ccache \
     qt6-base qt6-declarative \
     kirigami kirigami-addons kdeclarative ki18n kdbusaddons kconfig kcolorscheme \
-    kglobalaccel knotifications kstatusnotifieritem kwindowsystem \
+    kglobalaccel kguiaddons knotifications kstatusnotifieritem kwindowsystem \
     layer-shell-qt qtkeychain-qt6 libxcb xcb-util-keysyms zlib \
     qqc2-desktop-style qt6-wayland hicolor-icon-theme \
     desktop-file-utils appstream dbus xorg-server-xvfb xorg-xauth luajit

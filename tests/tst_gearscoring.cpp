@@ -160,7 +160,7 @@ private Q_SLOTS:
         QVERIFY(s.scoring.summary().startsWith(u"Slots Path of Building didn't weigh go by the "_s));
 
         // the weighed stats are the rows, with the start's for the other slots
-        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);
         QVERIFY(s.labels().contains(u"Rarity"_s));
     }
 
@@ -242,19 +242,20 @@ private Q_SLOTS:
     {
         Scoring s;
         s.play(tester(u"es-caster"_s));
-        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);
         QCOMPARE(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString(),
-                 u"Counts on Weapon, Offhand, and Amulet"_s);
+                 u"Counts on Weapon, Offhand, and Amulet."_s);
         QCOMPARE(s.of(u"Life"_s, GearScoring::WhereRole).toString(),
-                 u"Counts in every slot but Weapon and Jewel"_s);
-        QCOMPARE(s.of(u"Mana"_s, GearScoring::WhereRole).toString(), u"Counts in every slot but Jewel"_s);
+                 u"Counts in every slot but Weapon and Jewel."_s);
+        QCOMPARE(s.of(u"Mana"_s, GearScoring::WhereRole).toString(), u"Counts in every slot but Jewel."_s);
         // half of them
         QCOMPARE(s.of(u"Rarity"_s, GearScoring::WhereRole).toString(),
-                 u"Counts on Helmet, Gloves, Boots, Amulet, and Ring"_s);
+                 u"Counts on Helmet, Gloves, Boots, Amulet, and Ring."_s);
 
         Scoring minions;
         minions.play(tester(u"minion-es"_s));
-        QCOMPARE(minions.of(u"Intelligence"_s, GearScoring::WhereRole).toString(), u"Counts in every slot"_s);
+        QCOMPARE(minions.of(u"Intelligence"_s, GearScoring::WhereRole).toString(),
+                 u"Counts in every slot."_s);
     }
 
     void theAttackersStats()
@@ -262,10 +263,10 @@ private Q_SLOTS:
         Scoring s;
         s.play(tester(u"es-attacker"_s));
         QCOMPARE(s.of(u"Weapon damage per second"_s, GearScoring::WhereRole).toString(),
-                 u"Counts on Weapon"_s);
+                 u"Counts on Weapon."_s);
         QCOMPARE(s.of(u"Attack Speed"_s, GearScoring::WhereRole).toString(),
-                 u"Counts in every slot but Helmet, Body Armour, Boots, and Belt"_s);
-        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots"_s);
+                 u"Counts in every slot but Helmet, Body Armour, Boots, and Belt."_s);
+        QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);
         QVERIFY(s.of(u"Spell skill levels"_s, GearScoring::WhereRole).toString().isEmpty());
     }
 
@@ -335,7 +336,7 @@ private Q_SLOTS:
         QCOMPARE(s.of(chaos, GearScoring::LevelRole).toInt(), 0);
         QVERIFY(s.of(chaos, GearScoring::WhereRole)
                     .toString()
-                    .endsWith(u". Not at all to start with, as your build has Chaos Inoculation"_s));
+                    .endsWith(u". Not at all to start with, as your build has Chaos Inoculation."_s));
         QVERIFY(!s.of(u"Life"_s, GearScoring::WhereRole).toString().contains(u"Chaos"_s));
         QVERIFY(!s.scoring.isTweaked());
 

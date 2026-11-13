@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "core/characterstore.h"
 #include "core/pobbuild.h"
 #include "core/pobverdict.h"
+#include "services/characterstore.h"
 
 #include <QJsonObject>
 #include <QObject>

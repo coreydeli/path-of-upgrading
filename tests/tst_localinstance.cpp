@@ -2,6 +2,8 @@
 #include "platform/localinstance.h"
 
 #include <QCoreApplication>
+#include <QDataStream>
+#include <QLocalSocket>
 #include <QSignalSpy>
 #include <QTest>
 #include <QThread>
@@ -24,6 +26,37 @@ bool claimElsewhere(const QString &name, const QStringList &arguments)
     while (!thread->wait(10))
         QCoreApplication::processEvents();
     return claimed;
+}
+
+// Sends these bytes, as some other program could, and says whether the first
+// one hung up on it within the wait.
+bool hungUpOn(const QString &name, const QByteArray &bytes, int wait)
+{
+    bool hungUp = false;
+    const std::unique_ptr<QThread> thread(QThread::create([&] {
+        QLocalSocket socket;
+        socket.connectToServer(name);
+        if (!socket.waitForConnected(1000))
+            return;
+        socket.write(bytes);
+        socket.waitForBytesWritten(1000);
+        hungUp = socket.state() == QLocalSocket::UnconnectedState || socket.waitForDisconnected(wait);
+    }));
+    thread->start();
+    while (!thread->wait(10))
+        QCoreApplication::processEvents();
+    return hungUp;
+}
+
+// What a list of this many arguments starts with, and the first of them,
+// which says it's this many bytes long.
+QByteArray listHead(quint32 count, quint32 firstBytes)
+{
+    QByteArray bytes;
+    QDataStream stream(&bytes, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_6_8);
+    stream << count << firstBytes;
+    return bytes;
 }
 
 } // namespace
@@ -80,6 +113,44 @@ private Q_SLOTS:
         QSignalSpy started(&next, &LocalInstance::startedAgain);
         QVERIFY(!claimElsewhere(m_name, {u"path-of-upgrading"_s}));
         QTRY_COMPARE(started.size(), 1);
+    }
+
+    void turnsAwayTooManyArguments()
+    {
+        LocalInstance first(m_name);
+        QVERIFY(first.claim({u"path-of-upgrading"_s}));
+        QSignalSpy started(&first, &LocalInstance::startedAgain);
+        // which, read as a list, would be reserved at once
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Something that isn't a copy of the program sent too much, and was turned away");
+        QVERIFY(hungUpOn(m_name, listHead(0xfffffff0, 0), 2000));
+        QVERIFY(started.isEmpty());
+        // and a copy is still heard
+        QVERIFY(!claimElsewhere(m_name, {u"path-of-upgrading"_s}));
+        QTRY_COMPARE(started.size(), 1);
+    }
+
+    void turnsAwayTooMuch()
+    {
+        LocalInstance first(m_name);
+        QVERIFY(first.claim({u"path-of-upgrading"_s}));
+        QSignalSpy started(&first, &LocalInstance::startedAgain);
+        QTest::ignoreMessage(QtWarningMsg,
+                             "Something that isn't a copy of the program sent too much, and was turned away");
+        // an argument a gigabyte long, of which it gets the first 100 KB
+        QVERIFY(hungUpOn(m_name, listHead(1, 1 << 30) + QByteArray(100 * 1024, 'a'), 2000));
+        QVERIFY(started.isEmpty());
+    }
+
+    void hangsUpOnOneThatStalls()
+    {
+        LocalInstance first(m_name);
+        first.setReadTime(std::chrono::milliseconds(200));
+        QVERIFY(first.claim({u"path-of-upgrading"_s}));
+        QSignalSpy started(&first, &LocalInstance::startedAgain);
+        // two arguments, and the first never comes
+        QVERIFY(hungUpOn(m_name, listHead(2, 10), 3000));
+        QVERIFY(started.isEmpty());
     }
 };
 

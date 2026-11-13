@@ -208,9 +208,12 @@ bool CharacterList::remove(const QString &id)
     const int row = int(m_ids.indexOf(id));
     if (row < 0)
         return false;
-    const QString name = m_store->find(id)->name;
-    if (!m_store->remove(id))
-        return fail(u"Couldn't delete %1: %2"_s.arg(name, m_store->errorString()));
+    // none when it's gone from the store already, and only its row is left
+    if (const Character *character = m_store->find(id)) {
+        const QString name = character->name;
+        if (!m_store->remove(id))
+            return fail(u"Couldn't delete %1: %2"_s.arg(name, m_store->errorString()));
+    }
     beginRemoveRows({}, row, row);
     m_ids.removeAt(row);
     m_builds.remove(id);

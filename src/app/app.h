@@ -29,10 +29,10 @@
 #include "app/traderesults.h"
 #include "app/tradesession.h"
 #include "app/updates.h"
-#include "core/characterstore.h"
 #include "core/pobinstall.h"
 #include "platform/autostart.h"
 #include "platform/gamewatcher.h"
+#include "services/characterstore.h"
 #include "services/pobengine.h"
 #include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
@@ -56,6 +56,7 @@ class GameInput;
 class GlobalShortcuts;
 class Opener;
 class SecretStore;
+class SystemClipboard;
 
 // What the app runs while it's open: the hotkeys, the item checker with its
 // popup and the items you've checked, your characters, Path of Building and
@@ -126,6 +127,9 @@ public:
     ActiveCharacter &character() { return m_character; }
     PobEngine &pob() { return m_pob; }
     ItemChecker &checker() { return m_checker; }
+    // The desktop's clipboard, which what you had copied is put back on after
+    // the hotkey's copy. Tests leave it out.
+    void setClipboard(std::unique_ptr<SystemClipboard> clipboard);
     // Their keys are changed here rather than in the settings, which have the
     // keys the desktop gave them.
     Hotkeys &hotkeys() { return m_hotkeys; }
@@ -187,6 +191,8 @@ private:
     PobEngine m_pob;
     ActiveCharacter m_character;
     std::unique_ptr<GameInput> m_input;
+    // which the checker reads, so it goes after it
+    std::unique_ptr<SystemClipboard> m_clipboard;
     ItemChecker m_checker;
     BuildWeigher m_weigher;
     std::unique_ptr<GlobalShortcuts> m_shortcuts;

@@ -32,6 +32,7 @@ void ItemChecker::setSettings(const Settings &settings)
     m_reader.setHotkey(overlay.hotkey);
     m_reader.setAdvancedCopy(overlay.advancedCopy);
     m_reader.setWatchClipboard(overlay.watchClipboard);
+    m_reader.setPutBackClipboard(overlay.putBackClipboard);
     m_reader.setPaused(overlay.paused);
     m_popup.setSettings(overlay);
 
