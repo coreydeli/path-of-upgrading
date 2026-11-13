@@ -195,7 +195,7 @@ Kirigami.ApplicationWindow {
                 Kirigami.Action {
                     id: overlayAction
                     objectName: "overlayAction"
-                    text: qsTr("Settings")
+                    text: qsTr("General")
                     icon.name: "settings-configure"
                     checkable: true
                     QQC2.ActionGroup.group: pages
