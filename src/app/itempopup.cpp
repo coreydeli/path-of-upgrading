@@ -23,7 +23,11 @@ ItemPopup::ItemPopup(QQmlEngine *engine, GameInput *input, QObject *parent)
     setSettings({});
 }
 
-ItemPopup::~ItemPopup() = default;
+ItemPopup::~ItemPopup()
+{
+    // first, while what its bindings read is still here
+    m_window.reset();
+}
 
 void ItemPopup::setSettings(const OverlaySettings &settings)
 {
