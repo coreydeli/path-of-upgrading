@@ -36,7 +36,7 @@ ColumnsPage {
         }
     ]
 
-    title: qsTr("Settings")
+    title: qsTr("General")
     description: qsTr("The hotkeys, and how the popup over the game looks.")
 
     SectionHeader {

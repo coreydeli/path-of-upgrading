@@ -3,7 +3,7 @@ import QtQuick
 import org.kde.kirigamiaddons.formcard as FormCard
 
 // The league you play in, which the Trade page and, without trade, the
-// Settings page have. Anything put inside goes under the switches.
+// General page have. Anything put inside goes under the switches.
 Sheet {
     id: card
 
