@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "core/settings.h"
+#include "services/settingsfile.h"
 
 #include <QSettings>
 #include <QTemporaryDir>

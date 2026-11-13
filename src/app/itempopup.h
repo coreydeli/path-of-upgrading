@@ -21,6 +21,7 @@ class QQuickWindow;
 namespace pou {
 
 class GameInput;
+class Opener;
 
 // The popup over the game that says what the item you checked means for you,
 // next to the mouse or where your settings put it. Its window is
@@ -58,6 +59,9 @@ public:
     ~ItemPopup() override;
 
     void setSettings(const OverlaySettings &settings);
+    // What opens the trade site in your browser, see openTradeSite(). It has to
+    // outlive the popup.
+    void setOpener(Opener *opener) { m_opener = opener; }
 
     // Shows it by the mouse, or at the top of the main screen when it isn't
     // known where the mouse is.
@@ -85,6 +89,8 @@ public:
     Q_INVOKABLE void findOnTrade(pou::TradeFinder::Kind kind);
     // For the button that shows the listings, see resultsAsked().
     Q_INVOKABLE void showResults();
+    // For the button that opens the search on the trade site, in your browser.
+    Q_INVOKABLE void openTradeSite();
 
     // For the buttons that say you wear the item, see wearAsked().
     Q_INVOKABLE void wear(const QString &slot);
@@ -131,6 +137,7 @@ private:
     void hide();
 
     QQmlEngine *m_engine;
+    Opener *m_opener = nullptr;
     PopupHider m_hider;
     std::unique_ptr<QQuickWindow> m_window;
     OverlaySettings m_settings;
