@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "app/clipboardkeeper.h"
 #include "core/item.h"
 #include "platform/gameinput.h"
 
@@ -29,6 +30,10 @@ public:
     void setWatchClipboard(bool watch);
     // Reads nothing at all.
     void setPaused(bool paused);
+    // Puts back what you had copied once the hotkey's copy has come in, which
+    // it does nothing of without a clipboard.
+    void setClipboard(SystemClipboard *clipboard);
+    void setPutBackClipboard(bool putBack);
     // How long it waits for the game before it says nothing came. Tests wait
     // less.
     void setGiveUpAfter(std::chrono::milliseconds wait);
@@ -61,6 +66,7 @@ private:
     QString hotkey() const;
 
     GameInput *m_input;
+    ClipboardKeeper m_keeper;
     QTimer m_slow;
     QTimer m_giveUp;
     QString m_hotkey;

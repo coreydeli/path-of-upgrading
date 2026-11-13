@@ -24,6 +24,8 @@ private Q_SLOTS:
         QCOMPARE(loadSettings(empty), expected);
     }
 
+    void putsBackTheClipboardByDefault() { QVERIFY(OverlaySettings().putBackClipboard); }
+
     void theBuildSaysIfItIsABeta()
     {
         // from the CMake option the build was made with
@@ -141,6 +143,7 @@ private Q_SLOTS:
         s.overlay.resultsHotkey = u"Ctrl+Shift+R"_s;
         s.overlay.advancedCopy = true;
         s.overlay.watchClipboard = false;
+        s.overlay.putBackClipboard = false;
         s.overlay.position = PopupPosition::Top;
         s.overlay.scale = 1.15;
         s.overlay.compact = false;
@@ -279,6 +282,7 @@ private Q_SLOTS:
             [](Settings &s) { s.overlay.resultsHotkey = u"F6"_s; },
             [](Settings &s) { s.overlay.advancedCopy = true; },
             [](Settings &s) { s.overlay.watchClipboard = false; },
+            [](Settings &s) { s.overlay.putBackClipboard = false; },
             [](Settings &s) { s.overlay.position = PopupPosition::Top; },
             [](Settings &s) { s.overlay.scale = 1.5; },
             [](Settings &s) { s.overlay.compact = false; },
