@@ -8,6 +8,7 @@ qt_add_library(pou_app STATIC
     buildweigher.cpp buildweigher.h
     characterlist.cpp characterlist.h
     checkeditems.cpp checkeditems.h
+    clipboardkeeper.cpp clipboardkeeper.h
     commandline.cpp commandline.h
     desktop.cpp desktop.h
     equipmentlist.cpp equipmentlist.h

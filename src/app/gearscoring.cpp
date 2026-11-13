@@ -29,20 +29,20 @@ QString listed(const QStringList &items)
     return QLocale(QLocale::English).createSeparatedList(items);
 }
 
-// "Counts on Boots", or "Counts in every slot but Weapon and Jewel".
+// "Counts on Boots.", or "Counts in every slot but Weapon and Jewel."
 QString whereItCounts(const QStringList &groups)
 {
     const QStringList &all = ratedGroups();
     if (groups.size() == all.size())
-        return u"Counts in every slot"_s;
+        return u"Counts in every slot."_s;
     if (groups.size() * 2 <= all.size())
-        return u"Counts on %1"_s.arg(listed(groups));
+        return u"Counts on %1."_s.arg(listed(groups));
     QStringList others;
     for (const QString &group : all) {
         if (!groups.contains(group))
             others << group;
     }
-    return u"Counts in every slot but %1"_s.arg(listed(others));
+    return u"Counts in every slot but %1."_s.arg(listed(others));
 }
 
 // The default one for none.
@@ -80,7 +80,7 @@ QVariant GearScoring::data(const QModelIndex &index, int role) const
     case WhereRole:
         if (untweaked(stat.label) == 0)
             return QString(whereItCounts(stat.groups) +
-                           u". Not at all to start with, as your build has Chaos Inoculation"_s);
+                           u" Not at all to start with, as your build has Chaos Inoculation."_s);
         return whereItCounts(stat.groups);
     case LevelRole:
         return levelOf(stat.label);
