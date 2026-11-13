@@ -1955,7 +1955,7 @@ private Q_SLOTS:
 
         QObject *life = w.in(u"stats"_s, u"stat:Life"_s);
         QCOMPARE(text(life), u"Life"_s);
-        QCOMPARE(life->property("description").toString(), u"Counts in every slot but Weapon and Jewel"_s);
+        QCOMPARE(life->property("description").toString(), u"Counts in every slot but Weapon and Jewel."_s);
         QObject *level = life->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(isVisible(level));
         QCOMPARE(level->property("currentText").toString(), u"Normal (1x)"_s);
