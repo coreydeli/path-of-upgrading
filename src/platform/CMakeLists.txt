@@ -23,10 +23,13 @@ add_library(pou_platform STATIC
     secretstore.cpp secretstore.h
     showwindow.cpp showwindow.h
     singleinstance.cpp singleinstance.h
+    systemclipboard.cpp systemclipboard.h
     tray.cpp tray.h
     traynotifier.cpp traynotifier.h
     # which needs no Windows, so it's tested everywhere
     win/winkeys.cpp win/winkeys.h
+    # Windows', built everywhere so it's checked everywhere
+    qtsystemclipboard.cpp qtsystemclipboard.h
 )
 
 target_include_directories(pou_platform PUBLIC ${PROJECT_SOURCE_DIR}/src)
@@ -53,6 +56,8 @@ else()
     find_package(Qt6 REQUIRED COMPONENTS DBus)
     find_package(KF6DBusAddons 6.0 REQUIRED)
     find_package(KF6GlobalAccel 6.0 REQUIRED)
+    # for the clipboard while the game has the focus
+    find_package(KF6GuiAddons 6.0 REQUIRED)
     find_package(KF6Notifications 6.0 REQUIRED)
     find_package(KF6WindowSystem 6.0 REQUIRED)
     find_package(LayerShellQt 6.0 REQUIRED)
@@ -60,6 +65,7 @@ else()
     target_sources(pou_platform PRIVATE
         kde/kdeglobalshortcuts.cpp kde/kdeglobalshortcuts.h
         kde/kdenotifier.cpp kde/kdenotifier.h
+        kde/kdesystemclipboard.cpp kde/kdesystemclipboard.h
         packagekitinstaller.cpp packagekitinstaller.h
         xcb/xconnection.cpp xcb/xconnection.h
         xcb/xgameinput.cpp xcb/xgameinput.h
@@ -71,7 +77,7 @@ else()
     )
     target_link_libraries(pou_platform
         PUBLIC PkgConfig::XCB Qt6::DBus
-        PRIVATE KF6::DBusAddons KF6::GlobalAccel KF6::Notifications KF6::WindowSystem
+        PRIVATE KF6::DBusAddons KF6::GlobalAccel KF6::GuiAddons KF6::Notifications KF6::WindowSystem
                 LayerShellQt::Interface
     )
 endif()

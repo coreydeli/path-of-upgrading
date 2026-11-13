@@ -4,6 +4,9 @@
 #include "itemtexts.h"
 
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -74,6 +77,25 @@ private Q_SLOTS:
         QCOMPARE(history.recent().size(), 30);
         QCOMPARE(history.recent().first().name, u"Ring 31"_s);
         QCOMPARE(history.recent().last().name, u"Ring 2"_s);
+    }
+
+    void readsNoMoreThanItKeeps()
+    {
+        // as from a file put together by hand
+        QTemporaryDir dir;
+        const QString path = dir.filePath(u"history.json"_s);
+        QJsonArray recent;
+        for (int n = 1; n <= 40; ++n)
+            recent << ring(n).raw;
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(QJsonDocument(QJsonObject{{u"version"_s, 1}, {u"recent"_s, recent}}).toJson());
+        file.close();
+
+        const ItemHistory history(path);
+        QCOMPARE(history.recent().size(), ItemHistory::recentLimit);
+        QCOMPARE(history.recent().first().name, u"Ring 1"_s);
+        QCOMPARE(history.recent().last().name, u"Ring 30"_s);
     }
 
     void countsStats()

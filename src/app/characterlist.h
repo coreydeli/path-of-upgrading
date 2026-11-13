@@ -2,8 +2,8 @@
 #pragma once
 
 #include "core/buildimport.h"
-#include "core/characterstore.h"
 #include "core/pobverdict.h"
+#include "services/characterstore.h"
 
 #include <QAbstractListModel>
 #include <QHash>
