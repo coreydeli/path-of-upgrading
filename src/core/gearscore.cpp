@@ -332,9 +332,11 @@ QList<KeyStat> topStats(const QString &slot, int count, const GearScoreOptions &
     const std::optional<Rating> rating = ratingFor(options, group);
     if (!rating)
         return {};
+    const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
+    const QString itemClass = classOfSlot(slot);
     QList<KeyStat> out;
     for (const ProfileStat *s : rating->stats) {
-        if (s->key.isEmpty() || s->resist)
+        if (s->key.isEmpty() || s->resist || !mods.allows(itemClass, s->key))
             continue;
         const double importance = importanceOf(*s, group, options);
         if (importance >= 4)
