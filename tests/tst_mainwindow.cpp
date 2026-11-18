@@ -2739,7 +2739,7 @@ private Q_SLOTS:
         QCOMPARE(guide->property("steps").toStringList(),
                  (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
-        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QCOMPARE(guide->property("title").toString(), u"Pick Your League"_s);
         QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
         // solo self-found, with or without hardcore, has nothing to turn off here
         QObject *solo = w.inGuide(u"setupSoloSwitch"_s);
@@ -3899,7 +3899,7 @@ private Q_SLOTS:
         QVERIFY(w.app->settings().set(settings));
         QVERIFY(w.show(u"appearanceAction"_s));
         QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(),
-                 u"The same as the text"_s);
+                 u"Same as the text font"_s);
         QCOMPARE(w.find(u"textFontButton"_s)->property("description").toString(),
                  settings.appearance.textFont);
         QCOMPARE(w.find(u"desktopSizeSwitch"_s)->property("checked").toBool(), false);
@@ -3922,7 +3922,7 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.headingFont, u"text"_s);
         QTRY_VERIFY(!isVisible(dialog));
         QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(),
-                 u"The same as the text"_s);
+                 u"Same as the text font"_s);
 
         const QString family = scalableFamilies().value(0);
         QVERIFY(click(w.find(u"headingFontButton"_s)));
@@ -4066,14 +4066,14 @@ private Q_SLOTS:
         QObject *next = w.inGuide(u"nextButton"_s);
 
         QVERIFY(click(next));
-        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QCOMPARE(guide->property("title").toString(), u"Pick Your League"_s);
         QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
         QVERIFY(!isVisible(w.inGuide(u"welcomeStep"_s)));
         QCOMPARE(text(next), u"Next"_s);
         QVERIFY(isVisible(w.inGuide(u"backButton"_s)));
 
         QVERIFY(click(next));
-        QCOMPARE(guide->property("title").toString(), u"Trade Searches"_s);
+        QCOMPARE(guide->property("title").toString(), u"Searching the Trade Site"_s);
         QVERIFY(isVisible(w.inGuide(u"tradeStep"_s)));
 
         QVERIFY(click(next));
@@ -4103,9 +4103,9 @@ private Q_SLOTS:
         QTRY_VERIFY(w.guide()->property("opened").toBool());
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
-        QCOMPARE(w.guide()->property("title").toString(), u"Trade Searches"_s);
+        QCOMPARE(w.guide()->property("title").toString(), u"Searching the Trade Site"_s);
         QVERIFY(click(w.inGuide(u"backButton"_s)));
-        QCOMPARE(w.guide()->property("title").toString(), u"Your League"_s);
+        QCOMPARE(w.guide()->property("title").toString(), u"Pick Your League"_s);
         QVERIFY(click(w.inGuide(u"backButton"_s)));
         QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
         QVERIFY(!isVisible(w.inGuide(u"backButton"_s)));
@@ -4192,12 +4192,12 @@ private Q_SLOTS:
         QCOMPARE(guide->property("title").toString(), u"Your Character"_s);
         QVERIFY(!isVisible(w.inGuide(u"tradeStep"_s)));
         QVERIFY(click(w.inGuide(u"backButton"_s)));
-        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QCOMPARE(guide->property("title").toString(), u"Pick Your League"_s);
 
         // and back in when it's turned off
         QVERIFY(toggle(w.inGuide(u"setupSoloSwitch"_s)));
         QVERIFY(click(next));
-        QCOMPARE(guide->property("title").toString(), u"Trade Searches"_s);
+        QCOMPARE(guide->property("title").toString(), u"Searching the Trade Site"_s);
         QVERIFY(isVisible(w.inGuide(u"tradeStep"_s)));
     }
 
@@ -4383,7 +4383,7 @@ private Q_SLOTS:
         QVERIFY(!isVisible(dialog));
         releaseIsOut(w, u"99.0.0"_s);
         QTRY_VERIFY(dialog->property("opened").toBool());
-        QCOMPARE(dialog->property("title").toString(), u"A New Version Is Out"_s);
+        QCOMPARE(dialog->property("title").toString(), u"There's a New Version"_s);
         QVERIFY(button(dialog, u"Update Now"_s));
         QVERIFY(button(dialog, u"Later"_s));
         QVERIFY(button(dialog, u"Skip This Version"_s));

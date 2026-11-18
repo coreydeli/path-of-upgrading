@@ -52,9 +52,9 @@ FormCard.FormCardDialog {
     title: {
         switch (step) {
         case "league":
-            return qsTr("Your League");
+            return qsTr("Pick Your League");
         case "trade":
-            return qsTr("Trade Searches");
+            return qsTr("Searching the Trade Site");
         case "character":
             return qsTr("Your Character");
         case "done":
