@@ -3,6 +3,7 @@
 
 #include "core/evaluation.h"
 #include "core/hands.h"
+#include "core/modtiers.h"
 #include "core/numbers.h"
 #include "core/slots.h"
 #include "core/statsources.h"
@@ -63,7 +64,10 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
         if (worn && rolledOn(*worn, w.pattern) >= minimum)
             continue;
         const auto top = mods.best(itemClass, w.key);
-        out << WantedStat{.label = w.label, .minimum = minimum, .best = top ? top->high : 0};
+        out << WantedStat{.label = w.label,
+                          .minimum = minimum,
+                          .best = top ? top->high : 0,
+                          .tier = tierFor(mods, itemClass, w.key, minimum).value_or(0)};
         if (out.size() == count)
             break;
     }
@@ -75,7 +79,9 @@ QString wantedText(const QList<WantedStat> &stats)
     QStringList parts;
     for (const WantedStat &s : stats)
         parts << s.label + u' ' + formatNumber(s.minimum) + u" or more"_s +
-                     (s.best > 0 ? u" (up to "_s + rollText(s.best) + u')' : QString());
+                     (s.best > 0 ? u" (up to "_s + rollText(s.best) +
+                                       (s.tier > 0 ? u", tier %1 or better"_s.arg(s.tier) : QString()) + u')'
+                                 : QString());
     return parts.join(u", "_s);
 }
 
