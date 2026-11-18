@@ -39,7 +39,9 @@ const char *probe = "import QtQuick\n"
                     "Item {\n"
                     "    function rarity(name) { return Style.rarity(name, Kirigami.Theme); }\n"
                     "    function rarityOnLight(name) { return Style.rarity(name, "
-                    "{ backgroundColor: \"#fef7ff\", textColor: \"#1d1b20\" }); }\n"
+                    "{ backgroundColor: Qt.color(\"#fef7ff\"), textColor: Qt.color(\"#1d1b20\") }); }\n"
+                    "    function rarityOnDark(name) { return Style.rarity(name, "
+                    "{ backgroundColor: Qt.color(\"#322f35\"), textColor: Qt.color(\"#e6e0e9\") }); }\n"
                     "    function grade(name) { return Style.grade(name, Kirigami.Theme); }\n"
                     "    function tone(tone, blind) { return Style.tone(tone, blind, Kirigami.Theme); }\n"
                     "    function frame() { return Style.frame(Kirigami.Theme); }\n"
@@ -147,7 +149,7 @@ private Q_SLOTS:
     void rarityKeepsTheGamesColorsOnDarkMaterial()
     {
         m_style->setProperty("material", true);
-        QCOMPARE(rarity(u"Rare"_s), hex("#ffff77"));
+        QCOMPARE(call(u"rarityOnDark"_s, {u"Rare"_s}).value<QColor>(), hex("#ffff77"));
         m_style->setProperty("material", false);
     }
 
