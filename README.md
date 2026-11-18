@@ -10,8 +10,9 @@ It is a native Qt 6 application, written in C++ and QML with Kirigami. KDE
 Plasma on Wayland is the first supported desktop, and there is a Windows
 version too. Other desktops may come later.
 
-Get it from the [releases](https://github.com/coreydeli/path-of-upgrading/releases),
-or build it from source, as [Installing](#installing) says. Betas come out
+Get it from [getpou.app](https://getpou.app/), the
+[releases](https://github.com/coreydeli/path-of-upgrading/releases), or build
+it from source, as [Installing](#installing) says. Betas come out
 first, as pre-releases, for anyone who wants the newest changes before they're
 released.
 The [changelog](docs/CHANGELOG.md) says what changed in each version.
