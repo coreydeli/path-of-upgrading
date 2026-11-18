@@ -324,7 +324,7 @@ private Q_SLOTS:
             site.searcher.search({{u"query"_s, QJsonObject()}});
         QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::dataChanged);
         site.upgrades.find(site.rowOf(u"Helmet"_s));
-        while (!site.tradeOf(u"Helmet"_s).note.contains(u"few searches"_s))
+        while (!site.tradeOf(u"Helmet"_s).note.contains(u"so many searches"_s))
             QVERIFY(changed.wait());
         const TradeReport report = site.tradeOf(u"Helmet"_s);
         QVERIFY(report.busy);

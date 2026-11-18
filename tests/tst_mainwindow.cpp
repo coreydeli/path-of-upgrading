@@ -3068,7 +3068,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"saveButton"_s)));
         QObject *error = w.find(u"sessionError"_s);
         QVERIFY(isVisible(error));
-        QCOMPARE(text(error), u"That isn't a session ID. It's only letters and digits."_s);
+        QCOMPARE(text(error), u"That doesn't look like a session ID. It's only letters and digits."_s);
         QCOMPARE(w.keyring->writes, 0);
         // which stays to be put right
         QCOMPARE(text(field), u"not an id!"_s);
