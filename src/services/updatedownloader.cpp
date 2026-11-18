@@ -145,7 +145,7 @@ void UpdateDownloader::drain()
     m_received += chunk.size();
     if (m_received > mostBytes || m_received > std::max<qint64>(m_asset.size, 0) + 1024 * 1024) {
         dropReply();
-        fail(u"The file is bigger than the release says, so it was thrown away."_s);
+        fail(u"The file is bigger than the release says, so it was deleted."_s);
         return;
     }
     m_hash.addData(chunk);
@@ -203,7 +203,7 @@ void UpdateDownloader::fileCame()
     const QString sum = QString::fromLatin1(m_hash.result().toHex());
     if (sum != m_checksums.value(m_asset.name)) {
         qCWarning(lcUpdates) << "The checksum of" << m_asset.name << "is" << sum;
-        fail(u"The download didn't match its checksum, so it was thrown away."_s);
+        fail(u"The download didn't match its checksum, so it was deleted."_s);
         return;
     }
     m_stage = Stage::Idle;

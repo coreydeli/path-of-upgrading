@@ -147,7 +147,7 @@ void XKeySender::waitForKeys()
     }
     if (othersHeld) {
         m_busy = false;
-        Q_EMIT failed(u"A key stayed down, so the game wasn't asked to copy."_s);
+        Q_EMIT failed(u"A key was still held down, so the copy wasn't sent to the game."_s);
         return;
     }
     m_steps = copySteps(copyKeys(), held, m_advanced);
