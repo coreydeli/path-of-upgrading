@@ -44,7 +44,11 @@ in QML.
   counts" rather than "Affix Impact".
 - A description says what the control does, in the third person ("Opens it",
   "Copies it", "Hides them"), and doesn't repeat the label. Keep to one style
-  within a page.
+  within a page. A natural question followed by an order is fine too ("Changed
+  your build? Have Path of Building weigh it again.").
+- Page intros, notes, empty states and errors speak to the player ("See what
+  you have equipped", "Your build wants Life here."). Only the descriptions of
+  controls describe the control.
 - Say "you" where a passive reads stiffly: "one gets made for you", not "one is
   made for it".
 - Buttons stay short verbs ("Check Again", "Find an Upgrade").
@@ -66,9 +70,9 @@ in QML.
   - `u"Path of Building's answer couldn't be read."_s`
   - `u"Searches need the trade site's list of stats, and it sent an empty one."_s`
 - When the message can't say the fix, the control beside it can. On the Build
-  Review page, `Path of Building wasn't found.` sits above the Update button,
-  whose description says `Use it after you install Path of Building, or after
-  you open it for Path of Exile 2 for the first time.`
+  Review page, `Path of Building isn't anywhere the app looks.` sits above
+  the Update button, whose description says `Use it after you install Path of Building, or after
+  you first open it for Path of Exile 2.`
 - Log text is short and plain too. Pass a `QString` to `%s` through
   `qPrintable()`, as `ItemPopup::makeWindow` does.
 
