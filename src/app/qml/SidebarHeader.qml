@@ -34,11 +34,11 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             font: Style.titleFont(Kirigami.Theme.defaultFont, 1.15)
             // the name is a slab of paper
-            color: Style.ink
+            color: Style.material ? Kirigami.Theme.textColor : Style.ink
             topPadding: 4
             bottomPadding: 4
             background: Rectangle {
-                color: Style.paper
+                color: Style.material ? "transparent" : Style.paper
             }
             text: qsTr("Path of Upgrading")
             wrapMode: Text.WordWrap
