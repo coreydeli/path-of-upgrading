@@ -27,15 +27,20 @@ QStringList numbered(const QStringList &steps)
     return lines;
 }
 
-QString whichIsUsed(const PobPlaces &places, const QString &location, const PobInstall &install)
+QString whichIsUsed(const PobPlaces &places, const QString &location, const PobInstall &install,
+                    bool would = false)
 {
+    const QString lead = would ? u"you'd be using"_s : u"You're using"_s;
+    QString what;
     if (!location.isEmpty())
-        return u"You're using the Path of Building in the folder you chose."_s;
-    if (install.flatpak)
-        return u"You're using Path of Building from Flathub."_s;
-    if (onWindows(places))
-        return u"You're using Path of Building Community (PoE2), from its installer."_s;
-    return u"You're using the Path of Building in your data folder."_s;
+        what = u"the Path of Building in the folder you chose"_s;
+    else if (install.flatpak)
+        what = u"Path of Building from Flathub"_s;
+    else if (onWindows(places))
+        what = u"Path of Building Community (PoE2), from its installer"_s;
+    else
+        what = u"the Path of Building in your data folder"_s;
+    return lead + u' ' + what + u'.';
 }
 
 QString folderNoteFor(const PobPlaces &places)
@@ -62,7 +67,7 @@ QString usualPlaces(const PobPlaces &places, const std::optional<PobInstall> &us
 {
     if (!usual)
         return u"Path of Building isn't in the usual places either."_s;
-    return u"Without that folder, it would use this: %1"_s.arg(whichIsUsed(places, {}, *usual));
+    return u"Without that folder, %1"_s.arg(whichIsUsed(places, {}, *usual, true));
 }
 
 } // namespace

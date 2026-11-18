@@ -213,8 +213,7 @@ private Q_SLOTS:
         QCOMPARE(guide.headline, u"There's no Path of Building in the folder you chose."_s);
         QVERIFY(guide.folderProblem);
         QVERIFY(guide.folderNote.contains(u"HeadlessWrapper.lua"));
-        QVERIFY(text(guide).contains(
-            u"that folder, it would use this: You're using Path of Building from Flathub."));
+        QVERIFY(text(guide).contains(u"that folder, you'd be using Path of Building from Flathub."));
         QVERIFY(guide.steps.last().contains(u"clear the folder"));
         QVERIFY(guide.places.first().endsWith(u", not there"));
 
