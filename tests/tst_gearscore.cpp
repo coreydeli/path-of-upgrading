@@ -2,6 +2,7 @@
 #include "core/buildprofiles.h"
 #include "core/gearscore.h"
 #include "core/parser.h"
+#include "core/slotmods.h"
 
 #include <QTest>
 
@@ -887,8 +888,25 @@ private Q_SLOTS:
         QStringList labels;
         for (const KeyStat &s : topStats(u"Ring"_s, 10, {.build = u"minion-es"_s}))
             labels << s.label;
-        // not the resistances, which are worth 4 here, nor the stats with no one key
-        QCOMPARE(labels, (QStringList{u"Minion damage"_s, u"Energy Shield"_s, u"Life"_s}));
+        // not the resistances, which are worth 4 here, nor the stats with no one key,
+        // nor flat Energy Shield and minion damage, which no ring affix rolls
+        QCOMPARE(labels, (QStringList{u"Life"_s}));
+    }
+
+    void topStatsKeepOnlyWhatTheSlotRolls()
+    {
+        GearScoreOptions options{.build = u"minion-es"_s};
+        QStringList ring;
+        for (const KeyStat &s : topStats(u"Ring"_s, 10, options))
+            ring << s.label;
+        QVERIFY(!ring.contains(u"Energy Shield"_s));
+        // with no table to go by, everything stays
+        const SlotMods none;
+        options.mods = &none;
+        QStringList any;
+        for (const KeyStat &s : topStats(u"Ring"_s, 10, options))
+            any << s.label;
+        QVERIFY(any.contains(u"Energy Shield"_s));
     }
 };
 

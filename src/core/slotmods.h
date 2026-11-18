@@ -9,11 +9,13 @@
 namespace pou {
 
 // One tier of a mod: the lowest item level it can come on, and what it rolls.
+// A hybrid mod gives more than one stat, and its ranges are its own.
 struct ModTier
 {
     int level = 0;
     double low = 0;
     double high = 0;
+    bool hybrid = false;
 
     friend bool operator==(const ModTier &, const ModTier &) = default;
 };
@@ -31,9 +33,15 @@ public:
     static SlotMods fromJson(const QJsonObject &table);
 
     // Highest tier first. Empty when the class can't roll the stat, or the
-    // class isn't in the table.
+    // class isn't in the table. Keys go by case, as the game's text has
+    // "damage" and "Damage" for the same stat.
     QList<ModTier> tiers(const QString &itemClass, const QString &key) const;
-    // The best tier, or the best an item of that level can come with.
+    // False when the table has the class and the class can't roll the stat as
+    // a prefix or suffix. A class the table doesn't have (the weapon slot,
+    // jewels) is allowed anything, as nothing says otherwise.
+    bool allows(const QString &itemClass, const QString &key) const;
+    // The best tier, or the best an item of that level can come with. A hybrid
+    // mod's tiers only count for a stat that has no other kind.
     std::optional<ModTier> best(const QString &itemClass, const QString &key) const;
     std::optional<ModTier> bestAt(const QString &itemClass, const QString &key, int itemLevel) const;
 
@@ -43,7 +51,7 @@ public:
     bool isEmpty() const { return m_classes.isEmpty(); }
 
 private:
-    // lower case class, then key
+    // lower case class, then lower case key
     QHash<QString, QHash<QString, QList<ModTier>>> m_classes;
     QString m_version;
     QString m_date;

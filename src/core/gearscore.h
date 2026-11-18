@@ -110,7 +110,8 @@ struct KeyStat
 };
 
 // The build's most important stats for a slot that can be searched for by
-// key, most important first. Resistances are left out.
+// key, most important first. Resistances are left out, and so is what the
+// slot's item class can't roll.
 QList<KeyStat> topStats(const QString &slot, int count = 2, const GearScoreOptions &options = {});
 
 // The least of a stat worth searching for, from how much a top roll of it

@@ -36,6 +36,23 @@ QStringList slotsOf(const QList<Recommendation> &list)
     return slots;
 }
 
+// A character whose build weighs one stat in the given slot group, the way Path
+// of Building's weighing does.
+GearScoreOptions weighedFor(const QString &group, const QString &label, const QString &key)
+{
+    WeighedProfile weighed;
+    weighed.profile = {.id = QString(weighedProfileId), .name = u"Weighed"_s, .summary = {}, .stats = {}};
+    weighed.profile.stats << ProfileStat{
+        .label = label,
+        .pattern = QRegularExpression(u"^"_s + QRegularExpression::escape(key) + u"$"_s),
+        .importance = PerSlot(10),
+        .cap = PerSlot(50),
+        .key = key,
+        .resist = std::nullopt};
+    weighed.slots = {group};
+    return {.build = {}, .weighed = weighed};
+}
+
 } // namespace
 
 class TestRecommendations : public QObject
@@ -113,6 +130,39 @@ private Q_SLOTS:
         };
         QVERIFY(life(boots));
         QVERIFY(!life(canRoll(u"Boots"_s, nullptr, {.tweaks = {{u"Life"_s, 0}}})));
+    }
+
+    void aStatTheSlotCantRollIsNotWanted()
+    {
+        const QString flat = u"Adds # to # Lightning Damage"_s;
+        const GearScoreOptions options = weighedFor(u"Belt"_s, u"Lightning damage"_s, flat);
+        // no belt affix adds damage, the Forking Belt only has it as an implicit
+        QVERIFY(wantedStats(u"Belt"_s, nullptr, options).isEmpty());
+        QVERIFY(canRoll(u"Belt"_s, nullptr, options).isEmpty());
+        const Item belt = item(u"Belts"_s, u"+60 to maximum Life"_s);
+        QVERIFY(wantedStats(u"Belt"_s, &belt, options).isEmpty());
+
+        // gloves roll it, and so do rings in either hand
+        const QString attacks = u"Adds # to # Lightning Damage to Attacks"_s;
+        const GearScoreOptions gloves = weighedFor(u"Gloves"_s, u"Lightning damage"_s, attacks);
+        QCOMPARE(labelsOf(wantedStats(u"Gloves"_s, nullptr, gloves)), (QStringList{u"Lightning damage"_s}));
+        const GearScoreOptions ring = weighedFor(u"Ring"_s, u"Lightning damage"_s, attacks);
+        QCOMPARE(labelsOf(wantedStats(u"Ring 2"_s, nullptr, ring)), (QStringList{u"Lightning damage"_s}));
+
+        // the game's text writes the element's "damage" both ways
+        const GearScoreOptions lower =
+            weighedFor(u"Gloves"_s, u"Lightning damage"_s, u"Adds # to # Lightning damage to Attacks"_s);
+        QCOMPARE(wantedStats(u"Gloves"_s, nullptr, lower).size(), 1);
+    }
+
+    void aWeaponSlotHasNoTableToCheckAgainst()
+    {
+        const GearScoreOptions options =
+            weighedFor(u"Weapon"_s, u"Imaginary"_s, u"#% increased Imaginary Thing"_s);
+        QCOMPARE(wantedStats(u"Weapon"_s, nullptr, options).size(), 1);
+        // while a worn sword is checked against the swords' table
+        const Item sword = item(u"One Hand Swords"_s, u"+60 to maximum Life"_s);
+        QVERIFY(wantedStats(u"Weapon"_s, &sword, options).isEmpty());
     }
 
     void aRangeWithOneEndIsOneNumber()
