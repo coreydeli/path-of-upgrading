@@ -59,7 +59,7 @@ void BuildFetcher::answered()
     } else if (status == 404 || (status == 200 && code.isEmpty())) {
         why = u"There's no build at that link."_s;
     } else if (status != 200) {
-        why = u"%1 couldn't give the build (HTTP %2)."_s.arg(host).arg(status);
+        why = u"%1 didn't send the build (HTTP %2)."_s.arg(host).arg(status);
     }
     if (!why.isEmpty()) {
         qCInfo(lcPob, "Couldn't download the build from %s: %s",

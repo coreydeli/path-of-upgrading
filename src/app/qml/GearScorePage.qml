@@ -56,7 +56,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: scorePage.scoring.character === ""
             text: qsTr("You haven't picked a character yet.")
-            description: qsTr("Change anything here and a character gets made for you. Or add one yourself, or import a build, under Gear Settings, Characters.")
+            description: qsTr("Change anything here and the app makes a character for you. You can also add one yourself, or import a build, under Gear Settings, Characters.")
         }
 
         FormCard.FormTextDelegate {

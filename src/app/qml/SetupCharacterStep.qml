@@ -55,7 +55,7 @@ ColumnLayout {
             id: nameField
             objectName: "setupNameField"
             label: qsTr("Name")
-            placeholderText: qsTr("The name it has in the game")
+            placeholderText: qsTr("Their name in the game")
             onAccepted: addButton.clicked()
         }
 
@@ -93,7 +93,7 @@ ColumnLayout {
 
     SectionText {
         objectName: "setupScoreNote"
-        text: qsTr("Once Path of Building is set up, your gear score is worked out from your build.")
+        text: qsTr("Once Path of Building is set up, it works out your gear score from your build.")
     }
 
     Sheet {

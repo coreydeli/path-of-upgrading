@@ -98,9 +98,9 @@ QStringList nextTiers(const GearScore &gear, int underPercent = 50);
 
 // What would raise a gear score, in the words the popup uses. Each is empty
 // when there's nothing to say.
-//   "Missing what your build wants: Life (up to 149), Fire Resistance (up to 45)."
+//   "Your build wants Life (up to 149), Fire Resistance (up to 45) here."
 QString missingNote(const GearScore &gear);
-//   "Not in the gear score: #% increased Rarity of Items found."
+//   "The gear score ignores #% increased Rarity of Items found."
 QString notScoredNote(const GearScore &gear);
 
 // Points per unit of a stat for the build in that slot, with your tweaks; 0

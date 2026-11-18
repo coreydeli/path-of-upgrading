@@ -445,16 +445,15 @@ private Q_SLOTS:
                            .ideal = 40,
                            .resistNote = capped};
         QCOMPARE(reportOf(check).gearNotes,
-                 (QStringList{capped, u"Not in the gear score: #% increased Light Radius, Evasion Rating."_s,
-                              u"Missing what your build wants: Life, Movement speed."_s}));
+                 (QStringList{capped, u"The gear score ignores #% increased Light Radius, Evasion Rating."_s,
+                              u"Your build wants Life, Movement speed here."_s}));
 
         e.gear->resistNote.clear();
         e.gear->notScored.clear();
-        QCOMPARE(reportOf(check).gearNotes,
-                 QStringList{u"Missing what your build wants: Life, Movement speed."_s});
+        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Your build wants Life, Movement speed here."_s});
         e.gear->missing.clear();
         e.gear->notScored = {u"# to Accuracy Rating"_s};
-        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Not in the gear score: # to Accuracy Rating."_s});
+        QCOMPARE(reportOf(check).gearNotes, QStringList{u"The gear score ignores # to Accuracy Rating."_s});
         e.gear->notScored.clear();
         QCOMPARE(reportOf(check).gearNotes, QStringList());
     }

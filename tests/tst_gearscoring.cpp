@@ -141,8 +141,7 @@ private Q_SLOTS:
     {
         Scoring s;
         s.play(tester());
-        QCOMPARE(s.scoring.state(),
-                 u"A rough starting point until Path of Building has weighed your build."_s);
+        QCOMPARE(s.scoring.state(), u"A rough guide until Path of Building has weighed your build."_s);
         QCOMPARE(s.scoring.weighedOn(), QString());
         QVERIFY(!s.scoring.weightsOnly());
         QVERIFY(!s.scoring.isWeighing());

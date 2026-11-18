@@ -685,8 +685,8 @@ private Q_SLOTS:
 
         g.missing = {u"Life"_s, u"Fire Resistance"_s};
         g.notScored = {u"#% increased Rarity of Items found"_s};
-        QCOMPARE(missingNote(g), u"Missing what your build wants: Life, Fire Resistance."_s);
-        QCOMPARE(notScoredNote(g), u"Not in the gear score: #% increased Rarity of Items found."_s);
+        QCOMPARE(missingNote(g), u"Your build wants Life, Fire Resistance here."_s);
+        QCOMPARE(notScoredNote(g), u"The gear score ignores #% increased Rarity of Items found."_s);
     }
 
     void weakRollsAreTheWeakestThree()
@@ -789,16 +789,15 @@ private Q_SLOTS:
         QCOMPARE(notScoredStats(g),
                  (QStringList{u"#% increased Rarity of Items found"_s, u"Evasion Rating"_s}));
         QCOMPARE(notScoredNote(g),
-                 u"Not in the gear score: #% increased Rarity of Items found, Evasion Rating."_s);
+                 u"The gear score ignores #% increased Rarity of Items found, Evasion Rating."_s);
     }
 
     void notesFromAnItem()
     {
         // a bare body armour has nothing but what it lacks
         const auto bare = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB"_s));
-        QCOMPARE(
-            missingNote(*bare),
-            u"Missing what your build wants: Armour or Evasion Rating, Energy Shield, Life (up to 214)."_s);
+        QCOMPARE(missingNote(*bare),
+                 u"Your build wants Armour or Evasion Rating, Energy Shield, Life (up to 214) here."_s);
         QCOMPARE(notScoredNote(*bare), QString());
         QCOMPARE(weakRolls(*bare), QStringList());
 
@@ -809,7 +808,7 @@ private Q_SLOTS:
         const QStringList rolls = weakRolls(*weak);
         QCOMPARE(rolls.size(), 1);
         QVERIFY(rolls.first().startsWith(u"Life "_s));
-        QCOMPARE(notScoredNote(*weak), u"Not in the gear score: #% increased Rarity of Items found."_s);
+        QCOMPARE(notScoredNote(*weak), u"The gear score ignores #% increased Rarity of Items found."_s);
     }
 
     void utilityStatsCountWhereTheGameRollsThem_data()

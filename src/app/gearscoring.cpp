@@ -107,7 +107,7 @@ QString GearScoring::state() const
         return u"Weighing your build with Path of Building"_s;
     if (character.weighed)
         return u"Weighed by Path of Building for your build on %1."_s.arg(weighedOn());
-    return u"A rough starting point until Path of Building has weighed your build."_s;
+    return u"A rough guide until Path of Building has weighed your build."_s;
 }
 
 QString GearScoring::summary() const

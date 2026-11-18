@@ -150,18 +150,18 @@ private Q_SLOTS:
         i.importer.importText(witch());
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.importer.message(),
-                 u"Imported the level 70 Witch build for Wren. It has no items equipped. "
-                 u"The gear score is a rough starting point until Path of Building has weighed the build."_s);
+                 u"Imported the level 70 Witch build for Wren. The build has no items. "
+                 u"The gear score is only a rough guide until Path of Building has weighed the build."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-caster"_s);
 
         // nothing more to say when it's the one it has
         i.importer.importText(witch());
         QCOMPARE(i.importer.message(),
-                 u"Imported the level 70 Witch build for Wren. It has no items equipped."_s);
+                 u"Imported the level 70 Witch build for Wren. The build has no items."_s);
 
         i.importer.importText(witch(true));
         QVERIFY(i.importer.message().endsWith(
-            u"The gear score is a rough starting point until Path of Building has weighed the build."_s));
+            u"The gear score is only a rough guide until Path of Building has weighed the build."_s));
         QCOMPARE(i.store.find(wren)->buildProfile, u"minion-es"_s);
     }
 
@@ -172,8 +172,8 @@ private Q_SLOTS:
         i.importer.importText(monk());
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.importer.message(),
-                 u"Imported the level 60 Monk build for Wren. It has no items equipped. "
-                 u"The gear score is a rough starting point until Path of Building has weighed the build."_s);
+                 u"Imported the level 60 Monk build for Wren. The build has no items. "
+                 u"The gear score is only a rough guide until Path of Building has weighed the build."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-attacker"_s);
     }
 
@@ -200,7 +200,7 @@ private Q_SLOTS:
 
         i.importer.importText(witch());
         QCOMPARE(i.importer.message(),
-                 u"Imported the level 70 Witch build for Wren. It has no items equipped."_s);
+                 u"Imported the level 70 Witch build for Wren. The build has no items."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"life-res"_s);
     }
 
@@ -239,13 +239,17 @@ private Q_SLOTS:
         QTest::addColumn<QString>("why");
         QTest::newRow("nothing") << u" \n"_s << u"Paste a build code or a link to one first."_s;
         QTest::newRow("not a code") << u"not a code!"_s
-                                    << u"That isn't a Path of Building code or a link to one."_s;
+                                    << u"That doesn't look like a Path of Building code or a link to one."_s;
         QTest::newRow("another site")
-            << u"https://example.com/AbC123"_s << u"That isn't a Path of Building code or a link to one."_s;
-        QTest::newRow("first game") << codeFor(u"<PathOfBuilding><Build level=\"90\"/></PathOfBuilding>"_s)
-                                    << u"That's a build for Path of Exile 1."_s;
-        QTest::newRow("some xml") << u"<html><body/></html>"_s << u"That isn't a Path of Exile 2 build."_s;
-        QTest::newRow("broken") << u"<PathOfBuilding2><Build>"_s << u"That isn't a Path of Exile 2 build."_s;
+            << u"https://example.com/AbC123"_s
+            << u"That doesn't look like a Path of Building code or a link to one."_s;
+        QTest::newRow("first game")
+            << codeFor(u"<PathOfBuilding><Build level=\"90\"/></PathOfBuilding>"_s)
+            << u"That build is for Path of Exile 1, and the app only reads Path of Exile 2 builds."_s;
+        QTest::newRow("some xml") << u"<html><body/></html>"_s
+                                  << u"That doesn't look like a Path of Exile 2 build."_s;
+        QTest::newRow("broken") << u"<PathOfBuilding2><Build>"_s
+                                << u"That doesn't look like a Path of Exile 2 build."_s;
     }
 
     void rejects()
@@ -270,7 +274,7 @@ private Q_SLOTS:
         QTest::newRow("one")
             << ranger({u"Weapon 1"_s}) << false
             << u"Imported the level 40 Ranger build for Wren. Wren now has 1 item equipped from it. "
-               u"Copy your weapon in the game once, since the build doesn't include its damage."_s;
+               u"Copy your weapon in the game once. The build doesn't include its damage."_s;
         QTest::newRow("two")
             << ranger({u"Weapon 1"_s, u"Weapon 2"_s}) << false
             << u"Imported the level 40 Ranger build for Wren. Wren now has 2 items equipped from it. "
@@ -288,7 +292,7 @@ private Q_SLOTS:
                u"item equipped from it. Kept 1 item you copied in the game, as it says "
                u"more than the build."_s;
         QTest::newRow("empty") << u"<PathOfBuilding2/>"_s << false
-                               << u"Imported the build for Wren. It has no items equipped."_s;
+                               << u"Imported the build for Wren. The build has no items."_s;
     }
 
     void says()
@@ -327,7 +331,7 @@ private Q_SLOTS:
         QVERIFY(!i.importer.isBusy());
         QCOMPARE(busy.size(), 2);
         QCOMPARE(i.importer.message(),
-                 u"Imported the level 40 Ranger build for Wren. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Wren. The build has no items."_s);
         QCOMPARE(i.network.sent.first().request.url(), QUrl(u"https://pobb.in/pob/AbC123"_s));
         QCOMPARE(i.store.pobBuild(wren).value_or(QString()), ranger({}));
     }
@@ -348,7 +352,7 @@ private Q_SLOTS:
         QTest::addColumn<QString>("why");
         QTest::newRow("no build") << FakeAnswer{.status = 404} << u"There's no build at that link."_s;
         QTest::newRow("not a code") << FakeAnswer{.body = "Sign in to see this paste."}
-                                    << u"That link doesn't give a Path of Building code."_s;
+                                    << u"That link doesn't lead to a Path of Building code."_s;
     }
 
     void linkFails()
@@ -411,7 +415,7 @@ private Q_SLOTS:
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.list.rowCount(), 1);
         QCOMPARE(i.importer.message(),
-                 u"Imported the level 40 Ranger build for Witch. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Witch. The build has no items."_s);
 
         // and nothing for one that's not on this computer
         QSignalSpy message(&i.importer, &BuildImporter::messageChanged);
@@ -444,7 +448,8 @@ private Q_SLOTS:
 
         QVERIFY(writeFile(i.dir.filePath(u"Old.xml"_s), "<PathOfBuilding><Build/></PathOfBuilding>"));
         i.importer.importFile(i.dir.filePath(u"Old.xml"_s));
-        QCOMPARE(i.importer.message(), u"That's a build for Path of Exile 1."_s);
+        QCOMPARE(i.importer.message(),
+                 u"That build is for Path of Exile 1, and the app only reads Path of Exile 2 builds."_s);
 
         // which isn't read at all
         QFile huge(i.dir.filePath(u"huge.xml"_s));
