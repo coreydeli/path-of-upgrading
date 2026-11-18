@@ -34,6 +34,7 @@ qt_add_library(pou_app STATIC
     resistances.cpp resistances.h
     resultspanel.cpp resultspanel.h
     settingsstore.cpp settingsstore.h
+    startover.cpp startover.h
     statpicker.cpp statpicker.h
     statweights.cpp statweights.h
     tradefinder.cpp tradefinder.h
@@ -55,6 +56,7 @@ qt_add_qml_module(pou_app
         qml/UpdateDialog.qml
         qml/UpdatesPage.qml
         qml/InstallDialog.qml
+        qml/StartOverDialog.qml
         qml/AppearancePage.qml
         qml/ChangesTable.qml
         qml/ColumnsPage.qml

@@ -35,6 +35,10 @@ public:
     // can be set before they're added. When another program has a key by the
     // time they're taken again, it has none and keyChanged says so.
     virtual void setGrabbed(bool grabbed) = 0;
+    // Has the desktop forget every key the app added, and stops using them
+    // until the next start, where they begin again with the defaults. Where
+    // the desktop keeps nothing between runs there's nothing to do.
+    virtual void forgetAll() {}
 
 Q_SIGNALS:
     void activated(const QString &id);

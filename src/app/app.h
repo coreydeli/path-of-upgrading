@@ -22,6 +22,7 @@
 #include "app/resistances.h"
 #include "app/resultspanel.h"
 #include "app/settingsstore.h"
+#include "app/startover.h"
 #include "app/statpicker.h"
 #include "app/statweights.h"
 #include "app/tradefinder.h"
@@ -85,6 +86,7 @@ class App : public QObject
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
     Q_PROPERTY(pou::Updates *updates READ updates CONSTANT)
+    Q_PROPERTY(pou::StartOver *startOver READ startOver CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
     Q_PROPERTY(pou::About *about READ about CONSTANT)
@@ -103,6 +105,8 @@ public:
         bool tradeOffered = isBetaBuild();
         // Whether waystones and tablets are checked, which a release leaves out for now.
         bool mapsOffered = isBetaBuild();
+        // Whether it can wipe what it keeps and start over, which a release leaves out.
+        bool startOverOffered = isBetaBuild();
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
@@ -155,6 +159,7 @@ public:
         m_updatesModel.setInstaller(std::move(installer), finish);
     }
     Updates *updates() { return &m_updatesModel; }
+    StartOver *startOver() { return &m_startOver; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -228,6 +233,7 @@ private:
     TradeOptions m_tradeOptions;
     Autostart m_autostart;
     OverlayOptions m_overlayOptions;
+    StartOver m_startOver;
     PobOptions m_pobOptions;
     About m_about;
     Help m_help;
