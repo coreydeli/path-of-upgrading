@@ -11,6 +11,8 @@ namespace pou {
 // to end, so the new one isn't turned away as a second copy. The caller quits.
 // False when it couldn't be started.
 bool startAgainAfterExit();
+// The same, starting it with these arguments in place of this one's.
+bool startAgainAfterExit(const QStringList &arguments);
 
 // What starts a program once the process with this id has ended, or once the
 // limit is up, whichever comes first. Past the limit the new one starts

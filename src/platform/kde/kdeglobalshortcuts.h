@@ -23,6 +23,7 @@ public:
     QKeySequence key(const QString &id) const override;
     bool setKey(const QString &id, const QKeySequence &key) override;
     void setGrabbed(bool grabbed) override;
+    void forgetAll() override;
 
 private:
     // Whether it didn't get the key it was to have.

@@ -52,9 +52,10 @@ Item {
                 top: parent.top
                 bottom: parent.bottom
                 left: parent.left
-                margins: 1
+                margins: Style.material ? Style.shapeMedium : 1
             }
             width: 3
+            radius: Style.material ? 1.5 : 0
             color: Style.rarity(row.rarity, Kirigami.Theme)
         }
 
@@ -137,6 +138,7 @@ Item {
                     Layout.alignment: Qt.AlignRight
                     implicitWidth: priceLabel.implicitWidth + 2 * Kirigami.Units.smallSpacing
                     implicitHeight: priceLabel.implicitHeight + 2
+                    radius: Style.material ? height / 2 : 0
                     color: Style.tint(Kirigami.Theme.backgroundColor, Style.accent(Kirigami.Theme), 0.1)
                     border {
                         width: 1
