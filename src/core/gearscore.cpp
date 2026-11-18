@@ -332,7 +332,7 @@ QStringList nextTiers(const GearScore &gear, int underPercent)
 {
     QStringList out;
     for (const WeakPart &p : weakParts(gear, underPercent)) {
-        if (p.mods == 1 && p.tier && true)
+        if (p.mods == 1 && p.tier && p.tier->better)
             out << p.label + u", "_s + nextTierText(*p.tier);
     }
     return out;
