@@ -3538,8 +3538,8 @@ private Q_SLOTS:
         QObject *group = w.window->findChild<QObject *>(u"settingsGroupAction"_s);
         QVERIFY(group);
         QCOMPARE(group->property("text").toString(), u"Settings"_s);
-        for (const QString &name :
-             {u"overlayAction"_s, u"appearanceAction"_s, u"helpAction"_s, u"aboutAction"_s}) {
+        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s, u"updatesAction"_s,
+                                    u"helpAction"_s, u"aboutAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
             QCOMPARE(action->parent(), group);
@@ -3735,7 +3735,8 @@ private Q_SLOTS:
         const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,    u"gearScoreAction"_s,
                                      u"weightsAction"_s,    u"ignoredAction"_s, u"checkedAction"_s,
                                      u"pobAction"_s,        u"tradeAction"_s,   u"overlayAction"_s,
-                                     u"appearanceAction"_s, u"helpAction"_s,    u"aboutAction"_s};
+                                     u"appearanceAction"_s, u"updatesAction"_s, u"helpAction"_s,
+                                     u"aboutAction"_s};
         for (const QString &action : actions) {
             QVERIFY2(w.show(action), qPrintable(action));
             const QString title = w.page()->property("title").toString();
@@ -4504,10 +4505,16 @@ private Q_SLOTS:
         QTRY_VERIFY(dialog->property("opened").toBool());
     }
 
-    void updatesCardInTheSettings()
+    void updatesPageInTheSettings()
     {
         Window w;
+        QObject *action = w.window->findChild<QObject *>(u"updatesAction"_s);
+        QCOMPARE(text(action), u"Updates"_s);
+        // after Appearance, and not on General
         QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(!w.page()->findChild<QObject *>(u"checkForUpdatesSwitch"_s));
+        QVERIFY(!w.page()->findChild<QObject *>(u"checkNowButton"_s));
+        QVERIFY(w.show(u"updatesAction"_s));
         QObject *launch = w.find(u"checkForUpdatesSwitch"_s);
         QObject *betas = w.find(u"includeBetasSwitch"_s);
         QCOMPARE(launch->property("checked").toBool(), true);

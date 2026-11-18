@@ -17,7 +17,8 @@ Kirigami.ApplicationWindow {
     function groupOf(page: Item): Kirigami.Action {
         if (page === charactersPage || page === gearScorePage || page === weightsPage || page === ignoredPage)
             return gearGroupAction;
-        if (page === overlayPage || page === appearancePage || page === helpPage || page === aboutPage)
+        if (page === overlayPage || page === appearancePage || page === updatesPage
+            || page === helpPage || page === aboutPage)
             return settingsGroupAction;
         return null;
     }
@@ -190,7 +191,8 @@ Kirigami.ApplicationWindow {
                 text: qsTr("Settings")
                 icon.name: "settings-configure"
                 // lit while one of its pages is shown
-                checked: overlayAction.checked || appearanceAction.checked || helpAction.checked || aboutAction.checked
+                checked: overlayAction.checked || appearanceAction.checked || updatesAction.checked
+                    || helpAction.checked || aboutAction.checked
 
                 Kirigami.Action {
                     id: overlayAction
@@ -210,6 +212,16 @@ Kirigami.ApplicationWindow {
                     checkable: true
                     QQC2.ActionGroup.group: pages
                     onTriggered: root.show(appearancePage)
+                }
+
+                Kirigami.Action {
+                    id: updatesAction
+                    objectName: "updatesAction"
+                    text: qsTr("Updates")
+                    icon.name: "update-none"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(updatesPage)
                 }
 
                 Kirigami.Action {
@@ -334,12 +346,16 @@ Kirigami.ApplicationWindow {
             options: root.app.overlayOptions
             tradeOffered: root.app.tradeOffered
             tradeOptions: root.app.tradeOptions
-            updates: root.app.updates
         }
 
         AppearancePage {
             id: appearancePage
             appearance: root.app.appearance
+        }
+
+        UpdatesPage {
+            id: updatesPage
+            updates: root.app.updates
         }
 
         HelpPage {
