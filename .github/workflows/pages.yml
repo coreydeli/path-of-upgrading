@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: MIT
+#
+# Builds the website (site/) and publishes it on GitHub Pages. It's a
+# workflow of its own, so release.yml and the checks it makes are untouched.
+#
+# The site is the pages in site/content, the wiki (cloned here, never copied
+# into the repository), the README, the changelog, and a downloads page made
+# from the GitHub releases. A pull request only builds it. Publishing only
+# happens from main, the one branch the github-pages environment allows.
+#
+# A release made with GITHUB_TOKEN can't start a workflow, so this one starts
+# when the Release workflow finishes (which a person's push to main starts, or
+# a nightly beta's run), and again each morning, which also picks up wiki edits.
+name: Website
+
+on:
+  pull_request:
+    paths:
+      - site/**
+      - .github/workflows/pages.yml
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Publish one at a time, and let a running publish finish.
+concurrency:
+  group: >-
+    website-${{ github.event.pull_request.number || 'publish' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build the site
+    # a Release run on a pull request or a failed one has nothing new
+    if: >-
+      github.event_name != 'workflow_run'
+      || (github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Get the wiki
+        run: git clone --quiet --depth 1 "https://github.com/${{ github.repository }}.wiki.git" "$RUNNER_TEMP/wiki"
+      - name: Install Zensical
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet --requirement site/requirements.txt
+      - name: Build the site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 -I site/build.py --wiki "$RUNNER_TEMP/wiki"
+          "$RUNNER_TEMP/venv/bin/zensical" build --clean --strict --config-file site/.work/zensical.toml
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/.work/site
+
+  deploy:
+    name: Publish the site
+    needs: build
+    # only from main, as a pull request or another branch just checks the build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v6
+      - id: deployment
+        uses: actions/deploy-pages@v5
