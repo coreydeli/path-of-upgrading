@@ -410,7 +410,7 @@ private Q_SLOTS:
         QTRY_COMPARE(rows(p.window()), 10);
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
         QVERIFY(shown(p.window(), u"30 listed in Runes of Aldur"_s));
-        QVERIFY(!shown(p.window(), u"The trade site lists only the first 23. Open it to see the rest."_s));
+        QVERIFY(!shown(p.window(), u"The trade site only shows the first 23. Open it to see the rest."_s));
 
         QVERIFY(click(p.window(), u"Load More"_s));
         QVERIFY(p.site.results.isBusy());
@@ -425,7 +425,7 @@ private Q_SLOTS:
         QVERIFY(p.loaded());
         QTRY_COMPARE(rows(p.window()), 23);
         QTRY_VERIFY(!button(p.window(), u"Load More"_s));
-        QTRY_VERIFY(shown(p.window(), u"The trade site lists only the first 23. Open it to see the rest."_s));
+        QTRY_VERIFY(shown(p.window(), u"The trade site only shows the first 23. Open it to see the rest."_s));
         QCOMPARE(p.site.network.sent.size(), 3);
     }
 
