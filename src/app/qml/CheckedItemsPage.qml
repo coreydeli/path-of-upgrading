@@ -100,7 +100,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "historyIntro"
-        text: qsTr("Items you check in the game land here, newest first, up to the last %1. That means items you check with the hotkey, and gear you copy yourself while \"Also check gear you copy yourself\" is on. When the list is full, the oldest one drops off.").arg(checkedPage.checkedItems.limit)
+        text: qsTr("Items you check in the game land here, newest first, up to the last %1. That covers the hotkey and, while \"Also check gear you copy yourself\" is on, gear you copy by hand. When the list is full, the oldest one drops off.").arg(checkedPage.checkedItems.limit)
     }
 
     Sheet {
@@ -139,7 +139,7 @@ ColumnsPage {
     SectionText {
         objectName: "checkedHelp"
         visible: itemRows.count > 0
-        text: qsTr("Check Again shows an item in the popup again, judged for the character you play now. Forgetting the items doesn't forget their stats, so the stat picker still offers them.")
+        text: qsTr("Check Again shows an item in the popup again, judged for the character you play now. Forgetting the items keeps their stats, so the stat picker still offers them.")
     }
 
     SectionHeader {

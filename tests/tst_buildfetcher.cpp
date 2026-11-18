@@ -58,8 +58,7 @@ private Q_SLOTS:
         QTest::newRow("no build") << FakeAnswer{.status = 404, .body = "Not found"}
                                   << u"There's no build at that link."_s;
         QTest::newRow("empty") << FakeAnswer{.body = " \n"} << u"There's no build at that link."_s;
-        QTest::newRow("down") << FakeAnswer{.status = 503}
-                              << u"pobb.in couldn't give the build (HTTP 503)."_s;
+        QTest::newRow("down") << FakeAnswer{.status = 503} << u"pobb.in didn't send the build (HTTP 503)."_s;
         QTest::newRow("unreachable") << FakeAnswer{.error = QNetworkReply::HostNotFoundError}
                                      << u"Couldn't reach pobb.in: Host pobb.in not found"_s;
         QTest::newRow("too slow") << FakeAnswer{.error = QNetworkReply::OperationCanceledError}

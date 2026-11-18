@@ -201,7 +201,7 @@ private Q_SLOTS:
         QCOMPARE(report.score, QString());
         QCOMPARE(report.versus, QString());
         QVERIFY(report.notes.contains(
-            u"Nothing saved for Helmet yet. Check the item you have equipped there and press Equip as Helmet."_s));
+            u"Nothing saved for Helmet yet. Check the item you have equipped there, then press Equip as Helmet."_s));
 
         report = reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}}));
         QCOMPARE(report.verdict, u"Already equipped"_s);
@@ -445,16 +445,15 @@ private Q_SLOTS:
                            .ideal = 40,
                            .resistNote = capped};
         QCOMPARE(reportOf(check).gearNotes,
-                 (QStringList{capped, u"Not in the gear score: #% increased Light Radius, Evasion Rating."_s,
-                              u"Missing what your build wants: Life, Movement speed."_s}));
+                 (QStringList{capped, u"The gear score ignores #% increased Light Radius, Evasion Rating."_s,
+                              u"Your build wants Life, Movement speed here."_s}));
 
         e.gear->resistNote.clear();
         e.gear->notScored.clear();
-        QCOMPARE(reportOf(check).gearNotes,
-                 QStringList{u"Missing what your build wants: Life, Movement speed."_s});
+        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Your build wants Life, Movement speed here."_s});
         e.gear->missing.clear();
         e.gear->notScored = {u"# to Accuracy Rating"_s};
-        QCOMPARE(reportOf(check).gearNotes, QStringList{u"Not in the gear score: # to Accuracy Rating."_s});
+        QCOMPARE(reportOf(check).gearNotes, QStringList{u"The gear score ignores # to Accuracy Rating."_s});
         e.gear->notScored.clear();
         QCOMPARE(reportOf(check).gearNotes, QStringList());
     }
@@ -1187,12 +1186,12 @@ private Q_SLOTS:
         build.health = 9000;
         ItemCheck check{.item = waystone};
         check.map = checkMap(waystone, MapKind::Waystone, build);
-        QVERIFY(reportOf(check).mapBuild.startsWith(u"Checked against your character"_s));
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"Nothing here is bad news for your character"_s));
 
         build.health = 2000;
         const Item thin = item(maptexts::header + u"12% increased Monster Damage\n"_s);
         check.map = checkMap(thin, MapKind::Waystone, build);
-        QVERIFY(reportOf(check).mapBuild.startsWith(u"Checked against your character"_s));
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"The marked mods are bad news for your character"_s));
         QVERIFY(!reportOf(check).mapMods.first().buildNote.isEmpty());
     }
 

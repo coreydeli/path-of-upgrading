@@ -38,8 +38,8 @@ SessionGuide guideToSessionId()
         .notes =
             {
                 u"Keep it to yourself. Anyone who has it can act as you on the site."_s,
-                u"It's kept in your system keyring."_s,
-                u"Signing out of the website ends it, and then you need to paste a new one."_s,
+                u"The app keeps it in your system keyring."_s,
+                u"Signing out of the website ends it, so you'd need to paste a new one."_s,
             },
     };
 }

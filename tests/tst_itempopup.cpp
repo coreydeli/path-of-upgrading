@@ -686,7 +686,7 @@ private Q_SLOTS:
                          .tone = Tone::Good},
         };
         whyRated.gearNotes = {u"Not used by your build: #% increased Light Radius."_s,
-                              u"Missing what your build wants: Movement Speed."_s};
+                              u"Your build wants Movement Speed here."_s};
         QTest::newRow("what the gear score is made of") << whyRated
                                                         << QStringList{u"Gear score breakdown"_s,
                                                                        u"Life"_s,
@@ -808,7 +808,7 @@ private Q_SLOTS:
         report.gearScore = u"78"_s;
         report.gearGrade = u"A"_s;
         report.gearParts = {ReportFigure{.label = u"Life"_s, .to = u"20"_s}};
-        report.gearNotes = {u"Missing what your build wants: Movement Speed."_s};
+        report.gearNotes = {u"Your build wants Movement Speed here."_s};
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
         QVERIFY(shown(popup, u"78 A"_s));

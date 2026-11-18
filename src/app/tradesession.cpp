@@ -52,7 +52,7 @@ QString TradeSession::status() const
     case State::NotAsked:
         return u"The keyring isn't checked unless trade searches are on."_s;
     case State::Unknown:
-        return u"Couldn't tell whether one is saved."_s;
+        return u"Couldn't tell whether a session ID is saved."_s;
     case State::SignedOut:
         return u"No session ID is saved."_s;
     case State::SignedIn:

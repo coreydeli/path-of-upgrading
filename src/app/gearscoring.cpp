@@ -80,7 +80,7 @@ QVariant GearScoring::data(const QModelIndex &index, int role) const
     case WhereRole:
         if (untweaked(stat.label) == 0)
             return QString(whereItCounts(stat.groups) +
-                           u" It starts at Not at all, as your build has Chaos Inoculation."_s);
+                           u" It starts at Not at all, because your build has Chaos Inoculation."_s);
         return whereItCounts(stat.groups);
     case LevelRole:
         return levelOf(stat.label);
@@ -107,7 +107,7 @@ QString GearScoring::state() const
         return u"Weighing your build with Path of Building"_s;
     if (character.weighed)
         return u"Weighed by Path of Building for your build on %1."_s.arg(weighedOn());
-    return u"A rough starting point until Path of Building has weighed your build."_s;
+    return u"A rough guide until Path of Building has weighed your build."_s;
 }
 
 QString GearScoring::summary() const
@@ -119,7 +119,7 @@ QString GearScoring::summary() const
     if (!p)
         return {};
     if (character.weighed)
-        return u"Slots Path of Building didn't weigh use the %1 profile: %2"_s.arg(p->name, p->summary);
+        return u"Slots Path of Building didn't weigh go by the %1 profile: %2"_s.arg(p->name, p->summary);
     return p->summary;
 }
 

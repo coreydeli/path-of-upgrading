@@ -451,7 +451,8 @@ private Q_SLOTS:
         Running r(folders);
         r.app.pobOptions()->setLocation(folders.pob.folder.path());
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
-        QCOMPARE(r.app.pobOptions()->headline(), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(r.app.pobOptions()->headline(),
+                 u"You're using the Path of Building in the folder you chose."_s);
         QCOMPARE(r.app.pobOptions()->installedAt(), QDir::toNativeSeparators(folders.pob.folder.path()));
 
         QVERIFY(r.app.overlayOptions()->setCheckKey(QKeySequence(u"F6"_s)));
@@ -1010,7 +1011,7 @@ private Q_SLOTS:
         r.app.tradeOptions()->unavailable();
         QTest::qWait(50);
         QVERIFY(r.tradeAsked().isEmpty());
-        QVERIFY(r.app.statPicker()->message().startsWith(u"The trade site's list of stats comes with"_s));
+        QVERIFY(r.app.statPicker()->message().startsWith(u"You get the trade site's list of stats"_s));
     }
 
     void refreshButtonAsksTheTradeSite()

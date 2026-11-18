@@ -86,7 +86,7 @@ QString resistNote(Element e, double need, bool partly)
     const QString more = formatNumber(roundHalfUp(need));
     if (partly)
         return name + u"you only need "_s + more + u" more to reach the cap, so the rest doesn't count."_s;
-    return name + u"you only need "_s + more + u" more to reach the cap, so it isn't counted."_s;
+    return name + u"you only need "_s + more + u" more to reach the cap, so it doesn't count."_s;
 }
 } // namespace
 
@@ -257,7 +257,7 @@ QString missingNote(const GearScore &gear)
 {
     if (gear.missing.isEmpty())
         return {};
-    return u"Missing what your build wants: "_s + missingStats(gear).join(u", "_s) + u'.';
+    return u"Your build wants "_s + missingStats(gear).join(u", "_s) + u" here."_s;
 }
 
 QStringList notScoredStats(const GearScore &gear)
@@ -272,7 +272,7 @@ QString notScoredNote(const GearScore &gear)
 {
     if (gear.notScored.isEmpty())
         return {};
-    return u"Not in the gear score: "_s + notScoredStats(gear).join(u", "_s) + u'.';
+    return u"The gear score ignores "_s + notScoredStats(gear).join(u", "_s) + u'.';
 }
 
 namespace {

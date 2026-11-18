@@ -167,7 +167,7 @@ private Q_SLOTS:
         Q_EMIT game.itemCopied(u"Hello"_s, overItem);
         QCOMPARE(failed.size(), 1);
         QCOMPARE(failed.first().at(0).toString(),
-                 u"That wasn't an item, the game copied something else. Hover an item until its tooltip "
+                 u"That wasn't an item, so the game copied something else. Hover an item until its tooltip "
                  "shows, then press F2."_s);
         QCOMPARE(mouseOf(failed), std::optional(overItem));
     }
@@ -185,11 +185,11 @@ private Q_SLOTS:
             << Unavailable << QString() << u"Items can't be copied out of the game here."_s;
         QTest::newRow("not in front")
             << NotInFront << u"firefox"_s
-            << u"Path of Exile 2 wasn't the active window, firefox was, so it didn't copy the item. Click "
+            << u"Path of Exile 2 wasn't the active window (firefox was), so nothing was copied. Click "
                "once in the game, then press F2 again."_s;
         QTest::newRow("not in front, unnamed")
             << NotInFront << QString()
-            << u"Path of Exile 2 wasn't the active window, so it didn't copy the item. Click once in the "
+            << u"Path of Exile 2 wasn't the active window, so nothing was copied. Click once in the "
                "game, then press F2 again."_s;
         QTest::newRow("key held") << KeyHeld << u"A key stayed down."_s
                                   << u"A key was still down after F2, so the game wasn't asked to copy. "

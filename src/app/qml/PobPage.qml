@@ -17,7 +17,7 @@ ColumnsPage {
     property bool showPlaces: false
 
     title: qsTr("Build Review")
-    description: qsTr("How items are judged with Path of Building, and which copy of it is used.")
+    description: qsTr("See how Path of Building judges items, and which copy of it the app uses.")
 
     SectionText {
         objectName: "analysisIntro"
@@ -30,7 +30,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Judge items with Path of Building")
-            description: qsTr("Uses its own numbers for your build, once you've imported one.")
+            description: qsTr("Once you've imported a build, the verdicts use Path of Building's own numbers.")
             checked: pobPage.options.enabled
             onToggled: pobPage.options.enabled = checked
         }
@@ -106,7 +106,7 @@ ColumnsPage {
             objectName: "flathubButton"
             visible: pobPage.options.offersFlatpak
             text: qsTr("Open Flathub")
-            description: qsTr("Its Flathub page, for installing it some other way.")
+            description: qsTr("Opens its Flathub page, for installing it some other way.")
             icon.name: "internet-web-browser"
             onClicked: pobPage.options.openFlathub()
         }
@@ -134,7 +134,7 @@ ColumnsPage {
             objectName: "installerButton"
             visible: pobPage.options.offersInstaller
             text: qsTr("Open the Download Page")
-            description: qsTr("Its releases page on GitHub, where the installer is.")
+            description: qsTr("Opens its releases page on GitHub, where the installer is.")
             icon.name: "internet-web-browser"
             onClicked: pobPage.options.openInstaller()
         }
@@ -145,8 +145,7 @@ ColumnsPage {
             objectName: "updateButton"
             text: qsTr("Update")
             description: qsTr("Looks in the usual places again, and for builds you've saved since. "
-                              + "Use it after you install Path of Building, or after you open it for Path of Exile 2 "
-                              + "for the first time.")
+                              + "Use it after you install Path of Building, or after you first open it for Path of Exile 2.")
             icon.name: "view-refresh"
             onClicked: pobPage.app.updatePob()
         }
@@ -186,7 +185,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "chooseFolderButton"
             text: qsTr("Choose a Folder")
-            description: qsTr("The folder that has HeadlessWrapper.lua in it, or the whole repository.")
+            description: qsTr("Picks the folder that has HeadlessWrapper.lua in it, or the whole repository.")
             icon.name: "document-open-folder"
             onClicked: folderDialog.open()
         }
@@ -210,7 +209,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "placesButton"
             text: pobPage.showPlaces ? qsTr("Hide Where It Looks") : qsTr("Show Where It Looks")
-            description: qsTr("Every place it looks, and whether Path of Building is in each.")
+            description: qsTr("Shows every place it looks, and whether Path of Building is in each.")
             icon.name: pobPage.showPlaces ? "arrow-up" : "arrow-down"
             onClicked: pobPage.showPlaces = !pobPage.showPlaces
         }
@@ -300,7 +299,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "keepDamageSwitch"
             text: qsTr("Never lose damage")
-            description: qsTr("An item that costs a good part of your damage is never an upgrade.")
+            description: qsTr("An item that costs you a good part of your damage is never an upgrade.")
             checked: pobPage.options.keepDamage
             onToggled: pobPage.options.keepDamage = checked
         }
@@ -310,7 +309,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "keepDefenceSwitch"
             text: qsTr("Never lose defences")
-            description: qsTr("An item that costs a good part of your Effective HP, Life or Energy Shield is never an upgrade.")
+            description: qsTr("An item that costs you a good part of your Effective HP, Life or Energy Shield is never an upgrade.")
             checked: pobPage.options.keepDefence
             onToggled: pobPage.options.keepDefence = checked
         }
@@ -320,7 +319,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "spiritSwitch"
             text: qsTr("Never run short of Spirit")
-            description: qsTr("For your minions and auras.")
+            description: qsTr("Keeps enough Spirit for your minions and auras.")
             checked: pobPage.options.spirit
             onToggled: pobPage.options.spirit = checked
         }
@@ -330,7 +329,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "attributesSwitch"
             text: qsTr("Keep my attribute requirements met")
-            description: qsTr("So you always have the Strength, Dexterity and Intelligence your gear and skills need.")
+            description: qsTr("You always keep the Strength, Dexterity and Intelligence your gear and skills need.")
             checked: pobPage.options.attributes
             onToggled: pobPage.options.attributes = checked
         }

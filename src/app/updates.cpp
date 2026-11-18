@@ -101,7 +101,7 @@ QString Updates::status() const
         return {};
     if (m_checker->newest())
         return u"Version %1 is out."_s.arg(m_checker->newest()->version.text());
-    return u"You have the newest version."_s;
+    return u"You're on the newest version."_s;
 }
 
 bool Updates::isPending() const
