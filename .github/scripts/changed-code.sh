@@ -17,7 +17,7 @@ set -eu
 is_code() {
     case $1 in
     src/* | tests/* | data/* | packaging/*) return 0 ;;
-    *.md | docs/* | .gitignore | .github/ISSUE_TEMPLATE/* | .github/release.yml | .github/CODEOWNERS) return 1 ;;
+    *.md | docs/* | site/* | .github/workflows/pages.yml | .gitignore | .github/ISSUE_TEMPLATE/* | .github/release.yml | .github/CODEOWNERS) return 1 ;;
     esac
     return 0
 }
@@ -25,6 +25,7 @@ is_code() {
 # whether the file is part of making the packages
 is_packaging() {
     case $1 in
+    .github/workflows/pages.yml) return 1 ;;
     .github/workflows/* | .github/scripts/* | packaging/*) return 0 ;;
     esac
     return 1
