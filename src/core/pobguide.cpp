@@ -30,12 +30,12 @@ QStringList numbered(const QStringList &steps)
 QString whichIsUsed(const PobPlaces &places, const QString &location, const PobInstall &install)
 {
     if (!location.isEmpty())
-        return u"Using the Path of Building in the folder you chose."_s;
+        return u"You're using the Path of Building in the folder you chose."_s;
     if (install.flatpak)
-        return u"Using Path of Building from Flathub."_s;
+        return u"You're using Path of Building from Flathub."_s;
     if (onWindows(places))
-        return u"Using Path of Building Community (PoE2), from its installer."_s;
-    return u"Using the Path of Building in your data folder."_s;
+        return u"You're using Path of Building Community (PoE2), from its installer."_s;
+    return u"You're using the Path of Building in your data folder."_s;
 }
 
 QString folderNoteFor(const PobPlaces &places)
@@ -61,7 +61,7 @@ QString placeLine(const PobPlace &place)
 QString usualPlaces(const PobPlaces &places, const std::optional<PobInstall> &usual)
 {
     if (!usual)
-        return u"It isn't in the usual places either."_s;
+        return u"Path of Building isn't in the usual places either."_s;
     return u"Without that folder, it would use this: %1"_s.arg(whichIsUsed(places, {}, *usual));
 }
 
@@ -102,13 +102,14 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
         if (!survey.buildsFolder.isEmpty())
             guide.buildsAt = shown(survey.buildsFolder);
         if (running->flatpak) {
-            guide.details << u"It's a Flatpak, which keeps its files in a hidden folder named .var in your "
+            guide.details << u"It's a Flatpak, so its files are in a hidden folder named .var in your "
                              u"home folder."_s;
         }
         if (!location.isEmpty())
-            guide.folderNote = u"Used instead of the usual places. Clear it to go back to them."_s;
+            guide.folderNote =
+                u"This folder is used in place of the usual places. Clear it to go back to them."_s;
         if (!runProblem.isEmpty()) {
-            guide.headline = u"Path of Building was found, but it wouldn't start."_s;
+            guide.headline = u"Path of Building is there, but it wouldn't start."_s;
             guide.details << runProblem;
             guide.steps << u"Press Update to try once more."_s
                         << u"If it keeps failing, open %1 yourself to see whether it works."_s.arg(
@@ -122,7 +123,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
     const PobLookup &lookup = survey.lookup;
     if (lookup.install) {
         // it turned up since the app looked
-        guide.headline = u"Path of Building has turned up since you last looked."_s;
+        guide.headline = u"Path of Building is there now."_s;
         guide.steps = numbered({u"Press Update."_s});
         return guide;
     }
@@ -130,11 +131,13 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
     const bool noFlatpak = places.flatpak.isEmpty();
     switch (lookup.problem) {
     case PobProblem::NotInstalled:
-        guide.headline = u"Path of Building wasn't found."_s;
-        guide.details << u"Path of Upgrading uses the Path of Building from Flathub to work out how an item "
-                         u"changes your build."_s;
+        guide.headline = u"Path of Building isn't anywhere the app looks."_s;
+        guide.details
+            << u"Path of Upgrading uses the Flathub version of Path of Building to work out how an item "
+               u"changes your build."_s;
         if (noFlatpak)
-            guide.steps << u"Install Flatpak on this computer. See https://flatpak.org/setup/"_s;
+            guide.steps
+                << u"Install Flatpak on this computer first. Steps are at https://flatpak.org/setup/"_s;
         guide.steps
             << u"Install \"Path of Building\" from Flathub, in Discover or with the buttons below."_s
             << u"Open \"Path of Building Community (PoE2)\" once, and wait while it downloads what it needs."_s
@@ -142,28 +145,28 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
         guide.getFlatpak = true;
         break;
     case PobProblem::NotOpened:
-        guide.headline = u"Path of Building is installed, but not set up for Path of Exile 2 yet."_s;
+        guide.headline = u"Path of Building is installed, but it isn't set up for Path of Exile 2 yet."_s;
         guide.details << u"It downloads what it needs for Path of Exile 2 the first time you open it for "
                          u"that game."_s;
         guide.steps << u"Open \"Path of Building Community (PoE2)\" from your application menu."_s
                     << u"Wait until its window shows."_s << u"Press Update."_s;
         break;
     case PobProblem::NoLuajit:
-        guide.headline = u"Path of Building was found, but LuaJIT is missing."_s;
+        guide.headline = u"Path of Building is there, but LuaJIT is missing."_s;
         guide.installedAt = shown(lookup.folder);
         guide.details << u"LuaJIT is what runs Path of Building without its window."_s;
         guide.steps << u"Install the \"luajit\" package with your package manager."_s
                     << u"Restart Path of Upgrading."_s;
         break;
     case PobProblem::NotInstalledOnWindows:
-        guide.headline = u"Path of Building wasn't found."_s;
+        guide.headline = u"Path of Building isn't anywhere the app looks."_s;
         guide.details << u"Path of Upgrading uses Path of Building Community (PoE2) from its installer."_s;
         guide.steps << u"Download its installer from the releases page, with the button below."_s
                     << u"Run the installer."_s << u"Press Update."_s;
         guide.getInstaller = true;
         break;
     case PobProblem::NoLuajitOnWindows:
-        guide.headline = u"Path of Building was found, but LuaJIT is missing."_s;
+        guide.headline = u"Path of Building is there, but LuaJIT is missing."_s;
         guide.details << u"LuaJIT comes with Path of Upgrading, and should be in the folder it is installed "
                          u"in."_s;
         guide.steps << u"Install Path of Upgrading again to put it back."_s << u"Start it again."_s;

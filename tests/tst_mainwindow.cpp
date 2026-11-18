@@ -852,7 +852,7 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(w.find(u"stepsText"_s)->property("description").toString().startsWith(u"1. "_s));
         QVERIFY(!isVisible(w.find(u"installedAtText"_s)));
         // nothing is opened or copied until you click for it
@@ -891,7 +891,8 @@ private Q_SLOTS:
         QVERIFY(field->setProperty("text", folder));
         QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
         QCOMPARE(w.settings().pob.location, folder);
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"You're using the Path of Building in the folder you chose."_s);
         QCOMPARE(w.find(u"installedAtText"_s)->property("description").toString(),
                  QDir::toNativeSeparators(folder));
         QVERIFY(isVisible(w.find(u"installedAtText"_s)));
@@ -913,7 +914,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"usualPlacesButton"_s)));
         QCOMPARE(w.settings().pob.location, QString());
         QCOMPARE(text(w.find(u"folderField"_s)), QString());
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(!isVisible(w.find(u"usualPlacesButton"_s)));
     }
 
@@ -942,7 +943,8 @@ private Q_SLOTS:
         // once it's there
         QVERIFY(makePob(folder));
         QVERIFY(QMetaObject::invokeMethod(w.find(u"updateButton"_s), "clicked"));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"You're using the Path of Building in the folder you chose."_s);
     }
 
     void pobSettings()

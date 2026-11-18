@@ -174,14 +174,14 @@ private Q_SLOTS:
     {
         Options o;
         QCOMPARE(o.options.installedAt(), QString());
-        QCOMPARE(o.options.headline(), u"Path of Building wasn't found."_s);
+        QCOMPARE(o.options.headline(), u"Path of Building isn't anywhere the app looks."_s);
 
         QSignalSpy changed(&o.options, &PobOptions::changed);
         o.pob.setInstall({.folder = u"/data/RustyPathOfBuilding2"_s,
                           .program = u"luajit"_s,
                           .userFolder = u"/data/RustyPathOfBuilding2/userdata"_s});
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.headline(), u"Using the Path of Building in your data folder."_s);
+        QCOMPARE(o.options.headline(), u"You're using the Path of Building in your data folder."_s);
         // with backslashes on Windows
         QCOMPARE(o.options.installedAt(), QDir::toNativeSeparators(u"/data/RustyPathOfBuilding2"_s));
         QCOMPARE(o.options.buildsAt(),
@@ -192,7 +192,7 @@ private Q_SLOTS:
         changed.clear();
         o.pob.setInstall({.folder = u"/flatpak/pob"_s, .program = u"flatpak"_s, .flatpak = true});
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.headline(), u"Using Path of Building from Flathub."_s);
+        QCOMPARE(o.options.headline(), u"You're using Path of Building from Flathub."_s);
         QVERIFY(o.options.details().first().contains(u"hidden folder"));
     }
 
@@ -203,7 +203,7 @@ private Q_SLOTS:
         QSignalSpy changed(&o.options, &PobOptions::changed);
         o.pob.setUnavailable(u"There's no Path of Building."_s);
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.headline(), u"Path of Building wasn't found."_s);
+        QCOMPARE(o.options.headline(), u"Path of Building isn't anywhere the app looks."_s);
         QCOMPARE(o.options.installedAt(), QString());
         QCOMPARE(o.options.steps().size(), 3);
         QVERIFY(o.options.offersFlatpak());
@@ -229,7 +229,7 @@ private Q_SLOTS:
         o.options.useUsualPlaces();
         QCOMPARE(o.options.location(), QString());
         QVERIFY(!o.options.folderProblem());
-        QCOMPARE(o.options.headline(), u"Path of Building wasn't found."_s);
+        QCOMPARE(o.options.headline(), u"Path of Building isn't anywhere the app looks."_s);
         QCOMPARE(o.saved().location, QString());
     }
 
@@ -246,7 +246,7 @@ private Q_SLOTS:
         QVERIFY(reply->isFinished() || finished.wait());
         QCOMPARE(o.pob.state(), PobEngine::State::Failed);
         QVERIFY(!changed.isEmpty());
-        QCOMPARE(o.options.headline(), u"Path of Building was found, but it wouldn't start."_s);
+        QCOMPARE(o.options.headline(), u"Path of Building is there, but it wouldn't start."_s);
         QVERIFY(o.options.details().contains(u"The fake didn't start."_s));
         QCOMPARE(o.options.steps().size(), 2);
         // it's still the one it uses
