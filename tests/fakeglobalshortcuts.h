@@ -43,6 +43,13 @@ public:
         grabbed = grab;
     }
 
+    void forgetAll() override
+    {
+        ++forgets;
+        keys.clear();
+        names.clear();
+    }
+
     // as in System Settings
     void change(const QString &id, const QKeySequence &key)
     {
@@ -53,6 +60,7 @@ public:
     bool available = true;
     bool grabbed = true;
     int grabChanges = 0;
+    int forgets = 0;
     QHash<QString, QString> names; // of the ones added
     // Theirs, from before the app started when it's set first.
     QHash<QString, QKeySequence> keys;
