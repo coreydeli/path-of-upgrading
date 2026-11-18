@@ -93,6 +93,20 @@ ColumnsPage {
             text: qsTr("Searches go to")
             description: tradePage.options.searchedLeague
         }
+
+        RowRule {}
+
+        FormRow {
+            text: qsTr("Leagues and stats")
+            description: qsTr("The trade site's lists are only asked for when you search or press Refresh.")
+
+            QQC2.Button {
+                objectName: "refreshSiteButton"
+                text: qsTr("Refresh")
+                enabled: tradePage.options.unavailable === "" && !tradePage.options.refreshing
+                onClicked: tradePage.options.refresh()
+            }
+        }
     }
 
     SectionHeader {

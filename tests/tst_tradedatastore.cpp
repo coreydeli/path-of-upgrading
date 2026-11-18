@@ -169,6 +169,48 @@ private Q_SLOTS:
         QCOMPARE(store.data().stats.all().size(), 7);
     }
 
+    void staleness_data()
+    {
+        QTest::addColumn<bool>("kept");
+        QTest::addColumn<std::chrono::hours>("age");
+        QTest::addColumn<bool>("stale");
+        QTest::newRow("nothing kept") << false << 0h << true;
+        QTest::newRow("this morning's") << true << 5h << false;
+        QTest::newRow("a day old") << true << 25h << true;
+    }
+
+    void staleness()
+    {
+        QFETCH(bool, kept);
+        QFETCH(std::chrono::hours, age);
+        QFETCH(bool, stale);
+        QTemporaryDir dir;
+        if (kept)
+            QVERIFY(keepAll(dir.path(), age));
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeDataStore store(&client, dir.path());
+        // which reads the files and asks for nothing
+        QCOMPARE(store.isStale(), stale);
+        QCoreApplication::processEvents();
+        QVERIFY(network.sent.isEmpty());
+        QVERIFY(!store.isRefreshing());
+    }
+
+    void turnedOffAsksNothing()
+    {
+        QTemporaryDir dir;
+        FakeNetwork network;
+        TradeClient client(&network);
+        client.setBlocked(u"Trade searches are turned off."_s);
+        TradeDataStore store(&client, dir.path());
+        // and says nothing of the site, which wasn't asked
+        QVERIFY(refreshes(store));
+        QVERIFY(network.sent.isEmpty());
+        QVERIFY(store.errorString().isEmpty());
+        QVERIFY(store.data().stats.isEmpty());
+    }
+
     void readsPastBadFiles_data()
     {
         QTest::addColumn<QByteArray>("file");
@@ -244,7 +286,8 @@ private Q_SLOTS:
         TradeDataStore store(&client, dir.path());
 
         QVERIFY(refreshes(store));
-        QCOMPARE(network.sent.size(), 3);
+        // a site that's not there gets asked once, as the rest wouldn't come either
+        QCOMPARE(network.sent.size(), answer.error != QNetworkReply::NoError || answer.status == 503 ? 1 : 3);
         QCOMPARE(store.data().stats.all().size(), 7);
         QVERIFY(!store.data().categories.isEmpty());
         QCOMPARE(store.leagues(), QStringList{u"Runes of Aldur"_s});
@@ -273,16 +316,21 @@ private Q_SLOTS:
         network.answers = {
             answer, {.body = json(tradefixtures::filters())}, {.body = json(leagues({u"Standard"_s}))}};
         TradeClient client(&network);
+        client.setRest(1ms);
         TradeDataStore store(&client, dir.path());
 
         QVERIFY(refreshes(store));
         QVERIFY(store.data().stats.isEmpty());
         QCOMPARE(store.errorString(), why);
         QVERIFY(!QFile::exists(dir.filePath(u"stats.json"_s)));
-        QCOMPARE(store.leagues(), QStringList{u"Standard"_s});
+        // a site that's not there isn't asked for the rest
+        QCOMPARE(store.leagues(),
+                 answer.error == QNetworkReply::NoError ? QStringList{u"Standard"_s} : QStringList{});
 
         // until it has them
-        network.answers = {{.body = json(tradefixtures::stats())}};
+        network.answers = {{.body = json(tradefixtures::stats())},
+                           {.body = json(tradefixtures::filters())},
+                           {.body = json(leagues({u"Standard"_s}))}};
         QVERIFY(refreshes(store));
         QCOMPARE(network.sent.size(), 4);
         QVERIFY(!store.data().stats.isEmpty());
@@ -329,7 +377,8 @@ private Q_SLOTS:
         TradeClient client(&network);
         auto *store = new TradeDataStore(&client, dir.path());
         store->refresh();
-        QCOMPARE(network.sent.size(), 3);
+        // one, until the site has answered
+        QCOMPARE(network.sent.size(), 1);
         delete store;
         for (const FakeNetwork::Sent &sent : std::as_const(network.sent))
             QVERIFY(!sent.reply);
