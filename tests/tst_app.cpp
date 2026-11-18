@@ -786,7 +786,7 @@ private Q_SLOTS:
         r.app.checker().popup().wear(u"Helmet"_s);
         QCOMPARE(r.app.character().character().gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
         QCOMPARE(r.app.characters().find(settings.character)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
-        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Already equipped"_s);
         QCOMPARE(r.app.checker().popup().wearError(), QString());
     }
 
@@ -807,7 +807,7 @@ private Q_SLOTS:
         QCOMPARE(r.app.characters().find(id)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
         QCOMPARE(r.app.characterList()->current(), id);
         QCOMPARE(r.app.characterList()->rowCount(), 1);
-        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Already equipped"_s);
 
         // and it is still the one next time
         Running again(folders);
@@ -908,7 +908,7 @@ private Q_SLOTS:
         r.app.checker().popup().close();
         checked.checkAgain(0);
         QVERIFY(r.app.checker().popup().isVisible());
-        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Already equipped"_s);
     }
 
     void forgetCheckedItems()
