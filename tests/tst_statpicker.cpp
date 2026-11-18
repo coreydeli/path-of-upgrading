@@ -97,12 +97,14 @@ struct Picking
         return row < 0 ? QVariant() : picker.index(int(row)).data(role);
     }
 
-    // Asks the site, and waits for what it says.
+    // Opens the picker, has the site asked as a search or the Refresh button
+    // would, and waits for what it says.
     bool refreshFromSite()
     {
         picker.setSiteAllowed(true);
-        QSignalSpy reset(&picker, &StatPicker::modelReset);
         picker.refresh();
+        QSignalSpy reset(&picker, &StatPicker::modelReset);
+        data.refresh();
         return reset.wait();
     }
 };
@@ -161,9 +163,26 @@ private Q_SLOTS:
     {
         Picking p;
         p.picker.setSiteAllowed(true);
+        p.data.refresh();
         p.picker.refresh();
         QCOMPARE(p.picker.message(), u"Getting the list of stats from the trade site."_s);
         QCOMPARE(p.keys(), properties);
+    }
+
+    void opensWithoutAsking()
+    {
+        Picking p;
+        p.picker.setSiteAllowed(true);
+        p.picker.refresh();
+        p.picker.refresh();
+        QTest::qWait(30);
+        QVERIFY(p.network.sent.isEmpty());
+        QVERIFY(!p.data.isRefreshing());
+        QCOMPARE(p.keys(), properties);
+        QCOMPARE(p.picker.message(),
+                 u"The trade site's list of stats comes with your first trade search, or when you press "
+                 u"Refresh on the Trade page. Until then, here are only the item's own and those on the "
+                 u"items you've checked."_s);
     }
 
     void cantGetThem()

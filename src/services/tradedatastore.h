@@ -38,8 +38,12 @@ public:
 
     // Reads the files, the first time, and asks the site nothing.
     void load();
+    // Whether any of it is missing or a day old, which refresh() would ask the
+    // site for. Reads the files the first time.
+    bool isStale();
     // Reads the files the first time, then asks the site for what's missing
-    // or a day old, or for all of it when forced.
+    // or a day old, or for all of it when forced. Only for when it's wanted:
+    // a search, or a refresh you pressed.
     void refresh(bool force = false);
     bool isRefreshing() const;
 

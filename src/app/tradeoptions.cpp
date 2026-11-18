@@ -154,6 +154,19 @@ QString TradeOptions::unavailable() const
     return tradeUnavailable(trade());
 }
 
+bool TradeOptions::isRefreshing() const
+{
+    return m_data->isRefreshing();
+}
+
+void TradeOptions::refresh()
+{
+    if (!unavailable().isEmpty() || m_data->isRefreshing())
+        return;
+    m_data->refresh(true);
+    Q_EMIT changed();
+}
+
 double TradeOptions::ninjaRate() const
 {
     // the rates are for the league last asked about, which is the searched

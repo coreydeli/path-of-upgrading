@@ -157,6 +157,7 @@ private Q_SLOTS:
                         << FakeAnswer{.error = QNetworkReply::OperationCanceledError}
                         << FakeAnswer{.error = QNetworkReply::TimeoutError};
         TradeClient client(&network);
+        client.setRest(0ms);
 
         TradeReply *offline = client.data(u"stats"_s);
         QVERIFY(finishes(offline));
@@ -180,6 +181,7 @@ private Q_SLOTS:
         network.answers << FakeAnswer{.status = 403, .body = "<!DOCTYPE html><title>Just a moment...</title>"}
                         << FakeAnswer{.body = "[]"} << FakeAnswer{.status = 500};
         TradeClient client(&network);
+        client.setRest(0ms);
 
         TradeReply *blocked = client.search(u"Standard"_s, {});
         QVERIFY(finishes(blocked));
@@ -233,10 +235,10 @@ private Q_SLOTS:
         TradeReply *fifth = nullptr;
         for (int i = 0; i < 5; ++i)
             fifth = client.search(u"Standard"_s, {});
-        QCOMPARE(network.sent.size(), 4);
-
         QSignalSpy waiting(fifth, &TradeReply::waiting);
-        QVERIFY(waiting.wait());
+        // once the first has been answered
+        QTRY_COMPARE(network.sent.size(), 4);
+        QVERIFY(!waiting.isEmpty() || waiting.wait());
         const auto wait = waiting.first().first().value<std::chrono::milliseconds>();
         QCOMPARE_GT(wait, 9s);
         QCOMPARE_LE(wait, 10250ms);
@@ -319,7 +321,8 @@ private Q_SLOTS:
             fifth = client.search(u"Standard"_s, {});
         QVERIFY(finishes(fifth));
         QCOMPARE(fifth->error(), TradeReply::Error::RateLimited);
-        QCOMPARE(network.sent.size(), 4);
+        // only the first went, which is how it found out
+        QCOMPARE(network.sent.size(), 1);
     }
 
     void waitsOutAHold()
@@ -364,6 +367,166 @@ private Q_SLOTS:
         QCOMPARE(next->error(), TradeReply::Error::RateLimited);
         QCOMPARE(next->retryAfter(), hold);
         QCOMPARE(network.sent.size(), 1);
+    }
+
+    void blockedSendsNothing()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        client.setBlocked(u"Trade searches are turned off."_s);
+        QCOMPARE(client.blocked(), u"Trade searches are turned off."_s);
+
+        const QList<TradeReply *> replies{client.search(u"Standard"_s, {}),
+                                          client.fetch({u"x1"_s}, u"Ab3dE9"_s), client.data(u"stats"_s)};
+        for (TradeReply *reply : replies) {
+            // from the event loop, as the others are
+            QVERIFY(!reply->isFinished() || reply->error() != TradeReply::Error::None);
+            QVERIFY(finishes(reply));
+            QCOMPARE(reply->error(), TradeReply::Error::Unavailable);
+            QCOMPARE(reply->errorString(), u"Trade searches are turned off."_s);
+        }
+        QVERIFY(network.sent.isEmpty());
+
+        // and goes again once it's let
+        client.setBlocked({});
+        QVERIFY(finishes(client.data(u"stats"_s)));
+        QCOMPARE(network.sent.size(), 1);
+    }
+
+    void blockingCallsOffWhatWaits()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        TradeReply *fifth = nullptr;
+        for (int i = 0; i < 5; ++i)
+            fifth = client.search(u"Standard"_s, {});
+        QCOMPARE(network.sent.size(), 1);
+
+        client.setBlocked(u"Trade searches are turned off."_s);
+        QVERIFY(finishes(fifth));
+        QCOMPARE(fifth->error(), TradeReply::Error::Unavailable);
+        // and the ones held for the answer don't go when it comes
+        QTest::qWait(30);
+        QCOMPARE(network.sent.size(), 1);
+    }
+
+    void oneAtATimeUntilTheSiteAnswers()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.never = true} << FakeAnswer{.never = true};
+        TradeClient client(&network);
+        const QList<TradeReply *> replies{client.search(u"Standard"_s, {}), client.search(u"Standard"_s, {}),
+                                          client.search(u"Standard"_s, {})};
+        QTest::qWait(50);
+        QCOMPARE(network.sent.size(), 1);
+
+        // calling off the one that's out lets the next go, still alone
+        delete replies[0];
+        QCOMPARE(network.sent.size(), 2);
+        QTest::qWait(50);
+        QCOMPARE(network.sent.size(), 2);
+    }
+
+    void manyOnceTheSiteHasAnswered()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        QList<TradeReply *> replies;
+        for (int i = 0; i < 3; ++i)
+            replies << client.search(u"Standard"_s, {});
+        QCOMPARE(network.sent.size(), 1);
+        for (TradeReply *reply : replies)
+            QVERIFY(finishes(reply));
+        QCOMPARE(network.sent.size(), 3);
+        // and each kind is waited for apart
+        QCOMPARE(network.sent.size(), 3);
+        TradeReply *fetch = client.fetch({u"x1"_s}, u"Ab3dE9"_s);
+        TradeReply *data = client.data(u"stats"_s);
+        QCOMPARE(network.sent.size(), 5);
+        QVERIFY(finishes(fetch) && finishes(data));
+    }
+
+    void stillOneAtATimeAfterNoAnswer()
+    {
+        FakeNetwork network;
+        // as when it couldn't be reached, which says nothing of its limits
+        network.answers << FakeAnswer{.error = QNetworkReply::HostNotFoundError} << FakeAnswer{.never = true};
+        TradeClient client(&network);
+        client.setRest(0ms);
+        const TradeReply *first = client.search(u"Standard"_s, {});
+        client.search(u"Standard"_s, {});
+        client.search(u"Standard"_s, {});
+        QTRY_COMPARE(network.sent.size(), 2);
+        QTest::qWait(50);
+        QCOMPARE(network.sent.size(), 2);
+        QVERIFY(first->isFinished());
+    }
+
+    void restsAfterAFailure()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.error = QNetworkReply::HostNotFoundError} << FakeAnswer{.status = 500};
+        TradeClient client(&network);
+        client.setRest(300ms);
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+
+        // it waits out the rest, which is said as any other wait
+        QElapsedTimer clock;
+        clock.start();
+        TradeReply *next = client.data(u"stats"_s);
+        QSignalSpy waiting(next, &TradeReply::waiting);
+        QVERIFY(waiting.wait());
+        const auto wait = waiting.first().first().value<std::chrono::milliseconds>();
+        QCOMPARE_GT(wait, 200ms);
+        QCOMPARE_LE(wait, 300ms);
+        QCOMPARE(network.sent.size(), 1);
+        QVERIFY(finishes(next));
+        QCOMPARE_GE(clock.elapsed(), 280);
+        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(next->error(), TradeReply::Error::BadAnswer);
+
+        // twice as long after the next, and the same kind of wait for any kind
+        clock.restart();
+        TradeReply *third = client.fetch({u"x1"_s}, u"Ab3dE9"_s);
+        QVERIFY(finishes(third));
+        QCOMPARE_GE(clock.elapsed(), 580);
+        QCOMPARE(network.sent.size(), 3);
+        QCOMPARE(third->error(), TradeReply::Error::None);
+
+        // and what it answers puts that right
+        QElapsedTimer quick;
+        quick.start();
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+        QCOMPARE_LT(quick.elapsed(), 200);
+    }
+
+    void failsRatherThanRestLong()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.error = QNetworkReply::HostNotFoundError};
+        TradeClient client(&network);
+        client.setRest(40s);
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+
+        TradeReply *next = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(next));
+        QCOMPARE(next->error(), TradeReply::Error::Network);
+        QCOMPARE(next->retryAfter(), 40s);
+        QCOMPARE(
+            next->errorString(),
+            u"The trade site isn't answering, so the app is giving it a rest. Try again in 40 seconds."_s);
+        QCOMPARE(network.sent.size(), 1);
+    }
+
+    void aSiteThatSaysNoIsNotResting()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.status = 400, .body = siteError(u"Unknown item base"_s)};
+        TradeClient client(&network);
+        client.setRest(40s);
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+        QCOMPARE(network.sent.size(), 2);
     }
 
     void sessionIds()

@@ -8,6 +8,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <algorithm>
+#include <memory>
+#include <utility>
 
 using namespace Qt::Literals::StringLiterals;
 using namespace std::chrono_literals;
@@ -34,6 +36,19 @@ QString duration(std::chrono::seconds time)
 QString tooMany(std::chrono::seconds retryAfter)
 {
     return u"The trade site has had too many requests from you. Try again in %1."_s.arg(duration(retryAfter));
+}
+
+// How long the site is left alone after its nth failure in a row: the first
+// rest, doubled each time up to a minute.
+std::chrono::milliseconds restAfter(int failures, std::chrono::milliseconds first)
+{
+    return std::min<std::chrono::milliseconds>(60s, first * (1 << std::min(failures - 1, 4)));
+}
+
+QString resting(std::chrono::seconds retryAfter)
+{
+    return u"The trade site isn't answering, so the app is giving it a rest. Try again in %1."_s.arg(
+        duration(retryAfter));
 }
 
 QString unreachable(const QNetworkReply &reply)
@@ -119,6 +134,21 @@ TradeReply *TradeClient::data(const QString &name)
     return send(m_data, apiRequest(tradeDataUrl(name)));
 }
 
+void TradeClient::setBlocked(const QString &why)
+{
+    m_blocked = why;
+    if (why.isEmpty())
+        return;
+    for (Queue *queue : {&m_searches, &m_fetches, &m_data}) {
+        queue->timer.stop();
+        const QList<Queue::Waiting> waiting = std::exchange(queue->waiting, {});
+        for (const Queue::Waiting &next : waiting) {
+            if (next.trade)
+                next.trade->fail(TradeReply::Error::Unavailable, why);
+        }
+    }
+}
+
 bool TradeClient::isSessionId(QStringView text)
 {
     return !text.isEmpty() && std::all_of(text.begin(), text.end(),
@@ -134,6 +164,10 @@ void TradeClient::setSessionId(const QString &id)
 TradeReply *TradeClient::send(Queue &queue, const QNetworkRequest &request, const QByteArray &body)
 {
     auto *trade = new TradeReply(this);
+    if (!m_blocked.isEmpty()) {
+        trade->fail(TradeReply::Error::Unavailable, m_blocked);
+        return trade;
+    }
     queue.waiting << Queue::Waiting{trade, request, body, Clock::now() + maxWait};
     pump(queue);
     return trade;
@@ -148,14 +182,32 @@ void TradeClient::pump(Queue &queue)
             continue;
         }
         const Clock::time_point now = Clock::now();
-        const std::chrono::milliseconds wait = queue.limiter.wait(now);
+        // one at a time until the site has said its limits, as the ones we
+        // guessed may be more than it gives
+        if (!queue.heardFrom && queue.inFlight > 0) {
+            if (now >= next.deadline) {
+                queue.waiting.takeFirst().trade->fail(TradeReply::Error::Network,
+                                                      u"The trade site didn't answer in time."_s);
+                continue;
+            }
+            queue.timer.start(std::chrono::ceil<std::chrono::milliseconds>(next.deadline - now));
+            return;
+        }
+        const std::chrono::milliseconds limited = queue.limiter.wait(now);
+        const std::chrono::milliseconds rest =
+            std::chrono::ceil<std::chrono::milliseconds>(std::max(m_restUntil, now) - now);
+        const std::chrono::milliseconds wait = std::max(limited, rest);
         if (wait == 0ms) {
             queue.limiter.sent(now);
             start(queue, queue.waiting.takeFirst());
         } else if (now + wait > next.deadline) {
             const auto retryAfter = std::chrono::ceil<std::chrono::seconds>(wait);
-            queue.waiting.takeFirst().trade->fail(TradeReply::Error::RateLimited, tooMany(retryAfter),
-                                                  retryAfter);
+            if (rest >= limited)
+                queue.waiting.takeFirst().trade->fail(TradeReply::Error::Network, resting(retryAfter),
+                                                      retryAfter);
+            else
+                queue.waiting.takeFirst().trade->fail(TradeReply::Error::RateLimited, tooMany(retryAfter),
+                                                      retryAfter);
         } else {
             next.trade->hold(wait);
             queue.timer.start(wait);
@@ -183,8 +235,20 @@ void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
         waiting.body.isEmpty() ? m_network->get(request) : m_network->post(request, waiting.body);
     // deleting the trade reply calls the request off
     reply->setParent(trade);
-    connect(reply, &QNetworkReply::finished, trade,
-            [this, &queue, trade, reply] { answered(queue, trade, reply); });
+    // counted off once, when it's answered or when it's called off
+    ++queue.inFlight;
+    const auto counted = std::make_shared<bool>(false);
+    const auto settle = [this, &queue, counted] {
+        if (std::exchange(*counted, true))
+            return;
+        --queue.inFlight;
+        pump(queue);
+    };
+    connect(reply, &QNetworkReply::finished, trade, [this, &queue, trade, reply, settle] {
+        answered(queue, trade, reply);
+        settle();
+    });
+    connect(reply, &QObject::destroyed, this, settle);
 }
 
 void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply)
@@ -197,6 +261,9 @@ void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply
     const QJsonDocument json = QJsonDocument::fromJson(reply->readAll());
     const QString message = json.object().value(u"error").toObject().value(u"message").toString();
     trade->m_siteMessage = message;
+    // whatever it said, it's there, and has given its limits if it has any
+    if (status != 0)
+        queue.heardFrom = true;
 
     if (status == 0) {
         trade->fail(Error::Network, unreachable(*reply));
@@ -216,8 +283,11 @@ void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply
     } else {
         trade->succeed(json.object());
     }
-    // what the site said can change when the next can go
-    pump(queue);
+    // a site that isn't answering is left alone for longer each time
+    if (trade->error() == Error::Network || trade->error() == Error::BadAnswer)
+        m_restUntil = now + restAfter(++m_failures, m_rest);
+    else
+        m_failures = 0;
 }
 
 } // namespace pou

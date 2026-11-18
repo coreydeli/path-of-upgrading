@@ -34,6 +34,7 @@ public:
         Rejected,    // the site said no, see errorString()
         Network,     // the site couldn't be reached
         BadAnswer,   // the site's answer couldn't be read
+        Unavailable, // trade is off, so nothing was sent, see TradeClient::setBlocked()
     };
     Q_ENUM(Error)
 
@@ -73,9 +74,11 @@ private:
     QJsonObject m_answer;
 };
 
-// The official trade site. Searches, fetches and data requests each wait
-// their turn to stay under the site's limits, and fail as RateLimited when
-// that would take more than half a minute.
+// The official trade site. Every request to it goes through here, and this is
+// the one place that says whether it may go: not while it's blocked, one at a
+// time until the site has answered once, under the site's limits, and not
+// straight after the site has failed. Searches, fetches and data requests each
+// wait their turn, and fail when that would take more than half a minute.
 class TradeClient : public QObject
 {
     Q_OBJECT
@@ -92,6 +95,16 @@ public:
     TradeReply *fetch(const QStringList &listingIds, const QString &searchId);
     // "stats", "filters" or "leagues", see tradeDataUrl().
     TradeReply *data(const QString &name);
+
+    // Turns every request down with that reason, without sending it, as when
+    // trade searches are off, and calls off those waiting. Empty lets them go
+    // again.
+    void setBlocked(const QString &why);
+    QString blocked() const { return m_blocked; }
+
+    // For tests: how long the first rest after a failure is, 5 seconds to
+    // start with.
+    void setRest(std::chrono::milliseconds first) { m_rest = first; }
 
     // Whether the text could be your session id on the site: the POESESSID
     // cookie of a browser that's signed in to it, which is letters and digits.
@@ -117,6 +130,8 @@ private:
         RateLimiter limiter;
         QList<Waiting> waiting; // in the order they were made
         QTimer timer;           // for when the first can go
+        int inFlight = 0;       // sent and not answered yet
+        bool heardFrom = false; // whether the site has answered, and so said its limits
     };
 
     // POSTed when there's a body
@@ -128,6 +143,10 @@ private:
 
     QNetworkAccessManager *m_network;
     QByteArray m_sessionId;
+    QString m_blocked;
+    std::chrono::milliseconds m_rest{5000};
+    int m_failures = 0; // in a row
+    Clock::time_point m_restUntil;
     Queue m_searches;
     Queue m_fetches;
     Queue m_data;

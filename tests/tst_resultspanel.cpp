@@ -28,6 +28,7 @@
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 using namespace resultsite;
 
@@ -532,6 +533,8 @@ private Q_SLOTS:
     void failedToLoad()
     {
         Panel p;
+        // so trying again isn't held back
+        p.site.client.setRest(0ms);
         p.site.network.answers = {{.error = QNetworkReply::HostNotFoundError}, fetched(listingIds(2))};
         p.site.results.setSearch(foundBy(2));
         p.panel.show();
