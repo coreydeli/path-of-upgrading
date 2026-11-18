@@ -14,6 +14,9 @@ ColumnsPage {
     property bool tradeOffered: true
     // the league, which has no page of its own without trade
     property TradeOptions tradeOptions
+    // the beta's way to wipe what the app keeps, which a release leaves out
+    property StartOver startOver
+    signal startOverAsked
     // whether the last key you chose was refused
     property bool refused: false
     readonly property var positions: [
@@ -258,6 +261,41 @@ ColumnsPage {
             objectName: "startError"
             visible: text !== ""
             text: overlayPage.options.startError
+            textItem.wrapMode: Text.Wrap
+        }
+    }
+
+    SectionHeader {
+        title: qsTr("Start Over")
+        visible: overlayPage.startOver && overlayPage.startOver.offered
+    }
+
+    Sheet {
+        objectName: "startOverCard"
+        visible: overlayPage.startOver && overlayPage.startOver.offered
+
+        FormRow {
+            text: qsTr("Start over as a new user")
+            description: qsTr("Wipes everything the app has kept and opens it again on the setup guide, so you can go through it as if you'd never run it.")
+
+            QQC2.Button {
+                objectName: "startOverButton"
+                text: qsTr("Start Over")
+                icon.name: "edit-clear-all"
+                enabled: !(overlayPage.startOver && overlayPage.startOver.busy)
+                onClicked: overlayPage.startOverAsked()
+            }
+        }
+
+        RowRule {
+            visible: startOverProblems.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: startOverProblems
+            objectName: "startOverProblems"
+            visible: overlayPage.startOver && overlayPage.startOver.problems.length > 0
+            text: overlayPage.startOver ? qsTr("Most of it is gone, but not everything.") + "\n" + overlayPage.startOver.problems.join("\n") : ""
             textItem.wrapMode: Text.Wrap
         }
     }

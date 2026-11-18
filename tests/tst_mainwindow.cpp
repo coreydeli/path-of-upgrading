@@ -190,7 +190,8 @@ struct Window
     // It has trade, which a release build of the app leaves out.
     explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {},
                     const std::optional<Settings> &saved = used(), bool tradeOffered = true,
-                    FakeGameWatcher *game = nullptr, bool siteKept = true, bool ratesCome = true)
+                    FakeGameWatcher *game = nullptr, bool siteKept = true, bool ratesCome = true,
+                    bool startOverOffered = true)
         : network(online(ratesCome))
     {
         shortcuts->available = hotkeys;
@@ -208,7 +209,8 @@ struct Window
                        .cache = dir.filePath(u"cache"_s),
                        .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
                        .colors = colors,
-                       .tradeOffered = tradeOffered},
+                       .tradeOffered = tradeOffered,
+                       .startOverOffered = startOverOffered},
             std::unique_ptr<GameWatcher>(game));
         // whatever the build was configured for, a test says what it needs
         app->updates()->setInstallKind(InstallKind::Source);
@@ -2754,6 +2756,40 @@ private Q_SLOTS:
         QVERIFY(release.network->sent.isEmpty());
     }
 
+    void betaSettingsHaveTheStartOverCard()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(isVisible(w.find(u"startOverCard"_s)));
+        QVERIFY(isVisible(w.find(u"startOverButton"_s)));
+    }
+
+    void releaseSettingsHaveNoStartOverCard()
+    {
+        Window release(true, false, {}, used(), true, nullptr, true, true, false);
+        QVERIFY(!release.app->startOver()->isOffered());
+        QVERIFY(release.show(u"overlayAction"_s));
+        QVERIFY(isVisible(release.find(u"checkKey"_s)));
+        QVERIFY(!isVisible(release.find(u"startOverCard"_s)));
+        QVERIFY(!isVisible(release.find(u"startOverButton"_s)));
+    }
+
+    void startOverAsksFirst()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        w.app->startOver()->setRestart([] { return true; });
+        QObject *dialog = w.window->findChild<QObject *>(u"startOverDialog"_s);
+        QVERIFY(dialog);
+        QVERIFY(!dialog->property("opened").toBool());
+        QVERIFY(QMetaObject::invokeMethod(w.find(u"startOverButton"_s), "clicked"));
+        QVERIFY(QTest::qWaitFor([&] { return dialog->property("opened").toBool(); }, 5000));
+        // nothing is wiped until it's said yes to
+        QVERIFY(!w.app->startOver()->isBusy());
+        QVERIFY(QFileInfo::exists(w.dir.filePath(u"settings.conf"_s)));
+        QVERIFY(QMetaObject::invokeMethod(dialog, "close"));
+    }
+
     void sidebarHasTradeWhenOffered()
     {
         Window w;
@@ -3385,6 +3421,31 @@ private Q_SLOTS:
 
         QVERIFY(activate(w.find(u"designBox"_s), 0));
         QCOMPARE(w.settings().appearance.design, Design::Dossier);
+    }
+
+    void everyPageLoadsUnderEachDesign_data()
+    {
+        QTest::addColumn<QString>("design");
+        QTest::addColumn<QString>("brightness");
+        QTest::newRow("dossier") << u"dossier"_s << u"desktop"_s;
+        QTest::newRow("material light") << u"material"_s << u"light"_s;
+        QTest::newRow("material dark") << u"material"_s << u"dark"_s;
+    }
+
+    // QTest::failOnWarning() would catch a page that can't load or bind
+    void everyPageLoadsUnderEachDesign()
+    {
+        QFETCH(QString, design);
+        QFETCH(QString, brightness);
+        Window w(true, false, QStringLiteral(COLORS));
+        w.app->appearance()->setBrightness(brightness);
+        w.app->appearance()->setDesign(design);
+        QVERIFY(w.shown());
+        for (const QString &action : {u"gearAction"_s, u"charactersAction"_s, u"gearScoreAction"_s,
+                                      u"overlayAction"_s, u"appearanceAction"_s}) {
+            QVERIFY2(w.show(action), qPrintable(action));
+            QVERIFY(w.settled());
+        }
     }
 
     void styleFollowsTheDesign()

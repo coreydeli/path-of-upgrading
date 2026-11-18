@@ -93,6 +93,17 @@ void KdeGlobalShortcuts::setGrabbed(bool grabbed)
     }
 }
 
+void KdeGlobalShortcuts::forgetAll()
+{
+    for (QAction *action : std::as_const(m_actions)) {
+        KGlobalAccel::self()->removeAllShortcuts(action);
+        // so the desktop's answer isn't taken for a change
+        delete action;
+    }
+    m_actions.clear();
+    m_keys.clear();
+}
+
 QKeySequence KdeGlobalShortcuts::key(const QString &id) const
 {
     const QAction *action = m_actions.value(id);

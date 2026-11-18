@@ -39,6 +39,9 @@ public:
     TradeSession(SecretStore *store, TradeClient *client, Opener *opener = nullptr,
                  QObject *parent = nullptr);
 
+    // What the id is kept under in the keyring.
+    static QString secretName();
+
     // Signs in with the one in the keyring. It asks the keyring once, so it
     // can be called whenever trade searches are on.
     void load();

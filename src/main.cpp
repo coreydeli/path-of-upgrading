@@ -99,6 +99,13 @@ int main(int argc, char *argv[])
                                 QCoreApplication::quit();
                                 return true;
                             });
+    // a new start has no settings, so it opens on the setup guide
+    root.startOver()->setRestart([] {
+        if (!pou::startAgainAfterExit({}))
+            return false;
+        QCoreApplication::quit();
+        return true;
+    });
     root.updateChecker().start();
 
     const int exitCode = app.exec();
