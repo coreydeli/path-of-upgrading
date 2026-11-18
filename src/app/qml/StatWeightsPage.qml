@@ -21,7 +21,7 @@ ColumnsPage {
     readonly property real boxWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Stat Weights")
-    description: qsTr("What each stat is worth to you, for items judged by your weights.")
+    description: qsTr("How much each stat is worth to you, when items are judged by your weights.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
@@ -86,7 +86,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: weightsPage.weights.character === ""
             text: qsTr("You haven't picked a character yet.")
-            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
+            description: qsTr("Change anything here and a character gets made for you. Or add one yourself, or import a build, under Gear Settings, Characters.")
         }
 
         TableHeader {
@@ -114,7 +114,7 @@ ColumnsPage {
             objectName: "noWeightsText"
             visible: weightRows.count === 0
             text: qsTr("You have no weights.")
-            description: qsTr("Every item scores 0 by them. Add some, suggest some from your gear, or go back to the defaults.")
+            description: qsTr("Every item scores 0 without them. Add some, get suggestions from your gear, or go back to the defaults.")
             textItem.wrapMode: Text.Wrap
         }
 
@@ -164,7 +164,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "weightsHelp"
-        text: qsTr("A weight is what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges items by them when you turn on Judge by my stat weights alone on the Gear Score page, and so does searching the trade site by your weights.")
+        text: qsTr("A weight says what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges items by them when you turn on Judge by my stat weights alone on the Gear Score page. Searching the trade site by your weights always uses them.")
     }
 
     StatPickerDialog {

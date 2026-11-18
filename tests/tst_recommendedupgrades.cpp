@@ -324,7 +324,7 @@ private Q_SLOTS:
             site.searcher.search({{u"query"_s, QJsonObject()}});
         QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::dataChanged);
         site.upgrades.find(site.rowOf(u"Helmet"_s));
-        while (!site.tradeOf(u"Helmet"_s).note.contains(u"few searches"_s))
+        while (!site.tradeOf(u"Helmet"_s).note.contains(u"so many searches"_s))
             QVERIFY(changed.wait());
         const TradeReport report = site.tradeOf(u"Helmet"_s);
         QVERIFY(report.busy);
@@ -417,7 +417,7 @@ private Q_SLOTS:
         QVERIFY(site.upgrades.chosenLookFor().isEmpty());
         const QStringList boots = site.upgrades.chosenCanRoll();
         QVERIFY(!boots.isEmpty());
-        QVERIFY(boots.first().contains(u", item level "_s));
+        QVERIFY(boots.first().contains(u" at item level "_s));
 
         // an empty slot with a class
         site.upgrades.choose(u"Belt"_s);

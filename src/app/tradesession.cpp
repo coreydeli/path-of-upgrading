@@ -50,9 +50,9 @@ QString TradeSession::status() const
         return u"Waiting for the keyring."_s;
     switch (m_state) {
     case State::NotAsked:
-        return u"The keyring is only asked while trade searches are on."_s;
+        return u"The keyring isn't checked unless trade searches are on."_s;
     case State::Unknown:
-        return u"Couldn't tell if one is saved."_s;
+        return u"Couldn't tell whether one is saved."_s;
     case State::SignedOut:
         return u"No session ID is saved."_s;
     case State::SignedIn:
@@ -91,7 +91,7 @@ void TradeSession::save(const QString &text)
         return;
     const QString id = text.trimmed();
     if (!TradeClient::isSessionId(id)) {
-        m_error = u"That isn't a session ID. It's only letters and digits."_s;
+        m_error = u"That doesn't look like a session ID. It's only letters and digits."_s;
         Q_EMIT changed();
         return;
     }

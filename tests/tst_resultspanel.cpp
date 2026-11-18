@@ -182,7 +182,8 @@ private Q_SLOTS:
         QVERIFY(p.panel.isVisible());
         // over the game, which keeps the keyboard
         QVERIFY(p.window()->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
-        const QString first = u"Check an item and search the trade site from the popup first."_s;
+        const QString first =
+            u"Check an item and search for it from the popup, and the listings show up here."_s;
         QVERIFY(shown(p.window(), first));
         QVERIFY(shown(p.window(), u"Trade Results"_s));
         QVERIFY(!button(p.window(), u"Open on the Trade Site"_s));
@@ -248,7 +249,7 @@ private Q_SLOTS:
         QVERIFY(button(p.window(), u"Open on the Trade Site"_s));
         // with no more to load
         QVERIFY(!button(p.window(), u"Load More"_s));
-        QVERIFY(!shown(p.window(), u"Asking the trade site for the listings"_s));
+        QVERIFY(!shown(p.window(), u"Getting the listings from the trade site"_s));
     }
 
     void bigTotal()
@@ -409,22 +410,22 @@ private Q_SLOTS:
         QTRY_COMPARE(rows(p.window()), 10);
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
         QVERIFY(shown(p.window(), u"30 listed in Runes of Aldur"_s));
-        QVERIFY(!shown(p.window(), u"The trade site lists only the first 23. Open it to see the rest."_s));
+        QVERIFY(!shown(p.window(), u"The trade site only shows the first 23. Open it to see the rest."_s));
 
         QVERIFY(click(p.window(), u"Load More"_s));
         QVERIFY(p.site.results.isBusy());
-        QVERIFY(shown(p.window(), u"Asking the trade site for the listings"_s));
+        QVERIFY(shown(p.window(), u"Getting the listings from the trade site"_s));
         // not again while it waits
         QVERIFY(!button(p.window(), u"Load More"_s)->isEnabled());
         QVERIFY(p.loaded());
         QTRY_COMPARE(rows(p.window()), 20);
-        QVERIFY(!shown(p.window(), u"Asking the trade site for the listings"_s));
+        QVERIFY(!shown(p.window(), u"Getting the listings from the trade site"_s));
 
         QVERIFY(click(p.window(), u"Load More"_s));
         QVERIFY(p.loaded());
         QTRY_COMPARE(rows(p.window()), 23);
         QTRY_VERIFY(!button(p.window(), u"Load More"_s));
-        QTRY_VERIFY(shown(p.window(), u"The trade site lists only the first 23. Open it to see the rest."_s));
+        QTRY_VERIFY(shown(p.window(), u"The trade site only shows the first 23. Open it to see the rest."_s));
         QCOMPARE(p.site.network.sent.size(), 3);
     }
 
@@ -524,7 +525,8 @@ private Q_SLOTS:
         p.panel.show();
         QVERIFY(QQuickTest::qWaitForPolish(p.window()));
         QVERIFY(shown(p.window(), u"None listed in Runes of Aldur right now"_s));
-        QVERIFY(!shown(p.window(), u"Check an item and search the trade site from the popup first."_s));
+        QVERIFY(!shown(p.window(),
+                       u"Check an item and search for it from the popup, and the listings show up here."_s));
         QVERIFY(button(p.window(), u"Open on the Trade Site"_s));
         QVERIFY(!button(p.window(), u"Load More"_s));
         QVERIFY(p.site.network.sent.isEmpty());
@@ -581,7 +583,7 @@ private Q_SLOTS:
         p.site.results.loadMore();
         QTRY_COMPARE(p.site.results.waiting(), 1);
         QTRY_VERIFY(shown(p.window(), u"Waiting a second for the trade site"_s));
-        QVERIFY(!shown(p.window(), u"Asking the trade site for the listings"_s));
+        QVERIFY(!shown(p.window(), u"Getting the listings from the trade site"_s));
         QTRY_VERIFY_WITH_TIMEOUT(!p.site.results.isBusy(), 3000);
         QTRY_VERIFY(!shown(p.window(), u"Waiting a second for the trade site"_s));
         QTRY_COMPARE(rows(p.window()), 20);
@@ -733,7 +735,7 @@ private Q_SLOTS:
         QVERIFY(shown(p.window(), u"+8 gear score"_s));
         // against what it would replace, and what you wear
         QVERIFY(shown(p.window(), u"vs Grim Crown"_s));
-        QVERIFY(shown(p.window(), u"Gear score 13 D, yours 5"_s));
+        QVERIFY(shown(p.window(), u"Gear score 13 D, yours is 5"_s));
         const QQuickItem *life = shown(p.window(), u"Life +50"_s);
         QVERIFY(life);
         QCOMPARE(toneOf(life), int(Tone::Good));

@@ -18,7 +18,7 @@ namespace {
 QString noteFor(const QString &key, const Character &character)
 {
     if (isIgnored(character.ignored, key))
-        return u"You ignore it, so it doesn't count"_s;
+        return u"You're ignoring it, so it doesn't count"_s;
     return propertyNote(key);
 }
 
