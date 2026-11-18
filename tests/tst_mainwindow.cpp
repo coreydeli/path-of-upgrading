@@ -63,18 +63,29 @@ QByteArray json(const QJsonObject &object)
     return QJsonDocument(object).toJson(QJsonDocument::Compact);
 }
 
-// The trade site with its data and leagues, then poe.ninja with what
-// currencies are worth.
-FakeNetwork *online()
+// The trade site with its data and leagues, and poe.ninja with what
+// currencies are worth, each said to whoever asks, whatever the order.
+FakeNetwork *online(bool ratesCome = true)
 {
     QJsonArray leagues;
     for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
         leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
     auto *network = new FakeNetwork;
-    network->answers = {{.body = json(tradefixtures::stats())},
-                        {.body = json(tradefixtures::filters())},
-                        {.body = json(QJsonObject{{u"result"_s, leagues}})},
-                        {.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"}};
+    network->route = [leagues, ratesCome](const QNetworkRequest &request) -> std::optional<FakeAnswer> {
+        const QString path = request.url().path();
+        if (path.endsWith(u"/data/stats"_s))
+            return FakeAnswer{.body = json(tradefixtures::stats())};
+        if (path.endsWith(u"/data/filters"_s))
+            return FakeAnswer{.body = json(tradefixtures::filters())};
+        if (path.endsWith(u"/data/leagues"_s))
+            return FakeAnswer{.body = json(QJsonObject{{u"result"_s, leagues}})};
+        if (request.url().host().contains(u"poe.ninja"_s)) {
+            if (!ratesCome)
+                return FakeAnswer{.never = true};
+            return FakeAnswer{.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"};
+        }
+        return std::nullopt;
+    };
     return network;
 }
 
@@ -169,7 +180,7 @@ struct Window
     FakeGlobalShortcuts *shortcuts = new FakeGlobalShortcuts;
     FakeSecretStore *keyring = new FakeSecretStore;
     FakeOpener *opener = new FakeOpener;
-    FakeNetwork *network = online();
+    FakeNetwork *network;
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
 
@@ -179,9 +190,12 @@ struct Window
     // It has trade, which a release build of the app leaves out.
     explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {},
                     const std::optional<Settings> &saved = used(), bool tradeOffered = true,
-                    FakeGameWatcher *game = nullptr)
+                    FakeGameWatcher *game = nullptr, bool siteKept = true, bool ratesCome = true)
+        : network(online(ratesCome))
     {
         shortcuts->available = hotkeys;
+        if (siteKept)
+            keepSite();
         if (saved)
             SettingsStore(dir.filePath(u"settings.conf"_s)).set(*saved);
         app = std::make_unique<App>(
@@ -208,6 +222,20 @@ struct Window
         if (!made)
             qWarning() << main.errorString();
         window.reset(qobject_cast<QQuickWindow *>(made));
+    }
+
+    // What the site said on an earlier run, which is all the app goes by
+    // until a search or Refresh asks it again.
+    void keepSite() const
+    {
+        const QString trade = dir.filePath(u"cache/trade"_s);
+        QJsonArray leagues;
+        for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
+            leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
+        if (!QDir().mkpath(trade) || !writeJsonFile(trade + u"/stats.json"_s, tradefixtures::stats()) ||
+            !writeJsonFile(trade + u"/filters.json"_s, tradefixtures::filters()) ||
+            !writeJsonFile(trade + u"/leagues.json"_s, QJsonObject{{u"result"_s, leagues}}))
+            qWarning() << "Couldn't keep the site's data in" << trade;
     }
 
     // The rows a list let go of are only deleted later, and in Qt 6.8 a QML
@@ -2214,16 +2242,24 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"noStats"_s)));
     }
 
-    void pickerWaitsForTheSite()
+    void pickerSaysWhereTheStatsComeFrom()
     {
-        Window w;
+        // with none kept, it asks nothing as it opens, and has them once the
+        // Refresh button on the Trade page has asked
+        Window w(true, false, {}, used(), true, nullptr, false);
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QVERIFY(click(w.find(u"addStatButton"_s)));
         QObject *message = w.find(u"pickerMessage"_s);
         QVERIFY(isVisible(message));
-        QCOMPARE(text(message), u"Getting the list of stats from the trade site."_s);
+        QCOMPARE(text(message), u"The trade site's list of stats comes with your first trade search, or when "
+                                u"you press Refresh on the Trade page. Until then, here are only the item's "
+                                u"own and those on the items you've checked."_s);
         QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size());
+        QTest::qWait(30);
+        QVERIFY(w.network->sent.isEmpty() ||
+                !w.network->sent.first().request.url().path().contains(u"/data/"_s));
+        w.app->tradeOptions()->refresh();
         QTRY_VERIFY(!isVisible(message));
         QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size() + 4);
     }
@@ -2965,9 +3001,8 @@ private Q_SLOTS:
 
     void noRateYet()
     {
-        Window w;
-        // poe.ninja, which is asked once the trade site has said its leagues
-        w.network->answers.last() = {.never = true};
+        // poe.ninja, which is asked as the app starts, and says nothing
+        Window w(true, false, {}, used(), true, nullptr, true, false);
         QVERIFY(w.shown());
         QTRY_VERIFY(w.app->rates().isRefreshing());
         QVERIFY(w.show(u"tradeAction"_s));

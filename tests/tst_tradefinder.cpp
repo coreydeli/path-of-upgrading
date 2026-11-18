@@ -1554,7 +1554,8 @@ private Q_SLOTS:
         QVERIFY(finished.wait());
         QCOMPARE(site.finder.errorString(), tradeUnavailable({.enabled = false}));
         QVERIFY(site.ninja.sent.isEmpty());
-        QCOMPARE(site.network.sent.size(), 3);
+        // only the first had gone, and what waited was called off
+        QCOMPARE(site.network.sent.size(), 1);
     }
 
     void noStats()
@@ -1565,7 +1566,55 @@ private Q_SLOTS:
         QVERIFY(site.finds(helmet));
         QVERIFY(site.finder.errorString().startsWith(u"Searches need the trade site's list of stats."_s));
         QCOMPARE(site.finder.errorString(), site.data.errorString());
-        QCOMPARE(site.network.sent.size(), 3);
+        // the first one said it isn't there, so the others weren't sent
+        QCOMPARE(site.network.sent.size(), 1);
+    }
+
+    void freshDataAsksForNothingButTheSearch()
+    {
+        // what the site said today is what a search goes by
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 5)};
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.network.sent.size(), 1);
+        QVERIFY(!site.network.sent.first().request.url().path().contains(u"/data/"_s));
+    }
+
+    void oldDataIsAskedForFirst()
+    {
+        // as it's a search, which the site is asked for in, that asks again
+        Site site;
+        const QDateTime old = QDateTime::currentDateTimeUtc().addSecs(-25 * 3600);
+        for (const auto &[name, answer] :
+             {std::pair{u"stats"_s, tradefixtures::stats()},
+              std::pair{u"filters"_s, tradefixtures::filters()}, std::pair{u"leagues"_s, leagues()}}) {
+            QVERIFY(writeJsonFile(site.dir.filePath(name + u".json"_s), answer));
+            QFile file(site.dir.filePath(name + u".json"_s));
+            QVERIFY(file.open(QIODevice::ReadWrite));
+            QVERIFY(file.setFileTime(old, QFileDevice::FileModificationTime));
+        }
+        QVERIFY(site.data.isStale());
+        QVERIFY(site.network.sent.isEmpty());
+        site.network.answers = {{.body = json(tradefixtures::stats())},
+                                {.body = json(tradefixtures::filters())},
+                                {.body = json(leagues())},
+                                found(u"s1"_s, 5)};
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.network.sent.size(), 4);
+        QVERIFY(site.network.sent.first().request.url().path().contains(u"/data/"_s));
+        QVERIFY(!site.network.sent.last().request.url().path().contains(u"/data/"_s));
+        QVERIFY(!site.data.isStale());
+    }
+
+    void unavailableAsksNothingAtAll()
+    {
+        // not even for the lists, as there's nowhere to search
+        Site site;
+        site.searcher.setSettings({.enabled = false});
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.finder.errorString(), tradeUnavailable({.enabled = false}));
+        QVERIFY(site.network.sent.isEmpty());
     }
 
     void nothingToSearch()

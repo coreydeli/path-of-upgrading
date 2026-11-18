@@ -134,6 +134,8 @@ TradeSearcher::TradeSearcher(TradeClient *client, QObject *parent)
 void TradeSearcher::setSettings(const TradeSettings &settings)
 {
     m_settings = settings;
+    // so nothing goes to the site, by whoever asks, while searches are off
+    m_client->setBlocked(unavailable());
 }
 
 void TradeSearcher::setLeagues(const QStringList &leagues)
@@ -196,6 +198,9 @@ void TradeSearcher::answered(TradeSearch *search)
         break;
     case Error::RateLimited:
         search->fail(TradeSearch::Error::RateLimited, reply->errorString(), reply->retryAfter());
+        return;
+    case Error::Unavailable:
+        search->fail(TradeSearch::Error::Unavailable, reply->errorString());
         return;
     case Error::TooComplex:
         search->fail(TradeSearch::Error::TooComplex, reply->errorString());

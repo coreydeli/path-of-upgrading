@@ -152,8 +152,10 @@ void TradeFinder::find(const Item &item, Kind kind)
     m_errorString.clear();
     m_errorUrl.clear();
     m_busy = true;
-    // while trade searches are off, the site isn't asked for its stats either
-    if (m_data->data().stats.isEmpty() && m_searcher->unavailable().isEmpty()) {
+    // The search is what asks the site for its stats, leagues and filters when
+    // the files have none or are a day old. While trade searches are off, it
+    // asks for nothing.
+    if (m_searcher->unavailable().isEmpty() && m_data->isStale()) {
         m_waiting = true;
         m_data->refresh();
         return;

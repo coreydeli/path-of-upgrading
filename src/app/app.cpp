@@ -253,10 +253,12 @@ void App::followTrade()
     m_upgrades.setTradeAvailable(m_trade.unavailable().isEmpty());
     m_resultsPanel.setUnavailable(m_trade.unavailable());
     m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());
+    // The trade site's lists come from what's kept. It's only asked when you
+    // search or press Refresh.
+    m_tradeData.load();
+    m_trade.setLeagues(m_tradeData.leagues());
     if (m_trade.unavailable().isEmpty()) {
-        // which does nothing while what there is is fresh
-        m_tradeData.refresh();
-        // and this asks the keyring once
+        // this asks the keyring once
         m_tradeSession.load();
     }
     followRates();
@@ -264,11 +266,15 @@ void App::followTrade()
 
 void App::followRates()
 {
-    // which carries on as it was when nothing about it changed
-    if (m_trade.unavailable().isEmpty() && m_settings.settings().trade.autoRate)
+    // poe.ninja isn't the trade site, so its prices come at the start too,
+    // unless the kept ones are still fresh. The follow carries on as it was
+    // when nothing about it changed.
+    if (m_trade.unavailable().isEmpty() && m_settings.settings().trade.autoRate) {
+        m_rates.refresh(m_trade.league().tradeId());
         m_ratesRefresher.follow(m_trade.league().tradeId(), m_settings.settings().trade.rateMinutes);
-    else
+    } else {
         m_ratesRefresher.stop();
+    }
 }
 
 } // namespace pou
