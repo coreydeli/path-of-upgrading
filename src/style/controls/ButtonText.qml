@@ -20,7 +20,7 @@ Text {
     opacity: control.enabled ? 1 : 0.4
     color: {
         if (Look.material)
-            return primary ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.highlightColor;
+            return primary ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.linkColor;
         return primary || control.down ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor;
     }
 }
