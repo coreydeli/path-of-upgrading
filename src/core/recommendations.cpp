@@ -29,14 +29,18 @@ double rolledOn(const Item &item, const QRegularExpression &pattern)
     return total;
 }
 
-// The stats worth searching for in a slot, most important first.
-QList<SearchWeight> wantedWeights(const QString &slot, const GearScoreOptions &options)
+// The stats worth searching for in a slot, most important first. A stat the
+// item class can't roll as a prefix or suffix is no use to look for, whatever
+// the build rates it.
+QList<SearchWeight> wantedWeights(const QString &slot, const QString &itemClass,
+                                  const GearScoreOptions &options)
 {
+    const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
     // the same bar topStats() uses for the stats worth searching for
     constexpr double worthSearching = 4;
     QList<SearchWeight> weights;
     for (const SearchWeight &w : searchWeights(slot, options)) {
-        if (!w.key.isEmpty() && w.importance >= worthSearching)
+        if (!w.key.isEmpty() && w.importance >= worthSearching && mods.allows(itemClass, w.key))
             weights << w;
     }
     std::ranges::stable_sort(weights, std::greater<>(), &SearchWeight::importance);
@@ -48,9 +52,9 @@ QList<SearchWeight> wantedWeights(const QString &slot, const GearScoreOptions &o
 QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearScoreOptions &options,
                               int count)
 {
-    const QList<SearchWeight> weights = wantedWeights(slot, options);
     const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
     const QString itemClass = worn && !worn->itemClass.isEmpty() ? worn->itemClass : classOfSlot(slot);
+    const QList<SearchWeight> weights = wantedWeights(slot, itemClass, options);
     QList<WantedStat> out;
     for (const SearchWeight &w : std::as_const(weights)) {
         double minimum = searchMinimum(w.cap);
@@ -80,7 +84,7 @@ QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreO
     const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
     const QString itemClass = worn && !worn->itemClass.isEmpty() ? worn->itemClass : classOfSlot(slot);
     QList<RollRange> out;
-    for (const SearchWeight &w : wantedWeights(slot, options)) {
+    for (const SearchWeight &w : wantedWeights(slot, itemClass, options)) {
         if (const auto top = mods.best(itemClass, w.key))
             out << RollRange{.label = w.label, .top = *top};
         if (out.size() == count)

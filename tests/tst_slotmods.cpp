@@ -44,12 +44,55 @@ private Q_SLOTS:
         QVERIFY(!mods.bestAt(u"Boots"_s, u"# to Spirit"_s, 80));
     }
 
+    void whatAClassAllows()
+    {
+        const auto mods = small();
+        QVERIFY(mods.allows(u"Boots"_s, u"# to maximum Life"_s));
+        QVERIFY(!mods.allows(u"Boots"_s, u"# to Spirit"_s));
+        // a class the table doesn't have is allowed anything
+        QVERIFY(mods.allows(u"Wands"_s, u"# to Spirit"_s));
+        QVERIFY(mods.allows(QString(), u"# to Spirit"_s));
+        QVERIFY(SlotMods().allows(u"Boots"_s, u"# to Spirit"_s));
+    }
+
+    void keysIgnoreCase()
+    {
+        const auto mods = small();
+        QCOMPARE(mods.tiers(u"Boots"_s, u"# TO MAXIMUM life"_s).size(), 3);
+        QVERIFY(mods.allows(u"Boots"_s, u"# to MAXIMUM Life"_s));
+    }
+
+    void beltsCantAddDamageButGlovesCan()
+    {
+        const auto &mods = SlotMods::builtIn();
+        QVERIFY(!mods.allows(u"Belts"_s, u"Adds # to # Lightning Damage"_s));
+        QVERIFY(!mods.allows(u"Belts"_s, u"Adds # to # Lightning damage to Attacks"_s));
+        QVERIFY(mods.allows(u"Gloves"_s, u"Adds # to # Lightning damage to Attacks"_s));
+        QVERIFY(mods.allows(u"Rings"_s, u"Adds # to # Physical Damage to Attacks"_s));
+        // the Genesis tree's mods aren't rolled on the item
+        QVERIFY(!mods.allows(u"Belts"_s, u"Minions Revive #% faster"_s));
+        QVERIFY(!mods.allows(u"Rings"_s, u"#% increased Spell Damage"_s));
+    }
+
     void bestForTheItemLevel()
     {
         const auto mods = small();
         QCOMPARE(mods.bestAt(u"Boots"_s, u"# to maximum Life"_s, 45)->high, 99.0);
         QCOMPARE(mods.bestAt(u"Boots"_s, u"# to maximum Life"_s, 80)->high, 149.0);
         QVERIFY(!mods.bestAt(u"Boots"_s, u"#% increased Movement Speed"_s, 10));
+    }
+
+    void hybridRangesAreLeftOutWhenThereIsAPlainOne()
+    {
+        const auto json = QJsonDocument::fromJson(
+            "{\"classes\":{\"Boots\":{\"# to maximum Life\":[[70,200,250,1],[60,120,149],[30,70,99]],"
+            "\"# to Spirit\":[[50,10,20,1]]}}}");
+        const auto mods = SlotMods::fromJson(json.object());
+        QVERIFY(mods.tiers(u"Boots"_s, u"# to maximum Life"_s).first().hybrid);
+        QCOMPARE(mods.best(u"Boots"_s, u"# to maximum Life"_s)->high, 149.0);
+        QCOMPARE(mods.bestAt(u"Boots"_s, u"# to maximum Life"_s, 80)->high, 149.0);
+        // with nothing plain, the hybrid is all there is
+        QCOMPARE(mods.best(u"Boots"_s, u"# to Spirit"_s)->high, 20.0);
     }
 
     void classNamesIgnoreCase() { QCOMPARE(small().best(u"boots"_s, u"# to maximum Life"_s)->low, 120.0); }
