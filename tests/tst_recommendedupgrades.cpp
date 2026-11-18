@@ -197,8 +197,9 @@ private Q_SLOTS:
         QVERIFY(!site.in(u"Helmet"_s, RecommendedUpgrades::GradeRole).toString().isEmpty());
         // it has the 55 life asked for, so that's left out
         QCOMPARE(site.in(u"Helmet"_s, RecommendedUpgrades::LookForRole).toString(),
-                 u"Fire Resistance 24 or more (up to 45), Cold Resistance 24 or more (up to 45), "
-                 u"Lightning Resistance 24 or more (up to 45)"_s);
+                 u"Fire Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Cold Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Lightning Resistance 24 or more (up to 45, tier 5 or better)"_s);
 
         // and the offhand is covered once there is one, and the list follows
         QSignalSpy reset(&site.upgrades, &QAbstractItemModel::modelReset);
