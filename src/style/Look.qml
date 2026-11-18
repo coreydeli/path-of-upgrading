@@ -16,6 +16,9 @@ QtObject {
     property bool material: false
     // whether the colors on the app are dark
     property bool dark: true
+    // M3 baseline secondary container, for the row you're on
+    readonly property color secondaryContainer: dark ? "#4A4458" : "#E8DEF8"
+    readonly property color onSecondaryContainer: dark ? "#E8DEF8" : "#1D192B"
 
     // whether the controls move, which Plain decorations turn off
     property bool animated: true

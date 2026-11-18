@@ -29,19 +29,20 @@ T.ItemDelegate {
     contentItem: Text {
         text: control.text
         font: control.font
-        color: control.here && !Look.material ? Look.ink : control.ink
+        color: Look.material && control.here ? Look.onSecondaryContainer
+                                              : control.here ? Look.ink : control.ink
         elide: Text.ElideRight
         verticalAlignment: Text.AlignVCenter
     }
 
-    // Dossier: the row you're on is a slab of paper. Material: a pill in a
-    // tint of the primary color, with a state layer over it.
+    // Dossier: the row you're on is a slab of paper. Material: a pill in the
+    // secondary container color.
     background: Rectangle {
         visible: control.here || control.hovered
         radius: Look.material ? Look.shapeExtraLarge : 0
         color: {
             if (Look.material)
-                return control.here ? Look.tint(control.ground, Kirigami.Theme.highlightColor, 0.2)
+                return control.here ? Look.secondaryContainer
                                     : Look.tint(control.ground, control.ink, 0.08);
             return control.here ? Look.paper : Look.tint(control.ground, control.ink, 0.07);
         }
