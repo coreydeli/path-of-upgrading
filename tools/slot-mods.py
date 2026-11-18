@@ -73,6 +73,9 @@ def read_bases(folder):
             if not kind or not tags:
                 continue
             names = set(re.findall(r"(\w+) = true", tags.group(1)))
+            # hidden and unique-only bases don't set what a slot can roll
+            if "hidden = true" in body or "not_for_sale" in names:
+                continue
             cls = item_class(kind.group(1), names)
             if cls:
                 bases.append((cls, names))
@@ -82,6 +85,9 @@ def read_bases(folder):
 def weight_for(keys, weights, tags):
     """The weight of the first of the mod's tags that the base has."""
     for key, weight in zip(keys, weights):
+        # these come only from the Genesis tree, not from rolling the item
+        if key.startswith("genesis_tree"):
+            continue
         if key == "default" or key in tags:
             return weight
     return 0
