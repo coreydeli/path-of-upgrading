@@ -267,9 +267,9 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
         .shrinks = true,
     };
     if (search.countOnly)
-        plan.note = (m_signedIn ? u"The trade site only takes a simple search"_s
-                                : u"Signed out, the trade site only takes a simple search"_s) +
-                    u", so each has at least %1 of these at a decent roll: %2. Cheapest first."_s.arg(
+        plan.note = (m_signedIn ? u"The trade site only takes simple searches"_s
+                                : u"Signed out, the trade site only takes simple searches"_s) +
+                    u", so each result has at least %1 of these at a decent roll: %2. Cheapest first."_s.arg(
                         QString::number(search.needKeyStats), search.keyStats.join(u", "));
     else if (m_level == 0 && m_size > 0)
         plan.note =
@@ -392,7 +392,7 @@ TradeFinder::Plan TradeFinder::weightedPlan() const
     if (search.current <= 0)
         return {.error = u"None of your weighted stats on this item could be matched on the trade site."_s};
 
-    Plan plan{.body = search.body, .title = u"Beats your %1 by your weights"_s.arg(m_item.name)};
+    Plan plan{.body = search.body, .title = u"Better than your %1 by your weights"_s.arg(m_item.name)};
     if (!search.unmatched.isEmpty()) {
         QStringList quoted;
         for (const QString &key : search.unmatched)

@@ -104,7 +104,7 @@ QString nextTierText(const StatTier &tier)
 {
     if (!tier.better)
         return {};
-    return u"tier %1 (%2) at item level %3 or higher"_s.arg(
+    return u"tier %1 (%2) from item level %3"_s.arg(
         QString::number(tier.betterNumber), rangeText(*tier.better), QString::number(tier.better->level));
 }
 

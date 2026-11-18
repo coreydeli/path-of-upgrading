@@ -41,7 +41,8 @@ private Q_SLOTS:
         const TradeReport report = searchingReport(wait);
         QVERIFY(report.busy);
         QCOMPARE(report.status, status);
-        QCOMPARE(report.note, u"The trade site only allows a few searches at a time."_s);
+        QCOMPARE(report.note,
+                 u"The trade site only allows so many searches at once, so this one has to wait."_s);
     }
 
     void found()

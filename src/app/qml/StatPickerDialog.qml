@@ -140,7 +140,7 @@ FormCard.FormCardDialog {
                 anchors.centerIn: parent
                 width: parent.width - Kirigami.Units.gridUnit * 4
                 visible: statList.count === 0
-                text: qsTr("No stat has those words.")
+                text: qsTr("No stats match that.")
             }
         }
     }

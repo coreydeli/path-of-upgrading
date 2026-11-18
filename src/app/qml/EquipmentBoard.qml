@@ -55,7 +55,7 @@ RowLayout {
         QQC2.Label {
             Layout.fillWidth: true
             visible: others.count > 0
-            text: qsTr("Weapon Swap, Flasks, Charms and Jewels")
+            text: qsTr("Everything else you have equipped")
             color: Kirigami.Theme.disabledTextColor
             font: Kirigami.Theme.smallFont
             wrapMode: Text.Wrap

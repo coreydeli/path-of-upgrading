@@ -38,7 +38,7 @@ FormCard.AbstractFormDelegate {
     topPadding: Kirigami.Units.largeSpacing
     bottomPadding: Kirigami.Units.largeSpacing
     Accessible.name: slot
-    Accessible.description: name !== "" ? qsTr("%1, look for %2").arg(name).arg(lookFor) : qsTr("Not saved yet, look for %1").arg(lookFor)
+    Accessible.description: name !== "" ? qsTr("%1, look for %2").arg(name).arg(lookFor) : qsTr("Nothing saved yet, look for %1").arg(lookFor)
 
     Kirigami.Separator {
         visible: !row.first
@@ -78,7 +78,7 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "itemName"
                 Layout.fillWidth: true
-                text: row.name !== "" ? row.name : qsTr("Not saved yet")
+                text: row.name !== "" ? row.name : qsTr("Nothing saved yet")
                 color: row.name !== "" ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
                 wrapMode: Text.Wrap
                 Accessible.ignored: true

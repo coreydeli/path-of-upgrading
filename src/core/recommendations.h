@@ -53,7 +53,7 @@ struct RollRange
 QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreOptions &options,
                          int count = 6);
 
-// "Life 100 to 149, item level 82", or one number when the tier has no range.
+// "Life 100 to 149 at item level 82", or one number when the tier has no range.
 QString rollRangeText(const RollRange &range);
 
 struct Recommendation

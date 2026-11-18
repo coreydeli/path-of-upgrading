@@ -29,7 +29,7 @@ QList<Credit> creditList()
 {
     return {
         {u"Path of Building Community"_s,
-         u"Does the calculations. It isn't included or changed, and the copy you have runs without its window."_s,
+         u"Works out the numbers. It isn't bundled or changed, and your copy runs without its window."_s,
          u"MIT"_s, u"https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2"_s},
         {u"rusty-path-of-building"_s,
          u"Makes Path of Building run on Linux, and is its Flatpak on Flathub."_s, u"MIT"_s,

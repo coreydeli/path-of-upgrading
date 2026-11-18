@@ -317,9 +317,8 @@ QStringList weakRolls(const GearScore &gear, int underPercent)
     for (const WeakPart &p : weakParts(gear, underPercent)) {
         // the most one mod rolls says little of two
         if (p.best > 0 && p.mods == 1) {
-            QString text = u"%1 %2 of up to %3"_s.arg(p.label, rollText(p.value), rollText(p.best));
-            if (p.tier)
-                text += u", "_s + tierText(*p.tier);
+            QString text = u"%1 %2 (up to %3"_s.arg(p.label, rollText(p.value), rollText(p.best));
+            text += (p.tier ? u", "_s + tierText(*p.tier) : QString()) + u')';
             out << text;
         } else {
             out << u"%1 %2% of an excellent roll"_s.arg(p.label).arg(p.quality);

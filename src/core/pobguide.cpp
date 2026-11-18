@@ -42,12 +42,12 @@ QString folderNoteFor(const PobPlaces &places)
 {
     if (onWindows(places)) {
         return u"Only for a Path of Building you unzipped instead of using its installer. Pick the folder "
-               u"with HeadlessWrapper.lua in it, or the folder of its repository. Leave it empty to use "
-               u"the one found."_s;
+               u"that has HeadlessWrapper.lua in it, or the folder of its repository. Leave it empty to use "
+               u"the one it found."_s;
     }
     return u"Only for a Path of Building you installed some other way, such as from its source, the AUR or "
-           u"a zip. Pick the folder with HeadlessWrapper.lua in it, or the folder of its repository. "
-           u"Leave it empty to use the one found."_s;
+           u"a zip. Pick the folder that has HeadlessWrapper.lua in it, or the folder of its repository. "
+           u"Leave it empty to use the one it found."_s;
 }
 
 QString placeLine(const PobPlace &place)
@@ -61,8 +61,8 @@ QString placeLine(const PobPlace &place)
 QString usualPlaces(const PobPlaces &places, const std::optional<PobInstall> &usual)
 {
     if (!usual)
-        return u"Nothing is found in the usual places either."_s;
-    return u"Without it, the usual places have this: %1"_s.arg(whichIsUsed(places, {}, *usual));
+        return u"It isn't in the usual places either."_s;
+    return u"Without that folder, it would use this: %1"_s.arg(whichIsUsed(places, {}, *usual));
 }
 
 } // namespace
@@ -122,7 +122,7 @@ PobGuide guideToPob(const PobPlaces &places, const QString &location,
     const PobLookup &lookup = survey.lookup;
     if (lookup.install) {
         // it turned up since the app looked
-        guide.headline = u"Path of Building is there now."_s;
+        guide.headline = u"Path of Building has turned up since you last looked."_s;
         guide.steps = numbered({u"Press Update."_s});
         return guide;
     }

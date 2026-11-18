@@ -118,8 +118,8 @@ private Q_SLOTS:
         QTest::addColumn<QString>("text");
         QTest::addColumn<Tone::Tone>("tone");
 
-        QTest::newRow("new") << Verdict::New << u"Empty slot"_s << Tone::Plain;
-        QTest::newRow("same") << Verdict::Same << u"Sidegrade"_s << Tone::Plain;
+        QTest::newRow("new") << Verdict::New << u"Fills an empty slot"_s << Tone::Plain;
+        QTest::newRow("same") << Verdict::Same << u"About the same"_s << Tone::Plain;
         QTest::newRow("small") << Verdict::Small << u"Small upgrade"_s << Tone::Good;
         QTest::newRow("upgrade") << Verdict::Upgrade << u"Upgrade"_s << Tone::Good;
         QTest::newRow("downgrade") << Verdict::Downgrade << u"Downgrade"_s << Tone::Bad;
@@ -127,7 +127,7 @@ private Q_SLOTS:
         QTest::newRow("resistance") << Verdict::ResistLoss << u"Loses resistance"_s << Tone::Bad;
         QTest::newRow("damage") << Verdict::DamageLoss << u"Loses damage"_s << Tone::Bad;
         QTest::newRow("defences") << Verdict::DefenceLoss << u"Loses defences"_s << Tone::Bad;
-        QTest::newRow("equipped") << Verdict::Equipped << u"Equipped"_s << Tone::Plain;
+        QTest::newRow("equipped") << Verdict::Equipped << u"Already equipped"_s << Tone::Plain;
     }
 
     void verdicts()
@@ -197,14 +197,14 @@ private Q_SLOTS:
     void nothingToScoreAgainst()
     {
         ItemReport report = reportOn(helmetNew);
-        QCOMPARE(report.verdict, u"Empty slot"_s);
+        QCOMPARE(report.verdict, u"Fills an empty slot"_s);
         QCOMPARE(report.score, QString());
         QCOMPARE(report.versus, QString());
         QVERIFY(report.notes.contains(
             u"Nothing saved for Helmet yet. Check the item you have equipped there and press Equip as Helmet."_s));
 
         report = reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}}));
-        QCOMPARE(report.verdict, u"Equipped"_s);
+        QCOMPARE(report.verdict, u"Already equipped"_s);
         QCOMPARE(report.score, QString());
         QCOMPARE(report.versus, u"in your Helmet slot"_s);
     }
@@ -254,7 +254,7 @@ private Q_SLOTS:
         QCOMPARE(report.verdict, u"Upgrade"_s);
         QCOMPARE(report.score, u"+5%"_s);
 
-        QCOMPARE(reportOn(unique, wearing({{u"Helmet"_s, unique}})).verdict, u"Equipped"_s);
+        QCOMPARE(reportOn(unique, wearing({{u"Helmet"_s, unique}})).verdict, u"Already equipped"_s);
     }
 
     void gearScores()
@@ -541,7 +541,7 @@ private Q_SLOTS:
                  (QList<ReportFigure>{
                      {.label = u"Minion DPS"_s, .change = u"+10%"_s, .tone = Tone::Good},
                      {.label = u"Effective HP"_s, .change = u"-2.5%"_s, .tone = Tone::Bad},
-                     {.label = u"Resistances toward the caps"_s, .change = u"+12"_s, .tone = Tone::Good},
+                     {.label = u"Resistances against the caps"_s, .change = u"+12"_s, .tone = Tone::Good},
                  }));
 
         // what it doesn't know or doesn't change
@@ -551,7 +551,7 @@ private Q_SLOTS:
         QCOMPARE(reportOf(judgedByPob(v)).headline,
                  (QList<ReportFigure>{
                      {.label = u"DPS"_s, .change = u"0%"_s},
-                     {.label = u"Resistances toward the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
+                     {.label = u"Resistances against the caps"_s, .change = u"-4"_s, .tone = Tone::Bad},
                  }));
         QVERIFY(reportOf(judgedByPob({})).headline.isEmpty());
         QVERIFY(reportOf(judged(Verdict::Upgrade)).headline.isEmpty());
@@ -1015,7 +1015,7 @@ private Q_SLOTS:
         QTest::newRow("unused") << Unused << false << QString();
         QTest::newRow("no build")
             << NoBuild << false
-            << u"Import this character's build from Path of Building for exact verdicts."_s;
+            << u"Import this character's build to get exact verdicts from Path of Building."_s;
         QTest::newRow("checking") << Checking << true << u"Checking with Path of Building"_s;
         QTest::newRow("checked") << Checked << false << QString();
         QTest::newRow("failed") << Failed << false << u"Path of Building stopped."_s;
@@ -1192,7 +1192,7 @@ private Q_SLOTS:
         build.health = 2000;
         const Item thin = item(maptexts::header + u"12% increased Monster Damage\n"_s);
         check.map = checkMap(thin, MapKind::Waystone, build);
-        QVERIFY(reportOf(check).mapBuild.startsWith(u"Counted against your character"_s));
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"Checked against your character"_s));
         QVERIFY(!reportOf(check).mapMods.first().buildNote.isEmpty());
     }
 

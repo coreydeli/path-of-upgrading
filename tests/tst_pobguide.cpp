@@ -111,7 +111,7 @@ private Q_SLOTS:
         QVERIFY(guide.steps.isEmpty());
         QVERIFY(!guide.getFlatpak);
         QVERIFY(!guide.folderProblem);
-        QVERIFY(guide.folderNote.contains(u"Leave it empty to use the one found."));
+        QVERIFY(guide.folderNote.contains(u"Leave it empty to use the one it found."));
         QVERIFY(guide.folderNote.contains(u"AUR"));
         QVERIFY(guide.folderNote.contains(u"HeadlessWrapper.lua"));
     }
@@ -213,7 +213,8 @@ private Q_SLOTS:
         QCOMPARE(guide.headline, u"There's no Path of Building in the folder you chose."_s);
         QVERIFY(guide.folderProblem);
         QVERIFY(guide.folderNote.contains(u"HeadlessWrapper.lua"));
-        QVERIFY(text(guide).contains(u"the usual places have this: Using Path of Building from Flathub."));
+        QVERIFY(
+            text(guide).contains(u"that folder, it would use this: Using Path of Building from Flathub."));
         QVERIFY(guide.steps.last().contains(u"clear the folder"));
         QVERIFY(guide.places.first().endsWith(u", not there"));
 
@@ -239,7 +240,7 @@ private Q_SLOTS:
         const QString empty = computer.dir.filePath(u"empty"_s);
         QVERIFY(QDir().mkpath(empty));
         const PobGuide guide = guideFor(computer.places, empty);
-        QVERIFY(text(guide).contains(u"Nothing is found in the usual places either."));
+        QVERIFY(text(guide).contains(u"It isn't in the usual places either."));
     }
 
     void wouldNotStart()
@@ -262,7 +263,7 @@ private Q_SLOTS:
         QVERIFY(computer.installFlatpak());
         QVERIFY(addPob(computer.flatpakFolder()));
         const PobGuide guide = guideRunning(computer.places, {}, std::nullopt);
-        QCOMPARE(guide.headline, u"Path of Building is there now."_s);
+        QCOMPARE(guide.headline, u"Path of Building has turned up since you last looked."_s);
         QCOMPARE(guide.steps, QStringList{u"1. Press Update."_s});
     }
 

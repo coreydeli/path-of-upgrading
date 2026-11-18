@@ -59,12 +59,12 @@ ColumnsPage {
         const font = appearance.headingFont;
         if (font === "")
             return appearance.headingFamily;
-        return font === "text" ? qsTr("The same as the text") : font;
+        return font === "text" ? qsTr("Same as the text font") : font;
     }
     readonly property string textName: appearance.textFont === "" ? appearance.textFamily : appearance.textFont
 
     title: qsTr("Appearance")
-    description: qsTr("The design, the colors, the extras that are drawn and the fonts.")
+    description: qsTr("Pick a design, colors and fonts.")
 
     SectionHeader {
         title: qsTr("Theme")
@@ -130,7 +130,7 @@ ColumnsPage {
         FormCard.FormComboBoxDelegate {
             objectName: "decorationsBox"
             text: qsTr("Decorations")
-            description: appearancePage.appearance.material ? qsTr("Plain leaves out the animation.") : qsTr("Plain squares the cut corners and leaves out the animation.")
+            description: appearancePage.appearance.material ? qsTr("Plain leaves out the animation.") : qsTr("Plain gives square corners and no animation.")
             textRole: "text"
             valueRole: "value"
             model: appearancePage.decorationChoices
@@ -247,7 +247,7 @@ ColumnsPage {
             },
             {
                 value: "text",
-                text: qsTr("The same as the text")
+                text: qsTr("Same as the text font")
             }
         ]
         onPicked: value => appearancePage.appearance.headingFont = value

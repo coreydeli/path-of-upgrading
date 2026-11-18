@@ -697,7 +697,7 @@ private Q_SLOTS:
         QCOMPARE(better.figures.at(0).change, u"+50"_s);
         QCOMPARE(better.figures.at(1).label, u"Average gear score"_s);
         QCOMPARE(better.versus, u"vs Grim Crown"_s);
-        QCOMPARE(better.gearScore, u"Gear score 13 D, yours 5"_s);
+        QCOMPARE(better.gearScore, u"Gear score 13 D, yours is 5"_s);
         QCOMPARE(better.gearGrade, u"D"_s);
         QCOMPARE(better.gearPoints, u"13"_s);
         QVERIFY(better.losses.isEmpty());
@@ -710,7 +710,7 @@ private Q_SLOTS:
         QCOMPARE(worse.tone, Tone::Bad);
         QCOMPARE(worse.score, u"-3 gear score"_s);
         QCOMPARE(worse.versus, u"vs Grim Crown"_s);
-        QCOMPARE(worse.gearScore, u"Gear score 2 D, yours 5"_s);
+        QCOMPARE(worse.gearScore, u"Gear score 2 D, yours is 5"_s);
         QCOMPARE(site.results.roleNames().value(TradeResults::VerdictRole), "verdict"_ba);
     }
 

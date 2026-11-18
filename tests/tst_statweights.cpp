@@ -151,10 +151,10 @@ private Q_SLOTS:
                                         u"#% to Fire Resistance"_s}));
         QCOMPARE(w.weights.keys(), w.keys());
         QCOMPARE(w.of(armour, StatWeights::NameRole).toString(), u"Armour"_s);
-        QCOMPARE(w.of(armour, StatWeights::NoteRole).toString(), u"The item's own, with its mods"_s);
+        QCOMPARE(w.of(armour, StatWeights::NoteRole).toString(), u"The item's own, mods included"_s);
         QCOMPARE(w.of(armour, StatWeights::WeightRole).toDouble(), 0.05);
         QCOMPARE(w.of(u"[Weapon] Total DPS"_s, StatWeights::NoteRole).toString(),
-                 u"The weapon's own, with its mods"_s);
+                 u"The weapon's own, mods included"_s);
         QCOMPARE(w.of(life, StatWeights::NameRole).toString(), life);
         QCOMPARE(w.of(life, StatWeights::NoteRole).toString(), QString());
         QVERIFY(!w.weights.isDefault());
@@ -187,7 +187,7 @@ private Q_SLOTS:
         Character c = tester();
         c.ignored = {{.preset = {}, .key = life, .mode = IgnoreRule::Mode::Ignore}};
         w.play(c);
-        QCOMPARE(w.of(life, StatWeights::NoteRole).toString(), u"You ignore it, so it doesn't count"_s);
+        QCOMPARE(w.of(life, StatWeights::NoteRole).toString(), u"You're ignoring it, so it doesn't count"_s);
     }
 
     void ignoredLater()
@@ -201,7 +201,7 @@ private Q_SLOTS:
         w.active.reload();
         QCOMPARE(dataChanged.size(), 1);
         QVERIFY(dataChanged.at(0).at(2).value<QList<int>>().contains(StatWeights::NoteRole));
-        QCOMPARE(w.of(life, StatWeights::NoteRole).toString(), u"You ignore it, so it doesn't count"_s);
+        QCOMPARE(w.of(life, StatWeights::NoteRole).toString(), u"You're ignoring it, so it doesn't count"_s);
     }
 
     void setWeight()
