@@ -13,14 +13,17 @@ in QML.
 
 - Write plain English. Say what the app found or what it needs, in short
   sentences.
-- Title Case for the window title, the sidebar entries, page titles, the
-  section headers of a settings page, buttons and dialog titles:
+- Write the way a friend who plays the game would explain it. Read each string
+  aloud, and if nobody would say it that way, rewrite it.
+- Title Case for the window title, the sidebar entries, page titles, buttons
+  and dialog titles:
   - `title: qsTr("Build Review")` on a page
-  - `SectionHeader { title: qsTr("What Matters Most") }`
   - `text: qsTr("Open on the Trade Site")` and `text: qsTr("Show More")` on buttons
   - `title: qsTr("Add a Stat")` on a dialog
-- Sentence case for switch and row labels, field labels, descriptions, status
-  lines and messages:
+- Sentence case for the section headers on a page, which are short phrases, and
+  for switch and row labels, field labels, descriptions, status lines and
+  messages:
+  - `SectionHeader { title: qsTr("What counts most when judging items") }`
   - `text: qsTr("Cap my resistances first")` on a switch
   - `description: qsTr("For your minions and auras.")` under a row
   - `u"Searching the trade site"_s` in a status line
@@ -34,6 +37,27 @@ in QML.
 - Text in C++ is `u"..."_s` with `%1` placeholders filled by `.arg()`, as in
   `u"Couldn't write %1: %2"_s.arg(m_file, file.errorString())`.
 
+### Voice
+
+- A heading says what is in the section, in everyday words: "Where Path of
+  Building is installed" rather than "Where It Is", and "How much each stat
+  counts" rather than "Affix Impact".
+- A description says what the control does, in the third person ("Opens ...",
+  "Copies ...", "Hides ..."), and doesn't repeat the label. Keep to one style
+  within a page.
+- Say "you" where a passive reads stiffly: "one gets made for you", not "one is
+  made for it".
+- Buttons stay short verbs ("Check Again", "Find an Upgrade").
+- Avoid stacked nouns ("Program files"), our own jargon ("a general start"),
+  and clipped fragments where a short sentence reads better ("Nothing saved
+  yet", not "Not saved yet").
+- Keep the game's words as they are: stat names, item classes, Energy Shield,
+  Spirit, Path of Building.
+- Don't blame the user. "That doesn't look like a session ID" is better than
+  "That isn't a session ID".
+- The labels of the gear score profiles' stats are saved with a character's
+  tweaks, so they aren't reworded without a migration.
+
 ### Errors
 
 - Say what went wrong, and where it helps, what to do about it. Name the file
@@ -43,8 +67,8 @@ in QML.
   - `u"Searches need the trade site's list of stats, and it sent an empty one."_s`
 - When the message can't say the fix, the control beside it can. On the Build
   Review page, `Path of Building wasn't found.` sits above the Update button,
-  whose description says `Use it after you install Path of Building, or open
-  it for Path of Exile 2 for the first time.`
+  whose description says `Use it after you install Path of Building, or after
+  you open it for Path of Exile 2 for the first time.`
 - Log text is short and plain too. Pass a `QString` to `%s` through
   `qPrintable()`, as `ItemPopup::makeWindow` does.
 

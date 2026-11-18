@@ -145,7 +145,7 @@ ColumnsPage {
             objectName: "updateButton"
             text: qsTr("Update")
             description: qsTr("Looks in the usual places again, and for builds you've saved since. "
-                              + "Use it after you install Path of Building, or open it for Path of Exile 2 "
+                              + "Use it after you install Path of Building, or after you open it for Path of Exile 2 "
                               + "for the first time.")
             icon.name: "view-refresh"
             onClicked: pobPage.app.updatePob()
