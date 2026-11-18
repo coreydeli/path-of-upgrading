@@ -36,7 +36,7 @@ Item {
             radius: parent.radius
             control: face.control
             pressed: face.control.down
-            tone: face.primary ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.highlightColor
+            tone: face.primary ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.linkColor
         }
     }
 

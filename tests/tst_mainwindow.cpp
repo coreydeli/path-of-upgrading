@@ -3423,6 +3423,31 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.design, Design::Dossier);
     }
 
+    void everyPageLoadsUnderEachDesign_data()
+    {
+        QTest::addColumn<QString>("design");
+        QTest::addColumn<QString>("brightness");
+        QTest::newRow("dossier") << u"dossier"_s << u"desktop"_s;
+        QTest::newRow("material light") << u"material"_s << u"light"_s;
+        QTest::newRow("material dark") << u"material"_s << u"dark"_s;
+    }
+
+    // QTest::failOnWarning() would catch a page that can't load or bind
+    void everyPageLoadsUnderEachDesign()
+    {
+        QFETCH(QString, design);
+        QFETCH(QString, brightness);
+        Window w(true, false, QStringLiteral(COLORS));
+        w.app->appearance()->setBrightness(brightness);
+        w.app->appearance()->setDesign(design);
+        QVERIFY(w.shown());
+        for (const QString &action : {u"gearAction"_s, u"charactersAction"_s, u"gearScoreAction"_s,
+                                      u"overlayAction"_s, u"appearanceAction"_s}) {
+            QVERIFY2(w.show(action), qPrintable(action));
+            QVERIFY(w.settled());
+        }
+    }
+
     void styleFollowsTheDesign()
     {
         Window w(true, false, QStringLiteral(COLORS));

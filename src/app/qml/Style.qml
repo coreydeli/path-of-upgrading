@@ -44,21 +44,23 @@ QtObject {
     readonly property int shortDuration: Look.shortDuration
     readonly property int mediumDuration: Look.mediumDuration
 
-    // the item colors the game's players read at a glance
+    // The item colors the game's players read at a glance. On a light Material
+    // surface they're darkened, each to 4.5 to 1 or better against Material's surfaces.
     function rarity(rarity: string, theme): color {
+        const light = material && theme.backgroundColor.hslLightness > 0.6;
         switch (rarity) {
         case "Normal":
-            return "#c8c8c8";
+            return light ? "#4a4a4a" : "#c8c8c8";
         case "Magic":
-            return "#8888ff";
+            return light ? "#3b3bcc" : "#8888ff";
         case "Rare":
-            return "#ffff77";
+            return light ? "#6f6000" : "#ffff77";
         case "Unique":
-            return "#af6025";
+            return light ? "#8a4a12" : "#af6025";
         case "Currency":
-            return "#aa9e82";
+            return light ? "#6b5f3f" : "#aa9e82";
         case "Gem":
-            return "#1ba29b";
+            return light ? "#00706b" : "#1ba29b";
         default:
             return theme.textColor;
         }
