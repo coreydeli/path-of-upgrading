@@ -1373,9 +1373,9 @@ private Q_SLOTS:
             u"first."_s);
     }
 
-    void twoKeyStatsAtMost()
+    void keyStatsTheSlotCantRollAreLeftOut()
     {
-        // of the three a caster's ring has, the two that matter most
+        // rings roll no flat Energy Shield, so of the three only Cast Speed is looked for
         Character caster;
         caster.buildProfile = u"es-caster"_s;
         using tradefixtures::stat;
@@ -1389,7 +1389,7 @@ private Q_SLOTS:
         site.finder.setCharacter(caster);
         site.network.answers = {found(u"s1"_s, 2)};
         QVERIFY(site.finds(ring(u"Grim Loop"_s, u"+20 to maximum Energy Shield"_s), Kind::CraftBases));
-        QCOMPARE(site.finder.found()->title, u"Craftable Rings with Cast Speed and Energy Shield"_s);
+        QCOMPARE(site.finder.found()->title, u"Craftable Rings with Cast Speed"_s);
     }
 
     void noKeyStats()

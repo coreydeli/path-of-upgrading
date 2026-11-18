@@ -346,6 +346,38 @@ private Q_SLOTS:
         QCOMPARE(reportOf(check).gearParts, alone);
     }
 
+    void gearScorePartsSayTheTierOfOneMod()
+    {
+        ItemCheck check = judged(Verdict::Upgrade);
+        const StatTier tier{.number = 4, .count = 10, .range = {30, 70, 99}};
+        check.evaluation.gear = GearScore{.score = 70,
+                                          .contributions = {{.key = u"life"_s,
+                                                             .label = u"Life"_s,
+                                                             .value = 80,
+                                                             .quality = 60,
+                                                             .points = 10.0,
+                                                             .tier = tier},
+                                                            // from two mods, so no tier
+                                                            {.key = u"fire"_s,
+                                                             .label = u"Fire resistance"_s,
+                                                             .value = 20,
+                                                             .quality = 50,
+                                                             .points = 10.0,
+                                                             .tier = tier},
+                                                            {.key = u"fire"_s,
+                                                             .label = u"Fire resistance"_s,
+                                                             .value = 20,
+                                                             .quality = 50,
+                                                             .points = 10.0,
+                                                             .tier = tier}},
+                                          .ideal = 50};
+        check.evaluation.gearEquipped.reset();
+        const QList<ReportFigure> parts = reportOf(check).gearParts;
+        QCOMPARE(parts.size(), 2);
+        QCOMPARE(parts.at(1).note, u"60% of an excellent roll, tier 4 of 10"_s);
+        QCOMPARE(parts.at(0).note, u"100% of an excellent roll"_s);
+    }
+
     void gearScoreWithoutAnIdeal()
     {
         ItemCheck check = judged(Verdict::Upgrade);

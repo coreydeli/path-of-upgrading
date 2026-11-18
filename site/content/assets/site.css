@@ -1,0 +1,80 @@
+/* The app's own colors and fonts, from its color scheme and data/fonts. */
+@font-face {
+  font-family: "Spectral";
+  font-weight: 400;
+  src: url("fonts/Spectral-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  font-style: italic;
+  font-weight: 400;
+  src: url("fonts/Spectral-Italic.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  font-weight: 600;
+  src: url("fonts/Spectral-SemiBold.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-weight: 700;
+  src: url("fonts/BigShouldersDisplay-Bold.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root,
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #161618;
+  --md-default-fg-color: #ece6da;
+  --md-default-fg-color--light: #bdb7aa;
+  --md-default-fg-color--lighter: #969086;
+  --md-default-fg-color--lightest: #2a2a2e;
+  --md-primary-fg-color: #0b0b0c;
+  --md-primary-bg-color: #ece6da;
+  --md-accent-fg-color: #5acdc0;
+  --md-typeset-a-color: #35b5a8;
+  --md-code-bg-color: #1e1e21;
+  --md-code-fg-color: #ece6da;
+  --md-footer-bg-color: #0b0b0c;
+  --md-footer-fg-color: #ece6da;
+  --md-text-font: "Spectral", Georgia, serif;
+  --md-code-font: monospace;
+}
+
+.md-typeset {
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-header__title,
+.md-nav__title {
+  font-family: "Big Shoulders Display", "Spectral", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.md-typeset h1 { color: var(--md-default-fg-color); font-size: 2.4em; }
+.md-typeset h2 { border-bottom: 1px solid var(--md-default-fg-color--lightest); padding-bottom: 0.2em; }
+
+.hero { padding: 2.5rem 0 1.5rem; }
+.hero h1 { font-size: 3.4em; margin-bottom: 0.3em; color: #35b5a8; }
+.hero p { font-size: 1.1em; max-width: 36em; }
+
+.md-typeset .md-button {
+  border-radius: 0;
+  font-family: "Big Shoulders Display", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.md-typeset .md-button { color: var(--md-typeset-a-color); border-color: var(--md-typeset-a-color); }
+.md-typeset .md-button--primary { background-color: #35b5a8; border-color: #35b5a8; color: #0b0b0c; }
+.md-typeset .md-button--primary:hover { background-color: #5acdc0; border-color: #5acdc0; color: #0b0b0c; }
+
+/* checksums are long, so let them wrap */
+.md-typeset table code { word-break: break-all; font-size: 0.7em; }
+.md-typeset table:not([class]) { display: table; width: 100%; }

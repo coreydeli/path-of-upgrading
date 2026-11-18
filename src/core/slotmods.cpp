@@ -38,11 +38,14 @@ SlotMods SlotMods::fromJson(const QJsonObject &table)
             QList<ModTier> tiers;
             for (const QJsonValue &tier : key.value().toArray()) {
                 const QJsonArray t = tier.toArray();
-                if (t.size() == 3)
-                    tiers << ModTier{t.at(0).toInt(), t.at(1).toDouble(), t.at(2).toDouble()};
+                if (t.size() == 3 || t.size() == 4)
+                    tiers << ModTier{.level = t.at(0).toInt(),
+                                     .low = t.at(1).toDouble(),
+                                     .high = t.at(2).toDouble(),
+                                     .hybrid = t.size() == 4};
             }
             if (!tiers.isEmpty())
-                into.insert(key.key(), tiers);
+                into.insert(key.key().toLower(), tiers);
         }
     }
     return mods;
@@ -50,12 +53,31 @@ SlotMods SlotMods::fromJson(const QJsonObject &table)
 
 QList<ModTier> SlotMods::tiers(const QString &itemClass, const QString &key) const
 {
-    return m_classes.value(itemClass.trimmed().toLower()).value(key);
+    return m_classes.value(itemClass.trimmed().toLower()).value(key.toLower());
 }
+
+bool SlotMods::allows(const QString &itemClass, const QString &key) const
+{
+    const auto cls = m_classes.constFind(itemClass.trimmed().toLower());
+    return cls == m_classes.cend() || cls->contains(key.toLower());
+}
+
+namespace {
+
+// A hybrid mod's ranges are for the other stat as much as this one, so they
+// only count when the stat has no other.
+QList<ModTier> plainOrAll(QList<ModTier> all)
+{
+    QList<ModTier> plain = all;
+    plain.removeIf([](const ModTier &t) { return t.hybrid; });
+    return plain.isEmpty() ? all : plain;
+}
+
+} // namespace
 
 std::optional<ModTier> SlotMods::best(const QString &itemClass, const QString &key) const
 {
-    const QList<ModTier> all = tiers(itemClass, key);
+    const QList<ModTier> all = plainOrAll(tiers(itemClass, key));
     if (all.isEmpty())
         return std::nullopt;
     // a tier with a lower item level can still roll higher, so look at all
@@ -70,7 +92,7 @@ std::optional<ModTier> SlotMods::best(const QString &itemClass, const QString &k
 std::optional<ModTier> SlotMods::bestAt(const QString &itemClass, const QString &key, int itemLevel) const
 {
     std::optional<ModTier> top;
-    for (const ModTier &t : tiers(itemClass, key)) {
+    for (const ModTier &t : plainOrAll(tiers(itemClass, key))) {
         if (t.level <= itemLevel && (!top || t.high > top->high))
             top = t;
     }

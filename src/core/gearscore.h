@@ -3,6 +3,7 @@
 
 #include "core/buildprofiles.h"
 #include "core/item.h"
+#include "core/modtiers.h"
 #include "core/resists.h"
 #include "core/scorer.h"
 #include "core/slotmods.h"
@@ -53,6 +54,7 @@ struct GearContribution
     double points = 0; // rounded to one decimal
     double best = 0;   // the most the item's class rolls of it, 0 when that's not known
     StatOrigin origin = StatOrigin::Mod;
+    std::optional<StatTier> tier; // when one explicit mod gave the value and the table knows it
 };
 
 struct GearScore
@@ -86,9 +88,13 @@ QStringList notScoredStats(const GearScore &gear);
 //   the missing ones, with the most the item can roll: "Life (up to 149)"
 QStringList missingStats(const GearScore &gear);
 //   the weakest three rolls under that share of an excellent roll, "Life 62 of
-//   up to 149", or "Life 40% of an excellent roll" when it isn't known what
-//   the item can roll. Runes aren't rolls, so they're left out.
+//   up to 149, tier 4 of 10" (the tier when one mod gave it and the table
+//   knows), or "Life 40% of an excellent roll" when it isn't known what the
+//   item can roll. Runes aren't rolls, so they're left out.
 QStringList weakRolls(const GearScore &gear, int underPercent = 50);
+//   for those same weak rolls that one mod gave, the next tier up: "Life, tier
+//   3 (120 to 149) at item level 60 or higher"
+QStringList nextTiers(const GearScore &gear, int underPercent = 50);
 
 // What would raise a gear score, in the words the popup uses. Each is empty
 // when there's nothing to say.
@@ -110,7 +116,8 @@ struct KeyStat
 };
 
 // The build's most important stats for a slot that can be searched for by
-// key, most important first. Resistances are left out.
+// key, most important first. Resistances are left out, and so is what the
+// slot's item class can't roll.
 QList<KeyStat> topStats(const QString &slot, int count = 2, const GearScoreOptions &options = {});
 
 // The least of a stat worth searching for, from how much a top roll of it
