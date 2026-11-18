@@ -2556,9 +2556,8 @@ private Q_SLOTS:
         QVERIFY(isVisible(intro));
         QCOMPARE(text(intro),
                  u"Items you check in the game land here, newest first, up to the last "
-                 "30. That means items you check with the hotkey, and gear you copy yourself while "
-                 "\"Also check gear you copy yourself\" is on. When the list is full, the "
-                 "oldest one drops off."_s);
+                 "30. That covers the hotkey and, while \"Also check gear you copy yourself\" is "
+                 "on, gear you copy by hand. When the list is full, the oldest one drops off."_s);
         QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 

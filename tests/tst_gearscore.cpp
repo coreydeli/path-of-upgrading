@@ -267,7 +267,7 @@ private Q_SLOTS:
         QCOMPARE(g->resistNote,
                  u"Fire Resistance: you only need 20 more to reach the cap, so the rest doesn't count. "
                  "Cold Resistance: you're already capped, so it doesn't count. "
-                 "Lightning Resistance: you only need 5 more to reach the cap, so it isn't counted."_s);
+                 "Lightning Resistance: you only need 5 more to reach the cap, so it doesn't count."_s);
     }
 
     void tweaksScaleImportance()
@@ -626,7 +626,7 @@ private Q_SLOTS:
         GearScoreOptions options;
         options.resistNeed[Element::Fire] = 5;
         QCOMPARE(gearScore(ring, options)->resistNote,
-                 u"Fire Resistance: you only need 5 more to reach the cap, so it isn't counted."_s);
+                 u"Fire Resistance: you only need 5 more to reach the cap, so it doesn't count."_s);
     }
 
     void runesAndConditionalModsCountForLess()

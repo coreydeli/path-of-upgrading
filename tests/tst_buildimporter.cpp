@@ -278,19 +278,19 @@ private Q_SLOTS:
         QTest::newRow("two")
             << ranger({u"Weapon 1"_s, u"Weapon 2"_s}) << false
             << u"Imported the level 40 Ranger build for Wren. Wren now has 2 items equipped from it. "
-               u"Copy your weapons in the game once, since the build doesn't include their "
+               u"Copy your weapons in the game once. The build doesn't include their "
                u"damage."_s;
         QTest::newRow("kept one") << ranger({u"Weapon 1"_s}) << true
                                   << u"Imported the level 40 Ranger build for Wren. Kept 1 item you copied "
-                                     u"in the game, as it says more than the build."_s;
+                                     u"in the game, since it tells more than the build."_s;
         QTest::newRow("kept two") << ranger({u"Weapon 1"_s, u"Weapon 2"_s}) << true
                                   << u"Imported the level 40 Ranger build for Wren. Kept 2 items you copied "
-                                     u"in the game, as they say more than the build."_s;
+                                     u"in the game, since they tell more than the build."_s;
         QTest::newRow("kept one of two")
             << ranger({u"Weapon 1"_s, u"Ring 1"_s}) << true
             << u"Imported the level 40 Ranger build for Wren. Wren now has 1 "
-               u"item equipped from it. Kept 1 item you copied in the game, as it says "
-               u"more than the build."_s;
+               u"item equipped from it. Kept 1 item you copied in the game, since it "
+               u"tells more than the build."_s;
         QTest::newRow("empty") << u"<PathOfBuilding2/>"_s << false
                                << u"Imported the build for Wren. The build has no items."_s;
     }

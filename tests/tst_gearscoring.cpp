@@ -157,7 +157,7 @@ private Q_SLOTS:
         const QString date = QLocale().toString(QDate(2026, 3, 14), QLocale::LongFormat);
         QCOMPARE(s.scoring.weighedOn(), date);
         QCOMPARE(s.scoring.state(), u"Weighed by Path of Building for your build on "_s + date + u"."_s);
-        QVERIFY(s.scoring.summary().startsWith(u"Slots Path of Building didn't weigh use the "_s));
+        QVERIFY(s.scoring.summary().startsWith(u"Slots Path of Building didn't weigh go by the "_s));
 
         // the weighed stats are the rows, with the start's for the other slots
         QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);

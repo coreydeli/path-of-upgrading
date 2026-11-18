@@ -181,7 +181,7 @@ private Q_SLOTS:
         Computer computer;
         QVERIFY(computer.installFlatpak());
         const PobGuide guide = guideFor(computer.places);
-        QVERIFY(guide.headline.contains(u"not set up for Path of Exile 2"));
+        QVERIFY(guide.headline.contains(u"isn't set up for Path of Exile 2"));
         QVERIFY(guide.steps[0].contains(u"Open \"Path of Building Community (PoE2)\""));
         QVERIFY(guide.steps.last().contains(u"Update"));
         // it's installed already
