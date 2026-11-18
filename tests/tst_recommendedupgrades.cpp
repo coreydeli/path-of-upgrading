@@ -417,7 +417,7 @@ private Q_SLOTS:
         QVERIFY(site.upgrades.chosenLookFor().isEmpty());
         const QStringList boots = site.upgrades.chosenCanRoll();
         QVERIFY(!boots.isEmpty());
-        QVERIFY(boots.first().contains(u", item level "_s));
+        QVERIFY(boots.first().contains(u" at item level "_s));
 
         // an empty slot with a class
         site.upgrades.choose(u"Belt"_s);

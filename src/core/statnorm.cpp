@@ -45,9 +45,9 @@ QString statName(const QString &key)
 QString propertyNote(QStringView key)
 {
     if (key.startsWith(u"[Weapon] "))
-        return u"The weapon's own, with its mods"_s;
+        return u"The weapon's own, mods included"_s;
     if (isItemProperty(key))
-        return u"The item's own, with its mods"_s;
+        return u"The item's own, mods included"_s;
     return {};
 }
 

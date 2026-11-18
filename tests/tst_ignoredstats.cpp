@@ -134,7 +134,7 @@ private Q_SLOTS:
         QCOMPARE(i.keys(), QStringList({armour, life, rarity}));
         QCOMPARE(i.ignored.index(0).data(Qt::DisplayRole).toString(), u"Armour"_s);
         QCOMPARE(i.of(armour, IgnoredStats::NameRole).toString(), u"Armour"_s);
-        QCOMPARE(i.of(armour, IgnoredStats::NoteRole).toString(), u"The item's own, with its mods"_s);
+        QCOMPARE(i.of(armour, IgnoredStats::NoteRole).toString(), u"The item's own, mods included"_s);
         QCOMPARE(i.of(life, IgnoredStats::NameRole).toString(), life);
         QCOMPARE(i.of(life, IgnoredStats::NoteRole).toString(), QString());
         QCOMPARE(i.of(life, IgnoredStats::ModeRole).toInt(), int(IgnoredStats::Ignored));
