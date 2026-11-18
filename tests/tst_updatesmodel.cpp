@@ -377,8 +377,7 @@ private Q_SLOTS:
         s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = "something else"}};
         s.updates.updateNow();
         QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
-        QCOMPARE(s.updates.installError(),
-                 u"The download didn't match its checksum, so it was thrown away."_s);
+        QCOMPARE(s.updates.installError(), u"The download didn't match its checksum, so it was deleted."_s);
         QVERIFY(s.updates.command().isEmpty());
     }
 

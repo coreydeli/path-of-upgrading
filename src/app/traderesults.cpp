@@ -39,7 +39,7 @@ ResultVerdict resultVerdict(const ItemCheck &check)
         out.gearGrade = report.gearGrade;
         out.gearPoints = report.gearScore;
         if (!report.yourGearScore.isEmpty())
-            out.gearScore += u", yours "_s + report.yourGearScore;
+            out.gearScore += u", yours is "_s + report.yourGearScore;
     }
     if (!report.headline.isEmpty()) {
         out.figures = report.headline;

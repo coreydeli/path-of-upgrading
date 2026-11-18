@@ -26,7 +26,7 @@ QQC2.AbstractButton {
     // what's in it in one line, for the screen reader and the tests
     readonly property string description: {
         if (empty)
-            return qsTr("Not saved yet");
+            return qsTr("Nothing saved yet");
         const parts = [name];
         if (base !== "")
             parts.push(base);

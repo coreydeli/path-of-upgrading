@@ -36,7 +36,7 @@ ColumnsPage {
     ]
 
     title: qsTr("General")
-    description: qsTr("The hotkeys, and how the popup over the game looks.")
+    description: qsTr("Your hotkeys, how the popup looks, your league, and starting with the desktop.")
 
     SectionHeader {
         title: qsTr("Hotkeys")
@@ -46,7 +46,7 @@ ColumnsPage {
         KeyField {
             objectName: "checkKey"
             label: qsTr("Check an item")
-            description: qsTr("Press it over an item in the game. An F key works best, as letters reach the game too.")
+            description: qsTr("Press it while hovering an item in the game. An F key works best, because letter keys reach the game too.")
             key: overlayPage.options.checkKey
             onChosen: key => overlayPage.refused = !overlayPage.options.setCheckKey(key)
         }
@@ -59,7 +59,7 @@ ColumnsPage {
             objectName: "resultsKey"
             visible: overlayPage.tradeOffered
             label: qsTr("Show the trade results")
-            description: qsTr("Opens the listings of your last trade search, and closes them again.")
+            description: qsTr("Opens the listings from your last trade search, and closes them again.")
             key: overlayPage.options.resultsKey
             onChosen: key => overlayPage.refused = !overlayPage.options.setResultsKey(key)
         }
@@ -72,7 +72,7 @@ ColumnsPage {
             id: gameOnlyText
             objectName: "gameOnlyNote"
             visible: overlayPage.options.hotkeysFollowGame
-            text: qsTr("These keys only work while Path of Exile 2 is running. The rest of the time other programs get them, so you can type them as usual.")
+            text: qsTr("These keys only work while Path of Exile 2 is running. Otherwise other programs get them, so you can use them as usual.")
             textItem.wrapMode: Text.Wrap
         }
 
@@ -84,7 +84,7 @@ ColumnsPage {
             id: refusedText
             objectName: "refusedText"
             visible: overlayPage.refused
-            text: qsTr("That key is already taken.")
+            text: qsTr("Something else already uses that key.")
         }
 
         RowRule {
@@ -104,7 +104,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "advancedCopySwitch"
             text: qsTr("Use advanced copy")
-            description: qsTr("Copies with Ctrl+Alt+C, which tells prefixes from suffixes, for crafting.")
+            description: qsTr("Copies with Ctrl+Alt+C, which also shows which mods are prefixes and which are suffixes, for crafting.")
             checked: overlayPage.options.advancedCopy
             onToggled: overlayPage.options.advancedCopy = checked
         }
@@ -113,8 +113,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "putBackSwitch"
-            text: qsTr("Put back what you had copied")
-            description: qsTr("Once the hotkey has copied the item, so you can still paste what you copied before.")
+            text: qsTr("Put your clipboard back")
+            description: qsTr("After the hotkey copies an item, so what you had copied before is still there to paste.")
             checked: overlayPage.options.putBackClipboard
             onToggled: overlayPage.options.putBackClipboard = checked
         }
@@ -124,7 +124,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "clipboardSwitch"
             text: qsTr("Also check gear you copy yourself")
-            description: qsTr("When you press Ctrl+C over it in the game.")
+            description: qsTr("When you press Ctrl+C over an item in the game.")
             checked: overlayPage.options.watchClipboard
             onToggled: overlayPage.options.watchClipboard = checked
         }
@@ -133,8 +133,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "pausedSwitch"
-            text: qsTr("Pause")
-            description: qsTr("The hotkeys and copied items are ignored until you turn this off.")
+            text: qsTr("Pause the hotkeys")
+            description: qsTr("The hotkeys and items you copy are ignored until you turn this off.")
             checked: overlayPage.options.paused
             onToggled: overlayPage.options.paused = checked
         }
@@ -147,7 +147,7 @@ ColumnsPage {
     Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "positionBox"
-            text: qsTr("Where it shows")
+            text: qsTr("Where the popup shows")
             textRole: "text"
             valueRole: "value"
             model: overlayPage.positions
@@ -194,8 +194,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "compactSwitch"
-            text: qsTr("Compact")
-            description: qsTr("Puts what hardly matters behind Show More.")
+            text: qsTr("Compact popup")
+            description: qsTr("Hides the details that hardly matter behind Show More.")
             checked: overlayPage.options.compact
             onToggled: overlayPage.options.compact = checked
         }
@@ -214,8 +214,8 @@ ColumnsPage {
 
         NumberField {
             objectName: "autoHide"
-            label: qsTr("Popup Timeout")
-            description: qsTr("How many seconds the popup stays up before it hides. "
+            label: qsTr("Hide the popup after")
+            description: qsTr("How long the popup stays up, in seconds. "
                               + "It stays while the mouse is over it.")
             minimum: 2
             maximum: 120
@@ -236,7 +236,7 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: qsTr("General")
+        title: qsTr("Startup")
     }
 
     Sheet {

@@ -44,7 +44,7 @@ std::optional<int> tierFor(const SlotMods &mods, const QString &itemClass, const
 
 // "tier 4 of 10"
 QString tierText(const StatTier &tier);
-// The next tier up: "tier 3 (120 to 149) at item level 60 or higher". Empty at tier 1.
+// The next tier up: "tier 3 (120 to 149) from item level 60". Empty at tier 1.
 QString nextTierText(const StatTier &tier);
 
 } // namespace pou
