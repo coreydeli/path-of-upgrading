@@ -59,7 +59,9 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
-  one that finds nothing is tried again a little looser. While trade searches
+  one that finds nothing is tried again a little looser. The app asks the trade
+  site only when you search, or press Refresh on the Trade page. While trade
+  searches
   are on, poe.ninja's prices are updated automatically, every 10 minutes unless
   you set another number of minutes, from 1 to 60, on the Trade page.
 - In a beta, shows the listings a search found in a window over the game, opened
@@ -68,7 +70,8 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   does, with its price, what that comes to in exalts or divines, the seller and
   how long ago it was listed.
 - Draws the popup and the results window in the app's own look, with cut-corner
-  panels. The popup's title takes the item's rarity color, and it has a verdict
+  panels, or Material's rounded ones under the Design setting. The popup's
+  title takes the item's rarity color, and it has a verdict
   banner. Each gain or loss in the popup's table has a bar under its figure,
   sized against the biggest change. The popup fades in and rises a little when
   it opens, unless Decorations is Plain or the desktop has animations off.
@@ -82,7 +85,8 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
 - Keeps several characters, each with its own gear, build and weights, and can
   put the item you checked on your character. The gear page shows the gear
   score of each slot, the overall score, and what each slot needs to score
-  more, and the most each slot can roll, such as Life (up to 149), from Path of
+  more, the most each slot can roll, such as Life (up to 149), the tier a weak
+  roll is in, and the next tier up, all from Path of
   Building's Path of Exile 2 data. On a wide window the slots are laid out like
   your character's equipment screen. Pick one to see what would improve it, the
   stats to look for in a better item, the top rolls the slot can have with their
@@ -122,20 +126,26 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   version. With the window hidden, a notification says so instead. Update Now
   downloads the file for how you installed the app and checks it against the
   release's checksums. Nothing is installed until you press Update Now. Turn the
-  check off, or include betas, under Updates on the General page.
-- Has the app's own controls, colors and fonts, so it looks the same on every
-  desktop. Its colors are the app's own dark ones, or your desktop's, which the
-  Appearance page in the same group picks. It also picks the heading font
-  (Big Shoulders Display by default), the text font (Spectral by default) and
-  the text size. The text size follows your desktop's unless you
-  set one, from 6 to 32 points. The font list only shows fonts that scale
-  smoothly, each in its own face. Decorations there can be set to Full, the
-  default, or Plain. Plain squares off the cut corners, leaves out the popup's
-  fade and rise, and shows a listing's gear score as text rather than in a ring.
+  check off, or include betas, on the Updates page in the sidebar's Settings group.
+- Has two designs, picked on the Appearance page in the sidebar's Settings group.
+  Dossier, the default, is the app's own, with its own controls, colors and
+  fonts, so it looks the same on every desktop. Material follows Google's
+  Material Design 3, light or dark or following your desktop. Either way the
+  colors can be the design's own or your desktop's. The Appearance page also
+  picks the heading font (Big Shoulders Display by default), the text font
+  (Spectral by default) and the text size. The text size follows your desktop's
+  unless you set one, from 6 to 32 points. The font list only shows fonts that
+  scale smoothly, each in its own face. Decorations can be set to Full, the
+  default, or Plain. In Dossier, Plain squares off the cut corners, leaves out
+  the popup's fade and rise, and shows a listing's gear score as text rather
+  than in a ring. In Material, Plain leaves out the animation.
 - Has an About page and a Help page in the sidebar's Settings group. About shows the version
   and edition, the license, the Qt and KDE Frameworks versions, where Path of Building was
   found, links to the source, the releases and the issue tracker, and the credits. Help opens
   the wiki, or one of its pages, in your browser.
+- In a beta, has Start Over on the General page. It wipes what the app has kept
+  and opens the app again on the setup guide. It asks first, and Path of
+  Building and the game are left alone.
 
 
 ## Installing
@@ -431,6 +441,9 @@ entry, so turn the switch off before you uninstall.
 
 The session ID is not in any of them. It is in the system keyring, and only a
 beta reads it.
+
+In a beta, Start Over on the General page removes everything above, the
+autostart entry, the session ID and the hotkeys on your desktop. It asks first.
 
 ## Other desktops
 
