@@ -19,7 +19,7 @@ CommandLine::CommandLine()
     m_parser.setApplicationDescription(u"Checks Path of Exile 2 items against your build."_s);
     m_parser.addHelpOption();
     m_parser.addVersionOption();
-    m_parser.addOption({backgroundOption, u"Start with only the tray icon, without the window."_s});
+    m_parser.addOption({backgroundOption, u"Start with just the tray icon and no window."_s});
     m_parser.addOption({setupOption, u"Show the setup guide again."_s});
 }
 

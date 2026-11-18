@@ -179,8 +179,9 @@ Comparison compare(const Item &item, const Equipped &equipped, const Weights &al
 
     const bool hasBaseline = !r.replacing.isEmpty();
     if (!hasBaseline)
-        notes << u"Nothing saved for %1 yet. Check the item you have equipped there and press Equip as %1."_s
-                     .arg(slotLabel(r.targetSlot));
+        notes
+            << u"Nothing saved for %1 yet. Check the item you have equipped there, then press Equip as %1."_s
+                   .arg(slotLabel(r.targetSlot));
     const bool anyWeighted =
         std::any_of(r.rows.cbegin(), r.rows.cend(), [](const StatRow &row) { return row.weight != 0; });
     if (!anyWeighted && !r.rows.isEmpty())

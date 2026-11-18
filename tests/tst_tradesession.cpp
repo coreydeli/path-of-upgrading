@@ -140,7 +140,7 @@ private Q_SLOTS:
         s.session.load();
         QVERIFY(s.settled());
         QVERIFY(!s.session.isSaved());
-        QCOMPARE(s.session.status(), u"Couldn't tell whether one is saved."_s);
+        QCOMPARE(s.session.status(), u"Couldn't tell whether a session ID is saved."_s);
         QCOMPARE(s.session.error(), u"The keyring is locked."_s);
         QCOMPARE(s.cookie(), QByteArray());
         // and isn't asked again

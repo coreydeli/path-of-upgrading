@@ -20,7 +20,7 @@ ColumnsPage {
     readonly property real modeWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Ignored Stats")
-    description: qsTr("Stats you want left out of the score.")
+    description: qsTr("Pick the stats you want left out of the score.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
@@ -94,7 +94,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: ignoredPage.ignored.character === ""
             text: qsTr("You haven't picked a character yet.")
-            description: qsTr("Change anything here and a character gets made for you. Or add one yourself, or import a build, under Gear Settings, Characters.")
+            description: qsTr("Change anything here and the app makes a character for you. You can also add one yourself, or import a build, under Gear Settings, Characters.")
         }
 
         TableHeader {

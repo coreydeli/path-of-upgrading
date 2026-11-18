@@ -769,8 +769,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"importButton"_s)));
         QObject *message = w.find(u"importMessage"_s);
         QVERIFY(isVisible(message));
-        QCOMPARE(text(message),
-                 u"Imported the level 40 Ranger build for Ranger. It has no items equipped."_s);
+        QCOMPARE(text(message), u"Imported the level 40 Ranger build for Ranger. The build has no items."_s);
         QCOMPARE(text(code), QString());
 
         // on a new one, as there was none to play
@@ -786,7 +785,8 @@ private Q_SLOTS:
         QObject *code = w.find(u"codeField"_s);
         QVERIFY(code->setProperty("text", u"nonsense"_s));
         QVERIFY(QMetaObject::invokeMethod(code, "accepted"));
-        QCOMPARE(text(w.find(u"importMessage"_s)), u"That isn't a Path of Building code or a link to one."_s);
+        QCOMPARE(text(w.find(u"importMessage"_s)),
+                 u"That doesn't look like a Path of Building code or a link to one."_s);
         // to put right
         QCOMPARE(text(code), u"nonsense"_s);
         QCOMPARE(w.app->characterList()->rowCount(), 0);
@@ -821,7 +821,7 @@ private Q_SLOTS:
         w.app->pobOptions()->setLocation(folder);
         QVERIFY(isVisible(w.find(u"savedBuilds"_s)));
         const QString builds = w.app->buildImporter()->buildsFolder();
-        QCOMPARE(text(w.find(u"noSavedBuildsText"_s)), u"No builds in %1 yet."_s.arg(builds));
+        QCOMPARE(text(w.find(u"noSavedBuildsText"_s)), u"There are no builds in %1 yet."_s.arg(builds));
 
         QVERIFY(writeFile(builds + u"/Leveling.xml"_s, ranger.toUtf8()));
         QVERIFY(click(w.find(u"refreshBuildsButton"_s)));
@@ -832,7 +832,7 @@ private Q_SLOTS:
                  u"Saved %1"_s.arg(QLocale().toString(modified, QLocale::ShortFormat)));
         QVERIFY(click(saved));
         QCOMPARE(text(w.find(u"importMessage"_s)),
-                 u"Imported the level 40 Ranger build for Leveling. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Leveling. The build has no items."_s);
     }
 
     // as for one saved while you were on another page
@@ -852,7 +852,7 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(w.find(u"stepsText"_s)->property("description").toString().startsWith(u"1. "_s));
         QVERIFY(!isVisible(w.find(u"installedAtText"_s)));
         // nothing is opened or copied until you click for it
@@ -891,7 +891,8 @@ private Q_SLOTS:
         QVERIFY(field->setProperty("text", folder));
         QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
         QCOMPARE(w.settings().pob.location, folder);
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"You're using the Path of Building in the folder you chose."_s);
         QCOMPARE(w.find(u"installedAtText"_s)->property("description").toString(),
                  QDir::toNativeSeparators(folder));
         QVERIFY(isVisible(w.find(u"installedAtText"_s)));
@@ -913,7 +914,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"usualPlacesButton"_s)));
         QCOMPARE(w.settings().pob.location, QString());
         QCOMPARE(text(w.find(u"folderField"_s)), QString());
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(!isVisible(w.find(u"usualPlacesButton"_s)));
     }
 
@@ -942,7 +943,8 @@ private Q_SLOTS:
         // once it's there
         QVERIFY(makePob(folder));
         QVERIFY(QMetaObject::invokeMethod(w.find(u"updateButton"_s), "clicked"));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"You're using the Path of Building in the folder you chose."_s);
     }
 
     void pobSettings()
@@ -1835,7 +1837,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"resistances"_s)));
         QCOMPARE(w.find(u"resistancesHeader"_s)->property("title").toString(), u"Resistances"_s);
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
+                 u"You don't have any yet. Import a build, or type them in from your character sheet."_s);
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
@@ -1858,7 +1860,7 @@ private Q_SLOTS:
         QObject *summary = w.find(u"resistSummary"_s);
         QCOMPARE(text(summary), u"Fire 80%, Cold 60%"_s);
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"From your build in Path of Building, with what you have equipped now."_s);
+                 u"These come from your build in Path of Building, plus what you have equipped now."_s);
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
         for (const QString &field :
              {u"fireMaximum"_s, u"coldMaximum"_s, u"lightningMaximum"_s, u"chaosMaximum"_s}) {
@@ -1880,8 +1882,9 @@ private Q_SLOTS:
         QVERIFY(toggle(w.find(u"fromSheetSwitch"_s)));
         QVERIFY(resists->isFromSheet());
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
-        QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"Typed in from your character sheet, with what you have equipped now."_s);
+        QCOMPARE(
+            text(w.find(u"resistSource"_s)),
+            u"You typed these in from your character sheet, and they follow what you have equipped now."_s);
         for (const QString &field :
              {u"fireResist"_s, u"coldResist"_s, u"lightningResist"_s, u"chaosResist"_s})
             QVERIFY(isVisible(w.find(field)));
@@ -1921,7 +1924,7 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
+                 u"You don't have any yet. Import a build, or type them in from your character sheet."_s);
     }
 
     void cantSaveResistances()
@@ -1968,7 +1971,7 @@ private Q_SLOTS:
 
         QObject *state = w.find(u"scoreState"_s);
         QVERIFY(isVisible(state));
-        QCOMPARE(text(state), u"A rough starting point until Path of Building has weighed your build."_s);
+        QCOMPARE(text(state), u"A rough guide until Path of Building has weighed your build."_s);
         QCOMPARE(state->property("description").toString(), w.app->gearScoring()->summary());
         QVERIFY(isVisible(w.find(u"weighAgainButton"_s)));
         // with Path of Building off here, there is nothing to ask
@@ -2252,9 +2255,10 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"addStatButton"_s)));
         QObject *message = w.find(u"pickerMessage"_s);
         QVERIFY(isVisible(message));
-        QCOMPARE(text(message), u"The trade site's list of stats comes with your first trade search, or when "
-                                u"you press Refresh on the Trade page. Until then, here are only the item's "
-                                u"own and those on the items you've checked."_s);
+        QCOMPARE(text(message),
+                 u"You get the trade site's list of stats with your first trade search, or when "
+                 u"you press Refresh on the Trade page. Until then you only see the item's "
+                 u"own stats and those on items you've checked."_s);
         QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size());
         QTest::qWait(30);
         QVERIFY(w.network->sent.isEmpty() ||
@@ -2552,9 +2556,8 @@ private Q_SLOTS:
         QVERIFY(isVisible(intro));
         QCOMPARE(text(intro),
                  u"Items you check in the game land here, newest first, up to the last "
-                 "30. That means items you check with the hotkey, and gear you copy yourself while "
-                 "\"Also check gear you copy yourself\" is on. When the list is full, the "
-                 "oldest one drops off."_s);
+                 "30. That covers the hotkey and, while \"Also check gear you copy yourself\" is "
+                 "on, gear you copy by hand. When the list is full, the oldest one drops off."_s);
         QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 
@@ -2909,9 +2912,9 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"budgetMin"_s)->property("label").toString(), u"Lowest price"_s);
         QCOMPARE(w.find(u"budgetMax"_s)->property("label").toString(), u"Highest price"_s);
         QCOMPARE(w.find(u"budgetMin"_s)->property("description").toString(),
-                 u"Listings cheaper than this are left out."_s);
+                 u"Anything cheaper won't show up."_s);
         QCOMPARE(w.find(u"budgetMax"_s)->property("description").toString(),
-                 u"Listings that cost more are left out."_s);
+                 u"Anything pricier won't show up."_s);
         QCOMPARE(w.find(u"currencyBox"_s)->property("text").toString(), u"Currency"_s);
     }
 
@@ -3936,7 +3939,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(wrenScore));
         QVERIFY(!isVisible(ash->findChild<QObject *>(u"rowScore"_s)));
         QCOMPARE(wren->property("detail").toString(),
-                 u"A rough starting point until Path of Building has weighed your build"_s);
+                 u"A rough guide until Path of Building has weighed your build"_s);
         QCOMPARE(ash->property("detail").toString(), QString());
         QVERIFY(!wrenScore->property("score").toString().isEmpty());
         QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));
@@ -4386,7 +4389,7 @@ private Q_SLOTS:
         QVERIFY(code->setProperty("text", ranger));
         QVERIFY(click(w.inGuide(u"setupImportButton"_s)));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"Imported the level 40 Ranger build for Ranger. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Ranger. The build has no items."_s);
         QCOMPARE(text(code), QString());
         QCOMPARE(w.inGuide(u"setupCharacter:Ranger"_s)->property("description").toString(),
                  u"Level 40 Ranger"_s);
@@ -4402,7 +4405,7 @@ private Q_SLOTS:
         QVERIFY(code->setProperty("text", u"nonsense"_s));
         QVERIFY(QMetaObject::invokeMethod(code, "accepted"));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"That isn't a Path of Building code or a link to one."_s);
+                 u"That doesn't look like a Path of Building code or a link to one."_s);
         QCOMPARE(text(code), u"nonsense"_s);
         QCOMPARE(w.app->characterList()->rowCount(), 0);
         // and it can be left for later
@@ -4424,7 +4427,7 @@ private Q_SLOTS:
         QVERIFY(saved);
         QVERIFY(click(saved));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"Imported the level 40 Ranger build for Leveling. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Leveling. The build has no items."_s);
     }
 
     void setupGuideShowsTheHotkeyItHas()
@@ -4446,7 +4449,7 @@ private Q_SLOTS:
         for (int i = 0; i < 4; ++i)
             QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
-                 u"The key to check an item isn't set. Choose one on the General page."_s);
+                 u"You haven't set a key to check an item. Choose one on the General page."_s);
     }
 
     // as --setup asks
@@ -4635,7 +4638,7 @@ private Q_SLOTS:
         QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
         w.network->answers = {{.body = fakeReleases({fakeRelease(u"0.0.1"_s)})}};
         QVERIFY(click(now));
-        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You have the newest version."_s, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You're on the newest version."_s, 5000);
     }
 
     // in the background, as it is at login

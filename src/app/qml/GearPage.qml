@@ -20,7 +20,7 @@ ColumnsPage {
     readonly property bool equipment: wide
 
     title: qsTr("Your Gear")
-    description: qsTr("What you have equipped, and where an upgrade would help most.")
+    description: qsTr("See what you have equipped and where an upgrade would help most.")
     // the slots need room to put their notes beside them
     minColumnWidth: Kirigami.Units.gridUnit * 44
     maxColumnWidth: Kirigami.Units.gridUnit * (equipment ? 66 : 60)
@@ -57,7 +57,7 @@ ColumnsPage {
 
     SectionText {
         visible: recommended.visible
-        text: qsTr("The slots where a better item would help most, and what to look for in it. Empty slots come first, then the lowest gear scores.")
+        text: qsTr("These are the slots where a better item would help most, with what to look for. Empty slots come first, then the lowest gear scores.")
     }
 
     SectionHeader {
@@ -97,7 +97,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: gearPage.gear.character === ""
             text: qsTr("You haven't picked a character yet.")
-            description: qsTr("Change anything here and a character gets made for you. Or add one yourself, or import a build, under Gear Settings, Characters.")
+            description: qsTr("Change anything here and the app makes a character for you. You can also add one yourself, or import a build, under Gear Settings, Characters.")
         }
 
         RowRule {
@@ -138,7 +138,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "gearHelp"
-        text: qsTr("To save what you're wearing, hover each item in the game and press the hotkey, then pick its slot under Equip as in the popup. Items you save replace the ones that came with the build.")
+        text: qsTr("To save what you're wearing, hover each item in the game, press the hotkey, then pick its slot under Equip as in the popup. What you save replaces the gear that came with the build.")
     }
 
     SectionHeader {
@@ -173,7 +173,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "fromSheetSwitch"
             text: qsTr("Type them in from your character sheet")
-            description: qsTr("Use the numbers from the game's character sheet instead of your build's, including the amounts over the maximum. They follow your gear from then on.")
+            description: qsTr("Use the numbers on the game's character sheet instead of your build's, including what's over the maximum. They follow your gear from then on.")
             checked: gearPage.resists.fromSheet
             onToggled: gearPage.resists.fromSheet = checked
         }
@@ -214,7 +214,7 @@ ColumnsPage {
             id: fireMaximum
             objectName: "fireMaximum"
             label: qsTr("Maximum Fire Resistance")
-            description: qsTr("The most a resistance can reach, which is 75% unless your passive skill tree raises it. Your gear's bonuses are counted for you, and your build's maximums are used until you change one.")
+            description: qsTr("A resistance tops out at 75% unless your passive skill tree raises it. The app counts your gear's bonuses, and uses your build's maximums until you change one.")
             value: gearPage.resists.fireMaximum
             onEdited: value => gearPage.resists.fireMaximum = value
         }
@@ -244,7 +244,7 @@ ColumnsPage {
             objectName: "resistMargin"
             visible: gearPage.resists.known
             label: qsTr("Safety buffer")
-            description: qsTr("How far over the maximum you like to stay. Some of what raises a resistance, like a charm, isn't always active, so you get a warning when an item leaves you closer than this.")
+            description: qsTr("How far over the maximum you like to stay. A charm or buff doesn't raise a resistance all the time, so you get a warning when an item leaves you closer than this.")
             maximum: 100
             value: gearPage.resists.margin
             onEdited: value => gearPage.resists.margin = value

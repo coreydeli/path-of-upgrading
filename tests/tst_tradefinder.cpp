@@ -641,7 +641,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, odd)})));
         QVERIFY(site.finds(helmet, Kind::Upgrades));
         QCOMPARE(site.finder.errorString(),
-                 u"None of your build's stats for this slot could be matched on the trade site."_s);
+                 u"The trade site has none of your build's stats for this slot."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -660,9 +660,10 @@ private Q_SLOTS:
         QCOMPARE(site.searched(1),
                  upgrades(helmet, data, character, u"Helmet"_s, clearlyBetter, {}, smaller(1)).body);
         QCOMPARE(site.finder.found()->total, 3);
-        QCOMPARE(site.finder.found()->note,
-                 u"Scored by your build's main weights, as the trade site limits how many filters a search "
-                 u"can have. Best for your build first."_s);
+        QCOMPARE(
+            site.finder.found()->note,
+            u"Scored by your build's main weights, since the trade site limits how many filters a search "
+            u"can have. Best for your build first."_s);
 
         // and the next starts there, and can be made smaller again
         site.network.answers = {tooManyFilters(), found(u"s2"_s, 1)};
@@ -1241,7 +1242,7 @@ private Q_SLOTS:
         QCOMPARE(site.searched(similarSearchLevels() - 1), similarSearch(belt, site.data.data(), last).body);
         QCOMPARE(site.finder.found()->title, u"Same stats or better than Mageblood"_s);
         QCOMPARE(site.finder.found()->note,
-                 u"Nothing matched its stats, so these are the Mageblood listed instead."_s);
+                 u"Nothing matched its stats, so these are the other Mageblood listed."_s);
         QCOMPARE(site.finder.found()->total, 8);
     }
 
@@ -1328,7 +1329,7 @@ private Q_SLOTS:
         site.finder.setCharacter(character);
         QVERIFY(site.finds(helmet, Kind::Weighted));
         QCOMPARE(site.finder.errorString(),
-                 u"None of your weighted stats on this item could be matched on the trade site."_s);
+                 u"The trade site has none of the stats you weighted on this item."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -1414,7 +1415,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, odd)})));
         QVERIFY(site.finds(helmet, Kind::CraftBases));
         QCOMPARE(site.finder.errorString(),
-                 u"None of your build's key stats for this slot could be matched on the trade site."_s);
+                 u"The trade site has none of your build's key stats for this slot."_s);
         QVERIFY(site.network.sent.isEmpty());
 
         // or only some of them
@@ -1623,8 +1624,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData());
         QVERIFY(site.finds(
             parseItem(u"Item Class: Rings\nRarity: Normal\nGold Ring\n--------\nItem Level: 50"_s).value()));
-        QCOMPARE(site.finder.errorString(),
-                 u"None of this item's stats could be matched on the trade site."_s);
+        QCOMPARE(site.finder.errorString(), u"The trade site has none of this item's stats."_s);
         QVERIFY(site.finder.errorUrl().isEmpty());
         QVERIFY(site.network.sent.isEmpty());
     }

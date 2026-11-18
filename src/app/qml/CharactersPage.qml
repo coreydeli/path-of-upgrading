@@ -21,7 +21,7 @@ ColumnsPage {
     signal gearAsked
 
     title: qsTr("Characters")
-    description: qsTr("Add characters, import their builds, and rename or remove the ones you have.")
+    description: qsTr("Add the characters you play and import their builds. You can rename or remove them here too.")
     // On a wide window the list is on the left, with the one you play beside
     // it and the builds you can import for it. Narrower, it's one column.
     maxColumns: wide ? 2 : 3
@@ -41,8 +41,8 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "noCharactersText"
             visible: characterRows.count === 0
-            text: qsTr("No characters yet.")
-            description: qsTr("Add one, or import a build and one gets made for you.")
+            text: qsTr("You haven't added anyone yet.")
+            description: qsTr("Add a character below, or import a build and the app makes one for you.")
         }
 
         Repeater {
@@ -189,7 +189,7 @@ ColumnsPage {
             id: problemsText
             objectName: "problemsText"
             visible: charactersPage.characters.problems.length > 0
-            text: qsTr("Some characters couldn't be read, so they were left alone:")
+            text: qsTr("Some characters couldn't be read, so the app left them alone:")
             description: charactersPage.characters.problems.join("\n")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
@@ -206,7 +206,7 @@ ColumnsPage {
             id: nameField
             objectName: "nameField"
             label: qsTr("Name")
-            placeholderText: qsTr("The name it has in the game")
+            placeholderText: qsTr("Their name in the game")
             onAccepted: addButton.clicked()
         }
 
@@ -216,7 +216,7 @@ ColumnsPage {
             id: addButton
             objectName: "addButton"
             text: qsTr("Add")
-            description: qsTr("It becomes the character you play.")
+            description: qsTr("They become the character you play.")
             icon.name: "list-add"
             enabled: nameField.text.trim() !== ""
             onClicked: {
@@ -267,7 +267,7 @@ ColumnsPage {
             icon.color: Style.accent(charactersPage.Kirigami.Theme)
             font.weight: Font.DemiBold
             text: charactersPage.importer.busy ? qsTr("Downloading the Build") : qsTr("Import")
-            description: qsTr("Puts its gear on the character you play, or on a new one if you have none. Items you copied in the game stay, since they show more than a build does.")
+            description: qsTr("The build's gear goes on the character you play, or on a new one if you have none. Items you copied in the game stay, since they show more than a build does.")
             icon.name: "document-import"
             enabled: !charactersPage.importer.busy
             onClicked: charactersPage.importer.importText(codeField.text)
@@ -311,7 +311,7 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "noSavedBuildsText"
             visible: savedRows.count === 0
-            text: qsTr("No builds in %1 yet.").arg(charactersPage.importer.buildsFolder)
+            text: qsTr("There are no builds in %1 yet.").arg(charactersPage.importer.buildsFolder)
             textItem.wrapMode: Text.Wrap
         }
 
@@ -336,7 +336,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "refreshBuildsButton"
             text: qsTr("Look Again")
-            description: qsTr("Picks up builds you've saved since.")
+            description: qsTr("Saved a build since? This finds it.")
             icon.name: "view-refresh"
             onClicked: charactersPage.importer.refreshBuilds()
         }
@@ -412,7 +412,7 @@ ColumnsPage {
         }
 
         FormCard.FormTextDelegate {
-            text: qsTr("Its gear, weights and imported build go with it.")
+            text: qsTr("The character's gear, weights and imported build go with it.")
             textItem.wrapMode: Text.Wrap
         }
     }

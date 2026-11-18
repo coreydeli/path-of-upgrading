@@ -179,7 +179,7 @@ ColumnsPage {
             objectName: "textSize"
             visible: appearancePage.appearance.textSize > 0
             label: qsTr("Text size")
-            description: qsTr("In points. The controls and the spacing grow with it.")
+            description: qsTr("Measured in points. The controls and the spacing grow with it.")
             value: appearancePage.appearance.textSize
             minimum: 6
             maximum: 32

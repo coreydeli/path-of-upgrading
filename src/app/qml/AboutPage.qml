@@ -12,7 +12,7 @@ ColumnsPage {
     required property About about
 
     title: qsTr("About")
-    description: qsTr("The version you have, where to find the project, and what it uses.")
+    description: qsTr("See which version you have, where the project lives, and what it uses.")
 
     SectionHeader {
         title: qsTr("This Version")
@@ -67,7 +67,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "repositoryButton"
             text: qsTr("Source Code")
-            description: qsTr("The repository on GitHub.")
+            description: qsTr("Where the code lives, on GitHub.")
             icon.name: "internet-web-browser"
             onClicked: aboutPage.about.openRepository()
         }
