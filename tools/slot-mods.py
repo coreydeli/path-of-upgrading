@@ -12,7 +12,8 @@ data/). Nothing is downloaded.
 
 For each item class it lists the prefixes and suffixes a base of that class
 can roll, by the stat text with its numbers taken out, as the app keys item
-stats, and each one's tiers as [item level, low, high].
+stats, and each one's tiers as [item level, low, high], with a 1 on the end for
+those of hybrid mods (more than one stat), whose ranges are their own.
 """
 import datetime
 import json
@@ -55,6 +56,18 @@ RANGE = re.compile(r"\((-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)\)")
 FIXED = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?![\w.])")
 
 
+# two numbers or ranges joined by "to", counted as one stat
+PAIR = re.compile(
+    r"(?P<lo>\((?:-?\d+(?:\.\d+)?)-(?:-?\d+(?:\.\d+)?)\)|\d+(?:\.\d+)?) to "
+    r"(?P<hi>\((?:-?\d+(?:\.\d+)?)-(?:-?\d+(?:\.\d+)?)\)|\d+(?:\.\d+)?)(?![\w.%])"
+)
+
+
+def fold(key):
+    """The key the app gives a stat, which writes reduced as increased and less as more."""
+    return re.sub(r"\bless\b", "more", re.sub(r"\breduced\b", "increased", key))
+
+
 def item_class(kind, tags):
     if kind == "Shield":
         return "Bucklers" if "buckler" in tags else "Shields"
@@ -73,6 +86,9 @@ def read_bases(folder):
             if not kind or not tags:
                 continue
             names = set(re.findall(r"(\w+) = true", tags.group(1)))
+            # hidden and unique-only bases don't set what a slot can roll
+            if "hidden = true" in body or "not_for_sale" in names:
+                continue
             cls = item_class(kind.group(1), names)
             if cls:
                 bases.append((cls, names))
@@ -82,6 +98,9 @@ def read_bases(folder):
 def weight_for(keys, weights, tags):
     """The weight of the first of the mod's tags that the base has."""
     for key, weight in zip(keys, weights):
+        # these come only from the Genesis tree, not from rolling the item
+        if key.startswith("genesis_tree"):
+            continue
         if key == "default" or key in tags:
             return weight
     return 0
@@ -101,21 +120,33 @@ def read_mods(folder):
         lines = re.findall(r'"([^"]+)"', head.split("affix =", 1)[1])[1:]
         stats = []
         for stat in lines:
-            # one number or range, and not "Adds # to # damage"
-            if stat.startswith("Adds "):
+            pair = PAIR.search(stat)
+            if pair:
+                # "Adds (1-3) to (5-8) Fire Damage": the app counts the average
+                low = [float(x) for x in pair.group("lo").strip("()").split("-")]
+                high = [float(x) for x in pair.group("hi").strip("()").split("-")]
+                key = fold(stat[: pair.start()] + "# to #" + stat[pair.end() :]).lstrip("+")
+                stats.append((key, (low[0] + high[0]) / 2, (low[-1] + high[-1]) / 2))
                 continue
             ranges = RANGE.findall(stat)
             if len(ranges) == 1:
-                key = RANGE.sub("#", stat).lstrip("+")
+                key = fold(RANGE.sub("#", stat).lstrip("+"))
                 stats.append((key, float(ranges[0][0]), float(ranges[0][1])))
                 continue
             fixed = FIXED.findall(stat)
             if not ranges and len(fixed) == 1:
-                key = FIXED.sub("#", stat).lstrip("+")
+                key = fold(FIXED.sub("#", stat).lstrip("+"))
                 stats.append((key, float(fixed[0]), float(fixed[0])))
         if stats:
-            mods.append((level, keys, weights, stats))
+            # a hybrid mod gives more than one stat, and its ranges are its own
+            mods.append((level, keys, weights, stats, len(lines) > 1))
     return mods
+
+
+def tier(found):
+    """[item level, low, high], with a 1 on the end for a hybrid mod's."""
+    level, low, high, hybrid = found
+    return [level, low, high, 1] if hybrid else [level, low, high]
 
 
 def number(value):
@@ -130,19 +161,19 @@ def main(folder, out):
     for cls in sorted({cls for cls, _ in bases}):
         tag_sets = [tags for c, tags in bases if c == cls]
         found = {}
-        for level, keys, weights, stats in mods:
+        for level, keys, weights, stats, hybrid in mods:
             if not any(weight_for(keys, weights, tags) > 0 for tags in tag_sets):
                 continue
             for key, low, high in stats:
-                found.setdefault(key, set()).add((level, number(low), number(high)))
-        classes[cls] = {key: [list(t) for t in sorted(tiers, reverse=True)] for key, tiers in sorted(found.items())}
+                found.setdefault(key, set()).add((level, number(low), number(high), hybrid))
+        classes[cls] = {key: [tier(t) for t in sorted(tiers, reverse=True)] for key, tiers in sorted(found.items())}
 
     version = re.search(r'number="([^"]+)"', (folder / "manifest.xml").read_text(encoding="utf-8"))
     table = {
         "source": "Path of Building (Path of Exile 2), Data/ModItem.lua and Data/Bases",
         "version": version.group(1) if version else "unknown",
         "date": datetime.date.today().isoformat(),
-        "tiers": "[item level, low, high], the highest item level first",
+        "tiers": "[item level, low, high], the highest item level first, with a 1 on the end when the mod is a hybrid",
         "classes": classes,
     }
     Path(out).write_text(json.dumps(table, separators=(",", ":"), ensure_ascii=False) + "\n", encoding="utf-8")

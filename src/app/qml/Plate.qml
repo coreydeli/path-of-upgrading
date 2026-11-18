@@ -3,56 +3,72 @@ import QtQuick
 import QtQuick.Shapes
 
 // A panel with its top left and bottom right corners cut off, which is how
-// the app draws its cards and the popup. Plain decorations square it.
-Shape {
+// the app draws its cards and the popup. Plain decorations square it, and in
+// Material the corners are rounded instead.
+Item {
     id: plate
 
     property color fill: "transparent"
     property color line: "transparent"
     property real lineWidth: 1
     property real notch: Style.cut
+    // Material's corners, from its shape scale
+    property real radius: Style.shapeMedium
 
     // the line is drawn on the middle of its width, so it's kept inside
     readonly property real h: lineWidth / 2
 
-    preferredRendererType: Shape.CurveRenderer
+    Rectangle {
+        visible: Style.material
+        anchors.fill: parent
+        radius: plate.radius
+        color: plate.fill
+        border.width: plate.line.a > 0 ? plate.lineWidth : 0
+        border.color: plate.line
+    }
 
-    ShapePath {
-        fillColor: plate.fill
-        strokeColor: plate.line
-        strokeWidth: plate.line.a > 0 ? plate.lineWidth : -1
-        joinStyle: ShapePath.MiterJoin
-        startX: plate.notch + plate.h
-        startY: plate.h
+    Shape {
+        anchors.fill: parent
+        visible: !Style.material
+        preferredRendererType: Shape.CurveRenderer
 
-        PathLine {
-            x: plate.width - plate.h
-            y: plate.h
-        }
+        ShapePath {
+            fillColor: plate.fill
+            strokeColor: plate.line
+            strokeWidth: plate.line.a > 0 ? plate.lineWidth : -1
+            joinStyle: ShapePath.MiterJoin
+            startX: plate.notch + plate.h
+            startY: plate.h
 
-        PathLine {
-            x: plate.width - plate.h
-            y: plate.height - plate.notch - plate.h
-        }
+            PathLine {
+                x: plate.width - plate.h
+                y: plate.h
+            }
 
-        PathLine {
-            x: plate.width - plate.notch - plate.h
-            y: plate.height - plate.h
-        }
+            PathLine {
+                x: plate.width - plate.h
+                y: plate.height - plate.notch - plate.h
+            }
 
-        PathLine {
-            x: plate.h
-            y: plate.height - plate.h
-        }
+            PathLine {
+                x: plate.width - plate.notch - plate.h
+                y: plate.height - plate.h
+            }
 
-        PathLine {
-            x: plate.h
-            y: plate.notch + plate.h
-        }
+            PathLine {
+                x: plate.h
+                y: plate.height - plate.h
+            }
 
-        PathLine {
-            x: plate.notch + plate.h
-            y: plate.h
+            PathLine {
+                x: plate.h
+                y: plate.notch + plate.h
+            }
+
+            PathLine {
+                x: plate.notch + plate.h
+                y: plate.h
+            }
         }
     }
 }

@@ -29,14 +29,14 @@ QList<Credit> creditList()
 {
     return {
         {u"Path of Building Community"_s,
-         u"Does the calculations. It isn't included or changed, and the copy you have runs without its window."_s,
+         u"Works out the numbers. It isn't bundled or changed, and your copy runs without its window."_s,
          u"MIT"_s, u"https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2"_s},
         {u"rusty-path-of-building"_s,
          u"Makes Path of Building run on Linux, and is its Flatpak on Flathub."_s, u"MIT"_s,
          u"https://github.com/meehl/rusty-path-of-building"_s},
-        {u"Big Shoulders"_s, u"The font of the titles, by The Big Shoulders Project Authors."_s,
+        {u"Big Shoulders"_s, u"The font for titles, by The Big Shoulders Project Authors."_s,
          u"SIL Open Font License 1.1"_s, u"https://github.com/xotypeco/big_shoulders"_s},
-        {u"Spectral"_s, u"The font of the text, by The Spectral Project Authors."_s,
+        {u"Spectral"_s, u"The font for text, by The Spectral Project Authors."_s,
          u"SIL Open Font License 1.1"_s, u"https://github.com/productiontype/Spectral"_s},
         {u"poe.ninja"_s, u"Where the currency prices come from."_s, QString(), u"https://poe.ninja"_s},
         {u"Path of Exile trade site"_s, u"Where the listings come from."_s, QString(),

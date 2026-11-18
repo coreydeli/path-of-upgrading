@@ -57,6 +57,8 @@ Item {
         }
         height: names.implicitHeight + 2 * Kirigami.Units.largeSpacing
         color: Style.tint(Kirigami.Theme.backgroundColor, card.accent, 0.14)
+        topLeftRadius: Style.material ? Style.shapeLarge : 0
+        topRightRadius: topLeftRadius
 
         HoverHandler {
             cursorShape: Qt.SizeAllCursor
@@ -484,7 +486,7 @@ Item {
             Layout.fillWidth: true
             Layout.topMargin: Kirigami.Units.smallSpacing
             visible: !card.folded && figures.length > 0
-            title: qsTr("Gear score points")
+            title: qsTr("Gear score breakdown")
             figures: card.report.gearParts
             colorblind: card.popup.colorblind
             plainNotes: true
@@ -629,7 +631,7 @@ Item {
                         },
                         {
                             kind: TradeFinder.Weighted,
-                            text: qsTr("By My Weights"),
+                            text: qsTr("Search by My Weights"),
                             icon: "view-statistics"
                         },
                         {

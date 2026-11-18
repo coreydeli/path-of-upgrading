@@ -3,6 +3,7 @@
 
 #include "core/evaluation.h"
 #include "core/hands.h"
+#include "core/modtiers.h"
 #include "core/numbers.h"
 #include "core/slots.h"
 #include "core/statsources.h"
@@ -29,14 +30,18 @@ double rolledOn(const Item &item, const QRegularExpression &pattern)
     return total;
 }
 
-// The stats worth searching for in a slot, most important first.
-QList<SearchWeight> wantedWeights(const QString &slot, const GearScoreOptions &options)
+// The stats worth searching for in a slot, most important first. A stat the
+// item class can't roll as a prefix or suffix is no use to look for, whatever
+// the build rates it.
+QList<SearchWeight> wantedWeights(const QString &slot, const QString &itemClass,
+                                  const GearScoreOptions &options)
 {
+    const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
     // the same bar topStats() uses for the stats worth searching for
     constexpr double worthSearching = 4;
     QList<SearchWeight> weights;
     for (const SearchWeight &w : searchWeights(slot, options)) {
-        if (!w.key.isEmpty() && w.importance >= worthSearching)
+        if (!w.key.isEmpty() && w.importance >= worthSearching && mods.allows(itemClass, w.key))
             weights << w;
     }
     std::ranges::stable_sort(weights, std::greater<>(), &SearchWeight::importance);
@@ -48,9 +53,9 @@ QList<SearchWeight> wantedWeights(const QString &slot, const GearScoreOptions &o
 QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearScoreOptions &options,
                               int count)
 {
-    const QList<SearchWeight> weights = wantedWeights(slot, options);
     const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
     const QString itemClass = worn && !worn->itemClass.isEmpty() ? worn->itemClass : classOfSlot(slot);
+    const QList<SearchWeight> weights = wantedWeights(slot, itemClass, options);
     QList<WantedStat> out;
     for (const SearchWeight &w : std::as_const(weights)) {
         double minimum = searchMinimum(w.cap);
@@ -59,7 +64,10 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
         if (worn && rolledOn(*worn, w.pattern) >= minimum)
             continue;
         const auto top = mods.best(itemClass, w.key);
-        out << WantedStat{.label = w.label, .minimum = minimum, .best = top ? top->high : 0};
+        out << WantedStat{.label = w.label,
+                          .minimum = minimum,
+                          .best = top ? top->high : 0,
+                          .tier = tierFor(mods, itemClass, w.key, minimum).value_or(0)};
         if (out.size() == count)
             break;
     }
@@ -71,7 +79,9 @@ QString wantedText(const QList<WantedStat> &stats)
     QStringList parts;
     for (const WantedStat &s : stats)
         parts << s.label + u' ' + formatNumber(s.minimum) + u" or more"_s +
-                     (s.best > 0 ? u" (up to "_s + rollText(s.best) + u')' : QString());
+                     (s.best > 0 ? u" (up to "_s + rollText(s.best) +
+                                       (s.tier > 0 ? u", tier %1 or better"_s.arg(s.tier) : QString()) + u')'
+                                 : QString());
     return parts.join(u", "_s);
 }
 
@@ -80,7 +90,7 @@ QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreO
     const SlotMods &mods = options.mods ? *options.mods : SlotMods::builtIn();
     const QString itemClass = worn && !worn->itemClass.isEmpty() ? worn->itemClass : classOfSlot(slot);
     QList<RollRange> out;
-    for (const SearchWeight &w : wantedWeights(slot, options)) {
+    for (const SearchWeight &w : wantedWeights(slot, itemClass, options)) {
         if (const auto top = mods.best(itemClass, w.key))
             out << RollRange{.label = w.label, .top = *top};
         if (out.size() == count)
@@ -93,7 +103,7 @@ QString rollRangeText(const RollRange &range)
 {
     const ModTier &t = range.top;
     const QString roll = t.low == t.high ? rollText(t.high) : rollText(t.low) + u" to "_s + rollText(t.high);
-    return range.label + u' ' + roll + u", item level "_s + QString::number(t.level);
+    return range.label + u' ' + roll + u" at item level "_s + QString::number(t.level);
 }
 
 QList<Recommendation> recommendedUpgrades(const Character &character, const PobPriorities &priorities,

@@ -18,7 +18,7 @@ ColumnsPage {
     readonly property real levelWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Gear Score")
-    description: qsTr("What the gear score goes by, and how much each stat counts.")
+    description: qsTr("See how items are scored for your character, and change how much each stat counts.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
@@ -56,7 +56,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: scorePage.scoring.character === ""
             text: qsTr("You haven't picked a character yet.")
-            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
+            description: qsTr("Change anything here and the app makes a character for you. You can also add one yourself, or import a build, under Gear Settings, Characters.")
         }
 
         FormCard.FormTextDelegate {
@@ -70,7 +70,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "weighAgainButton"
             text: scorePage.scoring.weighing ? qsTr("Weighing Your Build") : qsTr("Weigh Again")
-            description: qsTr("Has Path of Building weigh your build again.")
+            description: qsTr("Changed your build? Have Path of Building weigh it again.")
             icon.name: "view-refresh"
             enabled: scorePage.scoring.canWeigh && !scorePage.scoring.weighing
             onClicked: scorePage.scoring.weighAgain()
@@ -103,18 +103,18 @@ ColumnsPage {
     SectionText {
         objectName: "scoreHelp"
         visible: stats.visible
-        text: qsTr("The gear score rates an item from 0 to 100 by how much it has of what your build wants in its slot. You can change how much a stat adds under Affix Impact below, for this character only.")
+        text: qsTr("The gear score rates an item from 0 to 100 by how much of what your build wants in that slot it has. You can change how much each stat adds below, for this character only.")
     }
 
     SectionHeader {
         visible: stats.visible
-        title: qsTr("Affix Impact")
+        title: qsTr("How much each stat counts")
     }
 
     SectionText {
         objectName: "impactHelp"
         visible: stats.visible
-        text: qsTr("Changes how much each stat adds to the gear score. The number is what the stat's points are multiplied by, so Normal (1x) is how your build has it, Not at all (0x) leaves the stat out and Three times (3x) triples it.")
+        text: qsTr("Each stat's points are multiplied by this number. Normal (1x) keeps your build's setting, Not at all (0x) leaves the stat out, and Three times (3x) triples it.")
     }
 
     Sheet {
@@ -127,7 +127,7 @@ ColumnsPage {
             visible: scorePage.wide
             first: qsTr("Stat")
             second: qsTr("Where it counts")
-            third: qsTr("Impact")
+            third: qsTr("How much")
             descriptionWidth: scorePage.whereWidth
             controlsWidth: scorePage.levelWidth
         }

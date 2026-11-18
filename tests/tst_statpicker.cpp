@@ -97,12 +97,14 @@ struct Picking
         return row < 0 ? QVariant() : picker.index(int(row)).data(role);
     }
 
-    // Asks the site, and waits for what it says.
+    // Opens the picker, has the site asked as a search or the Refresh button
+    // would, and waits for what it says.
     bool refreshFromSite()
     {
         picker.setSiteAllowed(true);
-        QSignalSpy reset(&picker, &StatPicker::modelReset);
         picker.refresh();
+        QSignalSpy reset(&picker, &StatPicker::modelReset);
+        data.refresh();
         return reset.wait();
     }
 };
@@ -129,12 +131,12 @@ private Q_SLOTS:
         QCOMPARE(p.keys(), properties);
         QCOMPARE(p.of(u"[Base] Armour"_s, StatPicker::NameRole).toString(), u"Armour"_s);
         QCOMPARE(p.of(u"[Base] Armour"_s, StatPicker::NoteRole).toString(),
-                 u"The item's own, with its mods"_s);
+                 u"The item's own, mods included"_s);
         QCOMPARE(p.of(u"[Weapon] Total DPS"_s, StatPicker::NoteRole).toString(),
-                 u"The weapon's own, with its mods"_s);
+                 u"The weapon's own, mods included"_s);
         QCOMPARE(p.picker.message(),
-                 u"The trade site's list of stats comes with trade search, so here are only "
-                 u"the item's own and those on the items you've checked."_s);
+                 u"Trade search brings the trade site's list of stats, so for now you only see "
+                 u"the item's own stats and those on items you've checked."_s);
         QVERIFY(p.network.sent.isEmpty());
 
         // said once, as it's the same the next time
@@ -161,9 +163,26 @@ private Q_SLOTS:
     {
         Picking p;
         p.picker.setSiteAllowed(true);
+        p.data.refresh();
         p.picker.refresh();
         QCOMPARE(p.picker.message(), u"Getting the list of stats from the trade site."_s);
         QCOMPARE(p.keys(), properties);
+    }
+
+    void opensWithoutAsking()
+    {
+        Picking p;
+        p.picker.setSiteAllowed(true);
+        p.picker.refresh();
+        p.picker.refresh();
+        QTest::qWait(30);
+        QVERIFY(p.network.sent.isEmpty());
+        QVERIFY(!p.data.isRefreshing());
+        QCOMPARE(p.keys(), properties);
+        QCOMPARE(p.picker.message(),
+                 u"You get the trade site's list of stats with your first trade search, or when you press "
+                 u"Refresh on the Trade page. Until then you only see the item's own stats and those on "
+                 u"items you've checked."_s);
     }
 
     void cantGetThem()
@@ -173,8 +192,8 @@ private Q_SLOTS:
         QVERIFY(p.refreshFromSite());
         QCOMPARE(p.keys(), properties);
         QCOMPARE(p.picker.message(),
-                 u"Couldn't get the trade site's list of stats, so here are only the item's "
-                 u"own and those on the items you've checked."_s);
+                 u"Couldn't get the trade site's list of stats, so you only see the item's "
+                 u"own stats and those on items you've checked."_s);
     }
 
     void keptStats()
@@ -213,7 +232,7 @@ private Q_SLOTS:
         QCOMPARE(p.of(rarity, StatPicker::NoteRole).toString(),
                  u"Not on the trade site. On one of the items you've checked"_s);
         QCOMPARE(p.of(u"[Base] Evasion Rating"_s, StatPicker::NoteRole).toString(),
-                 u"The item's own, with its mods. On one of the items you've checked"_s);
+                 u"The item's own, mods included. On one of the items you've checked"_s);
     }
 
     void seenProperty()
@@ -225,7 +244,7 @@ private Q_SLOTS:
         QCOMPARE(p.of(chaos, StatPicker::NameRole).toString(), u"Chaos DPS"_s);
         QCOMPARE(
             p.of(chaos, StatPicker::NoteRole).toString(),
-            u"The weapon's own, with its mods. Not on the trade site. On one of the items you've checked"_s);
+            u"The weapon's own, mods included. Not on the trade site. On one of the items you've checked"_s);
         QVERIFY(p.keys().indexOf(chaos) < properties.size());
         QCOMPARE(p.picker.rowCount(), properties.size() + 5);
     }

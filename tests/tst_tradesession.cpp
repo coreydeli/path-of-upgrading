@@ -58,7 +58,7 @@ private Q_SLOTS:
         Signing s;
         QVERIFY(!s.session.isSaved());
         QVERIFY(!s.session.isBusy());
-        QCOMPARE(s.session.status(), u"The keyring is only asked while trade searches are on."_s);
+        QCOMPARE(s.session.status(), u"The keyring isn't checked unless trade searches are on."_s);
         QCOMPARE(s.session.error(), QString());
         QCOMPARE(s.store.reads, 0);
     }
@@ -140,7 +140,7 @@ private Q_SLOTS:
         s.session.load();
         QVERIFY(s.settled());
         QVERIFY(!s.session.isSaved());
-        QCOMPARE(s.session.status(), u"Couldn't tell if one is saved."_s);
+        QCOMPARE(s.session.status(), u"Couldn't tell whether a session ID is saved."_s);
         QCOMPARE(s.session.error(), u"The keyring is locked."_s);
         QCOMPARE(s.cookie(), QByteArray());
         // and isn't asked again
@@ -216,7 +216,7 @@ private Q_SLOTS:
         s.session.save(text);
         QVERIFY(!s.session.isBusy());
         QCOMPARE(changed.size(), 1);
-        QCOMPARE(s.session.error(), u"That isn't a session ID. It's only letters and digits."_s);
+        QCOMPARE(s.session.error(), u"That doesn't look like a session ID. It's only letters and digits."_s);
         QCOMPARE(s.store.writes, 0);
         QVERIFY(!s.session.isSaved());
         QCOMPARE(s.stored.size(), 0);

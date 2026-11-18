@@ -12,9 +12,14 @@ namespace pou {
 namespace {
 
 // What it's kept under, as the site calls the cookie.
-const QString secretName = u"POESESSID"_s;
+const QString keptAs = u"POESESSID"_s;
 
 } // namespace
+
+QString TradeSession::secretName()
+{
+    return keptAs;
+}
 
 TradeSession::TradeSession(SecretStore *store, TradeClient *client, Opener *opener, QObject *parent)
     : QObject(parent)
@@ -45,9 +50,9 @@ QString TradeSession::status() const
         return u"Waiting for the keyring."_s;
     switch (m_state) {
     case State::NotAsked:
-        return u"The keyring is only asked while trade searches are on."_s;
+        return u"The keyring isn't checked unless trade searches are on."_s;
     case State::Unknown:
-        return u"Couldn't tell if one is saved."_s;
+        return u"Couldn't tell whether a session ID is saved."_s;
     case State::SignedOut:
         return u"No session ID is saved."_s;
     case State::SignedIn:
@@ -63,7 +68,7 @@ void TradeSession::load()
     if (m_busy || m_state != State::NotAsked)
         return;
     begin();
-    m_store->read(secretName, this, [this](const SecretStore::Result &result) {
+    m_store->read(keptAs, this, [this](const SecretStore::Result &result) {
         switch (result.status) {
         case SecretStore::Status::Done:
             signIn(result.secret);
@@ -86,12 +91,12 @@ void TradeSession::save(const QString &text)
         return;
     const QString id = text.trimmed();
     if (!TradeClient::isSessionId(id)) {
-        m_error = u"That isn't a session ID. It's only letters and digits."_s;
+        m_error = u"That doesn't look like a session ID. It's only letters and digits."_s;
         Q_EMIT changed();
         return;
     }
     begin();
-    m_store->write(secretName, id, this, [this, id](const SecretStore::Result &result) {
+    m_store->write(keptAs, id, this, [this, id](const SecretStore::Result &result) {
         if (result.status == SecretStore::Status::Done) {
             signIn(id);
             Q_EMIT stored();
@@ -107,7 +112,7 @@ void TradeSession::forget()
     if (m_busy)
         return;
     begin();
-    m_store->remove(secretName, this, [this](const SecretStore::Result &result) {
+    m_store->remove(keptAs, this, [this](const SecretStore::Result &result) {
         // there being none is as good
         if (result.status == SecretStore::Status::Failed)
             m_error = result.error;

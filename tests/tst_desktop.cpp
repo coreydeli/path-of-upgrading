@@ -169,7 +169,7 @@ private Q_SLOTS:
         const FakeNotifier::Sent &sent = s.notifier.sent.first();
         QCOMPARE(sent.event, Notifier::Event::HotkeysUnavailable);
         QCOMPARE(sent.title, u"The Hotkeys Aren't Working"_s);
-        QCOMPARE(sent.text, u"It's off. The settings are in the Path of Upgrading window."_s);
+        QCOMPARE(sent.text, u"It's off. You can change them in the Path of Upgrading window."_s);
     }
 
     void saysNothingWhenTheyWork()
@@ -187,8 +187,8 @@ private Q_SLOTS:
         QCOMPARE(s.notifier.sent.size(), 1);
         const FakeNotifier::Sent &sent = s.notifier.sent.first();
         QCOMPARE(sent.event, Notifier::Event::UpdateAvailable);
-        QCOMPARE(sent.title, u"A New Version Is Out"_s);
-        QCOMPARE(sent.text, u"Version 0.8.0 of Path of Upgrading is ready."_s);
+        QCOMPARE(sent.title, u"There's a New Version"_s);
+        QCOMPARE(sent.text, u"Version 0.8.0 of Path of Upgrading is out."_s);
         QCOMPARE(sent.action, u"Update"_s);
         // and its button shows the window
         QVERIFY(!s.window.isVisible());

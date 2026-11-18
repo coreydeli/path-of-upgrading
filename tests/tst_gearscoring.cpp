@@ -141,7 +141,7 @@ private Q_SLOTS:
     {
         Scoring s;
         s.play(tester());
-        QCOMPARE(s.scoring.state(), u"A general start, until Path of Building weighs your build."_s);
+        QCOMPARE(s.scoring.state(), u"A rough guide until Path of Building has weighed your build."_s);
         QCOMPARE(s.scoring.weighedOn(), QString());
         QVERIFY(!s.scoring.weightsOnly());
         QVERIFY(!s.scoring.isWeighing());
@@ -336,7 +336,7 @@ private Q_SLOTS:
         QCOMPARE(s.of(chaos, GearScoring::LevelRole).toInt(), 0);
         QVERIFY(s.of(chaos, GearScoring::WhereRole)
                     .toString()
-                    .endsWith(u". Not at all to start with, as your build has Chaos Inoculation."_s));
+                    .endsWith(u". It starts at Not at all, because your build has Chaos Inoculation."_s));
         QVERIFY(!s.of(u"Life"_s, GearScoring::WhereRole).toString().contains(u"Chaos"_s));
         QVERIFY(!s.scoring.isTweaked());
 

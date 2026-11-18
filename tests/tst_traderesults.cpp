@@ -17,6 +17,7 @@
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 using namespace resultsite;
 
@@ -509,6 +510,7 @@ private Q_SLOTS:
     void keepsWhatItHasWhenAPageFails()
     {
         Site site;
+        site.client.setRest(0ms);
         const TradeFinder::Found found = foundBy(25);
         site.network.answers = {
             fetched(found.listingIds.first(10)), {.status = 500}, fetched(found.listingIds.mid(10, 10))};
@@ -532,6 +534,7 @@ private Q_SLOTS:
     void asksAgainForTheFirstPageAfterAFailure()
     {
         Site site;
+        site.client.setRest(0ms);
         const TradeFinder::Found found = foundBy(25);
         site.network.answers = {{.status = 500}, fetched(found.listingIds.first(10))};
         site.results.setSearch(found);
@@ -694,7 +697,7 @@ private Q_SLOTS:
         QCOMPARE(better.figures.at(0).change, u"+50"_s);
         QCOMPARE(better.figures.at(1).label, u"Average gear score"_s);
         QCOMPARE(better.versus, u"vs Grim Crown"_s);
-        QCOMPARE(better.gearScore, u"Gear score 13 D, yours 5"_s);
+        QCOMPARE(better.gearScore, u"Gear score 13 D, yours is 5"_s);
         QCOMPARE(better.gearGrade, u"D"_s);
         QCOMPARE(better.gearPoints, u"13"_s);
         QVERIFY(better.losses.isEmpty());
@@ -707,7 +710,7 @@ private Q_SLOTS:
         QCOMPARE(worse.tone, Tone::Bad);
         QCOMPARE(worse.score, u"-3 gear score"_s);
         QCOMPARE(worse.versus, u"vs Grim Crown"_s);
-        QCOMPARE(worse.gearScore, u"Gear score 2 D, yours 5"_s);
+        QCOMPARE(worse.gearScore, u"Gear score 2 D, yours is 5"_s);
         QCOMPARE(site.results.roleNames().value(TradeResults::VerdictRole), "verdict"_ba);
     }
 
@@ -782,7 +785,8 @@ private Q_SLOTS:
         QStringList labels;
         for (const ReportFigure &figure : verdictIn(site, 0).figures)
             labels << figure.label;
-        QCOMPARE(labels, (QStringList{u"Cold Resistance"_s, u"Lightning Resistance"_s, u"Chaos Resistance"_s, u"Life"_s}));
+        QCOMPARE(labels, (QStringList{u"Cold Resistance"_s, u"Lightning Resistance"_s, u"Chaos Resistance"_s,
+                                      u"Life"_s}));
     }
 
     // with cold and fire resistance on the helmet you wear

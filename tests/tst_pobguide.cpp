@@ -102,7 +102,7 @@ private Q_SLOTS:
         QVERIFY(computer.installFlatpak());
         QVERIFY(addPob(computer.flatpakFolder()));
         const PobGuide guide = guideFor(computer.places);
-        QCOMPARE(guide.headline, u"Using Path of Building from Flathub."_s);
+        QCOMPARE(guide.headline, u"You're using Path of Building from Flathub."_s);
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(computer.flatpakFolder()));
         QCOMPARE(guide.buildsAt, QDir::toNativeSeparators(computer.flatpakFolder() +
                                                           u"/userdata/Path of Building (PoE2)/Builds"_s));
@@ -111,7 +111,7 @@ private Q_SLOTS:
         QVERIFY(guide.steps.isEmpty());
         QVERIFY(!guide.getFlatpak);
         QVERIFY(!guide.folderProblem);
-        QVERIFY(guide.folderNote.contains(u"Leave it empty to use the one found."));
+        QVERIFY(guide.folderNote.contains(u"Leave it empty to use the one it found."));
         QVERIFY(guide.folderNote.contains(u"AUR"));
         QVERIFY(guide.folderNote.contains(u"HeadlessWrapper.lua"));
     }
@@ -129,7 +129,7 @@ private Q_SLOTS:
         Computer computer;
         QVERIFY(addPob(computer.dataFolder()));
         const PobGuide guide = guideFor(computer.places);
-        QCOMPARE(guide.headline, u"Using the Path of Building in your data folder."_s);
+        QCOMPARE(guide.headline, u"You're using the Path of Building in your data folder."_s);
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(computer.dataFolder()));
         QVERIFY(!guide.buildsAt.isEmpty());
         QVERIFY(guide.details.isEmpty());
@@ -141,9 +141,9 @@ private Q_SLOTS:
         const QString folder = computer.dir.filePath(u"games/pob"_s);
         QVERIFY(addPob(folder));
         const PobGuide guide = guideFor(computer.places, folder);
-        QCOMPARE(guide.headline, u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(guide.headline, u"You're using the Path of Building in the folder you chose."_s);
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(folder));
-        QVERIFY(guide.folderNote.startsWith(u"Used instead of the usual places."));
+        QVERIFY(guide.folderNote.startsWith(u"This folder is used in place of the usual places."));
         QVERIFY(!guide.folderProblem);
         QCOMPARE(guide.places.size(), 1);
         QVERIFY(guide.places.first().startsWith(u"The folder you chose: "));
@@ -154,7 +154,7 @@ private Q_SLOTS:
     {
         Computer computer;
         const PobGuide guide = guideFor(computer.places);
-        QCOMPARE(guide.headline, u"Path of Building wasn't found."_s);
+        QCOMPARE(guide.headline, u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(guide.installedAt.isEmpty());
         QCOMPARE(guide.steps.size(), 3);
         QVERIFY(guide.steps[0].startsWith(u"1. Install \"Path of Building\" from Flathub, in Discover"));
@@ -181,7 +181,7 @@ private Q_SLOTS:
         Computer computer;
         QVERIFY(computer.installFlatpak());
         const PobGuide guide = guideFor(computer.places);
-        QVERIFY(guide.headline.contains(u"not set up for Path of Exile 2"));
+        QVERIFY(guide.headline.contains(u"isn't set up for Path of Exile 2"));
         QVERIFY(guide.steps[0].contains(u"Open \"Path of Building Community (PoE2)\""));
         QVERIFY(guide.steps.last().contains(u"Update"));
         // it's installed already
@@ -194,7 +194,7 @@ private Q_SLOTS:
         QVERIFY(addPob(computer.dataFolder()));
         computer.places.luajit.clear();
         const PobGuide guide = guideFor(computer.places);
-        QCOMPARE(guide.headline, u"Path of Building was found, but LuaJIT is missing."_s);
+        QCOMPARE(guide.headline, u"Path of Building is there, but LuaJIT is missing."_s);
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(computer.dataFolder()));
         QVERIFY(text(guide).contains(u"\"luajit\" package"));
         QVERIFY(guide.steps.last().contains(u"Restart Path of Upgrading"));
@@ -213,7 +213,7 @@ private Q_SLOTS:
         QCOMPARE(guide.headline, u"There's no Path of Building in the folder you chose."_s);
         QVERIFY(guide.folderProblem);
         QVERIFY(guide.folderNote.contains(u"HeadlessWrapper.lua"));
-        QVERIFY(text(guide).contains(u"the usual places have this: Using Path of Building from Flathub."));
+        QVERIFY(text(guide).contains(u"that folder, you'd be using Path of Building from Flathub."));
         QVERIFY(guide.steps.last().contains(u"clear the folder"));
         QVERIFY(guide.places.first().endsWith(u", not there"));
 
@@ -239,7 +239,7 @@ private Q_SLOTS:
         const QString empty = computer.dir.filePath(u"empty"_s);
         QVERIFY(QDir().mkpath(empty));
         const PobGuide guide = guideFor(computer.places, empty);
-        QVERIFY(text(guide).contains(u"Nothing is found in the usual places either."));
+        QVERIFY(text(guide).contains(u"Path of Building isn't in the usual places either."));
     }
 
     void wouldNotStart()
@@ -248,7 +248,7 @@ private Q_SLOTS:
         QVERIFY(computer.installFlatpak());
         QVERIFY(addPob(computer.flatpakFolder()));
         const PobGuide guide = guideFor(computer.places, {}, u"Path of Building didn't start in time."_s);
-        QCOMPARE(guide.headline, u"Path of Building was found, but it wouldn't start."_s);
+        QCOMPARE(guide.headline, u"Path of Building is there, but it wouldn't start."_s);
         QVERIFY(guide.details.contains(u"Path of Building didn't start in time."_s));
         QCOMPARE(guide.steps.size(), 2);
         QVERIFY(guide.steps[1].contains(u"open Path of Building Community (PoE2) yourself"));
@@ -298,7 +298,7 @@ private Q_SLOTS:
         QVERIFY(addPob(computer.installFolder()));
         QVERIFY(writeFile(computer.installFolder() + u"/installed.cfg"_s, {}));
         PobGuide guide = guideFor(computer.places);
-        QCOMPARE(guide.headline, u"Using Path of Building Community (PoE2), from its installer."_s);
+        QCOMPARE(guide.headline, u"You're using Path of Building Community (PoE2), from its installer."_s);
         QCOMPARE(guide.installedAt, QDir::toNativeSeparators(computer.installFolder()));
         QVERIFY(guide.buildsAt.contains(u"Path of Building (PoE2)"));
         QVERIFY(guide.folderNote.contains(u"unzipped"));
@@ -308,7 +308,7 @@ private Q_SLOTS:
 
         computer.places.luajit.clear();
         guide = guideFor(computer.places);
-        QCOMPARE(guide.headline, u"Path of Building was found, but LuaJIT is missing."_s);
+        QCOMPARE(guide.headline, u"Path of Building is there, but LuaJIT is missing."_s);
         QVERIFY(text(guide).contains(u"Install Path of Upgrading again"));
         QVERIFY(!guide.getInstaller);
     }
@@ -317,7 +317,7 @@ private Q_SLOTS:
     {
         WindowsComputer computer;
         const PobGuide guide = guideFor(computer.places);
-        QCOMPARE(guide.headline, u"Path of Building wasn't found."_s);
+        QCOMPARE(guide.headline, u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(guide.getInstaller);
         QVERIFY(!guide.getFlatpak);
         QVERIFY(text(guide).contains(u"Run the installer."));

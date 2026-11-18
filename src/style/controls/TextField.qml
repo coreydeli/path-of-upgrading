@@ -13,13 +13,14 @@ T.TextField {
                              contentHeight + topPadding + bottomPadding,
                              placeholder.implicitHeight + topPadding + bottomPadding)
     padding: Kirigami.Units.smallSpacing
-    leftPadding: Kirigami.Units.smallSpacing * 2
+    leftPadding: Look.material ? 16 * Look.dp : Kirigami.Units.smallSpacing * 2
     hoverEnabled: true
 
-    color: Look.ink
+    color: Look.material ? Kirigami.Theme.textColor : Look.ink
     selectionColor: Kirigami.Theme.highlightColor
-    selectedTextColor: Look.paper
-    placeholderTextColor: Look.tint(Look.paper, Look.ink, 0.45)
+    selectedTextColor: Look.material ? Kirigami.Theme.highlightedTextColor : Look.paper
+    placeholderTextColor: Look.material ? Look.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.6)
+                                        : Look.tint(Look.paper, Look.ink, 0.45)
     verticalAlignment: TextInput.AlignVCenter
 
     Text {

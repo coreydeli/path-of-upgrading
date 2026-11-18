@@ -16,33 +16,51 @@ QtObject {
     property bool appColors: false
     // the family the page titles are set in
     property string headingFamily: "Big Shoulders Display"
+    // Which design is on: Dossier, the app's own, or Material Design 3. The
+    // controls draw both, from the same colors.
+    property bool material: false
+    // whether the colors on the app are dark, which Material's depend on
+    property bool dark: true
     // Whether the plates are square, which is when the decorations are plain.
     property bool plain: false
 
     // how much is cut off the corners of a plate
-    readonly property real cut: plain ? 0 : 12
+    readonly property real cut: plain || material ? 0 : 12
 
     // the paper the slabs and the fields are, and the ink on it
     readonly property color paper: Look.paper
     readonly property color ink: Look.ink
 
     onHeadingFamilyChanged: Look.headingFamily = headingFamily
+    onMaterialChanged: Look.material = material
+    onPlainChanged: Look.animated = !plain
+    onDarkChanged: Look.dark = dark
 
-    // the item colors the game's players read at a glance
+    // Material's shape scale and motion are in Look, as the controls draw them
+    readonly property real shapeSmall: Look.shapeSmall
+    readonly property real shapeMedium: Look.shapeMedium
+    readonly property real shapeLarge: Look.shapeLarge
+    readonly property real shapeExtraLarge: Look.shapeExtraLarge
+    readonly property int shortDuration: Look.shortDuration
+    readonly property int mediumDuration: Look.mediumDuration
+
+    // The item colors the game's players read at a glance. On a light Material
+    // surface they're darkened, each to 4.5 to 1 or better against Material's surfaces.
     function rarity(rarity: string, theme): color {
+        const light = material && theme.backgroundColor.hslLightness > 0.6;
         switch (rarity) {
         case "Normal":
-            return "#c8c8c8";
+            return light ? "#4a4a4a" : "#c8c8c8";
         case "Magic":
-            return "#8888ff";
+            return light ? "#3b3bcc" : "#8888ff";
         case "Rare":
-            return "#ffff77";
+            return light ? "#6f6000" : "#ffff77";
         case "Unique":
-            return "#af6025";
+            return light ? "#8a4a12" : "#af6025";
         case "Currency":
-            return "#aa9e82";
+            return light ? "#6b5f3f" : "#aa9e82";
         case "Gem":
-            return "#1ba29b";
+            return light ? "#00706b" : "#1ba29b";
         default:
             return theme.textColor;
         }
@@ -85,11 +103,12 @@ QtObject {
 
     // the line round a plate, and the finer one inside it
     function frame(theme): color {
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.28);
+        // Material's outline variant
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, material ? 0.2 : 0.28);
     }
 
     function inner(theme): color {
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.14);
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, material ? 0.12 : 0.14);
     }
 
     // the one color besides the text, which is teal in the app's scheme

@@ -11,6 +11,67 @@ version that comes out.
 
 Nothing yet.
 
+## [0.8.0] - 2026-11-18
+
+[Release notes](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.8.0)
+
+### Added
+
+- A Design setting on the Appearance page, with Dossier and Material. Dossier is
+  the app's own look, and it stays the default. Material follows Google's
+  Material Design 3, and it changes right away. With Material, Colors is
+  Material's own colors or your desktop's, and Light or dark sets the
+  brightness, which follows your desktop by default. Decorations set to Plain
+  leaves out Material's animation.
+- Under Material, the popup and the results window have rounded corners and
+  Material's button colors. The item colors are darkened on a light surface so
+  they stay easy to read.
+- Start Over, on the General page, in betas only. It wipes what the app has
+  kept: your settings, characters, imported builds, gear, stat weights, item
+  history, the trade and price data, downloads, your session ID in the keyring,
+  the autostart entry and the hotkeys on your desktop. It asks first, and then
+  the app opens again on the setup guide. Path of Building, its builds and the
+  game are left alone.
+- The gear score points in the popup, under Show More, say which tier a stat's
+  roll is in, such as "tier 4 of 10", when one mod gave the stat.
+- The weak rolls in a gear slot's notes say the tier too, such as "Life 62 (up
+  to 149, tier 4 of 10)".
+- A Next tier note on the gear page names the tier above a weak roll, with its
+  range and item level, such as "Life, tier 3 (120 to 149) from item level 60".
+  It's left out when the roll is already in the top tier.
+- Look for says the tier a wanted stat has to reach, such as "Life 60 or more
+  (up to 149, tier 3 or better)".
+- Added damage mods have ranges in the slot tables, so they can show up in Can
+  roll.
+- A website at getpou.app has the downloads and the docs. pathofupgrading.app
+  takes you there too.
+
+### Changed
+
+- The app only talks to the trade site when you ask it to: a search from the
+  popup, Find an Upgrade, Show Results, Load More, or Refresh under "Leagues and
+  stats" on the Trade page. It no longer asks when it starts, when a setting
+  changes or when the stat picker opens. The site's stats, filters and leagues
+  are kept, and a search fetches them again only when they're missing or a day
+  old. poe.ninja's prices still update on their own timer while trade searches
+  are on.
+- Until the trade site has said what its limits are, the app sends it one
+  request at a time, and after a failed request it waits a little before the
+  next one.
+- Updates has a page of its own in the sidebar's Settings group, between
+  Appearance and Help. The General page no longer has the Updates card.
+- The wording across the app is plainer, and it talks to you more directly.
+  Messages say what happened and what to do next. Some labels changed too:
+  "Popup Timeout" is now "Hide the popup after", "Where it shows" is now "Where
+  the popup shows", "Put back what you had copied" is now "Put your clipboard
+  back", the update dialog is "There's a New Version", and the gear notes say
+  "Not counted" in place of "Not scored".
+
+### Fixed
+
+- Look for only names stats the slot can roll. The slot tables leave out hidden
+  bases and the mods that only come from the Genesis tree.
+
 ## [0.7.0] - 2026-11-13
 
 [Release notes](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.7.0)
@@ -264,6 +325,7 @@ The 0.1.0 betas (v0.1.0-beta.1 to v0.1.0-beta.33, from 2026-11-03 to
   checks do.
 
 [Unreleased]: https://github.com/coreydeli/path-of-upgrading/commits/beta
+[0.8.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.8.0
 [0.7.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.7.0
 [0.6.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0
 [0.5.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.5.0

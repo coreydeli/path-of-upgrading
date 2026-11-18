@@ -26,9 +26,9 @@ Words wordsFor(Verdict verdict)
 {
     switch (verdict) {
     case Verdict::New:
-        return {u"Empty slot"_s, Tone::Plain};
+        return {u"Fills an empty slot"_s, Tone::Plain};
     case Verdict::Same:
-        return {u"Sidegrade"_s, Tone::Plain};
+        return {u"About the same"_s, Tone::Plain};
     case Verdict::Small:
         return {u"Small upgrade"_s, Tone::Good};
     case Verdict::Upgrade:
@@ -44,7 +44,7 @@ Words wordsFor(Verdict verdict)
     case Verdict::DefenceLoss:
         return {u"Loses defences"_s, Tone::Bad};
     case Verdict::Equipped:
-        return {u"Equipped"_s, Tone::Plain};
+        return {u"Already equipped"_s, Tone::Plain};
     }
     Q_UNREACHABLE_RETURN({});
 }
@@ -92,7 +92,7 @@ void putPobStatus(ItemReport &report, const ItemCheck &check)
         report.pobStatus = check.pobError;
         return;
     case ItemCheck::Pob::NoBuild:
-        report.pobStatus = u"Import this character's build from Path of Building for exact verdicts."_s;
+        report.pobStatus = u"Import this character's build to get exact verdicts from Path of Building."_s;
         return;
     case ItemCheck::Pob::Unused:
     case ItemCheck::Pob::Checked:
@@ -144,7 +144,7 @@ QList<ReportFigure> headlineOf(const PobVerdict &v)
             .label = u"Effective HP"_s, .change = signedNumber(*ehp) + u'%', .tone = toneOf(*ehp)};
     }
     if (v.resistGain != 0) {
-        headline << ReportFigure{.label = u"Resistances toward the caps"_s,
+        headline << ReportFigure{.label = u"Resistances against the caps"_s,
                                  .change = signedNumber(v.resistGain),
                                  .tone = toneOf(v.resistGain)};
     }
@@ -323,6 +323,8 @@ struct GearPart
     double points = 0;
     int quality = 0; // percent of an excellent roll
     bool runes = false;
+    int mods = 0;
+    std::optional<StatTier> tier; // of the last mod
 };
 
 // By the stat's label in the build profile, as it can come from several mods.
@@ -335,6 +337,8 @@ QHash<QString, GearPart> gearPartsByLabel(const GearScore &gear)
         part.points += c.points * scale;
         part.quality += c.quality;
         part.runes = part.runes || c.origin == StatOrigin::Socket;
+        part.tier = c.tier;
+        ++part.mods;
     }
     return parts;
 }
@@ -344,6 +348,9 @@ QString gearPartNote(const GearPart &part)
     QStringList notes;
     if (part.quality > 0)
         notes << u"%1% of an excellent roll"_s.arg(part.quality);
+    // one mod's tier says nothing of several
+    if (part.mods == 1 && part.tier)
+        notes << tierText(*part.tier);
     if (part.runes)
         notes << u"runes count half"_s;
     return notes.join(u", "_s);
@@ -493,12 +500,11 @@ void putMap(ItemReport &report, const MapCheck &map)
     if (map.corrupted)
         report.notes << u"It's corrupted."_s;
     if (map.usedBuild) {
-        report.mapBuild = map.buildChanged
-                              ? u"Counted against your character: the mods marked below are worse for it."_s
-                              : u"Checked against your character. Nothing here is worse for it."_s;
+        report.mapBuild = map.buildChanged ? u"The marked mods are bad news for your character."_s
+                                           : u"Nothing here is bad news for your character."_s;
     }
     report.mapExperimental =
-        u"Experimental: checking waystones and tablets is still being tested, and is only in beta versions."_s;
+        u"Experimental: waystone and tablet checks are still being tested, and only come in beta versions."_s;
 }
 
 } // namespace

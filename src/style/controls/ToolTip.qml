@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Templates as T
 import org.kde.kirigami as Kirigami
+import PouStyle
 
 T.ToolTip {
     id: control
@@ -27,6 +28,7 @@ T.ToolTip {
     }
 
     background: Rectangle {
+        radius: Look.material ? Look.shapeExtraSmall : 0
         color: Kirigami.Theme.backgroundColor
     }
 }

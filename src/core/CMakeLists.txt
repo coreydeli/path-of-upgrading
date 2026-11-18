@@ -18,6 +18,7 @@ add_library(pou_core STATIC
     links.cpp links.h
     listing.cpp listing.h
     mapcheck.cpp mapcheck.h
+    modtiers.cpp modtiers.h
     numbers.cpp numbers.h
     parser.cpp parser.h
     placement.cpp placement.h

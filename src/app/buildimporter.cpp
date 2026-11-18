@@ -30,17 +30,18 @@ QString imported(const BuildImport &done, const PobBuild &build)
     else if (done.items > 1)
         said << u"%1 now has %2 items equipped from it."_s.arg(name, QString::number(done.items));
     else if (done.kept == 0)
-        said << u"It has no items equipped."_s;
+        said << u"The build has no items."_s;
     if (done.kept == 1)
-        said << u"Kept 1 item you copied in the game, which says more."_s;
+        said << u"Kept 1 item you copied in the game, since it tells more than the build."_s;
     else if (done.kept > 1)
-        said << u"Kept %1 items you copied in the game, which say more."_s.arg(done.kept);
+        said << u"Kept %1 items you copied in the game, since they tell more than the build."_s.arg(
+            done.kept);
     if (done.withoutDamage == 1)
-        said << u"Copy your weapon in the game once, as the build doesn't include its damage."_s;
+        said << u"Copy your weapon in the game once. The build doesn't include its damage."_s;
     else if (done.withoutDamage > 1)
-        said << u"Copy your weapons in the game once, as the build doesn't include their damage."_s;
+        said << u"Copy your weapons in the game once. The build doesn't include their damage."_s;
     if (done.profileChanged && !done.character.weighed)
-        said << u"The gear score is a general start until Path of Building weighs the build."_s;
+        said << u"The gear score is only a rough guide until Path of Building has weighed the build."_s;
     return said.join(u' ');
 }
 
@@ -58,7 +59,7 @@ BuildImporter::BuildImporter(CharacterList *characters, PobEngine *pob, QNetwork
         if (const std::optional<QString> xml = decodeBuildCode(code))
             import(*xml, {});
         else
-            finish(u"That link doesn't give a Path of Building code."_s, true);
+            finish(u"That link doesn't lead to a Path of Building code."_s, true);
     });
     connect(&m_fetcher, &BuildFetcher::failed, this, [this](const QString &why) {
         Q_EMIT busyChanged();
@@ -80,7 +81,7 @@ void BuildImporter::importText(const QString &text)
     } else if (const std::optional<QString> xml = decodeBuildCode(trimmed)) {
         import(*xml, {});
     } else {
-        finish(u"That isn't a Path of Building code or a link to one."_s, true);
+        finish(u"That doesn't look like a Path of Building code or a link to one."_s, true);
     }
 }
 
@@ -132,12 +133,12 @@ QVariantList BuildImporter::builds() const
 void BuildImporter::import(const QString &xml, const QString &nameIfNew)
 {
     if (isPoe1Build(xml)) {
-        finish(u"That's a build for Path of Exile 1."_s, true);
+        finish(u"That build is for Path of Exile 1, and the app only reads Path of Exile 2 builds."_s, true);
         return;
     }
     const std::optional<PobBuild> build = parsePobBuild(xml);
     if (!build) {
-        finish(u"That isn't a Path of Exile 2 build."_s, true);
+        finish(u"That doesn't look like a Path of Exile 2 build."_s, true);
         return;
     }
 

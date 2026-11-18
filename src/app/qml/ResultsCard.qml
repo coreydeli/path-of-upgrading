@@ -24,7 +24,7 @@ Rectangle {
     // what it waits for while it asks the site
     readonly property string progress: {
         if (results.waiting === 0)
-            return qsTr("Asking the trade site for the listings");
+            return qsTr("Getting the listings from the trade site");
         return results.waiting === 1 ? qsTr("Waiting a second for the trade site")
                                      : qsTr("Waiting %1 seconds for the trade site").arg(results.waiting);
     }
@@ -36,6 +36,7 @@ Rectangle {
     implicitWidth: Kirigami.Units.gridUnit * 26
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
     color: Kirigami.Theme.backgroundColor
+    radius: Style.material ? Style.shapeLarge : 0
 
     ColumnLayout {
         id: content
@@ -91,7 +92,7 @@ Rectangle {
             opacity: 0.7
             text: card.panel.unavailable !== ""
                   ? card.panel.unavailable
-                  : qsTr("Check an item and search the trade site from the popup first.")
+                  : qsTr("Check an item and search for it from the popup, and the listings show up here.")
         }
 
         ListView {
@@ -150,7 +151,7 @@ Rectangle {
             wrapMode: Text.Wrap
             opacity: 0.7
             font: Kirigami.Theme.smallFont
-            text: qsTr("The trade site lists only the first %1. Open it to see the rest.")
+            text: qsTr("The trade site only shows the first %1. Open it to see the rest.")
                   .arg(card.results.available)
         }
 

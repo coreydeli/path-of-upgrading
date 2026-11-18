@@ -242,7 +242,7 @@ private Q_SLOTS:
             }
             return u"missing"_s;
         };
-        QCOMPARE(source(plain), u"A general start, until Path of Building weighs your build"_s);
+        QCOMPARE(source(plain), u"A rough guide until Path of Building has weighed your build"_s);
         QCOMPARE(source(byWeights), u"Judged by your stat weights alone"_s);
         QCOMPARE(source(byBuild), u"Weighed by Path of Building for your build"_s);
     }

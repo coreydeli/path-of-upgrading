@@ -197,8 +197,9 @@ private Q_SLOTS:
         QVERIFY(!site.in(u"Helmet"_s, RecommendedUpgrades::GradeRole).toString().isEmpty());
         // it has the 55 life asked for, so that's left out
         QCOMPARE(site.in(u"Helmet"_s, RecommendedUpgrades::LookForRole).toString(),
-                 u"Fire Resistance 24 or more (up to 45), Cold Resistance 24 or more (up to 45), "
-                 u"Lightning Resistance 24 or more (up to 45)"_s);
+                 u"Fire Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Cold Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Lightning Resistance 24 or more (up to 45, tier 5 or better)"_s);
 
         // and the offhand is covered once there is one, and the list follows
         QSignalSpy reset(&site.upgrades, &QAbstractItemModel::modelReset);
@@ -323,7 +324,7 @@ private Q_SLOTS:
             site.searcher.search({{u"query"_s, QJsonObject()}});
         QSignalSpy changed(&site.upgrades, &RecommendedUpgrades::dataChanged);
         site.upgrades.find(site.rowOf(u"Helmet"_s));
-        while (!site.tradeOf(u"Helmet"_s).note.contains(u"few searches"_s))
+        while (!site.tradeOf(u"Helmet"_s).note.contains(u"so many searches"_s))
             QVERIFY(changed.wait());
         const TradeReport report = site.tradeOf(u"Helmet"_s);
         QVERIFY(report.busy);
@@ -416,7 +417,7 @@ private Q_SLOTS:
         QVERIFY(site.upgrades.chosenLookFor().isEmpty());
         const QStringList boots = site.upgrades.chosenCanRoll();
         QVERIFY(!boots.isEmpty());
-        QVERIFY(boots.first().contains(u", item level "_s));
+        QVERIFY(boots.first().contains(u" at item level "_s));
 
         // an empty slot with a class
         site.upgrades.choose(u"Belt"_s);

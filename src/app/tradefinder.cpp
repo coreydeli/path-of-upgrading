@@ -152,8 +152,10 @@ void TradeFinder::find(const Item &item, Kind kind)
     m_errorString.clear();
     m_errorUrl.clear();
     m_busy = true;
-    // while trade searches are off, the site isn't asked for its stats either
-    if (m_data->data().stats.isEmpty() && m_searcher->unavailable().isEmpty()) {
+    // The search is what asks the site for its stats, leagues and filters when
+    // the files have none or are a day old. While trade searches are off, it
+    // asks for nothing.
+    if (m_searcher->unavailable().isEmpty() && m_data->isStale()) {
         m_waiting = true;
         m_data->refresh();
         return;
@@ -253,7 +255,7 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
     options.countOnly = size.countOnly;
     const GearSearch search = gearSearch(m_item, weights, m_data->data(), options);
     if (search.filters == 0)
-        return {.error = u"None of your build's stats for this slot could be matched on the trade site."_s};
+        return {.error = u"The trade site has none of your build's stats for this slot."_s};
 
     Plan plan{
         .body = search.body,
@@ -265,13 +267,13 @@ TradeFinder::Plan TradeFinder::upgradePlan() const
         .shrinks = true,
     };
     if (search.countOnly)
-        plan.note = (m_signedIn ? u"The trade site only takes a simple search"_s
-                                : u"Signed out, the trade site only takes a simple search"_s) +
-                    u", so each has at least %1 of these at a decent roll: %2. Cheapest first."_s.arg(
+        plan.note = (m_signedIn ? u"The trade site only takes simple searches"_s
+                                : u"Signed out, the trade site only takes simple searches"_s) +
+                    u", so each result has at least %1 of these at a decent roll: %2. Cheapest first."_s.arg(
                         QString::number(search.needKeyStats), search.keyStats.join(u", "));
     else if (m_level == 0 && m_size > 0)
         plan.note =
-            u"Scored by your build's main weights, as the trade site limits how many filters a search "
+            u"Scored by your build's main weights, since the trade site limits how many filters a search "
             u"can have. Best for your build first."_s;
     else if (m_level == 0)
         plan.note = scoredBy(search) + u" Best for your build first."_s;
@@ -361,7 +363,7 @@ TradeFinder::Plan TradeFinder::similarPlan() const
     options.level = m_level;
     const SimilarSearch search = similarSearch(m_item, m_data->data(), options);
     if (!asksForAnything(search.body))
-        return {.error = u"None of this item's stats could be matched on the trade site."_s};
+        return {.error = u"The trade site has none of this item's stats."_s};
 
     Plan plan{
         .body = search.body,
@@ -369,7 +371,7 @@ TradeFinder::Plan TradeFinder::similarPlan() const
         .looser = search.level + 1 < similarSearchLevels(),
     };
     if (search.unique && search.need == 0)
-        plan.note = u"Nothing matched its stats, so these are the %1 listed instead."_s.arg(m_item.name);
+        plan.note = u"Nothing matched its stats, so these are the other %1 listed."_s.arg(m_item.name);
     else if (search.level > 0)
         plan.note = u"Nothing matched your exact values, so these have %1, on %2 of the %3 stats."_s.arg(
             search.levelLabel, QString::number(search.need), QString::number(search.total));
@@ -388,9 +390,9 @@ TradeFinder::Plan TradeFinder::weightedPlan() const
         return {.error = u"None of your stat weights are on this item, so almost anything would beat it. Set "
                          u"weights for its stats, or find upgrades for your build."_s};
     if (search.current <= 0)
-        return {.error = u"None of your weighted stats on this item could be matched on the trade site."_s};
+        return {.error = u"The trade site has none of the stats you weighted on this item."_s};
 
-    Plan plan{.body = search.body, .title = u"Beats your %1 by your weights"_s.arg(m_item.name)};
+    Plan plan{.body = search.body, .title = u"Better than your %1 by your weights"_s.arg(m_item.name)};
     if (!search.unmatched.isEmpty()) {
         QStringList quoted;
         for (const QString &key : search.unmatched)
@@ -419,8 +421,7 @@ TradeFinder::Plan TradeFinder::craftPlan() const
             wanted << stat.label;
     }
     if (wanted.isEmpty())
-        return {.error =
-                    u"None of your build's key stats for this slot could be matched on the trade site."_s};
+        return {.error = u"The trade site has none of your build's key stats for this slot."_s};
 
     const QString stats = QLocale(QLocale::English).createSeparatedList(wanted);
     Plan plan{

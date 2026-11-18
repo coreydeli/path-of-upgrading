@@ -19,6 +19,7 @@ struct WantedStat
     QString label; // "Life"
     double minimum = 0;
     double best = 0; // the most the slot's items roll of it, 0 when that's not known
+    int tier = 0;    // the lowest tier that rolls the minimum, 0 when that's not known
 
     friend bool operator==(const WantedStat &, const WantedStat &) = default;
 };
@@ -31,7 +32,7 @@ struct WantedStat
 QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearScoreOptions &options,
                               int count = 3);
 
-// "Life 60 or more (up to 149), Cold Resistance 25 or more".
+// "Life 60 or more (up to 149, tier 3 or better), Cold Resistance 25 or more".
 QString wantedText(const QList<WantedStat> &stats);
 
 // What a slot can roll of a stat the build wants: the top tier's range, and the
@@ -52,7 +53,7 @@ struct RollRange
 QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreOptions &options,
                          int count = 6);
 
-// "Life 100 to 149, item level 82", or one number when the tier has no range.
+// "Life 100 to 149 at item level 82", or one number when the tier has no range.
 QString rollRangeText(const RollRange &range);
 
 struct Recommendation

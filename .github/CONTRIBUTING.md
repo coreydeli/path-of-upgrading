@@ -18,7 +18,9 @@ already on it.
 ## Reporting a bug or asking for a feature
 
 Use the issue forms, and search the open issues first in case it's already
-known.
+known. An issue's title starts with its kind, as a pull request's does
+(`Bug:`, `Feature:`, `Docs:`, `CI:` or `Maintenance:`), and the forms fill
+that in.
 
 For a bug, give the version, your desktop, how you installed the app and the
 steps that cause the problem. If it's about an item, paste the item text.
@@ -166,6 +168,8 @@ touch.
   builds into the tests, and don't commit them.
 - Window tests run offscreen. `initMain` sets `QT_QPA_PLATFORM=offscreen`, and
   the tests call `QTest::failOnWarning()`.
+- The window tests load every settings page under Dossier, and under Material in
+  light and dark, so a change to the look has to keep all of them loading.
 - Tests must not touch the clipboard, open a page in the browser, map visible
   windows, send XTest input, register real global shortcuts or set off desktop
   prompts.

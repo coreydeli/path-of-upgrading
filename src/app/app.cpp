@@ -94,6 +94,12 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
                                     .exec = CommandLine::backgroundCommand(),
                                     .icon = QGuiApplication::desktopFileName()})
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
+    , m_startOver(paths.startOverOffered,
+                  {.settings = paths.settings,
+                   .data = paths.data,
+                   .cache = paths.cache,
+                   .marker = u"path-of-upgrading"_s},
+                  &m_autostart, m_secrets.get(), m_shortcuts.get())
     , m_pobOptions(&m_settings, &m_pob, m_places, m_opener.get())
     , m_about(&m_pobOptions, m_opener.get())
     , m_help(m_opener.get(), paths.tradeOffered)
@@ -253,10 +259,12 @@ void App::followTrade()
     m_upgrades.setTradeAvailable(m_trade.unavailable().isEmpty());
     m_resultsPanel.setUnavailable(m_trade.unavailable());
     m_statPicker.setSiteAllowed(m_trade.unavailable().isEmpty());
+    // The trade site's lists come from what's kept. It's only asked when you
+    // search or press Refresh.
+    m_tradeData.load();
+    m_trade.setLeagues(m_tradeData.leagues());
     if (m_trade.unavailable().isEmpty()) {
-        // which does nothing while what there is is fresh
-        m_tradeData.refresh();
-        // and this asks the keyring once
+        // this asks the keyring once
         m_tradeSession.load();
     }
     followRates();
@@ -264,11 +272,15 @@ void App::followTrade()
 
 void App::followRates()
 {
-    // which carries on as it was when nothing about it changed
-    if (m_trade.unavailable().isEmpty() && m_settings.settings().trade.autoRate)
+    // poe.ninja isn't the trade site, so its prices come at the start too,
+    // unless the kept ones are still fresh. The follow carries on as it was
+    // when nothing about it changed.
+    if (m_trade.unavailable().isEmpty() && m_settings.settings().trade.autoRate) {
+        m_rates.refresh(m_trade.league().tradeId());
         m_ratesRefresher.follow(m_trade.league().tradeId(), m_settings.settings().trade.rateMinutes);
-    else
+    } else {
         m_ratesRefresher.stop();
+    }
 }
 
 } // namespace pou

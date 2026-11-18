@@ -63,18 +63,29 @@ QByteArray json(const QJsonObject &object)
     return QJsonDocument(object).toJson(QJsonDocument::Compact);
 }
 
-// The trade site with its data and leagues, then poe.ninja with what
-// currencies are worth.
-FakeNetwork *online()
+// The trade site with its data and leagues, and poe.ninja with what
+// currencies are worth, each said to whoever asks, whatever the order.
+FakeNetwork *online(bool ratesCome = true)
 {
     QJsonArray leagues;
     for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
         leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
     auto *network = new FakeNetwork;
-    network->answers = {{.body = json(tradefixtures::stats())},
-                        {.body = json(tradefixtures::filters())},
-                        {.body = json(QJsonObject{{u"result"_s, leagues}})},
-                        {.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"}};
+    network->route = [leagues, ratesCome](const QNetworkRequest &request) -> std::optional<FakeAnswer> {
+        const QString path = request.url().path();
+        if (path.endsWith(u"/data/stats"_s))
+            return FakeAnswer{.body = json(tradefixtures::stats())};
+        if (path.endsWith(u"/data/filters"_s))
+            return FakeAnswer{.body = json(tradefixtures::filters())};
+        if (path.endsWith(u"/data/leagues"_s))
+            return FakeAnswer{.body = json(QJsonObject{{u"result"_s, leagues}})};
+        if (request.url().host().contains(u"poe.ninja"_s)) {
+            if (!ratesCome)
+                return FakeAnswer{.never = true};
+            return FakeAnswer{.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"};
+        }
+        return std::nullopt;
+    };
     return network;
 }
 
@@ -169,7 +180,7 @@ struct Window
     FakeGlobalShortcuts *shortcuts = new FakeGlobalShortcuts;
     FakeSecretStore *keyring = new FakeSecretStore;
     FakeOpener *opener = new FakeOpener;
-    FakeNetwork *network = online();
+    FakeNetwork *network;
     std::unique_ptr<App> app;
     std::unique_ptr<QQuickWindow> window;
 
@@ -179,9 +190,13 @@ struct Window
     // It has trade, which a release build of the app leaves out.
     explicit Window(bool hotkeys = true, bool startHidden = false, const QString &colors = {},
                     const std::optional<Settings> &saved = used(), bool tradeOffered = true,
-                    FakeGameWatcher *game = nullptr)
+                    FakeGameWatcher *game = nullptr, bool siteKept = true, bool ratesCome = true,
+                    bool startOverOffered = true)
+        : network(online(ratesCome))
     {
         shortcuts->available = hotkeys;
+        if (siteKept)
+            keepSite();
         if (saved)
             SettingsStore(dir.filePath(u"settings.conf"_s)).set(*saved);
         app = std::make_unique<App>(
@@ -194,7 +209,8 @@ struct Window
                        .cache = dir.filePath(u"cache"_s),
                        .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
                        .colors = colors,
-                       .tradeOffered = tradeOffered},
+                       .tradeOffered = tradeOffered,
+                       .startOverOffered = startOverOffered},
             std::unique_ptr<GameWatcher>(game));
         // whatever the build was configured for, a test says what it needs
         app->updates()->setInstallKind(InstallKind::Source);
@@ -208,6 +224,20 @@ struct Window
         if (!made)
             qWarning() << main.errorString();
         window.reset(qobject_cast<QQuickWindow *>(made));
+    }
+
+    // What the site said on an earlier run, which is all the app goes by
+    // until a search or Refresh asks it again.
+    void keepSite() const
+    {
+        const QString trade = dir.filePath(u"cache/trade"_s);
+        QJsonArray leagues;
+        for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
+            leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
+        if (!QDir().mkpath(trade) || !writeJsonFile(trade + u"/stats.json"_s, tradefixtures::stats()) ||
+            !writeJsonFile(trade + u"/filters.json"_s, tradefixtures::filters()) ||
+            !writeJsonFile(trade + u"/leagues.json"_s, QJsonObject{{u"result"_s, leagues}}))
+            qWarning() << "Couldn't keep the site's data in" << trade;
     }
 
     // The rows a list let go of are only deleted later, and in Qt 6.8 a QML
@@ -741,8 +771,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"importButton"_s)));
         QObject *message = w.find(u"importMessage"_s);
         QVERIFY(isVisible(message));
-        QCOMPARE(text(message),
-                 u"Imported the level 40 Ranger build for Ranger. It has no items equipped."_s);
+        QCOMPARE(text(message), u"Imported the level 40 Ranger build for Ranger. The build has no items."_s);
         QCOMPARE(text(code), QString());
 
         // on a new one, as there was none to play
@@ -758,7 +787,8 @@ private Q_SLOTS:
         QObject *code = w.find(u"codeField"_s);
         QVERIFY(code->setProperty("text", u"nonsense"_s));
         QVERIFY(QMetaObject::invokeMethod(code, "accepted"));
-        QCOMPARE(text(w.find(u"importMessage"_s)), u"That isn't a Path of Building code or a link to one."_s);
+        QCOMPARE(text(w.find(u"importMessage"_s)),
+                 u"That doesn't look like a Path of Building code or a link to one."_s);
         // to put right
         QCOMPARE(text(code), u"nonsense"_s);
         QCOMPARE(w.app->characterList()->rowCount(), 0);
@@ -793,7 +823,7 @@ private Q_SLOTS:
         w.app->pobOptions()->setLocation(folder);
         QVERIFY(isVisible(w.find(u"savedBuilds"_s)));
         const QString builds = w.app->buildImporter()->buildsFolder();
-        QCOMPARE(text(w.find(u"noSavedBuildsText"_s)), u"There are none in %1 yet."_s.arg(builds));
+        QCOMPARE(text(w.find(u"noSavedBuildsText"_s)), u"There are no builds in %1 yet."_s.arg(builds));
 
         QVERIFY(writeFile(builds + u"/Leveling.xml"_s, ranger.toUtf8()));
         QVERIFY(click(w.find(u"refreshBuildsButton"_s)));
@@ -804,7 +834,7 @@ private Q_SLOTS:
                  u"Saved %1"_s.arg(QLocale().toString(modified, QLocale::ShortFormat)));
         QVERIFY(click(saved));
         QCOMPARE(text(w.find(u"importMessage"_s)),
-                 u"Imported the level 40 Ranger build for Leveling. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Leveling. The build has no items."_s);
     }
 
     // as for one saved while you were on another page
@@ -824,7 +854,7 @@ private Q_SLOTS:
     {
         Window w;
         QVERIFY(w.show(u"pobAction"_s));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(w.find(u"stepsText"_s)->property("description").toString().startsWith(u"1. "_s));
         QVERIFY(!isVisible(w.find(u"installedAtText"_s)));
         // nothing is opened or copied until you click for it
@@ -863,7 +893,8 @@ private Q_SLOTS:
         QVERIFY(field->setProperty("text", folder));
         QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
         QCOMPARE(w.settings().pob.location, folder);
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"You're using the Path of Building in the folder you chose."_s);
         QCOMPARE(w.find(u"installedAtText"_s)->property("description").toString(),
                  QDir::toNativeSeparators(folder));
         QVERIFY(isVisible(w.find(u"installedAtText"_s)));
@@ -885,7 +916,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"usualPlacesButton"_s)));
         QCOMPARE(w.settings().pob.location, QString());
         QCOMPARE(text(w.find(u"folderField"_s)), QString());
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building wasn't found."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)), u"Path of Building isn't anywhere the app looks."_s);
         QVERIFY(!isVisible(w.find(u"usualPlacesButton"_s)));
     }
 
@@ -914,7 +945,8 @@ private Q_SLOTS:
         // once it's there
         QVERIFY(makePob(folder));
         QVERIFY(QMetaObject::invokeMethod(w.find(u"updateButton"_s), "clicked"));
-        QCOMPARE(text(w.find(u"foundText"_s)), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(text(w.find(u"foundText"_s)),
+                 u"You're using the Path of Building in the folder you chose."_s);
     }
 
     void pobSettings()
@@ -1029,7 +1061,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"checkedAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Item History"_s);
         QVERIFY(w.show(u"charactersAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Import Character"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
 
     void gearForNobody()
@@ -1045,7 +1077,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"resistances"_s)));
         QObject *helmet = w.find(u"slot:Helmet"_s);
         QVERIFY(isVisible(helmet));
-        QCOMPARE(helmet->property("description").toString(), u"Not saved yet"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Nothing saved yet"_s);
 
         // and wearing something makes a character
         QVERIFY(w.app->character().wear(u"Helmet"_s, item(itemtexts::helmetOld)));
@@ -1089,7 +1121,7 @@ private Q_SLOTS:
         // each way it falls short on a line of its own, with the stats beside the label
         const auto notes = w.app->gearList()->index(2).data(GearList::NotesRole).value<QList<GearNote>>();
         QVERIFY(!notes.isEmpty());
-        QCOMPARE(notes.first().label, u"Missing"_s);
+        QCOMPARE(notes.first().label, u"Missing stats"_s);
         const QList<QObject *> labels = findAll(helmet, u"noteLabel"_s);
         const QList<QObject *> texts = findAll(helmet, u"noteText"_s);
         QCOMPARE(labels.size(), notes.size());
@@ -1101,12 +1133,12 @@ private Q_SLOTS:
         }
 
         QObject *gloves = w.find(u"slot:Gloves"_s);
-        QCOMPARE(gloves->property("description").toString(), u"Not saved yet"_s);
-        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Not saved yet"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Nothing saved yet"_s);
+        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Nothing saved yet"_s);
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"itemBase"_s)));
         QObject *wantsLabel = findAll(gloves, u"noteLabel"_s).value(0);
         QVERIFY(isVisible(wantsLabel));
-        QCOMPARE(text(wantsLabel), u"Wants most"_s);
+        QCOMPARE(text(wantsLabel), u"Your build wants"_s);
         QVERIFY(!text(findAll(gloves, u"noteText"_s).value(0)).isEmpty());
         QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
@@ -1134,7 +1166,7 @@ private Q_SLOTS:
             QObject *row = w.find(u"recommendation:"_s + slot);
             QVERIFY(isVisible(row));
             QCOMPARE(text(row->findChild<QObject *>(u"slotName"_s)), slotLabel(slot));
-            QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)), u"Not saved yet"_s);
+            QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)), u"Nothing saved yet"_s);
             const QString lookFor = upgrades->index(i).data(RecommendedUpgrades::LookForRole).toString();
             QVERIFY(lookFor.contains(u" or more"_s));
             QCOMPARE(text(row->findChild<QObject *>(u"lookFor"_s)), lookFor);
@@ -1183,11 +1215,11 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearAction"_s));
         QObject *heading = search(w.page(), [](QObject *o) {
-            return o->inherits("QQuickItem") && o->property("title").toString().startsWith(u"Equipped"_s);
+            return o->inherits("QQuickItem") && o->property("title").toString().startsWith(u"What "_s);
         });
-        QCOMPARE(heading->property("title").toString(), u"Equipped"_s);
+        QCOMPARE(heading->property("title").toString(), u"What you have equipped"_s);
         w.play({});
-        QCOMPARE(heading->property("title").toString(), u"Equipped by Wren"_s);
+        QCOMPARE(heading->property("title").toString(), u"What Wren has equipped"_s);
     }
 
     void gearExtras()
@@ -1342,7 +1374,7 @@ private Q_SLOTS:
         QVERIFY(w.settled());
         checkTable(w, u"stat:"_s, u"statsHeader"_s, true);
         QCOMPARE(w.page()->property("maxColumns").toInt(), 1);
-        QCOMPARE(text(w.find(u"statsHeader"_s)->findChild<QObject *>(u"thirdLabel"_s)), u"Impact"_s);
+        QCOMPARE(text(w.find(u"statsHeader"_s)->findChild<QObject *>(u"thirdLabel"_s)), u"How much"_s);
         // the choices are still there to make
         QObject *box = w.find(u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(isVisible(box));
@@ -1653,7 +1685,7 @@ private Q_SLOTS:
         QObject *gloves = w.find(u"tile:Gloves"_s);
         QVERIFY(gloves->property("empty").toBool());
         QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Empty"_s);
-        QCOMPARE(gloves->property("description").toString(), u"Not saved yet"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Nothing saved yet"_s);
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"tileGauge"_s)));
         QVERIFY(!helmet->property("empty").toBool());
 
@@ -1713,7 +1745,7 @@ private Q_SLOTS:
         QVERIFY(lookFor.contains(u" or more"_s));
         QCOMPARE(lookFor, upgrades->chosenLookFor());
         QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
-        QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u", item level "_s));
+        QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u" at item level "_s));
         QCOMPARE(text(w.find(u"panelCanRoll"_s)), upgrades->chosenCanRoll().join(u'\n'));
         QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());
         QVERIFY(!w.find(u"tile:Gloves"_s)->property("chosen").toBool());
@@ -1745,10 +1777,10 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"tile:Gloves"_s)));
         QVERIFY(w.settled());
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Gloves"_s);
-        QCOMPARE(text(w.find(u"panelItem"_s)), u"Not saved yet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved yet"_s);
         QVERIFY(!isVisible(w.find(u"panelBase"_s)));
         QVERIFY(!isVisible(w.find(u"panelGauge"_s)));
-        QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Wants most"_s);
+        QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Your build wants"_s);
         QVERIFY(text(w.find(u"panelLookFor"_s)).contains(u" or more"_s));
         QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
         // the weapon has no item class to go by
@@ -1769,7 +1801,7 @@ private Q_SLOTS:
         QVERIFY(w.settled());
         QVERIFY(w.app->character().character().gear.isEmpty());
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
-        QCOMPARE(text(w.find(u"panelItem"_s)), u"Not saved yet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved yet"_s);
         QVERIFY(w.find(u"tile:Helmet"_s)->property("empty").toBool());
     }
 
@@ -1782,7 +1814,7 @@ private Q_SLOTS:
         QCOMPARE(spoken(takeOff), u"Unequip Helmet"_s);
         QVERIFY(click(takeOff));
         QVERIFY(w.app->character().character().gear.isEmpty());
-        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Not saved yet"_s);
+        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Nothing saved yet"_s);
     }
 
     void cantTakeOff()
@@ -1807,7 +1839,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"resistances"_s)));
         QCOMPARE(w.find(u"resistancesHeader"_s)->property("title").toString(), u"Resistances"_s);
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
+                 u"You don't have any yet. Import a build, or type them in from your character sheet."_s);
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QVERIFY(!w.find(u"fromSheetSwitch"_s)->property("checked").toBool());
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
@@ -1830,7 +1862,7 @@ private Q_SLOTS:
         QObject *summary = w.find(u"resistSummary"_s);
         QCOMPARE(text(summary), u"Fire 80%, Cold 60%"_s);
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"From your build in Path of Building, with what you have equipped now."_s);
+                 u"These come from your build in Path of Building, plus what you have equipped now."_s);
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
         for (const QString &field :
              {u"fireMaximum"_s, u"coldMaximum"_s, u"lightningMaximum"_s, u"chaosMaximum"_s}) {
@@ -1852,8 +1884,9 @@ private Q_SLOTS:
         QVERIFY(toggle(w.find(u"fromSheetSwitch"_s)));
         QVERIFY(resists->isFromSheet());
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
-        QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"Typed in from your character sheet, with what you have equipped now."_s);
+        QCOMPARE(
+            text(w.find(u"resistSource"_s)),
+            u"You typed these in from your character sheet, and they follow what you have equipped now."_s);
         for (const QString &field :
              {u"fireResist"_s, u"coldResist"_s, u"lightningResist"_s, u"chaosResist"_s})
             QVERIFY(isVisible(w.find(field)));
@@ -1893,7 +1926,7 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"fireResist"_s)));
         QVERIFY(!isVisible(w.find(u"resistSummary"_s)));
         QCOMPARE(text(w.find(u"resistSource"_s)),
-                 u"Not known yet. Import a build, or type them in from your character sheet."_s);
+                 u"You don't have any yet. Import a build, or type them in from your character sheet."_s);
     }
 
     void cantSaveResistances()
@@ -1940,7 +1973,7 @@ private Q_SLOTS:
 
         QObject *state = w.find(u"scoreState"_s);
         QVERIFY(isVisible(state));
-        QCOMPARE(text(state), u"A general start, until Path of Building weighs your build."_s);
+        QCOMPARE(text(state), u"A rough guide until Path of Building has weighed your build."_s);
         QCOMPARE(state->property("description").toString(), w.app->gearScoring()->summary());
         QVERIFY(isVisible(w.find(u"weighAgainButton"_s)));
         // with Path of Building off here, there is nothing to ask
@@ -1948,7 +1981,8 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
         QVERIFY(isVisible(w.find(u"stats"_s)));
         QObject *impact = search(w.page(), [](QObject *o) {
-            return o->inherits("QQuickItem") && o->property("title").toString() == u"Affix Impact";
+            return o->inherits("QQuickItem") &&
+                   o->property("title").toString() == u"How much each stat counts";
         });
         QVERIFY(isVisible(impact));
         QVERIFY(isVisible(w.find(u"impactHelp"_s)));
@@ -2052,7 +2086,7 @@ private Q_SLOTS:
         QObject *armour = w.find(u"weight:[Base] Armour"_s);
         QVERIFY(isVisible(armour));
         QCOMPARE(text(armour), u"Armour"_s);
-        QCOMPARE(armour->property("description").toString(), u"The item's own, with its mods"_s);
+        QCOMPARE(armour->property("description").toString(), u"The item's own, mods included"_s);
         QObject *box = armour->findChild<QObject *>(u"weightBox"_s);
         QCOMPARE(box->property("displayText").toString(), QLocale().toString(0.05, 'f', 2));
 
@@ -2213,16 +2247,25 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"noStats"_s)));
     }
 
-    void pickerWaitsForTheSite()
+    void pickerSaysWhereTheStatsComeFrom()
     {
-        Window w;
+        // with none kept, it asks nothing as it opens, and has them once the
+        // Refresh button on the Trade page has asked
+        Window w(true, false, {}, used(), true, nullptr, false);
         QVERIFY(w.show(u"weightsAction"_s));
         w.play({});
         QVERIFY(click(w.find(u"addStatButton"_s)));
         QObject *message = w.find(u"pickerMessage"_s);
         QVERIFY(isVisible(message));
-        QCOMPARE(text(message), u"Getting the list of stats from the trade site."_s);
+        QCOMPARE(text(message),
+                 u"You get the trade site's list of stats with your first trade search, or when "
+                 u"you press Refresh on the Trade page. Until then you only see the item's "
+                 u"own stats and those on items you've checked."_s);
         QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size());
+        QTest::qWait(30);
+        QVERIFY(w.network->sent.isEmpty() ||
+                !w.network->sent.first().request.url().path().contains(u"/data/"_s));
+        w.app->tradeOptions()->refresh();
         QTRY_VERIFY(!isVisible(message));
         QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size() + 4);
     }
@@ -2387,7 +2430,7 @@ private Q_SLOTS:
         QVERIFY(w.settled());
         QObject *fire = w.find(u"stat:#% to Fire Resistance"_s);
         QVERIFY(!fire->property("enabled").toBool());
-        QCOMPARE(text(fire->findChild<QObject *>(u"statNote"_s)), u"You ignore it already"_s);
+        QCOMPARE(text(fire->findChild<QObject *>(u"statNote"_s)), u"You're ignoring it already"_s);
 
         QVERIFY(search->setProperty("text", u"armour"_s));
         QVERIFY(w.settled());
@@ -2442,7 +2485,7 @@ private Q_SLOTS:
         QCOMPARE(text(none), u"You haven't checked any items yet."_s);
         QCOMPARE(none->property("description").toString(),
                  u"Hover over an item in Path of Exile 2 and press F2."_s);
-        QCOMPARE(w.find(u"checkedHeader"_s)->property("title").toString(), u"Newest First"_s);
+        QCOMPARE(w.find(u"checkedHeader"_s)->property("title").toString(), u"Recently checked"_s);
         QVERIFY(!isVisible(w.find(u"forgetSeparator"_s)));
         QVERIFY(!isVisible(w.find(u"forgetButton"_s)));
         QVERIFY(!isVisible(w.find(u"checkedHelp"_s)));
@@ -2458,10 +2501,9 @@ private Q_SLOTS:
     {
         Window w(false);
         QVERIFY(w.show(u"checkedAction"_s));
-        QCOMPARE(
-            w.find(u"noItemsText"_s)->property("description").toString(),
-            u"Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on "
-            "the General page."_s);
+        QCOMPARE(w.find(u"noItemsText"_s)->property("description").toString(),
+                 u"Hover over an item in Path of Exile 2 and press your check hotkey. You can set it on "
+                 "the General page."_s);
     }
 
     void generalName()
@@ -2515,10 +2557,9 @@ private Q_SLOTS:
         QObject *intro = w.find(u"historyIntro"_s);
         QVERIFY(isVisible(intro));
         QCOMPARE(text(intro),
-                 u"The items you check in the game are kept here, the newest first, up to the last "
-                 "30: those you check with the hotkey, and gear you copy yourself while "
-                 "\"Also check gear you copy yourself\" is on. When the list is full, the "
-                 "oldest drops off."_s);
+                 u"Items you check in the game land here, newest first, up to the last "
+                 "30. That covers the hotkey and, while \"Also check gear you copy yourself\" is "
+                 "on, gear you copy by hand. When the list is full, the oldest one drops off."_s);
         QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 
@@ -2715,6 +2756,40 @@ private Q_SLOTS:
         QVERIFY(release.network->sent.isEmpty());
     }
 
+    void betaSettingsHaveTheStartOverCard()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(isVisible(w.find(u"startOverCard"_s)));
+        QVERIFY(isVisible(w.find(u"startOverButton"_s)));
+    }
+
+    void releaseSettingsHaveNoStartOverCard()
+    {
+        Window release(true, false, {}, used(), true, nullptr, true, true, false);
+        QVERIFY(!release.app->startOver()->isOffered());
+        QVERIFY(release.show(u"overlayAction"_s));
+        QVERIFY(isVisible(release.find(u"checkKey"_s)));
+        QVERIFY(!isVisible(release.find(u"startOverCard"_s)));
+        QVERIFY(!isVisible(release.find(u"startOverButton"_s)));
+    }
+
+    void startOverAsksFirst()
+    {
+        Window w;
+        QVERIFY(w.show(u"overlayAction"_s));
+        w.app->startOver()->setRestart([] { return true; });
+        QObject *dialog = w.window->findChild<QObject *>(u"startOverDialog"_s);
+        QVERIFY(dialog);
+        QVERIFY(!dialog->property("opened").toBool());
+        QVERIFY(QMetaObject::invokeMethod(w.find(u"startOverButton"_s), "clicked"));
+        QVERIFY(QTest::qWaitFor([&] { return dialog->property("opened").toBool(); }, 5000));
+        // nothing is wiped until it's said yes to
+        QVERIFY(!w.app->startOver()->isBusy());
+        QVERIFY(QFileInfo::exists(w.dir.filePath(u"settings.conf"_s)));
+        QVERIFY(QMetaObject::invokeMethod(dialog, "close"));
+    }
+
     void sidebarHasTradeWhenOffered()
     {
         Window w;
@@ -2739,7 +2814,7 @@ private Q_SLOTS:
         QCOMPARE(guide->property("steps").toStringList(),
                  (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
-        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QCOMPARE(guide->property("title").toString(), u"Pick Your League"_s);
         QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
         // solo self-found, with or without hardcore, has nothing to turn off here
         QObject *solo = w.inGuide(u"setupSoloSwitch"_s);
@@ -2873,9 +2948,9 @@ private Q_SLOTS:
         QCOMPARE(w.find(u"budgetMin"_s)->property("label").toString(), u"Lowest price"_s);
         QCOMPARE(w.find(u"budgetMax"_s)->property("label").toString(), u"Highest price"_s);
         QCOMPARE(w.find(u"budgetMin"_s)->property("description").toString(),
-                 u"Listings cheaper than this are left out."_s);
+                 u"Anything cheaper won't show up."_s);
         QCOMPARE(w.find(u"budgetMax"_s)->property("description").toString(),
-                 u"Listings that cost more are left out."_s);
+                 u"Anything pricier won't show up."_s);
         QCOMPARE(w.find(u"currencyBox"_s)->property("text").toString(), u"Currency"_s);
     }
 
@@ -2965,9 +3040,8 @@ private Q_SLOTS:
 
     void noRateYet()
     {
-        Window w;
-        // poe.ninja, which is asked once the trade site has said its leagues
-        w.network->answers.last() = {.never = true};
+        // poe.ninja, which is asked as the app starts, and says nothing
+        Window w(true, false, {}, used(), true, nullptr, true, false);
         QVERIFY(w.shown());
         QTRY_VERIFY(w.app->rates().isRefreshing());
         QVERIFY(w.show(u"tradeAction"_s));
@@ -3068,7 +3142,7 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"saveButton"_s)));
         QObject *error = w.find(u"sessionError"_s);
         QVERIFY(isVisible(error));
-        QCOMPARE(text(error), u"That isn't a session ID. It's only letters and digits."_s);
+        QCOMPARE(text(error), u"That doesn't look like a session ID. It's only letters and digits."_s);
         QCOMPARE(w.keyring->writes, 0);
         // which stays to be put right
         QCOMPARE(text(field), u"not an id!"_s);
@@ -3327,6 +3401,74 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.colors, ColorTheme::App);
     }
 
+    void theDesignIsPickedOnTheAppearancePage()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"designBox"_s)->property("currentText").toString(), u"Dossier"_s);
+        // Dossier has one dark scheme, so there's no brightness to pick
+        QCOMPARE(w.find(u"brightnessBox"_s)->property("visible").toBool(), false);
+
+        QVERIFY(activate(w.find(u"designBox"_s), 1));
+        QCOMPARE(w.settings().appearance.design, Design::Material);
+        QCOMPARE(w.find(u"brightnessBox"_s)->property("visible").toBool(), true);
+        QVERIFY(activate(w.find(u"brightnessBox"_s), 2));
+        QCOMPARE(w.settings().appearance.brightness, Brightness::Dark);
+
+        // the desktop's own colors are neither light nor dark by choice
+        QVERIFY(activate(w.find(u"colorsBox"_s), 1));
+        QCOMPARE(w.find(u"brightnessBox"_s)->property("visible").toBool(), false);
+
+        QVERIFY(activate(w.find(u"designBox"_s), 0));
+        QCOMPARE(w.settings().appearance.design, Design::Dossier);
+    }
+
+    void everyPageLoadsUnderEachDesign_data()
+    {
+        QTest::addColumn<QString>("design");
+        QTest::addColumn<QString>("brightness");
+        QTest::newRow("dossier") << u"dossier"_s << u"desktop"_s;
+        QTest::newRow("material light") << u"material"_s << u"light"_s;
+        QTest::newRow("material dark") << u"material"_s << u"dark"_s;
+    }
+
+    // QTest::failOnWarning() would catch a page that can't load or bind
+    void everyPageLoadsUnderEachDesign()
+    {
+        QFETCH(QString, design);
+        QFETCH(QString, brightness);
+        Window w(true, false, QStringLiteral(COLORS));
+        w.app->appearance()->setBrightness(brightness);
+        w.app->appearance()->setDesign(design);
+        QVERIFY(w.shown());
+        for (const QString &action : {u"gearAction"_s, u"charactersAction"_s, u"gearScoreAction"_s,
+                                      u"overlayAction"_s, u"appearanceAction"_s}) {
+            QVERIFY2(w.show(action), qPrintable(action));
+            QVERIFY(w.settled());
+        }
+    }
+
+    void styleFollowsTheDesign()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        auto *style = w.qml.singletonInstance<QObject *>("PathOfUpgrading", "Style");
+        QVERIFY(style);
+        QCOMPARE(style->property("material").toBool(), false);
+        QCOMPARE(style->property("dark").toBool(), true);
+
+        w.app->appearance()->setBrightness(u"light"_s);
+        w.app->appearance()->setDesign(u"material"_s);
+        QCOMPARE(style->property("material").toBool(), true);
+        QCOMPARE(style->property("dark").toBool(), false);
+
+        w.app->appearance()->setBrightness(u"dark"_s);
+        QCOMPARE(style->property("dark").toBool(), true);
+
+        w.app->appearance()->setDesign(u"dossier"_s);
+        QCOMPARE(style->property("material").toBool(), false);
+        QCOMPARE(style->property("dark").toBool(), true);
+    }
+
     // the popup and the results window read it from the same engine
     void styleFollowsTheColors()
     {
@@ -3399,7 +3541,7 @@ private Q_SLOTS:
 
         QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Gear Score"_s));
-        QVERIFY(w.sidebarRow(u"Import Character"_s));
+        QVERIFY(w.sidebarRow(u"Characters"_s));
         QVERIFY(w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(w.sidebarRow(u"Ignored Stats"_s));
         QVERIFY(w.sidebarRow(u"Back"_s));
@@ -3463,7 +3605,7 @@ private Q_SLOTS:
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Back"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
-        QCOMPARE(w.focusedRow(), u"Import Character"_s);
+        QCOMPARE(w.focusedRow(), u"Characters"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Gear Score"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
@@ -3538,8 +3680,8 @@ private Q_SLOTS:
         QObject *group = w.window->findChild<QObject *>(u"settingsGroupAction"_s);
         QVERIFY(group);
         QCOMPARE(group->property("text").toString(), u"Settings"_s);
-        for (const QString &name :
-             {u"overlayAction"_s, u"appearanceAction"_s, u"helpAction"_s, u"aboutAction"_s}) {
+        for (const QString &name : {u"overlayAction"_s, u"appearanceAction"_s, u"updatesAction"_s,
+                                    u"helpAction"_s, u"aboutAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
             QCOMPARE(action->parent(), group);
@@ -3735,7 +3877,8 @@ private Q_SLOTS:
         const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,    u"gearScoreAction"_s,
                                      u"weightsAction"_s,    u"ignoredAction"_s, u"checkedAction"_s,
                                      u"pobAction"_s,        u"tradeAction"_s,   u"overlayAction"_s,
-                                     u"appearanceAction"_s, u"helpAction"_s,    u"aboutAction"_s};
+                                     u"appearanceAction"_s, u"updatesAction"_s, u"helpAction"_s,
+                                     u"aboutAction"_s};
         for (const QString &action : actions) {
             QVERIFY2(w.show(action), qPrintable(action));
             const QString title = w.page()->property("title").toString();
@@ -3832,7 +3975,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(wrenScore));
         QVERIFY(!isVisible(ash->findChild<QObject *>(u"rowScore"_s)));
         QCOMPARE(wren->property("detail").toString(),
-                 u"A general start, until Path of Building weighs your build"_s);
+                 u"A rough guide until Path of Building has weighed your build"_s);
         QCOMPARE(ash->property("detail").toString(), QString());
         QVERIFY(!wrenScore->property("score").toString().isEmpty());
         QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));
@@ -3898,7 +4041,7 @@ private Q_SLOTS:
         QVERIFY(w.app->settings().set(settings));
         QVERIFY(w.show(u"appearanceAction"_s));
         QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(),
-                 u"The same as the text"_s);
+                 u"Same as the text font"_s);
         QCOMPARE(w.find(u"textFontButton"_s)->property("description").toString(),
                  settings.appearance.textFont);
         QCOMPARE(w.find(u"desktopSizeSwitch"_s)->property("checked").toBool(), false);
@@ -3921,7 +4064,7 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.headingFont, u"text"_s);
         QTRY_VERIFY(!isVisible(dialog));
         QCOMPARE(w.find(u"headingFontButton"_s)->property("description").toString(),
-                 u"The same as the text"_s);
+                 u"Same as the text font"_s);
 
         const QString family = scalableFamilies().value(0);
         QVERIFY(click(w.find(u"headingFontButton"_s)));
@@ -4065,14 +4208,14 @@ private Q_SLOTS:
         QObject *next = w.inGuide(u"nextButton"_s);
 
         QVERIFY(click(next));
-        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QCOMPARE(guide->property("title").toString(), u"Pick Your League"_s);
         QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
         QVERIFY(!isVisible(w.inGuide(u"welcomeStep"_s)));
         QCOMPARE(text(next), u"Next"_s);
         QVERIFY(isVisible(w.inGuide(u"backButton"_s)));
 
         QVERIFY(click(next));
-        QCOMPARE(guide->property("title").toString(), u"Trade Searches"_s);
+        QCOMPARE(guide->property("title").toString(), u"Searching the Trade Site"_s);
         QVERIFY(isVisible(w.inGuide(u"tradeStep"_s)));
 
         QVERIFY(click(next));
@@ -4102,9 +4245,9 @@ private Q_SLOTS:
         QTRY_VERIFY(w.guide()->property("opened").toBool());
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
-        QCOMPARE(w.guide()->property("title").toString(), u"Trade Searches"_s);
+        QCOMPARE(w.guide()->property("title").toString(), u"Searching the Trade Site"_s);
         QVERIFY(click(w.inGuide(u"backButton"_s)));
-        QCOMPARE(w.guide()->property("title").toString(), u"Your League"_s);
+        QCOMPARE(w.guide()->property("title").toString(), u"Pick Your League"_s);
         QVERIFY(click(w.inGuide(u"backButton"_s)));
         QVERIFY(isVisible(w.inGuide(u"welcomeStep"_s)));
         QVERIFY(!isVisible(w.inGuide(u"backButton"_s)));
@@ -4191,12 +4334,12 @@ private Q_SLOTS:
         QCOMPARE(guide->property("title").toString(), u"Your Character"_s);
         QVERIFY(!isVisible(w.inGuide(u"tradeStep"_s)));
         QVERIFY(click(w.inGuide(u"backButton"_s)));
-        QCOMPARE(guide->property("title").toString(), u"Your League"_s);
+        QCOMPARE(guide->property("title").toString(), u"Pick Your League"_s);
 
         // and back in when it's turned off
         QVERIFY(toggle(w.inGuide(u"setupSoloSwitch"_s)));
         QVERIFY(click(next));
-        QCOMPARE(guide->property("title").toString(), u"Trade Searches"_s);
+        QCOMPARE(guide->property("title").toString(), u"Searching the Trade Site"_s);
         QVERIFY(isVisible(w.inGuide(u"tradeStep"_s)));
     }
 
@@ -4282,7 +4425,7 @@ private Q_SLOTS:
         QVERIFY(code->setProperty("text", ranger));
         QVERIFY(click(w.inGuide(u"setupImportButton"_s)));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"Imported the level 40 Ranger build for Ranger. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Ranger. The build has no items."_s);
         QCOMPARE(text(code), QString());
         QCOMPARE(w.inGuide(u"setupCharacter:Ranger"_s)->property("description").toString(),
                  u"Level 40 Ranger"_s);
@@ -4298,7 +4441,7 @@ private Q_SLOTS:
         QVERIFY(code->setProperty("text", u"nonsense"_s));
         QVERIFY(QMetaObject::invokeMethod(code, "accepted"));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"That isn't a Path of Building code or a link to one."_s);
+                 u"That doesn't look like a Path of Building code or a link to one."_s);
         QCOMPARE(text(code), u"nonsense"_s);
         QCOMPARE(w.app->characterList()->rowCount(), 0);
         // and it can be left for later
@@ -4320,7 +4463,7 @@ private Q_SLOTS:
         QVERIFY(saved);
         QVERIFY(click(saved));
         QCOMPARE(text(w.inGuide(u"setupImportMessage"_s)),
-                 u"Imported the level 40 Ranger build for Leveling. It has no items equipped."_s);
+                 u"Imported the level 40 Ranger build for Leveling. The build has no items."_s);
     }
 
     void setupGuideShowsTheHotkeyItHas()
@@ -4342,7 +4485,7 @@ private Q_SLOTS:
         for (int i = 0; i < 4; ++i)
             QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
-                 u"The key to check an item isn't set. Choose one on the General page."_s);
+                 u"You haven't set a key to check an item. Choose one on the General page."_s);
     }
 
     // as --setup asks
@@ -4382,7 +4525,7 @@ private Q_SLOTS:
         QVERIFY(!isVisible(dialog));
         releaseIsOut(w, u"99.0.0"_s);
         QTRY_VERIFY(dialog->property("opened").toBool());
-        QCOMPARE(dialog->property("title").toString(), u"A New Version Is Out"_s);
+        QCOMPARE(dialog->property("title").toString(), u"There's a New Version"_s);
         QVERIFY(button(dialog, u"Update Now"_s));
         QVERIFY(button(dialog, u"Later"_s));
         QVERIFY(button(dialog, u"Skip This Version"_s));
@@ -4504,10 +4647,16 @@ private Q_SLOTS:
         QTRY_VERIFY(dialog->property("opened").toBool());
     }
 
-    void updatesCardInTheSettings()
+    void updatesPageInTheSettings()
     {
         Window w;
+        QObject *action = w.window->findChild<QObject *>(u"updatesAction"_s);
+        QCOMPARE(text(action), u"Updates"_s);
+        // after Appearance, and not on General
         QVERIFY(w.show(u"overlayAction"_s));
+        QVERIFY(!w.page()->findChild<QObject *>(u"checkForUpdatesSwitch"_s));
+        QVERIFY(!w.page()->findChild<QObject *>(u"checkNowButton"_s));
+        QVERIFY(w.show(u"updatesAction"_s));
         QObject *launch = w.find(u"checkForUpdatesSwitch"_s);
         QObject *betas = w.find(u"includeBetasSwitch"_s);
         QCOMPARE(launch->property("checked").toBool(), true);
@@ -4525,7 +4674,7 @@ private Q_SLOTS:
         QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
         w.network->answers = {{.body = fakeReleases({fakeRelease(u"0.0.1"_s)})}};
         QVERIFY(click(now));
-        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You have the newest version."_s, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You're on the newest version."_s, 5000);
     }
 
     // in the background, as it is at login

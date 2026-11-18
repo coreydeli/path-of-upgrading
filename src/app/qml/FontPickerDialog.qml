@@ -141,7 +141,7 @@ FormCard.FormCardDialog {
                 anchors.centerIn: parent
                 width: parent.width - Kirigami.Units.gridUnit * 4
                 visible: fontList.count === 0
-                text: qsTr("No font has those words.")
+                text: qsTr("No font matches that.")
             }
         }
     }

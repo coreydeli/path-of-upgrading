@@ -17,7 +17,7 @@ T.ComboBox {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding,
                              implicitIndicatorHeight + topPadding + bottomPadding)
-    leftPadding: Kirigami.Units.smallSpacing * 2
+    leftPadding: Look.material ? 16 * Look.dp : Kirigami.Units.smallSpacing * 2
     rightPadding: (indicator ? indicator.width : 0) + Kirigami.Units.smallSpacing * 2
     topPadding: Kirigami.Units.smallSpacing
     bottomPadding: Kirigami.Units.smallSpacing
@@ -36,12 +36,16 @@ T.ComboBox {
         contentItem: Text {
             text: model[control.textRole] ?? model.modelData ?? ""
             font: control.font
-            color: parent.highlighted ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor
+            color: parent.highlighted && !Look.material ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle {
-            color: parent.highlighted ? Kirigami.Theme.highlightColor : "transparent"
+            color: {
+                if (Look.material)
+                    return parent.highlighted ? Look.tint(control.ground, control.ink, 0.1) : "transparent";
+                return parent.highlighted ? Kirigami.Theme.highlightColor : "transparent";
+            }
         }
     }
 
@@ -87,9 +91,21 @@ T.ComboBox {
 
     background: Item {
         implicitWidth: 7 * Kirigami.Units.gridUnit
-        implicitHeight: Kirigami.Units.gridUnit + 2 * Kirigami.Units.smallSpacing
+        implicitHeight: Look.material ? 40 * Look.dp : Kirigami.Units.gridUnit + 2 * Kirigami.Units.smallSpacing
+
+        // Material: an outlined box
+        Rectangle {
+            visible: Look.material
+            anchors.fill: parent
+            radius: Look.shapeExtraSmall
+            color: "transparent"
+            border.width: control.visualFocus || control.popup.visible ? 2 : 1
+            border.color: control.visualFocus || control.popup.visible ? Kirigami.Theme.highlightColor
+                : Look.tint(control.ground, control.ink, control.hovered ? 0.8 : 0.5)
+        }
 
         Rectangle {
+            visible: !Look.material
             anchors {
                 left: parent.left
                 right: parent.right
@@ -115,10 +131,12 @@ T.ComboBox {
             highlightMoveDuration: 0
         }
 
+        // Material's menu is a rounded surface a step up from the page
         background: Rectangle {
-            color: Kirigami.Theme.backgroundColor
+            radius: Look.material ? Look.shapeExtraSmall : 0
+            color: Look.material ? Look.tint(control.ground, control.ink, 0.06) : Kirigami.Theme.backgroundColor
             border.width: 1
-            border.color: control.ink
+            border.color: Look.material ? Look.tint(control.ground, control.ink, 0.2) : control.ink
         }
     }
 }

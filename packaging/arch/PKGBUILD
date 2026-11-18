@@ -2,11 +2,11 @@
 # Maintainer: Corey Deli <55706677+coreydeli@users.noreply.github.com>
 
 pkgname=path-of-upgrading
-pkgver=0.7.0
+pkgver=0.8.0
 pkgrel=1
 pkgdesc='Path of Exile 2 item overlay that checks items against your build'
 arch=(x86_64)
-url='https://github.com/coreydeli/path-of-upgrading'
+url='https://getpou.app'
 license=(MIT OFL-1.1)
 depends=(
   gcc-libs glibc

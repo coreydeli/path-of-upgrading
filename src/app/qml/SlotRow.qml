@@ -26,7 +26,7 @@ FormCard.AbstractFormDelegate {
     // what's in it in one line, for the screen reader and the tests
     readonly property string description: {
         if (name === "")
-            return qsTr("Not saved yet");
+            return qsTr("Nothing saved yet");
         const parts = [name];
         if (base !== "")
             parts.push(base);
@@ -85,7 +85,7 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "itemName"
                 Layout.fillWidth: true
-                text: row.name !== "" ? row.name : qsTr("Not saved yet")
+                text: row.name !== "" ? row.name : qsTr("Nothing saved yet")
                 color: row.name !== "" ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor
                 wrapMode: Text.Wrap
                 Accessible.ignored: true

@@ -288,7 +288,7 @@ private Q_SLOTS:
 
         QTest::newRow("upgrades") << u"Find Upgrades"_s << TradeFinder::Kind::Upgrades;
         QTest::newRow("similar") << u"Same or Better"_s << TradeFinder::Kind::Similar;
-        QTest::newRow("weighted") << u"By My Weights"_s << TradeFinder::Kind::Weighted;
+        QTest::newRow("weighted") << u"Search by My Weights"_s << TradeFinder::Kind::Weighted;
         QTest::newRow("craft bases") << u"Bases to Craft On"_s << TradeFinder::Kind::CraftBases;
     }
 
@@ -617,9 +617,9 @@ private Q_SLOTS:
         QTest::newRow("score") << scored << QStringList{u"+4%"_s, u"for your build, vs Grim Crown"_s};
 
         ItemReport equipped = aReport();
-        equipped.verdict = u"Equipped"_s;
+        equipped.verdict = u"Already equipped"_s;
         equipped.versus = u"in your Helmet slot"_s;
-        QTest::newRow("equipped") << equipped << QStringList{u"Equipped"_s, u"in your Helmet slot"_s};
+        QTest::newRow("equipped") << equipped << QStringList{u"Already equipped"_s, u"in your Helmet slot"_s};
 
         ItemReport costly = aReport();
         costly.losses = {u"Fire Resistance drops below the cap"_s, u"Cold Resistance drops below the cap"_s};
@@ -686,9 +686,9 @@ private Q_SLOTS:
                          .tone = Tone::Good},
         };
         whyRated.gearNotes = {u"Not used by your build: #% increased Light Radius."_s,
-                              u"Missing what your build wants: Movement Speed."_s};
+                              u"Your build wants Movement Speed here."_s};
         QTest::newRow("what the gear score is made of") << whyRated
-                                                        << QStringList{u"Gear score points"_s,
+                                                        << QStringList{u"Gear score breakdown"_s,
                                                                        u"Life"_s,
                                                                        u"16"_s,
                                                                        u"20"_s,
@@ -713,10 +713,10 @@ private Q_SLOTS:
         QTest::newRow("open affixes") << craftable << QStringList{u"Open affixes: 1 prefix, 2 suffixes"_s};
 
         ItemReport noBuild = aReport();
-        noBuild.pobStatus = u"Import this character's build from Path of Building for exact verdicts."_s;
+        noBuild.pobStatus = u"Import this character's build to get exact verdicts from Path of Building."_s;
         QTest::newRow("Path of Building's status")
             << noBuild
-            << QStringList{u"Import this character's build from Path of Building for exact verdicts."_s};
+            << QStringList{u"Import this character's build to get exact verdicts from Path of Building."_s};
 
         ItemReport noted = aReport();
         noted.notes = {u"Two-handed, so it takes your off hand too."_s, u"It's unidentified."_s};
@@ -808,18 +808,18 @@ private Q_SLOTS:
         report.gearScore = u"78"_s;
         report.gearGrade = u"A"_s;
         report.gearParts = {ReportFigure{.label = u"Life"_s, .to = u"20"_s}};
-        report.gearNotes = {u"Missing what your build wants: Movement Speed."_s};
+        report.gearNotes = {u"Your build wants Movement Speed here."_s};
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
         QVERIFY(shown(popup, u"78 A"_s));
-        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(!shown(popup, u"Gear score breakdown"_s));
         QVERIFY(!shown(popup, report.gearNotes.first()));
 
         QVERIFY(click(popup, u"Show More"_s));
-        QVERIFY(shown(popup, u"Gear score points"_s));
+        QVERIFY(shown(popup, u"Gear score breakdown"_s));
         QVERIFY(shown(popup, report.gearNotes.first()));
         QVERIFY(click(popup, u"Show Less"_s));
-        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(!shown(popup, u"Gear score breakdown"_s));
         QVERIFY(!shown(popup, report.gearNotes.first()));
     }
 
@@ -832,11 +832,11 @@ private Q_SLOTS:
         report.gearNotes = {u"Fire Resistance: you're already capped, so it doesn't count."_s};
         popup.showReport(report, mouseAt(200, 300));
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
-        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(!shown(popup, u"Gear score breakdown"_s));
         QVERIFY(click(popup, u"Show More"_s));
         QVERIFY(shown(popup, report.gearNotes.first()));
         // with no points to show
-        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(!shown(popup, u"Gear score breakdown"_s));
     }
 
     void foldedGearScorePointsOnly()
@@ -850,7 +850,7 @@ private Q_SLOTS:
         QVERIFY(QTest::qWaitForWindowExposed(popup.window()));
         QVERIFY(!shown(popup, u"Life"_s));
         QVERIFY(click(popup, u"Show More"_s));
-        QVERIFY(shown(popup, u"Gear score points"_s));
+        QVERIFY(shown(popup, u"Gear score breakdown"_s));
         QVERIFY(shown(popup, u"Life"_s));
     }
 
@@ -864,7 +864,7 @@ private Q_SLOTS:
         popup.setSettings(settings);
         popup.showReport(aReport(), mouseAt(200, 300));
         QVERIFY(!shown(popup, u"Stats that change"_s));
-        QVERIFY(!shown(popup, u"Gear score points"_s));
+        QVERIFY(!shown(popup, u"Gear score breakdown"_s));
     }
 
     void longStatName()
@@ -1020,7 +1020,7 @@ private Q_SLOTS:
         const QPoint at = popup.window()->position();
 
         ItemReport newer = aReport();
-        newer.verdict = u"Sidegrade"_s;
+        newer.verdict = u"About the same"_s;
         popup.updateReport(newer);
         QVERIFY(popup.isVisible());
         QCOMPARE(popup.report(), newer);

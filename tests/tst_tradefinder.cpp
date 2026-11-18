@@ -641,7 +641,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, odd)})));
         QVERIFY(site.finds(helmet, Kind::Upgrades));
         QCOMPARE(site.finder.errorString(),
-                 u"None of your build's stats for this slot could be matched on the trade site."_s);
+                 u"The trade site has none of your build's stats for this slot."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -660,9 +660,10 @@ private Q_SLOTS:
         QCOMPARE(site.searched(1),
                  upgrades(helmet, data, character, u"Helmet"_s, clearlyBetter, {}, smaller(1)).body);
         QCOMPARE(site.finder.found()->total, 3);
-        QCOMPARE(site.finder.found()->note,
-                 u"Scored by your build's main weights, as the trade site limits how many filters a search "
-                 u"can have. Best for your build first."_s);
+        QCOMPARE(
+            site.finder.found()->note,
+            u"Scored by your build's main weights, since the trade site limits how many filters a search "
+            u"can have. Best for your build first."_s);
 
         // and the next starts there, and can be made smaller again
         site.network.answers = {tooManyFilters(), found(u"s2"_s, 1)};
@@ -709,10 +710,9 @@ private Q_SLOTS:
         const TradeData &data = site.data.data();
         QCOMPARE(site.searched(0),
                  upgrades(helmet, data, character, u"Helmet"_s, clearlyBetter, {}, smaller(4)).body);
-        QCOMPARE(
-            site.finder.found()->note,
-            u"Signed out, the trade site only takes a simple search, so each has at least 1 of these at a "
-            u"decent roll: Life. Cheapest first."_s);
+        QCOMPARE(site.finder.found()->note, u"Signed out, the trade site only takes simple searches, so each "
+                                            u"result has at least 1 of these at a "
+                                            u"decent roll: Life. Cheapest first."_s);
 
         // and signing in makes them full size again
         site.finder.setSignedIn(true);
@@ -782,9 +782,10 @@ private Q_SLOTS:
         QCOMPARE(site.network.sent.size(), 6);
         QCOMPARE(site.searched(5), site.searched(4));
         QCOMPARE(site.finder.found()->total, 0);
-        QCOMPARE(site.finder.found()->note,
-                 u"The trade site only takes a simple search, so each has at least 1 of these at a decent "
-                 u"roll: Life. Cheapest first."_s);
+        QCOMPARE(
+            site.finder.found()->note,
+            u"The trade site only takes simple searches, so each result has at least 1 of these at a decent "
+            u"roll: Life. Cheapest first."_s);
     }
 
     void weighedByPathOfBuilding()
@@ -1241,7 +1242,7 @@ private Q_SLOTS:
         QCOMPARE(site.searched(similarSearchLevels() - 1), similarSearch(belt, site.data.data(), last).body);
         QCOMPARE(site.finder.found()->title, u"Same stats or better than Mageblood"_s);
         QCOMPARE(site.finder.found()->note,
-                 u"Nothing matched its stats, so these are the Mageblood listed instead."_s);
+                 u"Nothing matched its stats, so these are the other Mageblood listed."_s);
         QCOMPARE(site.finder.found()->total, 8);
     }
 
@@ -1271,7 +1272,7 @@ private Q_SLOTS:
         QCOMPARE(site.network.sent.size(), 1);
         const TradeFinder::Found &found = *site.finder.found();
         QCOMPARE(found.kind, Kind::Weighted);
-        QCOMPARE(found.title, u"Beats your Doom Visage by your weights"_s);
+        QCOMPARE(found.title, u"Better than your Doom Visage by your weights"_s);
         QCOMPARE(found.note, QString());
         QCOMPARE(found.total, 0);
     }
@@ -1328,7 +1329,7 @@ private Q_SLOTS:
         site.finder.setCharacter(character);
         QVERIFY(site.finds(helmet, Kind::Weighted));
         QCOMPARE(site.finder.errorString(),
-                 u"None of your weighted stats on this item could be matched on the trade site."_s);
+                 u"The trade site has none of the stats you weighted on this item."_s);
         QVERIFY(site.network.sent.isEmpty());
     }
 
@@ -1373,9 +1374,9 @@ private Q_SLOTS:
             u"first."_s);
     }
 
-    void twoKeyStatsAtMost()
+    void keyStatsTheSlotCantRollAreLeftOut()
     {
-        // of the three a caster's ring has, the two that matter most
+        // rings roll no flat Energy Shield, so of the three only Cast Speed is looked for
         Character caster;
         caster.buildProfile = u"es-caster"_s;
         using tradefixtures::stat;
@@ -1389,7 +1390,7 @@ private Q_SLOTS:
         site.finder.setCharacter(caster);
         site.network.answers = {found(u"s1"_s, 2)};
         QVERIFY(site.finds(ring(u"Grim Loop"_s, u"+20 to maximum Energy Shield"_s), Kind::CraftBases));
-        QCOMPARE(site.finder.found()->title, u"Craftable Rings with Cast Speed and Energy Shield"_s);
+        QCOMPARE(site.finder.found()->title, u"Craftable Rings with Cast Speed"_s);
     }
 
     void noKeyStats()
@@ -1414,7 +1415,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData(tradefixtures::response({tradefixtures::group(u"explicit"_s, odd)})));
         QVERIFY(site.finds(helmet, Kind::CraftBases));
         QCOMPARE(site.finder.errorString(),
-                 u"None of your build's key stats for this slot could be matched on the trade site."_s);
+                 u"The trade site has none of your build's key stats for this slot."_s);
         QVERIFY(site.network.sent.isEmpty());
 
         // or only some of them
@@ -1554,7 +1555,8 @@ private Q_SLOTS:
         QVERIFY(finished.wait());
         QCOMPARE(site.finder.errorString(), tradeUnavailable({.enabled = false}));
         QVERIFY(site.ninja.sent.isEmpty());
-        QCOMPARE(site.network.sent.size(), 3);
+        // only the first had gone, and what waited was called off
+        QCOMPARE(site.network.sent.size(), 1);
     }
 
     void noStats()
@@ -1565,7 +1567,55 @@ private Q_SLOTS:
         QVERIFY(site.finds(helmet));
         QVERIFY(site.finder.errorString().startsWith(u"Searches need the trade site's list of stats."_s));
         QCOMPARE(site.finder.errorString(), site.data.errorString());
-        QCOMPARE(site.network.sent.size(), 3);
+        // the first one said it isn't there, so the others weren't sent
+        QCOMPARE(site.network.sent.size(), 1);
+    }
+
+    void freshDataAsksForNothingButTheSearch()
+    {
+        // what the site said today is what a search goes by
+        Site site;
+        QVERIFY(site.hasData());
+        site.network.answers = {found(u"s1"_s, 5)};
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.network.sent.size(), 1);
+        QVERIFY(!site.network.sent.first().request.url().path().contains(u"/data/"_s));
+    }
+
+    void oldDataIsAskedForFirst()
+    {
+        // as it's a search, which the site is asked for in, that asks again
+        Site site;
+        const QDateTime old = QDateTime::currentDateTimeUtc().addSecs(-25 * 3600);
+        for (const auto &[name, answer] :
+             {std::pair{u"stats"_s, tradefixtures::stats()},
+              std::pair{u"filters"_s, tradefixtures::filters()}, std::pair{u"leagues"_s, leagues()}}) {
+            QVERIFY(writeJsonFile(site.dir.filePath(name + u".json"_s), answer));
+            QFile file(site.dir.filePath(name + u".json"_s));
+            QVERIFY(file.open(QIODevice::ReadWrite));
+            QVERIFY(file.setFileTime(old, QFileDevice::FileModificationTime));
+        }
+        QVERIFY(site.data.isStale());
+        QVERIFY(site.network.sent.isEmpty());
+        site.network.answers = {{.body = json(tradefixtures::stats())},
+                                {.body = json(tradefixtures::filters())},
+                                {.body = json(leagues())},
+                                found(u"s1"_s, 5)};
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.network.sent.size(), 4);
+        QVERIFY(site.network.sent.first().request.url().path().contains(u"/data/"_s));
+        QVERIFY(!site.network.sent.last().request.url().path().contains(u"/data/"_s));
+        QVERIFY(!site.data.isStale());
+    }
+
+    void unavailableAsksNothingAtAll()
+    {
+        // not even for the lists, as there's nowhere to search
+        Site site;
+        site.searcher.setSettings({.enabled = false});
+        QVERIFY(site.finds(helmet));
+        QCOMPARE(site.finder.errorString(), tradeUnavailable({.enabled = false}));
+        QVERIFY(site.network.sent.isEmpty());
     }
 
     void nothingToSearch()
@@ -1574,8 +1624,7 @@ private Q_SLOTS:
         QVERIFY(site.hasData());
         QVERIFY(site.finds(
             parseItem(u"Item Class: Rings\nRarity: Normal\nGold Ring\n--------\nItem Level: 50"_s).value()));
-        QCOMPARE(site.finder.errorString(),
-                 u"None of this item's stats could be matched on the trade site."_s);
+        QCOMPARE(site.finder.errorString(), u"The trade site has none of this item's stats."_s);
         QVERIFY(site.finder.errorUrl().isEmpty());
         QVERIFY(site.network.sent.isEmpty());
     }

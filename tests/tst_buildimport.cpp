@@ -78,7 +78,7 @@ private Q_SLOTS:
     void keepsWhatYouCopied()
     {
         Character character;
-        // the same helmet copied in the game, which says more about it
+        // the same helmet copied in the game, as it says more than the build about it
         const QString copied = helmet + u"\n+5% to Chaos Resistance"_s;
         character.gear.insert(u"Helmet"_s, item(copied));
         // and gloves the build doesn't wear

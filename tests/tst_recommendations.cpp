@@ -36,6 +36,23 @@ QStringList slotsOf(const QList<Recommendation> &list)
     return slots;
 }
 
+// A character whose build weighs one stat in the given slot group, the way Path
+// of Building's weighing does.
+GearScoreOptions weighedFor(const QString &group, const QString &label, const QString &key)
+{
+    WeighedProfile weighed;
+    weighed.profile = {.id = QString(weighedProfileId), .name = u"Weighed"_s, .summary = {}, .stats = {}};
+    weighed.profile.stats << ProfileStat{
+        .label = label,
+        .pattern = QRegularExpression(u"^"_s + QRegularExpression::escape(key) + u"$"_s),
+        .importance = PerSlot(10),
+        .cap = PerSlot(50),
+        .key = key,
+        .resist = std::nullopt};
+    weighed.slots = {group};
+    return {.build = {}, .weighed = weighed};
+}
+
 } // namespace
 
 class TestRecommendations : public QObject
@@ -50,8 +67,9 @@ private Q_SLOTS:
         // the same minimums a craft base search asks for
         QCOMPARE(boots.at(0).minimum, searchMinimum(35));
         QCOMPARE(boots.at(1).minimum, searchMinimum(100));
-        QCOMPARE(wantedText(boots), u"Movement Speed 19 or more (up to 35), Life 55 or more (up to 149), "
-                                    u"Fire Resistance 24 or more (up to 45)"_s);
+        QCOMPARE(wantedText(boots), u"Movement Speed 19 or more (up to 35, tier 4 or better), "
+                                    u"Life 55 or more (up to 149, tier 6 or better), "
+                                    u"Fire Resistance 24 or more (up to 45, tier 5 or better)"_s);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 5).size(), 5);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 1).size(), 1);
     }
@@ -68,8 +86,9 @@ private Q_SLOTS:
     {
         const Item boots = item(u"Boots"_s, lifeAndSpeed);
         QCOMPARE(wantedText(wantedStats(u"Boots"_s, &boots, {})),
-                 u"Fire Resistance 24 or more (up to 45), Cold Resistance 24 or more (up to 45), "
-                 u"Lightning Resistance 24 or more (up to 45)"_s);
+                 u"Fire Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Cold Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Lightning Resistance 24 or more (up to 45, tier 5 or better)"_s);
 
         // exactly the minimum is enough
         const Item exact = item(u"Boots"_s, u"+55 to maximum Life\n19% increased Movement Speed"_s);
@@ -94,7 +113,7 @@ private Q_SLOTS:
         QVERIFY(top);
         QCOMPARE(boots.first().top, *top);
         QCOMPARE(rollRangeText(boots.first()),
-                 u"Movement Speed %1, item level %2"_s.arg(rollText(top->high)).arg(top->level));
+                 u"Movement Speed %1 at item level %2"_s.arg(rollText(top->high)).arg(top->level));
         QCOMPARE(canRoll(u"Boots"_s, nullptr, {}, 2).size(), 2);
 
         // what's worn doesn't matter, only its class
@@ -115,12 +134,59 @@ private Q_SLOTS:
         QVERIFY(!life(canRoll(u"Boots"_s, nullptr, {.tweaks = {{u"Life"_s, 0}}})));
     }
 
+    void aWantedStatSaysTheTierItNeeds()
+    {
+        const auto boots = wantedStats(u"Boots"_s, nullptr, {}, 2);
+        // 19 movement speed needs the 20 tier, which is the fourth of six
+        QCOMPARE(boots.at(0).tier, 4);
+        QCOMPARE(wantedText({WantedStat{.label = u"Life"_s, .minimum = 120, .best = 149, .tier = 1}}),
+                 u"Life 120 or more (up to 149, tier 1 or better)"_s);
+        // with no table to go by there is no tier to say
+        const SlotMods none;
+        const auto bare = wantedStats(u"Boots"_s, nullptr, {.mods = &none}, 2);
+        QCOMPARE(bare.at(0).tier, 0);
+        QCOMPARE(wantedText(bare).contains(u"tier"_s), false);
+    }
+
+    void aStatTheSlotCantRollIsNotWanted()
+    {
+        const QString flat = u"Adds # to # Lightning Damage"_s;
+        const GearScoreOptions options = weighedFor(u"Belt"_s, u"Lightning damage"_s, flat);
+        // no belt affix adds damage, the Forking Belt only has it as an implicit
+        QVERIFY(wantedStats(u"Belt"_s, nullptr, options).isEmpty());
+        QVERIFY(canRoll(u"Belt"_s, nullptr, options).isEmpty());
+        const Item belt = item(u"Belts"_s, u"+60 to maximum Life"_s);
+        QVERIFY(wantedStats(u"Belt"_s, &belt, options).isEmpty());
+
+        // gloves roll it, and so do rings in either hand
+        const QString attacks = u"Adds # to # Lightning Damage to Attacks"_s;
+        const GearScoreOptions gloves = weighedFor(u"Gloves"_s, u"Lightning damage"_s, attacks);
+        QCOMPARE(labelsOf(wantedStats(u"Gloves"_s, nullptr, gloves)), (QStringList{u"Lightning damage"_s}));
+        const GearScoreOptions ring = weighedFor(u"Ring"_s, u"Lightning damage"_s, attacks);
+        QCOMPARE(labelsOf(wantedStats(u"Ring 2"_s, nullptr, ring)), (QStringList{u"Lightning damage"_s}));
+
+        // the game's text writes the element's "damage" both ways
+        const GearScoreOptions lower =
+            weighedFor(u"Gloves"_s, u"Lightning damage"_s, u"Adds # to # Lightning damage to Attacks"_s);
+        QCOMPARE(wantedStats(u"Gloves"_s, nullptr, lower).size(), 1);
+    }
+
+    void aWeaponSlotHasNoTableToCheckAgainst()
+    {
+        const GearScoreOptions options =
+            weighedFor(u"Weapon"_s, u"Imaginary"_s, u"#% increased Imaginary Thing"_s);
+        QCOMPARE(wantedStats(u"Weapon"_s, nullptr, options).size(), 1);
+        // while a worn sword is checked against the swords' table
+        const Item sword = item(u"One Hand Swords"_s, u"+60 to maximum Life"_s);
+        QVERIFY(wantedStats(u"Weapon"_s, &sword, options).isEmpty());
+    }
+
     void aRangeWithOneEndIsOneNumber()
     {
         QCOMPARE(rollRangeText({.label = u"Life"_s, .top = {.level = 5, .low = 20, .high = 20}}),
-                 u"Life 20, item level 5"_s);
+                 u"Life 20 at item level 5"_s);
         QCOMPARE(rollRangeText({.label = u"Life"_s, .top = {.level = 82, .low = 10.5, .high = 12}}),
-                 u"Life 10.5 to 12, item level 82"_s);
+                 u"Life 10.5 to 12 at item level 82"_s);
     }
 
     void nothingToRollWithoutAClassOrATable()
@@ -162,8 +228,9 @@ private Q_SLOTS:
         options.resistNeed[Element::Lightning] = 80;
         const QList<WantedStat> wants = wantedStats(u"Helmet"_s, nullptr, options, 5);
         // cold is capped, fire needs 11 at most, and lightning the usual
-        QCOMPARE(wantedText(wants), u"Life 55 or more (up to 174), Fire Resistance 11 or more (up to 45), "
-                                    u"Lightning Resistance 24 or more (up to 45)"_s);
+        QCOMPARE(wantedText(wants), u"Life 55 or more (up to 174, tier 7 or better), "
+                                    u"Fire Resistance 11 or more (up to 45, tier 7 or better), "
+                                    u"Lightning Resistance 24 or more (up to 45, tier 5 or better)"_s);
     }
 
     void thePickedSlotsGoByTheirScores()

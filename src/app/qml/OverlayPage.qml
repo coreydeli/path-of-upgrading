@@ -10,11 +10,13 @@ ColumnsPage {
     id: overlayPage
 
     required property OverlayOptions options
-    required property Updates updates
     // the results key is for trade searches
     property bool tradeOffered: true
     // the league, which has no page of its own without trade
     property TradeOptions tradeOptions
+    // the beta's way to wipe what the app keeps, which a release leaves out
+    property StartOver startOver
+    signal startOverAsked
     // whether the last key you chose was refused
     property bool refused: false
     readonly property var positions: [
@@ -37,7 +39,7 @@ ColumnsPage {
     ]
 
     title: qsTr("General")
-    description: qsTr("The hotkeys, and how the popup over the game looks.")
+    description: qsTr("Set your hotkeys, how the popup looks, your league, and whether the app starts with your desktop.")
 
     SectionHeader {
         title: qsTr("Hotkeys")
@@ -47,7 +49,7 @@ ColumnsPage {
         KeyField {
             objectName: "checkKey"
             label: qsTr("Check an item")
-            description: qsTr("Press it over an item in the game. An F key works best, as letters reach the game too.")
+            description: qsTr("Press it while hovering an item in the game. An F key works best, since letter keys reach the game too.")
             key: overlayPage.options.checkKey
             onChosen: key => overlayPage.refused = !overlayPage.options.setCheckKey(key)
         }
@@ -60,7 +62,7 @@ ColumnsPage {
             objectName: "resultsKey"
             visible: overlayPage.tradeOffered
             label: qsTr("Show the trade results")
-            description: qsTr("Opens the listings of your last trade search, and closes them again.")
+            description: qsTr("Opens the listings from your last trade search, and closes them again.")
             key: overlayPage.options.resultsKey
             onChosen: key => overlayPage.refused = !overlayPage.options.setResultsKey(key)
         }
@@ -73,7 +75,7 @@ ColumnsPage {
             id: gameOnlyText
             objectName: "gameOnlyNote"
             visible: overlayPage.options.hotkeysFollowGame
-            text: qsTr("These keys only work while Path of Exile 2 is running. The rest of the time other programs get them, so you can type them as usual.")
+            text: qsTr("These keys only work while Path of Exile 2 is running. Otherwise other programs get them, so they work as usual.")
             textItem.wrapMode: Text.Wrap
         }
 
@@ -85,7 +87,7 @@ ColumnsPage {
             id: refusedText
             objectName: "refusedText"
             visible: overlayPage.refused
-            text: qsTr("That key is already taken.")
+            text: qsTr("Something else already uses that key.")
         }
 
         RowRule {
@@ -105,7 +107,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "advancedCopySwitch"
             text: qsTr("Use advanced copy")
-            description: qsTr("Copies with Ctrl+Alt+C, which tells prefixes from suffixes, for crafting.")
+            description: qsTr("Copies with Ctrl+Alt+C, which also marks which mods are prefixes and which are suffixes, for crafting.")
             checked: overlayPage.options.advancedCopy
             onToggled: overlayPage.options.advancedCopy = checked
         }
@@ -114,8 +116,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "putBackSwitch"
-            text: qsTr("Put back what you had copied")
-            description: qsTr("Once the hotkey has copied the item, so you can still paste what you copied before.")
+            text: qsTr("Put your clipboard back")
+            description: qsTr("After the hotkey copies an item, the app puts back what you had copied before, so you can still paste it.")
             checked: overlayPage.options.putBackClipboard
             onToggled: overlayPage.options.putBackClipboard = checked
         }
@@ -125,7 +127,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "clipboardSwitch"
             text: qsTr("Also check gear you copy yourself")
-            description: qsTr("When you press Ctrl+C over it in the game.")
+            description: qsTr("Pressing Ctrl+C over gear in the game checks it too, not just the hotkey.")
             checked: overlayPage.options.watchClipboard
             onToggled: overlayPage.options.watchClipboard = checked
         }
@@ -134,8 +136,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "pausedSwitch"
-            text: qsTr("Pause")
-            description: qsTr("The hotkeys and copied items are ignored until you turn this off.")
+            text: qsTr("Pause the hotkeys")
+            description: qsTr("The hotkeys and items you copy are ignored until you turn this off.")
             checked: overlayPage.options.paused
             onToggled: overlayPage.options.paused = checked
         }
@@ -148,7 +150,7 @@ ColumnsPage {
     Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "positionBox"
-            text: qsTr("Where it shows")
+            text: qsTr("Where the popup shows")
             textRole: "text"
             valueRole: "value"
             model: overlayPage.positions
@@ -195,8 +197,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "compactSwitch"
-            text: qsTr("Compact")
-            description: qsTr("Puts what hardly matters behind Show More.")
+            text: qsTr("Compact popup")
+            description: qsTr("Keeps the details that hardly matter behind Show More.")
             checked: overlayPage.options.compact
             onToggled: overlayPage.options.compact = checked
         }
@@ -206,7 +208,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "colorblindSwitch"
             text: qsTr("Colorblind-friendly colors")
-            description: qsTr("Blue for better and orange for worse, in place of green and red.")
+            description: qsTr("Shows blue for better and orange for worse, in place of green and red.")
             checked: overlayPage.options.colorblind
             onToggled: overlayPage.options.colorblind = checked
         }
@@ -215,8 +217,8 @@ ColumnsPage {
 
         NumberField {
             objectName: "autoHide"
-            label: qsTr("Popup Timeout")
-            description: qsTr("How many seconds the popup stays up before it hides. "
+            label: qsTr("Hide the popup after")
+            description: qsTr("How long the popup stays up, in seconds. "
                               + "It stays while the mouse is over it.")
             minimum: 2
             maximum: 120
@@ -237,52 +239,14 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: qsTr("Updates")
-    }
-
-    Sheet {
-        SwitchRow {
-            objectName: "checkForUpdatesSwitch"
-            text: qsTr("Check for updates when the app starts")
-            description: qsTr("Asks GitHub once a day while it runs. Nothing is installed without you saying so.")
-            checked: overlayPage.updates.checkOnLaunch
-            onToggled: overlayPage.updates.checkOnLaunch = checked
-        }
-
-        RowRule {}
-
-        SwitchRow {
-            objectName: "includeBetasSwitch"
-            text: qsTr("Include beta builds")
-            description: qsTr("Betas come out often and may have bugs.")
-            checked: overlayPage.updates.includeBetas
-            onToggled: overlayPage.updates.includeBetas = checked
-        }
-
-        RowRule {}
-
-        FormRow {
-            text: qsTr("You have version %1").arg(overlayPage.updates.version)
-            description: overlayPage.updates.status
-
-            QQC2.Button {
-                objectName: "checkNowButton"
-                text: qsTr("Check Now")
-                enabled: !overlayPage.updates.checking
-                onClicked: overlayPage.updates.checkNow()
-            }
-        }
-    }
-
-    SectionHeader {
-        title: qsTr("General")
+        title: qsTr("Startup")
     }
 
     Sheet {
         SwitchRow {
             objectName: "startSwitch"
             text: qsTr("Start with your desktop")
-            description: qsTr("Waits in the tray when you log in, without the window.")
+            description: qsTr("Waits in the tray when you log in, with no window.")
             checked: overlayPage.options.startWithDesktop
             onToggled: overlayPage.options.startWithDesktop = checked
         }
@@ -297,6 +261,41 @@ ColumnsPage {
             objectName: "startError"
             visible: text !== ""
             text: overlayPage.options.startError
+            textItem.wrapMode: Text.Wrap
+        }
+    }
+
+    SectionHeader {
+        title: qsTr("Start Over")
+        visible: overlayPage.startOver && overlayPage.startOver.offered
+    }
+
+    Sheet {
+        objectName: "startOverCard"
+        visible: overlayPage.startOver && overlayPage.startOver.offered
+
+        FormRow {
+            text: qsTr("Start over as a new user")
+            description: qsTr("Wipes everything the app has kept and opens it again on the setup guide, so you can go through it as if you'd never run it.")
+
+            QQC2.Button {
+                objectName: "startOverButton"
+                text: qsTr("Start Over")
+                icon.name: "edit-clear-all"
+                enabled: !(overlayPage.startOver && overlayPage.startOver.busy)
+                onClicked: overlayPage.startOverAsked()
+            }
+        }
+
+        RowRule {
+            visible: startOverProblems.visible
+        }
+
+        FormCard.FormTextDelegate {
+            id: startOverProblems
+            objectName: "startOverProblems"
+            visible: overlayPage.startOver && overlayPage.startOver.problems.length > 0
+            text: overlayPage.startOver ? qsTr("Most of it is gone, but not everything.") + "\n" + overlayPage.startOver.problems.join("\n") : ""
             textItem.wrapMode: Text.Wrap
         }
     }

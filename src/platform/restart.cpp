@@ -25,15 +25,21 @@ RestartCommand restartCommand(qint64 pid, const QString &program, const QStringL
 
 bool startAgainAfterExit()
 {
-    // an AppImage is started by its own path, which the runtime hands on
-    const QString appImage = qEnvironmentVariable("APPIMAGE");
-    const QString program = appImage.isEmpty() ? QCoreApplication::applicationFilePath() : appImage;
     QStringList arguments = QCoreApplication::arguments();
     if (!arguments.isEmpty())
         arguments.removeFirst();
+    return startAgainAfterExit(arguments);
+}
+
+bool startAgainAfterExit(const QStringList &arguments)
+{
+    // an AppImage is started by its own path, which the runtime hands on
+    const QString appImage = qEnvironmentVariable("APPIMAGE");
+    const QString program = appImage.isEmpty() ? QCoreApplication::applicationFilePath() : appImage;
 #ifdef Q_OS_WIN
     // the setup program starts it there
     Q_UNUSED(program)
+    Q_UNUSED(arguments)
     return false;
 #else
     // a process that never goes, a zombie nobody reaps or a reused id, would

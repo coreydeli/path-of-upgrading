@@ -2,8 +2,8 @@
 #
 # The release builds put the tarball from git archive in the sources folder,
 # unpacking to the release's folder (a beta's too), and replace Version with
-# the one the release says. A beta's is like 0.7.0~beta.1, which sorts before
-# 0.7.0. Its Source0 only points at the tag when the version is a release.
+# the one the release says. A beta's is like 0.8.0~beta.1, which sorts before
+# 0.8.0. Its Source0 only points at the tag when the version is a release.
 
 # a warning fails the build with --with werror
 %bcond werror 0
@@ -11,13 +11,13 @@
 %bcond check 1
 
 Name:           path-of-upgrading
-Version:        0.7.0
+Version:        0.8.0
 Release:        1%{?dist}
 # the release a beta leads up to, whose folder the tarball unpacks to
 %global srcver  %(echo '%{version}' | cut -d '~' -f 1)
 Summary:        Path of Exile 2 item overlay that checks items against your build
 License:        MIT AND OFL-1.1
-URL:            https://github.com/coreydeli/path-of-upgrading
+URL:            https://getpou.app
 Source0:        %{url}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
 BuildRequires:  cmake >= 3.21
@@ -93,7 +93,7 @@ price an item and find bases to craft on.
 %build
 # Qt adds a run path to the program, which it doesn't need in /usr/bin.
 # Trade searches start on in a beta, and off in a release. The program says
-# its version as the release tag does, 0.7.0-beta.1 for 0.7.0~beta.1.
+# its version as the release tag does, 0.8.0-beta.1 for 0.8.0~beta.1.
 version_tag=$(echo '%{version}' | tr '~' '-')
 %cmake -G Ninja \
     -DCMAKE_SKIP_INSTALL_RPATH=ON \

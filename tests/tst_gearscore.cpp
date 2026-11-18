@@ -2,6 +2,7 @@
 #include "core/buildprofiles.h"
 #include "core/gearscore.h"
 #include "core/parser.h"
+#include "core/slotmods.h"
 
 #include <QTest>
 
@@ -266,7 +267,7 @@ private Q_SLOTS:
         QCOMPARE(g->resistNote,
                  u"Fire Resistance: you only need 20 more to reach the cap, so the rest doesn't count. "
                  "Cold Resistance: you're already capped, so it doesn't count. "
-                 "Lightning Resistance: you only need 5 more to reach the cap, so it isn't counted."_s);
+                 "Lightning Resistance: you only need 5 more to reach the cap, so it doesn't count."_s);
     }
 
     void tweaksScaleImportance()
@@ -625,7 +626,7 @@ private Q_SLOTS:
         GearScoreOptions options;
         options.resistNeed[Element::Fire] = 5;
         QCOMPARE(gearScore(ring, options)->resistNote,
-                 u"Fire Resistance: you only need 5 more to reach the cap, so it isn't counted."_s);
+                 u"Fire Resistance: you only need 5 more to reach the cap, so it doesn't count."_s);
     }
 
     void runesAndConditionalModsCountForLess()
@@ -684,8 +685,8 @@ private Q_SLOTS:
 
         g.missing = {u"Life"_s, u"Fire Resistance"_s};
         g.notScored = {u"#% increased Rarity of Items found"_s};
-        QCOMPARE(missingNote(g), u"Missing what your build wants: Life, Fire Resistance."_s);
-        QCOMPARE(notScoredNote(g), u"Not in the gear score: #% increased Rarity of Items found."_s);
+        QCOMPARE(missingNote(g), u"Your build wants Life, Fire Resistance here."_s);
+        QCOMPARE(notScoredNote(g), u"The gear score ignores #% increased Rarity of Items found."_s);
     }
 
     void weakRollsAreTheWeakestThree()
@@ -709,6 +710,76 @@ private Q_SLOTS:
         QCOMPARE(weakRolls(g, 20), QStringList());
     }
 
+    void aWeakRollSaysItsTier()
+    {
+        const auto tier = [](int number, double low, double high, int level) {
+            return StatTier{.number = number,
+                            .count = 6,
+                            .range = {level, low, high},
+                            .better = ModTier{level + 10, high + 1, high + 20},
+                            .betterNumber = number - 1};
+        };
+        GearScore g;
+        g.contributions = {{.key = u"life"_s,
+                            .label = u"Life"_s,
+                            .value = 60,
+                            .quality = 40,
+                            .points = 1,
+                            .best = 149,
+                            .tier = tier(4, 40, 69, 30)},
+                           // two mods, so no tier
+                           {.key = u"res"_s,
+                            .label = u"Fire Resistance"_s,
+                            .value = 10,
+                            .quality = 20,
+                            .points = 1,
+                            .best = 45,
+                            .tier = tier(5, 6, 10, 1)},
+                           {.key = u"res"_s,
+                            .label = u"Fire Resistance"_s,
+                            .value = 10,
+                            .quality = 10,
+                            .points = 1,
+                            .best = 45,
+                            .tier = tier(5, 6, 10, 1)}};
+        QCOMPARE(weakRolls(g), (QStringList{u"Fire Resistance 30% of an excellent roll"_s,
+                                            u"Life 60 (up to 149, tier 4 of 6)"_s}));
+        QCOMPARE(nextTiers(g), QStringList{u"Life, tier 3 (70 to 89) from item level 40"_s});
+        // the best tier has nothing above it
+        g.contributions = {{.key = u"life"_s,
+                            .label = u"Life"_s,
+                            .value = 140,
+                            .quality = 45,
+                            .points = 1,
+                            .best = 149,
+                            .tier = StatTier{.number = 1, .count = 6, .range = {60, 120, 149}}}};
+        QCOMPARE(weakRolls(g), QStringList{u"Life 140 (up to 149, tier 1 of 6)"_s});
+        QCOMPARE(nextTiers(g), QStringList());
+    }
+
+    void aRealItemGetsTheTierOfOneMod()
+    {
+        const QString base =
+            u"Item Class: Boots\nRarity: Rare\nA\nB\n--------\nEnergy Shield: 100\n--------\n"_s;
+        const auto lifeOf = [&](const QString &mods) {
+            const auto gear = gearScore(item(base + mods), {.build = u"life-res"_s});
+            for (const GearContribution &c : gear->contributions) {
+                if (c.label == u"Life"_s)
+                    return c.tier;
+            }
+            return std::optional<StatTier>();
+        };
+        const auto tier = lifeOf(u"+104 to maximum Life\n+30% increased Movement Speed\n"_s);
+        QVERIFY(tier);
+        QCOMPARE(tier->number, 2);
+        QCOMPARE(tier->range.low, 100.0);
+        QCOMPARE(tier->better->low, 120.0);
+        // more than one mod gave the stat, so there is no one tier
+        QVERIFY(!lifeOf(u"+104 to maximum Life\n+30 to maximum Life\n"_s));
+        // not a value the class rolls
+        QVERIFY(!lifeOf(u"+200 to maximum Life\n"_s));
+    }
+
     void notScoredStatsAreNamed()
     {
         GearScore g;
@@ -718,16 +789,15 @@ private Q_SLOTS:
         QCOMPARE(notScoredStats(g),
                  (QStringList{u"#% increased Rarity of Items found"_s, u"Evasion Rating"_s}));
         QCOMPARE(notScoredNote(g),
-                 u"Not in the gear score: #% increased Rarity of Items found, Evasion Rating."_s);
+                 u"The gear score ignores #% increased Rarity of Items found, Evasion Rating."_s);
     }
 
     void notesFromAnItem()
     {
         // a bare body armour has nothing but what it lacks
         const auto bare = gearScore(item(u"Item Class: Body Armours\nRarity: Rare\nA\nB"_s));
-        QCOMPARE(
-            missingNote(*bare),
-            u"Missing what your build wants: Armour or Evasion Rating, Energy Shield, Life (up to 214)."_s);
+        QCOMPARE(missingNote(*bare),
+                 u"Your build wants Armour or Evasion Rating, Energy Shield, Life (up to 214) here."_s);
         QCOMPARE(notScoredNote(*bare), QString());
         QCOMPARE(weakRolls(*bare), QStringList());
 
@@ -738,7 +808,7 @@ private Q_SLOTS:
         const QStringList rolls = weakRolls(*weak);
         QCOMPARE(rolls.size(), 1);
         QVERIFY(rolls.first().startsWith(u"Life "_s));
-        QCOMPARE(notScoredNote(*weak), u"Not in the gear score: #% increased Rarity of Items found."_s);
+        QCOMPARE(notScoredNote(*weak), u"The gear score ignores #% increased Rarity of Items found."_s);
     }
 
     void utilityStatsCountWhereTheGameRollsThem_data()
@@ -887,8 +957,25 @@ private Q_SLOTS:
         QStringList labels;
         for (const KeyStat &s : topStats(u"Ring"_s, 10, {.build = u"minion-es"_s}))
             labels << s.label;
-        // not the resistances, which are worth 4 here, nor the stats with no one key
-        QCOMPARE(labels, (QStringList{u"Minion damage"_s, u"Energy Shield"_s, u"Life"_s}));
+        // not the resistances, which are worth 4 here, nor the stats with no one key,
+        // nor flat Energy Shield and minion damage, which no ring affix rolls
+        QCOMPARE(labels, (QStringList{u"Life"_s}));
+    }
+
+    void topStatsKeepOnlyWhatTheSlotRolls()
+    {
+        GearScoreOptions options{.build = u"minion-es"_s};
+        QStringList ring;
+        for (const KeyStat &s : topStats(u"Ring"_s, 10, options))
+            ring << s.label;
+        QVERIFY(!ring.contains(u"Energy Shield"_s));
+        // with no table to go by, everything stays
+        const SlotMods none;
+        options.mods = &none;
+        QStringList any;
+        for (const KeyStat &s : topStats(u"Ring"_s, 10, options))
+            any << s.label;
+        QVERIFY(any.contains(u"Energy Shield"_s));
     }
 };
 

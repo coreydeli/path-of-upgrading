@@ -25,7 +25,7 @@ ColumnLayout {
 
     FormCard.FormHeader {
         visible: characterRows.count > 0
-        title: qsTr("Your Characters")
+        title: qsTr("Your characters")
     }
 
     Sheet {
@@ -47,7 +47,7 @@ ColumnLayout {
     }
 
     FormCard.FormHeader {
-        title: qsTr("Add a Character")
+        title: qsTr("Add a character")
     }
 
     Sheet {
@@ -55,7 +55,7 @@ ColumnLayout {
             id: nameField
             objectName: "setupNameField"
             label: qsTr("Name")
-            placeholderText: qsTr("As it's called in the game")
+            placeholderText: qsTr("Their name in the game")
             onAccepted: addButton.clicked()
         }
 
@@ -88,12 +88,12 @@ ColumnLayout {
     }
 
     FormCard.FormHeader {
-        title: qsTr("Import a Build")
+        title: qsTr("Import a build")
     }
 
     SectionText {
         objectName: "setupScoreNote"
-        text: qsTr("Once Path of Building is set up, the gear score comes from your build.")
+        text: qsTr("Once Path of Building is set up, it works out your gear score from your build.")
     }
 
     Sheet {
@@ -134,7 +134,7 @@ ColumnLayout {
 
                 objectName: "setupSaved:" + modelData.name
                 text: modelData.name
-                description: qsTr("Saved in Path of Building")
+                description: qsTr("Builds saved in Path of Building")
                 icon.name: "document-import"
                 enabled: !step.importer.busy
                 onClicked: step.importer.importFile(modelData.path)

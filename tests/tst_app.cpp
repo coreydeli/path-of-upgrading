@@ -14,6 +14,7 @@
 #include "fakesecretstore.h"
 #include "itemtexts.h"
 #include "maptexts.h"
+#include "services/datafiles.h"
 #include "stylefortests.h"
 #include "tradefixtures.h"
 #include "updatetexts.h"
@@ -24,6 +25,7 @@
 #include <QJsonDocument>
 #include <QQmlEngine>
 #include <QQmlExtensionPlugin>
+#include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -109,24 +111,47 @@ QByteArray json(const QJsonObject &object)
     return QJsonDocument(object).toJson(QJsonDocument::Compact);
 }
 
-// The trade site and poe.ninja, with what they say as the app starts: the
-// site's data with its leagues, then what currencies are worth in one.
-// What the trade site and then poe.ninja say when the app starts.
-QList<FakeAnswer> siteAnswers(const QJsonObject &stats = tradefixtures::stats())
+// The trade site's data with its leagues, and what currencies are worth in
+// one, said to whoever asks for them, in whatever order.
+QJsonObject leaguesBody()
 {
     QJsonArray leagues;
     for (const QString &id : {u"Runes of Aldur"_s, u"HC Runes of Aldur"_s, u"Standard"_s, u"Hardcore"_s})
         leagues << QJsonObject{{u"id"_s, id}, {u"realm"_s, u"poe2"_s}};
-    return {{.body = json(stats)},
-            {.body = json(tradefixtures::filters())},
-            {.body = json(QJsonObject{{u"result"_s, leagues}})},
-            {.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"}};
+    return {{u"result"_s, leagues}};
+}
+
+// What the site said on an earlier run, kept in the cache, which is all the
+// app goes by until a search asks it again.
+void keepSiteData(const Folders &folders, const QJsonObject &stats = tradefixtures::stats())
+{
+    const QString trade = folders.dir.filePath(u"cache/trade"_s);
+    QVERIFY(QDir().mkpath(trade));
+    QVERIFY(writeJsonFile(trade + u"/stats.json"_s, stats));
+    QVERIFY(writeJsonFile(trade + u"/filters.json"_s, tradefixtures::filters()));
+    QVERIFY(writeJsonFile(trade + u"/leagues.json"_s, leaguesBody()));
+}
+
+std::optional<FakeAnswer> siteSays(const QNetworkRequest &request, const QJsonObject &stats)
+{
+    const QString path = request.url().path();
+    if (path.endsWith(u"/data/stats"_s))
+        return FakeAnswer{.body = json(stats)};
+    if (path.endsWith(u"/data/filters"_s))
+        return FakeAnswer{.body = json(tradefixtures::filters())};
+    if (path.endsWith(u"/data/leagues"_s))
+        return FakeAnswer{.body = json(leaguesBody())};
+    if (request.url().host().contains(u"poe.ninja"_s))
+        return FakeAnswer{.body = R"({"core":{"primary":"divine","rates":{"exalted":400}},"lines":[]})"};
+    return std::nullopt;
 }
 
 FakeNetwork *online(const QJsonObject &stats = tradefixtures::stats())
 {
     auto *network = new FakeNetwork;
-    network->answers = siteAnswers(stats);
+    network->route = [stats](const QNetworkRequest &request) {
+        return siteSays(request, stats);
+    };
     return network;
 }
 
@@ -203,6 +228,17 @@ struct Running
         QList<QUrl> urls;
         for (const FakeNetwork::Sent &sent : network->sent)
             urls << sent.request.url();
+        return urls;
+    }
+
+    // what the trade site was asked, apart from poe.ninja
+    QList<QUrl> tradeAsked() const
+    {
+        QList<QUrl> urls;
+        for (const QUrl &url : asked()) {
+            if (url.path().contains(u"/trade2"_s))
+                urls << url;
+        }
         return urls;
     }
 
@@ -415,7 +451,8 @@ private Q_SLOTS:
         Running r(folders);
         r.app.pobOptions()->setLocation(folders.pob.folder.path());
         QCOMPARE(r.app.pob().state(), PobEngine::State::Stopped);
-        QCOMPARE(r.app.pobOptions()->headline(), u"Using the Path of Building in the folder you chose."_s);
+        QCOMPARE(r.app.pobOptions()->headline(),
+                 u"You're using the Path of Building in the folder you chose."_s);
         QCOMPARE(r.app.pobOptions()->installedAt(), QDir::toNativeSeparators(folders.pob.folder.path()));
 
         QVERIFY(r.app.overlayOptions()->setCheckKey(QKeySequence(u"F6"_s)));
@@ -786,7 +823,7 @@ private Q_SLOTS:
         r.app.checker().popup().wear(u"Helmet"_s);
         QCOMPARE(r.app.character().character().gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
         QCOMPARE(r.app.characters().find(settings.character)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
-        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Already equipped"_s);
         QCOMPARE(r.app.checker().popup().wearError(), QString());
     }
 
@@ -807,7 +844,7 @@ private Q_SLOTS:
         QCOMPARE(r.app.characters().find(id)->gear.value(u"Helmet"_s).name, u"Doom Visage"_s);
         QCOMPARE(r.app.characterList()->current(), id);
         QCOMPARE(r.app.characterList()->rowCount(), 1);
-        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Already equipped"_s);
 
         // and it is still the one next time
         Running again(folders);
@@ -908,7 +945,7 @@ private Q_SLOTS:
         r.app.checker().popup().close();
         checked.checkAgain(0);
         QVERIFY(r.app.checker().popup().isVisible());
-        QCOMPARE(r.app.checker().popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(r.app.checker().popup().report().verdict, u"Already equipped"_s);
     }
 
     void forgetCheckedItems()
@@ -940,25 +977,61 @@ private Q_SLOTS:
 
     void tradeData()
     {
-        // and the rates in the league searches go to, once the site has said
-        // which leagues there are
+        // the leagues searches go to, and the rates in them, come from what
+        // the site said on an earlier run
         Folders folders;
+        keepSiteData(folders);
         Running r(folders);
         QVERIFY(r.rated());
-        QCOMPARE(r.asked(), (QList<QUrl>{tradeDataUrl(u"stats"_s), tradeDataUrl(u"filters"_s),
-                                         tradeDataUrl(u"leagues"_s), ninjaCurrencyUrl(u"Runes of Aldur"_s)}));
+        QCOMPARE(r.asked(), (QList<QUrl>{ninjaCurrencyUrl(u"Runes of Aldur"_s)}));
         QVERIFY(r.app.trade().unavailable().isEmpty());
         QCOMPARE(r.app.trade().league().tradeId(), u"Runes of Aldur"_s);
         QCOMPARE(r.app.tradeData().data().stats.all().size(), 7);
         QCOMPARE(r.app.rates().divineRate(), 400);
-        // which are kept in the cache
-        QVERIFY(QFile::exists(folders.dir.filePath(u"cache/trade/stats.json"_s)));
+        // and the rates are kept in the cache
         QVERIFY(QFile::exists(folders.dir.filePath(u"cache/rates/Runes of Aldur.json"_s)));
+    }
+
+    void nothingIsAskedOfTheTradeSiteAtStart()
+    {
+        // with nothing kept, which poe.ninja doesn't mind
+        Folders folders;
+        Running r(folders);
+        QVERIFY(r.rated());
+        QVERIFY(r.tradeAsked().isEmpty());
+        QVERIFY(r.app.tradeData().data().stats.isEmpty());
+
+        // nor does a setting, the pages, or the picker's opening
+        Settings settings = r.app.settings().settings();
+        settings.trade.league.hardcore = true;
+        QVERIFY(r.app.settings().set(settings));
+        settings.overlay.scale = 1.5;
+        QVERIFY(r.app.settings().set(settings));
+        r.app.statPicker()->refresh();
+        r.app.tradeOptions()->unavailable();
+        QTest::qWait(50);
+        QVERIFY(r.tradeAsked().isEmpty());
+        QVERIFY(r.app.statPicker()->message().startsWith(u"You get the trade site's list of stats"_s));
+    }
+
+    void refreshButtonAsksTheTradeSite()
+    {
+        Folders folders;
+        Running r(folders);
+        QSignalSpy refreshed(&r.app.tradeData(), &TradeDataStore::refreshed);
+        r.app.tradeOptions()->refresh();
+        QVERIFY(r.app.tradeOptions()->isRefreshing());
+        QVERIFY(refreshed.wait());
+        QCOMPARE(r.tradeAsked(), (QList<QUrl>{tradeDataUrl(u"stats"_s), tradeDataUrl(u"filters"_s),
+                                              tradeDataUrl(u"leagues"_s)}));
+        QCOMPARE(r.app.tradeData().data().stats.all().size(), 7);
+        QCOMPARE(r.app.trade().league().tradeId(), u"Runes of Aldur"_s);
     }
 
     void hardcore()
     {
         Folders folders;
+        keepSiteData(folders);
         Settings settings;
         settings.trade.league.hardcore = true;
         folders.set(settings);
@@ -987,7 +1060,9 @@ private Q_SLOTS:
         settings.trade.enabled = true;
         QVERIFY(r.app.settings().set(settings));
         QVERIFY(r.rated());
-        QCOMPARE(r.asked().size(), 4);
+        // only poe.ninja, as the trade site is asked when you ask
+        QCOMPARE(r.asked().size(), 1);
+        QVERIFY(r.tradeAsked().isEmpty());
         QVERIFY(r.app.trade().unavailable().isEmpty());
         QVERIFY(r.app.checker().popup().isTradeAvailable());
         QVERIFY(r.app.checker().popup().tradeNote().isEmpty());
@@ -1081,6 +1156,7 @@ private Q_SLOTS:
     void ratesAreKeptFresh()
     {
         Folders folders;
+        keepSiteData(folders);
         Running r(folders);
         QVERIFY(r.rated());
         RatesRefresher &refresher = r.app.ratesRefresher();
@@ -1125,8 +1201,8 @@ private Q_SLOTS:
 
     void statPicker()
     {
-        // which only asks the trade site for its stats while there are
-        // trade searches
+        // which asks the trade site for its stats only when a search or the
+        // Refresh button does, and never as it opens
         Folders folders;
         Settings settings;
         settings.trade.league.soloSelfFound = true;
@@ -1138,40 +1214,55 @@ private Q_SLOTS:
         Running r(folders, desktop(), empty);
         StatPicker *picker = r.app.statPicker();
         picker->refresh();
-        QVERIFY(r.asked().isEmpty());
+        QVERIFY(r.tradeAsked().isEmpty());
         QCOMPARE(picker->rowCount(), equipmentKeys().size());
 
+        // poe.ninja's prices come when the site's league is known to be there
+        QTest::ignoreMessage(
+            QtWarningMsg, QRegularExpression(u"^Couldn't get currency rates for Standard from poe.ninja"_s));
         settings.trade.league.soloSelfFound = false;
         QVERIFY(r.app.settings().set(settings));
+        picker->refresh();
+        QTest::qWait(30);
+        QVERIFY(r.tradeAsked().isEmpty());
+        QCOMPARE(picker->rowCount(), equipmentKeys().size());
+
+        // when it's asked, and what it said was empty
         QTest::ignoreMessage(QtWarningMsg, "The trade site's stats came back empty");
         QTest::ignoreMessage(QtWarningMsg, "The trade site's filters came back empty");
         QTest::ignoreMessage(QtWarningMsg, "The trade site's leagues came back empty");
-        // which with no leagues are for Standard
-        QTest::ignoreMessage(QtWarningMsg, "Couldn't get currency rates for Standard from poe.ninja: "
-                                           "poe.ninja has no Divine Orb price for Standard.");
         QSignalSpy refreshed(&r.app.tradeData(), &TradeDataStore::refreshed);
+        r.app.tradeOptions()->refresh();
         QVERIFY(refreshed.wait());
         QVERIFY(r.app.tradeData().data().stats.isEmpty());
 
         // and again when it didn't get them
-        r.network->answers = siteAnswers();
+        r.network->route = [](const QNetworkRequest &request) {
+            return siteSays(request, tradefixtures::stats());
+        };
         QSignalSpy reset(picker, &StatPicker::modelReset);
-        picker->refresh();
+        r.app.tradeOptions()->refresh();
         QVERIFY(reset.wait());
         QCOMPARE(picker->rowCount(), equipmentKeys().size() + 4);
     }
 
     void offMeanwhile()
     {
-        // before the site has answered, so poe.ninja isn't asked
+        // turned off with a refresh going, which the site isn't asked the rest of
         Folders folders;
         Running r(folders);
+        r.app.tradeOptions()->refresh();
         Settings settings;
         settings.trade.enabled = false;
         QVERIFY(r.app.settings().set(settings));
         QSignalSpy refreshed(&r.app.tradeData(), &TradeDataStore::refreshed);
         QVERIFY(refreshed.wait());
-        QCOMPARE(r.asked().size(), 3);
+        QCOMPARE(r.tradeAsked().size(), 1);
+        QVERIFY(r.app.tradeData().data().stats.isEmpty());
+        // nor does turning it on ask
+        QVERIFY(r.app.settings().set(Settings()));
+        QTest::qWait(30);
+        QCOMPARE(r.tradeAsked().size(), 1);
     }
 
     void soloSelfFound()
@@ -1191,6 +1282,7 @@ private Q_SLOTS:
     {
         // for the character you play, in your budget at poe.ninja's rate
         Folders folders;
+        keepSiteData(folders);
         Character character;
         character.weights = {{u"# to maximum Life"_s, 1}};
         Settings settings;
@@ -1240,9 +1332,11 @@ private Q_SLOTS:
         QVERIFY(finished.wait());
         QVERIFY(r.app.finder().errorString().isEmpty());
         QCOMPARE(r.app.finder().found()->league, u"Runes of Aldur"_s);
-        QCOMPARE(r.asked(), (QList<QUrl>{tradeDataUrl(u"stats"_s), tradeDataUrl(u"filters"_s),
-                                         tradeDataUrl(u"leagues"_s), ninjaCurrencyUrl(u"Runes of Aldur"_s),
-                                         tradeSearchUrl(u"Runes of Aldur"_s)}));
+        // poe.ninja's prices came first, for the league it had to guess
+        QCOMPARE(r.asked(),
+                 (QList<QUrl>{ninjaCurrencyUrl(u"Standard"_s), tradeDataUrl(u"stats"_s),
+                              tradeDataUrl(u"filters"_s), tradeDataUrl(u"leagues"_s),
+                              ninjaCurrencyUrl(u"Runes of Aldur"_s), tradeSearchUrl(u"Runes of Aldur"_s)}));
     }
 
     void tradeResults()
@@ -1454,6 +1548,7 @@ private Q_SLOTS:
     {
         // as signed out, the site takes only the smallest upgrade searches
         Folders folders;
+        keepSiteData(folders, tradefixtures::manyStats());
         Settings settings;
         settings.character = folders.add(wearing(u"Torvald"_s, itemtexts::helmetOld));
         folders.set(settings);

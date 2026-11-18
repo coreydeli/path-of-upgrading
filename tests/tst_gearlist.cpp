@@ -227,7 +227,7 @@ private Q_SLOTS:
         const GearScore score = *gearScore(helmet, gearScoreOptions(c, u"Helmet"_s));
         QVERIFY(!score.missing.isEmpty());
         const QList<QStringList> notes = notesOf(g.in(u"Helmet"_s, GearList::NotesRole));
-        QCOMPARE(notes.first(), (QStringList{u"Missing"_s, missingStats(score).join(u", "_s)}));
+        QCOMPARE(notes.first(), (QStringList{u"Missing stats"_s, missingStats(score).join(u", "_s)}));
         QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.notScored.isEmpty()) +
                                    int(!weakRolls(score).isEmpty()));
 
@@ -248,9 +248,28 @@ private Q_SLOTS:
         QVERIFY(!score.notScored.isEmpty());
         QVERIFY(!weakRolls(score).isEmpty());
         QCOMPARE(notesOf(g.in(u"Body Armour"_s, GearList::NotesRole)),
-                 (QList<QStringList>{{u"Missing"_s, missingStats(score).join(u", "_s)},
-                                     {u"Not scored"_s, notScoredStats(score).join(u", "_s)},
+                 (QList<QStringList>{{u"Missing stats"_s, missingStats(score).join(u", "_s)},
+                                     {u"Not counted"_s, notScoredStats(score).join(u", "_s)},
                                      {u"Weak rolls"_s, weakRolls(score).join(u", "_s)}}));
+    }
+
+    void aWeakRollSaysItsTierAndTheNext()
+    {
+        Gear g;
+        const Item boots =
+            item(u"Boots"_s, u"Rare"_s, u"Dusk Step"_s, u"Plated Greaves"_s, u"+45 to maximum Life"_s);
+        const Character c = wearing({{u"Boots"_s, boots}});
+        g.play(c);
+        const QList<QStringList> notes = notesOf(g.in(u"Boots"_s, GearList::NotesRole));
+        QStringList weak, next;
+        for (const QStringList &note : notes) {
+            if (note.at(0) == u"Weak rolls"_s)
+                weak << note.at(1);
+            if (note.at(0) == u"Next tier"_s)
+                next << note.at(1);
+        }
+        QCOMPARE(weak, QStringList{u"Life 45 (up to 149, tier 6 of 9)"_s});
+        QCOMPARE(next, QStringList{u"Life, tier 5 (60 to 69) from item level 33"_s});
     }
 
     void whatTheBuildWantsInAnEmptySlot()
@@ -266,11 +285,11 @@ private Q_SLOTS:
         QCOMPARE(labels, QStringList{u"Life"_s});
         // with the most gloves roll of it
         QCOMPARE(notesOf(g.in(u"Gloves"_s, GearList::NotesRole)),
-                 (QList<QStringList>{{u"Wants most"_s, u"Life up to 149"_s}}));
+                 (QList<QStringList>{{u"Your build wants"_s, u"Life up to 149"_s}}));
 
         // before there's a character too, and not by your weights alone
         Gear nobody;
-        QCOMPARE(notesOf(nobody.in(u"Gloves"_s, GearList::NotesRole)).first().first(), u"Wants most"_s);
+        QCOMPARE(notesOf(nobody.in(u"Gloves"_s, GearList::NotesRole)).first().first(), u"Your build wants"_s);
         Character weights = wearing({});
         weights.buildProfile = noBuildProfile.toString();
         nobody.play(weights);

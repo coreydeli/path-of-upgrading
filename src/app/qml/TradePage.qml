@@ -49,7 +49,7 @@ ColumnsPage {
     ]
 
     title: qsTr("Trade")
-    description: qsTr("Trade searches from the popup, the league, and what you'll pay.")
+    description: qsTr("Search the trade site from the popup, and set your league and what you'll pay.")
 
     Sheet {
         Layout.topMargin: Kirigami.Units.largeSpacing
@@ -57,7 +57,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Search the trade site")
-            description: qsTr("From the popup, for upgrades and for items like the one you checked.")
+            description: qsTr("Adds search buttons to the popup, for upgrades and for items like the one you checked.")
             checked: tradePage.options.enabled
             onToggled: tradePage.options.enabled = checked
         }
@@ -93,6 +93,20 @@ ColumnsPage {
             text: qsTr("Searches go to")
             description: tradePage.options.searchedLeague
         }
+
+        RowRule {}
+
+        FormRow {
+            text: qsTr("Leagues and stats")
+            description: qsTr("The trade site's lists are only asked for when you search or press Refresh.")
+
+            QQC2.Button {
+                objectName: "refreshSiteButton"
+                text: qsTr("Refresh")
+                enabled: tradePage.options.unavailable === "" && !tradePage.options.refreshing
+                onClicked: tradePage.options.refresh()
+            }
+        }
     }
 
     SectionHeader {
@@ -119,7 +133,7 @@ ColumnsPage {
         NumberField {
             objectName: "budgetMin"
             label: qsTr("Lowest price")
-            description: qsTr("Listings cheaper than this are left out.")
+            description: qsTr("Anything cheaper won't show up.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -132,7 +146,7 @@ ColumnsPage {
         NumberField {
             objectName: "budgetMax"
             label: qsTr("Highest price")
-            description: qsTr("Listings that cost more are left out.")
+            description: qsTr("Anything pricier won't show up.")
             noneText: qsTr("Any")
             decimals: 1
             step: tradePage.options.currency === "divine" ? 0.5 : 1
@@ -145,7 +159,7 @@ ColumnsPage {
         FormCard.FormComboBoxDelegate {
             objectName: "currencyBox"
             text: qsTr("Currency")
-            description: qsTr("What the lowest and highest price are counted in.")
+            description: qsTr("The currency the lowest and highest price are in.")
             textRole: "text"
             valueRole: "value"
             model: tradePage.currencies
@@ -264,7 +278,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "findSessionButton"
             text: tradePage.showFindSession ? qsTr("Hide Where to Find It") : qsTr("Where Do I Find It?")
-            description: qsTr("It's a cookie in your browser, from signing in to the Path of Exile website.")
+            description: qsTr("It's a cookie your browser keeps after you sign in to the Path of Exile website.")
             icon.name: tradePage.showFindSession ? "arrow-up" : "arrow-down"
             onClicked: tradePage.showFindSession = !tradePage.showFindSession
         }
@@ -291,7 +305,7 @@ ColumnsPage {
             objectName: "signInButton"
             visible: tradePage.showFindSession
             text: qsTr("Open the Sign In Page")
-            description: qsTr("The Path of Exile website, in your browser.")
+            description: qsTr("Opens the Path of Exile website in your browser.")
             icon.name: "internet-web-browser"
             onClicked: tradePage.session.openSignIn()
         }
@@ -299,6 +313,6 @@ ColumnsPage {
 
     SectionText {
         objectName: "sessionHelp"
-        text: qsTr("The session ID is the POESESSID cookie of a browser that's signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. When you're signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
+        text: qsTr("The session ID is the POESESSID cookie your browser keeps once you're signed in to pathofexile.com. It's kept in your system keyring and only ever sent to the trade site. When you're signed in, the site takes bigger searches, and Path of Building can weigh upgrade searches for your build.")
     }
 }

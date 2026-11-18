@@ -50,7 +50,8 @@ StatPicker::StatPicker(TradeDataStore *data, ItemHistory *history, QObject *pare
     , m_history(history)
 {
     connect(data, &TradeDataStore::refreshed, this, [this] {
-        if (std::exchange(m_waiting, false))
+        // only while it has no stats, so a list in use doesn't shift under the pointer
+        if (m_opened && !m_hadStats)
             rebuild();
     });
 }
@@ -122,11 +123,9 @@ void StatPicker::setTradeOffered(bool offered)
 
 void StatPicker::refresh()
 {
-    if (m_siteAllowed)
-        m_data->refresh();
-    else
-        m_data->load();
-    m_waiting = m_data->isRefreshing();
+    // from the files, as opening the picker asks the site for nothing
+    m_data->load();
+    m_opened = true;
     rebuild();
 }
 
@@ -134,6 +133,7 @@ void StatPicker::rebuild()
 {
     const SeenStats &seen = m_history->seenStats();
     const StatCatalog catalog = buildCatalog(m_data->data().stats, seen);
+    m_hadStats = !m_data->data().stats.isEmpty();
 
     QHash<QString, int> seenKeys; // on items of any class
     for (const QHash<QString, int> &counts : seen) {
@@ -214,12 +214,17 @@ QString StatPicker::missingStats() const
     if (!m_data->data().stats.isEmpty() || !m_tradeOffered)
         return {};
     if (!m_siteAllowed)
-        return u"The trade site's list of stats comes with trade search, so here are only the item's own "
-               u"and those on the items you've checked."_s;
+        return u"Trade search brings the trade site's list of stats, so for now you only see the item's own "
+               u"stats and those on items you've checked."_s;
     if (m_data->isRefreshing())
         return u"Getting the list of stats from the trade site."_s;
-    return u"Couldn't get the trade site's list of stats, so here are only the item's own and those on "
-           u"the items you've checked."_s;
+    if (m_data->errorString().isEmpty())
+        return u"You get the trade site's list of stats with your first trade search, or when you press "
+               u"Refresh "
+               u"on the Trade page. Until then you only see the item's own stats and those on items you've "
+               u"checked."_s;
+    return u"Couldn't get the trade site's list of stats, so you only see the item's own stats and those on "
+           u"items you've checked."_s;
 }
 
 void StatPicker::updateMessage()
