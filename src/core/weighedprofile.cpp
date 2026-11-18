@@ -111,7 +111,7 @@ WeighedProfile weighedProfile(const QList<SlotWeighing> &weighings, const BuildP
     WeighedProfile out;
     out.profile = {.id = weighedProfileId.toString(),
                    .name = u"Weighed by Path of Building"_s,
-                   .summary = u"What Path of Building says each stat is worth to your build in each slot."_s,
+                   .summary = u"Path of Building says what each stat is worth to your build in each slot."_s,
                    .stats = {}};
 
     QHash<QString, QString> startLabels;
@@ -217,7 +217,7 @@ std::optional<WeighedProfile> weighedProfileFromJson(const QJsonObject &o)
     WeighedProfile out;
     out.profile = {.id = weighedProfileId.toString(),
                    .name = u"Weighed by Path of Building"_s,
-                   .summary = u"What Path of Building says each stat is worth to your build in each slot."_s,
+                   .summary = u"Path of Building says what each stat is worth to your build in each slot."_s,
                    .stats = {}};
     out.pobVersion = o.value(u"pobVersion").toString();
     out.date = o.value(u"date").toString();

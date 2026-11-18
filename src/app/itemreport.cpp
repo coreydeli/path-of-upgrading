@@ -500,12 +500,11 @@ void putMap(ItemReport &report, const MapCheck &map)
     if (map.corrupted)
         report.notes << u"It's corrupted."_s;
     if (map.usedBuild) {
-        report.mapBuild = map.buildChanged
-                              ? u"Checked against your character: the mods marked below are worse for it."_s
-                              : u"Checked against your character. Nothing here is worse for it."_s;
+        report.mapBuild = map.buildChanged ? u"The marked mods are bad news for your character."_s
+                                           : u"Nothing here is bad news for your character."_s;
     }
     report.mapExperimental =
-        u"Experimental: checking waystones and tablets is still being tested, and is only in beta versions."_s;
+        u"Experimental: waystone and tablet checks are still being tested, and only come in beta versions."_s;
 }
 
 } // namespace

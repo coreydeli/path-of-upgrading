@@ -22,7 +22,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "wikiButton"
             text: qsTr("Open the Wiki")
-            description: qsTr("All its pages, on GitHub.")
+            description: qsTr("Every page, on GitHub.")
             icon.name: "help-contents"
             onClicked: helpPage.help.openWiki()
         }

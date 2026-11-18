@@ -21,7 +21,7 @@ ColumnsPage {
     readonly property real boxWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Stat Weights")
-    description: qsTr("How much each stat is worth to you, when items are judged by your weights.")
+    description: qsTr("Set how much each stat is worth to you, for when items are judged by your weights.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
@@ -86,7 +86,7 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: weightsPage.weights.character === ""
             text: qsTr("You haven't picked a character yet.")
-            description: qsTr("Change anything here and a character gets made for you. Or add one yourself, or import a build, under Gear Settings, Characters.")
+            description: qsTr("Change anything here and the app makes a character for you. You can also add one yourself, or import a build, under Gear Settings, Characters.")
         }
 
         TableHeader {
@@ -113,8 +113,8 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "noWeightsText"
             visible: weightRows.count === 0
-            text: qsTr("You have no weights.")
-            description: qsTr("Every item scores 0 without them. Add some, get suggestions from your gear, or go back to the defaults.")
+            text: qsTr("You haven't set any weights.")
+            description: qsTr("Without them every item scores 0. Add some, get suggestions from your gear, or go back to the defaults.")
             textItem.wrapMode: Text.Wrap
         }
 
@@ -164,7 +164,7 @@ ColumnsPage {
 
     SectionText {
         objectName: "weightsHelp"
-        text: qsTr("A weight says what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges items by them when you turn on Judge by my stat weights alone on the Gear Score page. Searching the trade site by your weights always uses them.")
+        text: qsTr("A weight says what one point of a stat is worth to you. With Life at 1 and Fire Resistance at 1.5, 10% fire resistance counts as much as 15 Life. The popup judges by your weights when you turn on Judge by my stat weights alone on the Gear Score page, and searching the trade site by your weights always uses them.")
     }
 
     StatPickerDialog {
@@ -207,7 +207,7 @@ ColumnsPage {
         }
 
         FormCard.FormTextDelegate {
-            text: qsTr("From the stats on your gear, leaving out uniques and runes. A typical roll of each is worth about 30 points, and more when several of your items have it.")
+            text: qsTr("These come from the stats on your gear, leaving out uniques and runes. A typical roll of each is worth about 30 points, more when several of your items have it.")
             textItem.wrapMode: Text.Wrap
         }
 

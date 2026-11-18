@@ -32,7 +32,7 @@ ColumnLayout {
     Sheet {
         FormCard.FormTextDelegate {
             objectName: "setupSessionHelp"
-            text: qsTr("You can leave this for later. While you're signed in, the site takes bigger searches. The session ID is the POESESSID cookie your browser gets when you sign in to pathofexile.com, and it's kept in your system keyring.")
+            text: qsTr("You can leave this for later. Signed in, the site takes bigger searches. The session ID is the POESESSID cookie your browser gets when you sign in to pathofexile.com, and the app keeps it in your system keyring.")
             textItem.wrapMode: Text.Wrap
         }
 

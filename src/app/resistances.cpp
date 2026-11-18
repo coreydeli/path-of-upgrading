@@ -52,16 +52,16 @@ QString Resistances::summary() const
 QString Resistances::sourceNote() const
 {
     if (!m_live)
-        return u"Not known yet. Import a build, or type them in from your character sheet."_s;
+        return u"You don't have any yet. Import a build, or type them in from your character sheet."_s;
     switch (m_live->source) {
     case ResistSource::Pob:
-        return u"From your build in Path of Building, with what you have equipped now."_s;
+        return u"These come from your build in Path of Building, plus what you have equipped now."_s;
     case ResistSource::Game:
-        return u"Typed in from your character sheet, with what you have equipped now."_s;
+        return u"You typed these in from your character sheet, and they follow what you have equipped now."_s;
     case ResistSource::Manual:
         break;
     }
-    return u"Typed in by hand, with what you have equipped now."_s;
+    return u"You typed these in by hand, and they follow what you have equipped now."_s;
 }
 
 double Resistances::value(Element e) const

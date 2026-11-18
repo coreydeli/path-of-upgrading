@@ -214,17 +214,17 @@ QString StatPicker::missingStats() const
     if (!m_data->data().stats.isEmpty() || !m_tradeOffered)
         return {};
     if (!m_siteAllowed)
-        return u"The trade site's list of stats comes with trade search, so here are only the item's own "
-               u"and those on the items you've checked."_s;
+        return u"Trade search brings the trade site's list of stats, so for now you only see the item's own "
+               u"stats and those on items you've checked."_s;
     if (m_data->isRefreshing())
         return u"Getting the list of stats from the trade site."_s;
     if (m_data->errorString().isEmpty())
-        return u"The trade site's list of stats comes with your first trade search, or when you press "
+        return u"You get the trade site's list of stats with your first trade search, or when you press "
                u"Refresh "
-               u"on the Trade page. Until then, here are only the item's own and those on the items you've "
+               u"on the Trade page. Until then you only see the item's own stats and those on items you've "
                u"checked."_s;
-    return u"Couldn't get the trade site's list of stats, so here are only the item's own and those on "
-           u"the items you've checked."_s;
+    return u"Couldn't get the trade site's list of stats, so you only see the item's own stats and those on "
+           u"items you've checked."_s;
 }
 
 void StatPicker::updateMessage()
