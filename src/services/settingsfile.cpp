@@ -96,6 +96,8 @@ Settings loadSettings(const QSettings &store, bool beta)
     AppearanceSettings &appearance = s.appearance;
     appearance.colors = colorThemeFromId(store.value(u"appearance/theme"_s).toString());
     appearance.decorations = decorationsFromId(store.value(u"appearance/decorations"_s).toString());
+    appearance.design = designFromId(store.value(u"appearance/design"_s).toString());
+    appearance.brightness = brightnessFromId(store.value(u"appearance/brightness"_s).toString());
     read(store, u"appearance/headingFont"_s, appearance.headingFont);
     read(store, u"appearance/textFont"_s, appearance.textFont);
     read(store, u"appearance/textSize"_s, appearance.textSize, 0, largestTextSize);
@@ -160,6 +162,8 @@ void saveSettings(QSettings &store, const Settings &s, bool beta)
     const AppearanceSettings &appearance = s.appearance;
     store.setValue(u"appearance/theme"_s, colorThemeId(appearance.colors));
     store.setValue(u"appearance/decorations"_s, decorationsId(appearance.decorations));
+    store.setValue(u"appearance/design"_s, designId(appearance.design));
+    store.setValue(u"appearance/brightness"_s, brightnessId(appearance.brightness));
     store.setValue(u"appearance/headingFont"_s, appearance.headingFont);
     store.setValue(u"appearance/textFont"_s, appearance.textFont);
     store.setValue(u"appearance/textSize"_s, appearance.textSize);

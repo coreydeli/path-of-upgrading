@@ -3398,6 +3398,49 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.colors, ColorTheme::App);
     }
 
+    void theDesignIsPickedOnTheAppearancePage()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"designBox"_s)->property("currentText").toString(), u"Dossier"_s);
+        // Dossier has one dark scheme, so there's no brightness to pick
+        QCOMPARE(w.find(u"brightnessBox"_s)->property("visible").toBool(), false);
+
+        QVERIFY(activate(w.find(u"designBox"_s), 1));
+        QCOMPARE(w.settings().appearance.design, Design::Material);
+        QCOMPARE(w.find(u"brightnessBox"_s)->property("visible").toBool(), true);
+        QVERIFY(activate(w.find(u"brightnessBox"_s), 2));
+        QCOMPARE(w.settings().appearance.brightness, Brightness::Dark);
+
+        // the desktop's own colors are neither light nor dark by choice
+        QVERIFY(activate(w.find(u"colorsBox"_s), 1));
+        QCOMPARE(w.find(u"brightnessBox"_s)->property("visible").toBool(), false);
+
+        QVERIFY(activate(w.find(u"designBox"_s), 0));
+        QCOMPARE(w.settings().appearance.design, Design::Dossier);
+    }
+
+    void styleFollowsTheDesign()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        auto *style = w.qml.singletonInstance<QObject *>("PathOfUpgrading", "Style");
+        QVERIFY(style);
+        QCOMPARE(style->property("material").toBool(), false);
+        QCOMPARE(style->property("dark").toBool(), true);
+
+        w.app->appearance()->setBrightness(u"light"_s);
+        w.app->appearance()->setDesign(u"material"_s);
+        QCOMPARE(style->property("material").toBool(), true);
+        QCOMPARE(style->property("dark").toBool(), false);
+
+        w.app->appearance()->setBrightness(u"dark"_s);
+        QCOMPARE(style->property("dark").toBool(), true);
+
+        w.app->appearance()->setDesign(u"dossier"_s);
+        QCOMPARE(style->property("material").toBool(), false);
+        QCOMPARE(style->property("dark").toBool(), true);
+    }
+
     // the popup and the results window read it from the same engine
     void styleFollowsTheColors()
     {

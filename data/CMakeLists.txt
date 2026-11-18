@@ -8,6 +8,8 @@ if(NOT WIN32)
     # the app's own color scheme, not in the color-schemes folder System
     # Settings lists
     install(FILES color-schemes/PathOfUpgrading.colors
+        color-schemes/PathOfUpgradingMaterialLight.colors
+        color-schemes/PathOfUpgradingMaterialDark.colors
         DESTINATION ${CMAKE_INSTALL_DATADIR}/path-of-upgrading/color-schemes)
     # the fonts in the program have their licenses with them
     install(FILES fonts/OFL-Spectral.txt fonts/OFL-BigShoulders.txt

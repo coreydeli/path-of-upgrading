@@ -7,7 +7,9 @@
 #include <KColorScheme>
 #include <KConfigGroup>
 #include <KSharedConfig>
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QPalette>
@@ -18,6 +20,7 @@
 #include <QSettings>
 #include <QSignalSpy>
 #include <QStandardPaths>
+#include <QStyleHints>
 #include <QTemporaryDir>
 #include <QTest>
 #include <memory>
@@ -405,6 +408,121 @@ private Q_SLOTS:
         // and not for what hasn't changed
         look.appearance.setDecorations(u"full"_s);
         QCOMPARE(changed.count(), 2);
+    }
+
+    void startsInDossier()
+    {
+        Look look;
+        QCOMPARE(look.appearance.design(), u"dossier"_s);
+        QCOMPARE(look.appearance.brightness(), u"desktop"_s);
+        QVERIFY(!look.appearance.isMaterial());
+        QVERIFY(look.appearance.isDark());
+    }
+
+    void savesTheDesign()
+    {
+        Look look;
+        look.appearance.setDesign(u"material"_s);
+        look.appearance.setBrightness(u"dark"_s);
+        QCOMPARE(look.saved().design, Design::Material);
+        QCOMPARE(look.saved().brightness, Brightness::Dark);
+        QVERIFY(look.appearance.isMaterial());
+
+        QSettings again(look.dir.filePath(u"settings.conf"_s), QSettings::IniFormat);
+        QCOMPARE(again.value(u"appearance/design"_s).toString(), u"material"_s);
+        QCOMPARE(again.value(u"appearance/brightness"_s).toString(), u"dark"_s);
+
+        look.appearance.setDesign(u"neon"_s);
+        QCOMPARE(look.appearance.design(), u"dossier"_s);
+    }
+
+    void materialHasItsOwnLightAndDarkColors()
+    {
+        Settings first;
+        first.appearance.design = Design::Material;
+        first.appearance.brightness = Brightness::Light;
+        Look look(first);
+        QVERIFY(look.appearance.hasAppColors());
+        QVERIFY(!look.appearance.isDark());
+        QCOMPARE(window(), QColor(u"#fef7ff"_s));
+        QVERIFY(qApp->property("KDE_COLOR_SCHEME_PATH").toString().endsWith(u"MaterialLight.colors"_s));
+
+        look.appearance.setBrightness(u"dark"_s);
+        QVERIFY(look.appearance.isDark());
+        QCOMPARE(window(), QColor(u"#141218"_s));
+        QVERIFY(qApp->property("KDE_COLOR_SCHEME_PATH").toString().endsWith(u"MaterialDark.colors"_s));
+
+        // and the one the app had, when it goes back
+        look.appearance.setDesign(u"dossier"_s);
+        QCOMPARE(window(), appWindow);
+        QVERIFY(look.appearance.isDark());
+    }
+
+    void materialFollowsTheDesktopsBrightnessByDefault()
+    {
+        Settings first;
+        first.appearance.design = Design::Material;
+        Look look(first);
+        // there's no desktop offscreen, so the scheme isn't known and it's light
+        QCOMPARE(look.appearance.isDark(),
+                 QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark);
+    }
+
+    void tellsWhenTheBrightnessChanges()
+    {
+        Settings first;
+        first.appearance.design = Design::Material;
+        first.appearance.brightness = Brightness::Light;
+        Look look(first);
+        QSignalSpy changed(&look.appearance, &Appearance::changed);
+        look.appearance.setBrightness(u"dark"_s);
+        QVERIFY(changed.count() >= 1);
+    }
+
+    void materialKeepsTheDesktopsFont()
+    {
+        const QFont desktop = QGuiApplication::font();
+        Settings first;
+        first.appearance.design = Design::Material;
+        Look look(first);
+        QCOMPARE(look.appearance.textFamily(), desktop.family());
+        QCOMPARE(look.appearance.headingFamily(), desktop.family());
+
+        // and a font chosen is still the one it has
+        const QString other = otherFamily();
+        if (other.isEmpty())
+            QSKIP("There's no other font installed.");
+        look.appearance.setTextFont(other);
+        QCOMPARE(look.appearance.textFamily(), other);
+    }
+
+    void aMissingMaterialSchemeLeavesTheDesktopsColors()
+    {
+        const QColor before = window();
+        Settings first;
+        first.appearance.design = Design::Material;
+        Look look(first, u"/made-up/color-schemes/PathOfUpgrading.colors"_s);
+        QVERIFY(!look.appearance.hasAppColors());
+        QVERIFY(!look.appearance.colorsError().isEmpty());
+        QCOMPARE(window(), before);
+    }
+
+    void theMaterialSchemesAreFilledIn()
+    {
+        const QStringList sets = {u"Button"_s,  u"Complementary"_s, u"Header"_s, u"Selection"_s,
+                                  u"Tooltip"_s, u"View"_s,          u"Window"_s};
+        for (const QString &name : {u"MaterialLight"_s, u"MaterialDark"_s}) {
+            const QString file =
+                QFileInfo(colorsFile).dir().filePath(u"PathOfUpgrading"_s + name + u".colors"_s);
+            const KSharedConfigPtr config = KSharedConfig::openConfig(file, KConfig::SimpleConfig);
+            QVERIFY2(config->hasGroup(u"General"_s), qPrintable(file));
+            for (const QString &set : sets) {
+                const KConfigGroup group = config->group(u"Colors:"_s + set);
+                for (const char *key : {"BackgroundNormal", "BackgroundAlternate", "ForegroundNormal",
+                                        "ForegroundInactive", "DecorationFocus", "DecorationHover"})
+                    QVERIFY2(group.hasKey(key), qPrintable(name + u"/"_s + set));
+            }
+        }
     }
 
     // The scheme in the source is what the design says it is.

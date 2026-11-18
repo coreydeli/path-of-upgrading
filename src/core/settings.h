@@ -101,6 +101,17 @@ enum class Decorations {
 QString decorationsId(Decorations decorations);
 Decorations decorationsFromId(QStringView id);
 
+// Which look the app has. Dossier is the app's own, Material follows Google's
+// Material Design 3.
+enum class Design { Dossier, Material };
+QString designId(Design design);
+Design designFromId(QStringView id);
+
+// Whether Material's colors are light or dark, or follow the desktop.
+enum class Brightness { Desktop, Light, Dark };
+QString brightnessId(Brightness brightness);
+Brightness brightnessFromId(QStringView id);
+
 // What headingFont says for "the same as the text".
 constexpr QStringView sameAsText = u"text";
 
@@ -112,6 +123,8 @@ struct AppearanceSettings
 {
     ColorTheme colors = ColorTheme::App;
     Decorations decorations = Decorations::Full;
+    Design design = Design::Dossier;
+    Brightness brightness = Brightness::Desktop; // only Material has a light and a dark
     // Empty is the app's own heading font, "text" is the text font, and else
     // a font family.
     QString headingFont;
