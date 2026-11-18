@@ -95,8 +95,11 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
                                     .icon = QGuiApplication::desktopFileName()})
     , m_overlayOptions(&m_settings, &m_hotkeys, &m_autostart)
     , m_startOver(paths.startOverOffered,
-                  {.settings = paths.settings, .data = paths.data, .cache = paths.cache}, &m_autostart,
-                  m_secrets.get(), m_shortcuts.get())
+                  {.settings = paths.settings,
+                   .data = paths.data,
+                   .cache = paths.cache,
+                   .marker = u"path-of-upgrading"_s},
+                  &m_autostart, m_secrets.get(), m_shortcuts.get())
     , m_pobOptions(&m_settings, &m_pob, m_places, m_opener.get())
     , m_about(&m_pobOptions, m_opener.get())
     , m_help(m_opener.get(), paths.tradeOffered)

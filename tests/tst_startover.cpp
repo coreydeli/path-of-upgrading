@@ -34,9 +34,12 @@ struct Setup
     FakeGlobalShortcuts shortcuts;
     Autostart autostart{dir.filePath(u"autostart/made-up.desktop"_s),
                         {.name = u"Made-up"_s, .exec = u"made-up"_s}};
-    StartOver::Places places{.settings = dir.filePath(u"made-uprc"_s),
-                             .data = dir.filePath(u"data"_s),
-                             .cache = dir.filePath(u"cache"_s)};
+    // everything is in the temporary folder, and named for the marker, which
+    // is all the removal will touch
+    StartOver::Places places{.settings = dir.filePath(u"made-up-apprc"_s),
+                             .data = dir.filePath(u"made-up-app"_s),
+                             .cache = dir.filePath(u"made-up-app-cache"_s),
+                             .marker = u"made-up-app"_s};
     int restarts = 0;
 
     Setup()
@@ -141,8 +144,8 @@ private Q_SLOTS:
         // a folder where the settings file should be, with the folder's own
         // folder read only, so it can't be taken out
         const QString locked = s.dir.filePath(u"locked"_s);
-        QVERIFY(write(locked + u"/made-uprc/inside"_s));
-        s.places.settings = locked + u"/made-uprc"_s;
+        QVERIFY(write(locked + u"/made-up-apprc/inside"_s));
+        s.places.settings = locked + u"/made-up-apprc"_s;
         QVERIFY(QFile::setPermissions(locked, QFileDevice::ReadOwner | QFileDevice::ExeOwner));
         const auto restore = qScopeGuard([&] {
             QFile::setPermissions(locked,

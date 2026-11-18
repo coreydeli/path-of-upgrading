@@ -37,6 +37,7 @@ public:
         QString settings; // the file
         QString data;     // the folder
         QString cache;    // the folder
+        QString marker;   // in the name of each, see isOwnPath
     };
     // Starts the app again once this one is gone, and quits it. False when it
     // couldn't.
