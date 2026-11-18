@@ -51,7 +51,8 @@ build. No tabbing out, no spreadsheet.
 ## Made for Linux
 
 Path of Upgrading is a native Qt 6 app, written in C++ and QML, and it's at home
-on KDE Plasma with Wayland. The game runs under Proton, and the app reads it
+on KDE Plasma with Wayland. It has its own look, Dossier, and a Material Design 3
+look, which you pick on the Appearance page. The game runs under Proton, and the app reads it
 through XWayland. There's a Windows version too. It keeps your data on your own
 computer, and your session id, if you give it one, goes in your system keyring.
 [Your Data and Privacy](docs/Your-Data-and-Privacy.md) has the details.

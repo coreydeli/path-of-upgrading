@@ -168,6 +168,8 @@ touch.
   builds into the tests, and don't commit them.
 - Window tests run offscreen. `initMain` sets `QT_QPA_PLATFORM=offscreen`, and
   the tests call `QTest::failOnWarning()`.
+- The window tests load every settings page under Dossier, and under Material in
+  light and dark, so a change to the look has to keep all of them loading.
 - Tests must not touch the clipboard, open a page in the browser, map visible
   windows, send XTest input, register real global shortcuts or set off desktop
   prompts.
