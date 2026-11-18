@@ -117,7 +117,7 @@ private Q_SLOTS:
         QCOMPARE(s.done.size(), 0);
         QCOMPARE(s.failed.size(), 1);
         QCOMPARE(s.failed.at(0).at(0).toString(),
-                 u"The download didn't match its checksum, so it was thrown away."_s);
+                 u"The download didn't match its checksum, so it was deleted."_s);
         QVERIFY(!QFile::exists(s.dir.filePath(u"updates/0.8.0/"_s + s.name())));
     }
 

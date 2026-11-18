@@ -87,13 +87,13 @@ QString gearGrade(int score);
 QStringList notScoredStats(const GearScore &gear);
 //   the missing ones, with the most the item can roll: "Life (up to 149)"
 QStringList missingStats(const GearScore &gear);
-//   the weakest three rolls under that share of an excellent roll, "Life 62 of
-//   up to 149, tier 4 of 10" (the tier when one mod gave it and the table
+//   the weakest three rolls under that share of an excellent roll, "Life 62
+//   (up to 149, tier 4 of 10)" (the tier when one mod gave it and the table
 //   knows), or "Life 40% of an excellent roll" when it isn't known what the
 //   item can roll. Runes aren't rolls, so they're left out.
 QStringList weakRolls(const GearScore &gear, int underPercent = 50);
 //   for those same weak rolls that one mod gave, the next tier up: "Life, tier
-//   3 (120 to 149) at item level 60 or higher"
+//   3 (120 to 149) from item level 60"
 QStringList nextTiers(const GearScore &gear, int underPercent = 50);
 
 // What would raise a gear score, in the words the popup uses. Each is empty

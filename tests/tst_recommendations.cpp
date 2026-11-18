@@ -113,7 +113,7 @@ private Q_SLOTS:
         QVERIFY(top);
         QCOMPARE(boots.first().top, *top);
         QCOMPARE(rollRangeText(boots.first()),
-                 u"Movement Speed %1, item level %2"_s.arg(rollText(top->high)).arg(top->level));
+                 u"Movement Speed %1 at item level %2"_s.arg(rollText(top->high)).arg(top->level));
         QCOMPARE(canRoll(u"Boots"_s, nullptr, {}, 2).size(), 2);
 
         // what's worn doesn't matter, only its class
@@ -184,9 +184,9 @@ private Q_SLOTS:
     void aRangeWithOneEndIsOneNumber()
     {
         QCOMPARE(rollRangeText({.label = u"Life"_s, .top = {.level = 5, .low = 20, .high = 20}}),
-                 u"Life 20, item level 5"_s);
+                 u"Life 20 at item level 5"_s);
         QCOMPARE(rollRangeText({.label = u"Life"_s, .top = {.level = 82, .low = 10.5, .high = 12}}),
-                 u"Life 10.5 to 12, item level 82"_s);
+                 u"Life 10.5 to 12 at item level 82"_s);
     }
 
     void nothingToRollWithoutAClassOrATable()

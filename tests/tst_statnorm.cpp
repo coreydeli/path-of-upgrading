@@ -55,8 +55,8 @@ private Q_SLOTS:
 
     void propertyNotes()
     {
-        QCOMPARE(pou::propertyNote(u"[Base] Armour"), u"The item's own, with its mods"_s);
-        QCOMPARE(pou::propertyNote(u"[Weapon] Total DPS"), u"The weapon's own, with its mods"_s);
+        QCOMPARE(pou::propertyNote(u"[Base] Armour"), u"The item's own, mods included"_s);
+        QCOMPARE(pou::propertyNote(u"[Weapon] Total DPS"), u"The weapon's own, mods included"_s);
         QCOMPARE(pou::propertyNote(u"# to maximum Life"), QString());
     }
 

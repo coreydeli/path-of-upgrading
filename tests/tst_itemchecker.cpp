@@ -355,7 +355,7 @@ private Q_SLOTS:
         Character worn;
         worn.gear = {{u"Helmet"_s, parseItem(itemtexts::helmetNew).value()}};
         checker.setCharacter(worn, std::nullopt);
-        QCOMPARE(checker.popup().report().verdict, u"Equipped"_s);
+        QCOMPARE(checker.popup().report().verdict, u"Already equipped"_s);
         QCOMPARE(checker.popup().report().versus, u"in your Helmet slot"_s);
         QVERIFY(checker.popup().report().wearIn.isEmpty());
         // which isn't another item read
