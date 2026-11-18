@@ -2,7 +2,7 @@
 [project]
 site_name = "Path of Upgrading"
 site_description = "An item overlay for Path of Exile 2 on Linux. Download it and read the docs."
-site_url = "https://coreydeli.github.io/path-of-upgrading/"
+site_url = "https://getpou.app/"
 # No repo_url: the header would ask GitHub for the stars and releases from every visitor's browser.
 copyright = "MIT licensed. Path of Exile is a trademark of Grinding Gear Games. This project isn't affiliated with or endorsed by them."
 docs_dir = "content"

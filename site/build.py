@@ -21,7 +21,7 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = "coreydeli/path-of-upgrading"
-SITE = "https://coreydeli.github.io/path-of-upgrading"
+SITE = "https://getpou.app"
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 

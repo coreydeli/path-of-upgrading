@@ -17,7 +17,7 @@ Release:        1%{?dist}
 %global srcver  %(echo '%{version}' | cut -d '~' -f 1)
 Summary:        Path of Exile 2 item overlay that checks items against your build
 License:        MIT AND OFL-1.1
-URL:            https://github.com/coreydeli/path-of-upgrading
+URL:            https://getpou.app
 Source0:        %{url}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
 BuildRequires:  cmake >= 3.21
