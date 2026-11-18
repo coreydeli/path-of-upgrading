@@ -9,6 +9,12 @@ version that comes out.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.8.0] - 2026-11-18
+
+[Release notes](https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.8.0)
+
 ### Added
 
 - A Design setting on the Appearance page, with Dossier and Material. Dossier is
@@ -319,6 +325,7 @@ The 0.1.0 betas (v0.1.0-beta.1 to v0.1.0-beta.33, from 2026-11-03 to
   checks do.
 
 [Unreleased]: https://github.com/coreydeli/path-of-upgrading/commits/beta
+[0.8.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.8.0
 [0.7.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.7.0
 [0.6.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.6.0
 [0.5.0]: https://github.com/coreydeli/path-of-upgrading/releases/tag/v0.5.0
