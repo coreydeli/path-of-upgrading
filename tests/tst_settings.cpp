@@ -152,6 +152,8 @@ private Q_SLOTS:
         s.overlay.paused = true;
         s.appearance.colors = ColorTheme::Desktop;
         s.appearance.decorations = Decorations::Plain;
+        s.appearance.design = Design::Material;
+        s.appearance.brightness = Brightness::Dark;
         s.appearance.headingFont = u"Palatino"_s;
         s.appearance.textFont = u"Sans Mono"_s;
         s.appearance.textSize = 11.5;
@@ -173,6 +175,8 @@ private Q_SLOTS:
         QCOMPARE(again.value(u"overlay/position"_s).toString(), u"top"_s);
         QCOMPARE(again.value(u"appearance/theme"_s).toString(), u"desktop"_s);
         QCOMPARE(again.value(u"appearance/decorations"_s).toString(), u"plain"_s);
+        QCOMPARE(again.value(u"appearance/design"_s).toString(), u"material"_s);
+        QCOMPARE(again.value(u"appearance/brightness"_s).toString(), u"dark"_s);
         QCOMPARE(again.value(u"appearance/headingFont"_s).toString(), u"Palatino"_s);
         QCOMPARE(again.value(u"appearance/textFont"_s).toString(), u"Sans Mono"_s);
         QCOMPARE(again.value(u"appearance/textSize"_s).toDouble(), 11.5);
@@ -192,6 +196,8 @@ private Q_SLOTS:
         store.setValue(u"overlay/position"_s, u"sideways"_s);
         store.setValue(u"appearance/theme"_s, u"neon"_s);
         store.setValue(u"appearance/decorations"_s, u"lots"_s);
+        store.setValue(u"appearance/design"_s, u"neon"_s);
+        store.setValue(u"appearance/brightness"_s, u"dim"_s);
         store.setValue(u"appearance/textSize"_s, 500);
 
         const Settings s = loadSettings(store);
@@ -203,6 +209,8 @@ private Q_SLOTS:
         QCOMPARE(s.overlay.position, PopupPosition::Cursor);
         QCOMPARE(s.appearance.colors, ColorTheme::App);
         QCOMPARE(s.appearance.decorations, Decorations::Full);
+        QCOMPARE(s.appearance.design, Design::Dossier);
+        QCOMPARE(s.appearance.brightness, Brightness::Desktop);
         QCOMPARE(s.appearance.textSize, largestTextSize);
     }
 
@@ -291,6 +299,8 @@ private Q_SLOTS:
             [](Settings &s) { s.overlay.paused = true; },
             [](Settings &s) { s.appearance.colors = ColorTheme::Desktop; },
             [](Settings &s) { s.appearance.decorations = Decorations::Plain; },
+            [](Settings &s) { s.appearance.design = Design::Material; },
+            [](Settings &s) { s.appearance.brightness = Brightness::Light; },
             [](Settings &s) { s.appearance.headingFont = u"text"_s; },
             [](Settings &s) { s.appearance.textFont = u"Sans Mono"_s; },
             [](Settings &s) { s.appearance.textSize = 12; },
