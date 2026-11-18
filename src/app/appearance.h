@@ -30,6 +30,14 @@ class Appearance : public QObject
     Q_PROPERTY(QString colors READ colors WRITE setColors NOTIFY changed)
     // "full" or "plain"
     Q_PROPERTY(QString decorations READ decorations WRITE setDecorations NOTIFY changed)
+    // "dossier" or "material"
+    Q_PROPERTY(QString design READ design WRITE setDesign NOTIFY changed)
+    // "desktop", "light" or "dark", which only Material has a say in
+    Q_PROPERTY(QString brightness READ brightness WRITE setBrightness NOTIFY changed)
+    Q_PROPERTY(bool material READ isMaterial NOTIFY changed)
+    // Whether the colors on the app are dark: always in Dossier, and in
+    // Material as it's chosen, or as the desktop is.
+    Q_PROPERTY(bool dark READ isDark NOTIFY changed)
     // Whether the app's colors are on, which they aren't when it's the
     // desktop's you chose or the scheme couldn't be found.
     Q_PROPERTY(bool appColors READ hasAppColors NOTIFY changed)
@@ -53,7 +61,8 @@ class Appearance : public QObject
 
 public:
     // The scheme file is a KDE color scheme, read when the app's colors are
-    // wanted.
+    // wanted. The Material design's light and dark ones are in the same
+    // folder, as PathOfUpgradingMaterialLight.colors and ...Dark.colors.
     Appearance(SettingsStore *settings, const QString &schemeFile, QObject *parent = nullptr);
     // Puts the desktop's font back.
     ~Appearance() override;
@@ -62,6 +71,12 @@ public:
     void setColors(const QString &colors);
     QString decorations() const;
     void setDecorations(const QString &decorations);
+    QString design() const;
+    void setDesign(const QString &design);
+    QString brightness() const;
+    void setBrightness(const QString &brightness);
+    bool isMaterial() const { return appearance().design == Design::Material; }
+    bool isDark() const;
     bool hasAppColors() const { return m_appColors; }
     bool isPlain() const { return appearance().decorations == Decorations::Plain; }
     QString colorsError() const { return m_error; }
@@ -87,6 +102,8 @@ private:
     void change(Edit edit);
     void follow();
     bool activateScheme();
+    // the color scheme file the design and brightness ask for
+    QString schemeFile() const;
     void followFonts();
 
     SettingsStore *m_settings;
@@ -94,6 +111,9 @@ private:
     // made when the desktop's colors come back
     KColorSchemeManager *m_manager = nullptr;
     bool m_appColors = false;
+    // the scheme file on the app now
+    QString m_activeScheme;
+    bool m_dark = true;
     QString m_error;
     // the font the program started with, and the one it has now
     QFont m_desktopFont;

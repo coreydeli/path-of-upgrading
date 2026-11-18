@@ -25,6 +25,36 @@ Decorations decorationsFromId(QStringView id)
     return id == u"plain" ? Decorations::Plain : Decorations::Full;
 }
 
+QString designId(Design design)
+{
+    return design == Design::Material ? u"material"_s : u"dossier"_s;
+}
+
+Design designFromId(QStringView id)
+{
+    return id == u"material" ? Design::Material : Design::Dossier;
+}
+
+QString brightnessId(Brightness brightness)
+{
+    switch (brightness) {
+    case Brightness::Light:
+        return u"light"_s;
+    case Brightness::Dark:
+        return u"dark"_s;
+    case Brightness::Desktop:
+        break;
+    }
+    return u"desktop"_s;
+}
+
+Brightness brightnessFromId(QStringView id)
+{
+    if (id == u"light")
+        return Brightness::Light;
+    return id == u"dark" ? Brightness::Dark : Brightness::Desktop;
+}
+
 bool isBetaBuild()
 {
     return POU_BETA_BUILD != 0;
