@@ -141,7 +141,8 @@ private Q_SLOTS:
     {
         Scoring s;
         s.play(tester());
-        QCOMPARE(s.scoring.state(), u"A general start, until Path of Building weighs your build."_s);
+        QCOMPARE(s.scoring.state(),
+                 u"A rough starting point until Path of Building has weighed your build."_s);
         QCOMPARE(s.scoring.weighedOn(), QString());
         QVERIFY(!s.scoring.weightsOnly());
         QVERIFY(!s.scoring.isWeighing());
@@ -157,7 +158,7 @@ private Q_SLOTS:
         const QString date = QLocale().toString(QDate(2026, 3, 14), QLocale::LongFormat);
         QCOMPARE(s.scoring.weighedOn(), date);
         QCOMPARE(s.scoring.state(), u"Weighed by Path of Building for your build on "_s + date + u"."_s);
-        QVERIFY(s.scoring.summary().startsWith(u"Slots Path of Building didn't weigh go by the "_s));
+        QVERIFY(s.scoring.summary().startsWith(u"Slots Path of Building didn't weigh use the "_s));
 
         // the weighed stats are the rows, with the start's for the other slots
         QCOMPARE(s.of(u"Movement Speed"_s, GearScoring::WhereRole).toString(), u"Counts on Boots."_s);
@@ -336,7 +337,7 @@ private Q_SLOTS:
         QCOMPARE(s.of(chaos, GearScoring::LevelRole).toInt(), 0);
         QVERIFY(s.of(chaos, GearScoring::WhereRole)
                     .toString()
-                    .endsWith(u". Not at all to start with, as your build has Chaos Inoculation."_s));
+                    .endsWith(u". It starts at Not at all, as your build has Chaos Inoculation."_s));
         QVERIFY(!s.of(u"Life"_s, GearScoring::WhereRole).toString().contains(u"Chaos"_s));
         QVERIFY(!s.scoring.isTweaked());
 

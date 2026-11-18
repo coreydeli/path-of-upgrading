@@ -103,7 +103,7 @@ QString rollRangeText(const RollRange &range)
 {
     const ModTier &t = range.top;
     const QString roll = t.low == t.high ? rollText(t.high) : rollText(t.low) + u" to "_s + rollText(t.high);
-    return range.label + u' ' + roll + u", item level "_s + QString::number(t.level);
+    return range.label + u' ' + roll + u" at item level "_s + QString::number(t.level);
 }
 
 QList<Recommendation> recommendedUpgrades(const Character &character, const PobPriorities &priorities,

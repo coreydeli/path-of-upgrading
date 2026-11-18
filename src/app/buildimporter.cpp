@@ -32,15 +32,15 @@ QString imported(const BuildImport &done, const PobBuild &build)
     else if (done.kept == 0)
         said << u"It has no items equipped."_s;
     if (done.kept == 1)
-        said << u"Kept 1 item you copied in the game, which says more."_s;
+        said << u"Kept 1 item you copied in the game, as it says more than the build."_s;
     else if (done.kept > 1)
-        said << u"Kept %1 items you copied in the game, which say more."_s.arg(done.kept);
+        said << u"Kept %1 items you copied in the game, as they say more than the build."_s.arg(done.kept);
     if (done.withoutDamage == 1)
-        said << u"Copy your weapon in the game once, as the build doesn't include its damage."_s;
+        said << u"Copy your weapon in the game once, since the build doesn't include its damage."_s;
     else if (done.withoutDamage > 1)
-        said << u"Copy your weapons in the game once, as the build doesn't include their damage."_s;
+        said << u"Copy your weapons in the game once, since the build doesn't include their damage."_s;
     if (done.profileChanged && !done.character.weighed)
-        said << u"The gear score is a general start until Path of Building weighs the build."_s;
+        said << u"The gear score is a rough starting point until Path of Building has weighed the build."_s;
     return said.join(u' ');
 }
 

@@ -20,8 +20,8 @@ ColumnsPage {
     // for the window to show the gear page
     signal gearAsked
 
-    title: qsTr("Import Character")
-    description: qsTr("Add a character and import a build that gives it gear. Rename or remove the ones you have here too.")
+    title: qsTr("Characters")
+    description: qsTr("Add characters, import their builds, and rename or remove the ones you have.")
     // On a wide window the list is on the left, with the one you play beside
     // it and the builds you can import for it. Narrower, it's one column.
     maxColumns: wide ? 2 : 3
@@ -34,15 +34,15 @@ ColumnsPage {
 
     SectionHeader {
         column: charactersPage.wide ? 0 : -1
-        title: qsTr("Your Characters")
+        title: qsTr("Your characters")
     }
 
     Sheet {
         FormCard.FormTextDelegate {
             objectName: "noCharactersText"
             visible: characterRows.count === 0
-            text: qsTr("You have none yet.")
-            description: qsTr("Add one, or import a build and one is made for it.")
+            text: qsTr("No characters yet.")
+            description: qsTr("Add one, or import a build and one gets made for you.")
         }
 
         Repeater {
@@ -189,7 +189,7 @@ ColumnsPage {
             id: problemsText
             objectName: "problemsText"
             visible: charactersPage.characters.problems.length > 0
-            text: qsTr("Some characters couldn't be read, and were left as they are:")
+            text: qsTr("Some characters couldn't be read, so they were left alone:")
             description: charactersPage.characters.problems.join("\n")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
@@ -198,7 +198,7 @@ ColumnsPage {
 
     SectionHeader {
         column: charactersPage.wide ? 0 : -1
-        title: qsTr("Add a Character")
+        title: qsTr("Add a character")
     }
 
     Sheet {
@@ -206,7 +206,7 @@ ColumnsPage {
             id: nameField
             objectName: "nameField"
             label: qsTr("Name")
-            placeholderText: qsTr("As it's called in the game")
+            placeholderText: qsTr("The name it has in the game")
             onAccepted: addButton.clicked()
         }
 
@@ -230,7 +230,7 @@ ColumnsPage {
         objectName: "playedHeader"
         visible: charactersPage.wide && charactersPage.characters.current !== ""
         column: charactersPage.wide ? 1 : -1
-        title: qsTr("The Character You Play")
+        title: qsTr("The character you play")
     }
 
     CharacterPanel {
@@ -246,7 +246,7 @@ ColumnsPage {
 
     SectionHeader {
         column: charactersPage.wide ? 1 : -1
-        title: qsTr("Import a Build")
+        title: qsTr("Import a build")
     }
 
     Sheet {
@@ -267,7 +267,7 @@ ColumnsPage {
             icon.color: Style.accent(charactersPage.Kirigami.Theme)
             font.weight: Font.DemiBold
             text: charactersPage.importer.busy ? qsTr("Downloading the Build") : qsTr("Import")
-            description: qsTr("Its gear goes on the character you play, or on a new one when you have none. Items you copied in the game are kept, as they show more than a build does.")
+            description: qsTr("Puts its gear on the character you play, or on a new one if you have none. Items you copied in the game stay, since they show more than a build does.")
             icon.name: "document-import"
             enabled: !charactersPage.importer.busy
             onClicked: charactersPage.importer.importText(codeField.text)
@@ -300,7 +300,7 @@ ColumnsPage {
     SectionHeader {
         visible: savedBuilds.visible
         column: charactersPage.wide ? 1 : -1
-        title: qsTr("Saved in Path of Building")
+        title: qsTr("Builds saved in Path of Building")
     }
 
     Sheet {
@@ -311,7 +311,7 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "noSavedBuildsText"
             visible: savedRows.count === 0
-            text: qsTr("There are none in %1 yet.").arg(charactersPage.importer.buildsFolder)
+            text: qsTr("No builds in %1 yet.").arg(charactersPage.importer.buildsFolder)
             textItem.wrapMode: Text.Wrap
         }
 
@@ -336,7 +336,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "refreshBuildsButton"
             text: qsTr("Look Again")
-            description: qsTr("For a build you've saved since.")
+            description: qsTr("Picks up builds you've saved since.")
             icon.name: "view-refresh"
             onClicked: charactersPage.importer.refreshBuilds()
         }

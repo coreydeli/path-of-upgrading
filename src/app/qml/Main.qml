@@ -122,7 +122,7 @@ Kirigami.ApplicationWindow {
                 Kirigami.Action {
                     id: charactersAction
                     objectName: "charactersAction"
-                    text: qsTr("Import Character")
+                    text: qsTr("Characters")
                     icon.name: "document-import"
                     checkable: true
                     QQC2.ActionGroup.group: pages

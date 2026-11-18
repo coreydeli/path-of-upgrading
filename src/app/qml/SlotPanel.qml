@@ -98,7 +98,7 @@ Item {
                     QQC2.Label {
                         objectName: "panelItem"
                         Layout.fillWidth: true
-                        text: content.name !== "" ? content.name : qsTr("Not saved yet")
+                        text: content.name !== "" ? content.name : qsTr("Nothing saved yet")
                         color: content.name !== "" ? Style.rarity(content.rarity, Kirigami.Theme) : Kirigami.Theme.disabledTextColor
                         font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
                         wrapMode: Text.Wrap

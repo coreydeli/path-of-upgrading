@@ -743,8 +743,8 @@ private Q_SLOTS:
                             .best = 45,
                             .tier = tier(5, 6, 10, 1)}};
         QCOMPARE(weakRolls(g), (QStringList{u"Fire Resistance 30% of an excellent roll"_s,
-                                            u"Life 60 of up to 149, tier 4 of 6"_s}));
-        QCOMPARE(nextTiers(g), QStringList{u"Life, tier 3 (70 to 89) at item level 40 or higher"_s});
+                                            u"Life 60 (up to 149, tier 4 of 6)"_s}));
+        QCOMPARE(nextTiers(g), QStringList{u"Life, tier 3 (70 to 89) from item level 40"_s});
         // the best tier has nothing above it
         g.contributions = {{.key = u"life"_s,
                             .label = u"Life"_s,
@@ -753,7 +753,7 @@ private Q_SLOTS:
                             .points = 1,
                             .best = 149,
                             .tier = StatTier{.number = 1, .count = 6, .range = {60, 120, 149}}}};
-        QCOMPARE(weakRolls(g), QStringList{u"Life 140 of up to 149, tier 1 of 6"_s});
+        QCOMPARE(weakRolls(g), QStringList{u"Life 140 (up to 149, tier 1 of 6)"_s});
         QCOMPARE(nextTiers(g), QStringList());
     }
 
