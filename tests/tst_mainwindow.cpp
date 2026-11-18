@@ -793,7 +793,7 @@ private Q_SLOTS:
         w.app->pobOptions()->setLocation(folder);
         QVERIFY(isVisible(w.find(u"savedBuilds"_s)));
         const QString builds = w.app->buildImporter()->buildsFolder();
-        QCOMPARE(text(w.find(u"noSavedBuildsText"_s)), u"There are none in %1 yet."_s.arg(builds));
+        QCOMPARE(text(w.find(u"noSavedBuildsText"_s)), u"No builds in %1 yet."_s.arg(builds));
 
         QVERIFY(writeFile(builds + u"/Leveling.xml"_s, ranger.toUtf8()));
         QVERIFY(click(w.find(u"refreshBuildsButton"_s)));
@@ -1029,7 +1029,7 @@ private Q_SLOTS:
         QVERIFY(w.show(u"checkedAction"_s));
         QCOMPARE(w.page()->property("title").toString(), u"Item History"_s);
         QVERIFY(w.show(u"charactersAction"_s));
-        QCOMPARE(w.page()->property("title").toString(), u"Import Character"_s);
+        QCOMPARE(w.page()->property("title").toString(), u"Characters"_s);
     }
 
     void gearForNobody()
@@ -1045,7 +1045,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"resistances"_s)));
         QObject *helmet = w.find(u"slot:Helmet"_s);
         QVERIFY(isVisible(helmet));
-        QCOMPARE(helmet->property("description").toString(), u"Not saved yet"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Nothing saved yet"_s);
 
         // and wearing something makes a character
         QVERIFY(w.app->character().wear(u"Helmet"_s, item(itemtexts::helmetOld)));
@@ -1089,7 +1089,7 @@ private Q_SLOTS:
         // each way it falls short on a line of its own, with the stats beside the label
         const auto notes = w.app->gearList()->index(2).data(GearList::NotesRole).value<QList<GearNote>>();
         QVERIFY(!notes.isEmpty());
-        QCOMPARE(notes.first().label, u"Missing"_s);
+        QCOMPARE(notes.first().label, u"Missing stats"_s);
         const QList<QObject *> labels = findAll(helmet, u"noteLabel"_s);
         const QList<QObject *> texts = findAll(helmet, u"noteText"_s);
         QCOMPARE(labels.size(), notes.size());
@@ -1101,12 +1101,12 @@ private Q_SLOTS:
         }
 
         QObject *gloves = w.find(u"slot:Gloves"_s);
-        QCOMPARE(gloves->property("description").toString(), u"Not saved yet"_s);
-        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Not saved yet"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Nothing saved yet"_s);
+        QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Nothing saved yet"_s);
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"itemBase"_s)));
         QObject *wantsLabel = findAll(gloves, u"noteLabel"_s).value(0);
         QVERIFY(isVisible(wantsLabel));
-        QCOMPARE(text(wantsLabel), u"Wants most"_s);
+        QCOMPARE(text(wantsLabel), u"Your build wants"_s);
         QVERIFY(!text(findAll(gloves, u"noteText"_s).value(0)).isEmpty());
         QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
@@ -1134,7 +1134,7 @@ private Q_SLOTS:
             QObject *row = w.find(u"recommendation:"_s + slot);
             QVERIFY(isVisible(row));
             QCOMPARE(text(row->findChild<QObject *>(u"slotName"_s)), slotLabel(slot));
-            QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)), u"Not saved yet"_s);
+            QCOMPARE(text(row->findChild<QObject *>(u"itemName"_s)), u"Nothing saved yet"_s);
             const QString lookFor = upgrades->index(i).data(RecommendedUpgrades::LookForRole).toString();
             QVERIFY(lookFor.contains(u" or more"_s));
             QCOMPARE(text(row->findChild<QObject *>(u"lookFor"_s)), lookFor);
@@ -1183,11 +1183,11 @@ private Q_SLOTS:
         Window w;
         QVERIFY(w.show(u"gearAction"_s));
         QObject *heading = search(w.page(), [](QObject *o) {
-            return o->inherits("QQuickItem") && o->property("title").toString().startsWith(u"Equipped"_s);
+            return o->inherits("QQuickItem") && o->property("title").toString().startsWith(u"What "_s);
         });
-        QCOMPARE(heading->property("title").toString(), u"Equipped"_s);
+        QCOMPARE(heading->property("title").toString(), u"What you have equipped"_s);
         w.play({});
-        QCOMPARE(heading->property("title").toString(), u"Equipped by Wren"_s);
+        QCOMPARE(heading->property("title").toString(), u"What Wren has equipped"_s);
     }
 
     void gearExtras()
@@ -1342,7 +1342,7 @@ private Q_SLOTS:
         QVERIFY(w.settled());
         checkTable(w, u"stat:"_s, u"statsHeader"_s, true);
         QCOMPARE(w.page()->property("maxColumns").toInt(), 1);
-        QCOMPARE(text(w.find(u"statsHeader"_s)->findChild<QObject *>(u"thirdLabel"_s)), u"Impact"_s);
+        QCOMPARE(text(w.find(u"statsHeader"_s)->findChild<QObject *>(u"thirdLabel"_s)), u"How much"_s);
         // the choices are still there to make
         QObject *box = w.find(u"stat:Life"_s)->findChild<QObject *>(u"levelBox"_s);
         QVERIFY(isVisible(box));
@@ -1653,7 +1653,7 @@ private Q_SLOTS:
         QObject *gloves = w.find(u"tile:Gloves"_s);
         QVERIFY(gloves->property("empty").toBool());
         QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Empty"_s);
-        QCOMPARE(gloves->property("description").toString(), u"Not saved yet"_s);
+        QCOMPARE(gloves->property("description").toString(), u"Nothing saved yet"_s);
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"tileGauge"_s)));
         QVERIFY(!helmet->property("empty").toBool());
 
@@ -1713,7 +1713,7 @@ private Q_SLOTS:
         QVERIFY(lookFor.contains(u" or more"_s));
         QCOMPARE(lookFor, upgrades->chosenLookFor());
         QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
-        QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u", item level "_s));
+        QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u" at item level "_s));
         QCOMPARE(text(w.find(u"panelCanRoll"_s)), upgrades->chosenCanRoll().join(u'\n'));
         QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());
         QVERIFY(!w.find(u"tile:Gloves"_s)->property("chosen").toBool());
@@ -1745,10 +1745,10 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"tile:Gloves"_s)));
         QVERIFY(w.settled());
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Gloves"_s);
-        QCOMPARE(text(w.find(u"panelItem"_s)), u"Not saved yet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved yet"_s);
         QVERIFY(!isVisible(w.find(u"panelBase"_s)));
         QVERIFY(!isVisible(w.find(u"panelGauge"_s)));
-        QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Wants most"_s);
+        QCOMPARE(text(w.in(u"panelNotes"_s, u"noteLabel"_s)), u"Your build wants"_s);
         QVERIFY(text(w.find(u"panelLookFor"_s)).contains(u" or more"_s));
         QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
         // the weapon has no item class to go by
@@ -1769,7 +1769,7 @@ private Q_SLOTS:
         QVERIFY(w.settled());
         QVERIFY(w.app->character().character().gear.isEmpty());
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
-        QCOMPARE(text(w.find(u"panelItem"_s)), u"Not saved yet"_s);
+        QCOMPARE(text(w.find(u"panelItem"_s)), u"Nothing saved yet"_s);
         QVERIFY(w.find(u"tile:Helmet"_s)->property("empty").toBool());
     }
 
@@ -1782,7 +1782,7 @@ private Q_SLOTS:
         QCOMPARE(spoken(takeOff), u"Unequip Helmet"_s);
         QVERIFY(click(takeOff));
         QVERIFY(w.app->character().character().gear.isEmpty());
-        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Not saved yet"_s);
+        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Nothing saved yet"_s);
     }
 
     void cantTakeOff()
@@ -1940,7 +1940,7 @@ private Q_SLOTS:
 
         QObject *state = w.find(u"scoreState"_s);
         QVERIFY(isVisible(state));
-        QCOMPARE(text(state), u"A general start, until Path of Building weighs your build."_s);
+        QCOMPARE(text(state), u"A rough starting point until Path of Building has weighed your build."_s);
         QCOMPARE(state->property("description").toString(), w.app->gearScoring()->summary());
         QVERIFY(isVisible(w.find(u"weighAgainButton"_s)));
         // with Path of Building off here, there is nothing to ask
@@ -1948,7 +1948,8 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"scoreHelp"_s)));
         QVERIFY(isVisible(w.find(u"stats"_s)));
         QObject *impact = search(w.page(), [](QObject *o) {
-            return o->inherits("QQuickItem") && o->property("title").toString() == u"Affix Impact";
+            return o->inherits("QQuickItem") &&
+                   o->property("title").toString() == u"How much each stat counts";
         });
         QVERIFY(isVisible(impact));
         QVERIFY(isVisible(w.find(u"impactHelp"_s)));
@@ -2052,7 +2053,7 @@ private Q_SLOTS:
         QObject *armour = w.find(u"weight:[Base] Armour"_s);
         QVERIFY(isVisible(armour));
         QCOMPARE(text(armour), u"Armour"_s);
-        QCOMPARE(armour->property("description").toString(), u"The item's own, with its mods"_s);
+        QCOMPARE(armour->property("description").toString(), u"The item's own, mods included"_s);
         QObject *box = armour->findChild<QObject *>(u"weightBox"_s);
         QCOMPARE(box->property("displayText").toString(), QLocale().toString(0.05, 'f', 2));
 
@@ -2387,7 +2388,7 @@ private Q_SLOTS:
         QVERIFY(w.settled());
         QObject *fire = w.find(u"stat:#% to Fire Resistance"_s);
         QVERIFY(!fire->property("enabled").toBool());
-        QCOMPARE(text(fire->findChild<QObject *>(u"statNote"_s)), u"You ignore it already"_s);
+        QCOMPARE(text(fire->findChild<QObject *>(u"statNote"_s)), u"You're ignoring it already"_s);
 
         QVERIFY(search->setProperty("text", u"armour"_s));
         QVERIFY(w.settled());
@@ -2442,7 +2443,7 @@ private Q_SLOTS:
         QCOMPARE(text(none), u"You haven't checked any items yet."_s);
         QCOMPARE(none->property("description").toString(),
                  u"Hover over an item in Path of Exile 2 and press F2."_s);
-        QCOMPARE(w.find(u"checkedHeader"_s)->property("title").toString(), u"Newest First"_s);
+        QCOMPARE(w.find(u"checkedHeader"_s)->property("title").toString(), u"Recently checked"_s);
         QVERIFY(!isVisible(w.find(u"forgetSeparator"_s)));
         QVERIFY(!isVisible(w.find(u"forgetButton"_s)));
         QVERIFY(!isVisible(w.find(u"checkedHelp"_s)));
@@ -2458,10 +2459,9 @@ private Q_SLOTS:
     {
         Window w(false);
         QVERIFY(w.show(u"checkedAction"_s));
-        QCOMPARE(
-            w.find(u"noItemsText"_s)->property("description").toString(),
-            u"Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on "
-            "the General page."_s);
+        QCOMPARE(w.find(u"noItemsText"_s)->property("description").toString(),
+                 u"Hover over an item in Path of Exile 2 and press your check hotkey. You can set it on "
+                 "the General page."_s);
     }
 
     void generalName()
@@ -2515,10 +2515,10 @@ private Q_SLOTS:
         QObject *intro = w.find(u"historyIntro"_s);
         QVERIFY(isVisible(intro));
         QCOMPARE(text(intro),
-                 u"The items you check in the game are kept here, the newest first, up to the last "
-                 "30: those you check with the hotkey, and gear you copy yourself while "
+                 u"Items you check in the game land here, newest first, up to the last "
+                 "30. That means items you check with the hotkey, and gear you copy yourself while "
                  "\"Also check gear you copy yourself\" is on. When the list is full, the "
-                 "oldest drops off."_s);
+                 "oldest one drops off."_s);
         QVERIFY(isVisible(w.find(u"noItemsText"_s)));
     }
 
@@ -3399,7 +3399,7 @@ private Q_SLOTS:
 
         QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Gear Score"_s));
-        QVERIFY(w.sidebarRow(u"Import Character"_s));
+        QVERIFY(w.sidebarRow(u"Characters"_s));
         QVERIFY(w.sidebarRow(u"Stat Weights"_s));
         QVERIFY(w.sidebarRow(u"Ignored Stats"_s));
         QVERIFY(w.sidebarRow(u"Back"_s));
@@ -3463,7 +3463,7 @@ private Q_SLOTS:
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Back"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
-        QCOMPARE(w.focusedRow(), u"Import Character"_s);
+        QCOMPARE(w.focusedRow(), u"Characters"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Gear Score"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
@@ -3833,7 +3833,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(wrenScore));
         QVERIFY(!isVisible(ash->findChild<QObject *>(u"rowScore"_s)));
         QCOMPARE(wren->property("detail").toString(),
-                 u"A general start, until Path of Building weighs your build"_s);
+                 u"A rough starting point until Path of Building has weighed your build"_s);
         QCOMPARE(ash->property("detail").toString(), QString());
         QVERIFY(!wrenScore->property("score").toString().isEmpty());
         QCOMPARE(wrenScore->property("grade").toString(), gearGrade(wrenScore->property("score").toInt()));
