@@ -42,8 +42,8 @@ in QML.
 - A heading says what is in the section, in everyday words: "Where Path of
   Building is installed" rather than "Where It Is", and "How much each stat
   counts" rather than "Affix Impact".
-- A description says what the control does, in the third person ("Opens ...",
-  "Copies ...", "Hides ..."), and doesn't repeat the label. Keep to one style
+- A description says what the control does, in the third person ("Opens it",
+  "Copies it", "Hides them"), and doesn't repeat the label. Keep to one style
   within a page.
 - Say "you" where a passive reads stiffly: "one gets made for you", not "one is
   made for it".
