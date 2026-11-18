@@ -12,7 +12,8 @@ data/). Nothing is downloaded.
 
 For each item class it lists the prefixes and suffixes a base of that class
 can roll, by the stat text with its numbers taken out, as the app keys item
-stats, and each one's tiers as [item level, low, high].
+stats, and each one's tiers as [item level, low, high], with a 1 on the end for
+those of hybrid mods (more than one stat), whose ranges are their own.
 """
 import datetime
 import json
@@ -137,8 +138,15 @@ def read_mods(folder):
                 key = fold(FIXED.sub("#", stat).lstrip("+"))
                 stats.append((key, float(fixed[0]), float(fixed[0])))
         if stats:
-            mods.append((level, keys, weights, stats))
+            # a hybrid mod gives more than one stat, and its ranges are its own
+            mods.append((level, keys, weights, stats, len(lines) > 1))
     return mods
+
+
+def tier(found):
+    """[item level, low, high], with a 1 on the end for a hybrid mod's."""
+    level, low, high, hybrid = found
+    return [level, low, high, 1] if hybrid else [level, low, high]
 
 
 def number(value):
@@ -153,19 +161,19 @@ def main(folder, out):
     for cls in sorted({cls for cls, _ in bases}):
         tag_sets = [tags for c, tags in bases if c == cls]
         found = {}
-        for level, keys, weights, stats in mods:
+        for level, keys, weights, stats, hybrid in mods:
             if not any(weight_for(keys, weights, tags) > 0 for tags in tag_sets):
                 continue
             for key, low, high in stats:
-                found.setdefault(key, set()).add((level, number(low), number(high)))
-        classes[cls] = {key: [list(t) for t in sorted(tiers, reverse=True)] for key, tiers in sorted(found.items())}
+                found.setdefault(key, set()).add((level, number(low), number(high), hybrid))
+        classes[cls] = {key: [tier(t) for t in sorted(tiers, reverse=True)] for key, tiers in sorted(found.items())}
 
     version = re.search(r'number="([^"]+)"', (folder / "manifest.xml").read_text(encoding="utf-8"))
     table = {
         "source": "Path of Building (Path of Exile 2), Data/ModItem.lua and Data/Bases",
         "version": version.group(1) if version else "unknown",
         "date": datetime.date.today().isoformat(),
-        "tiers": "[item level, low, high], the highest item level first",
+        "tiers": "[item level, low, high], the highest item level first, with a 1 on the end when the mod is a hybrid",
         "classes": classes,
     }
     Path(out).write_text(json.dumps(table, separators=(",", ":"), ensure_ascii=False) + "\n", encoding="utf-8")
