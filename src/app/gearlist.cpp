@@ -25,6 +25,8 @@ QList<GearNote> notesOf(const GearScore &gear)
         notes << GearNote{.label = u"Not scored"_s, .text = notScoredStats(gear).join(u", "_s)};
     if (const QStringList weak = weakRolls(gear); !weak.isEmpty())
         notes << GearNote{.label = u"Weak rolls"_s, .text = weak.join(u", "_s)};
+    if (const QStringList next = nextTiers(gear); !next.isEmpty())
+        notes << GearNote{.label = u"Next tier"_s, .text = next.join(u"; "_s)};
     return notes;
 }
 

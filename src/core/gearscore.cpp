@@ -188,9 +188,10 @@ std::optional<GearScore> gearScore(const Item &item, const GearScoreOptions &opt
         used.insert(s);
         // runes and enchants aren't rolls of the item's class
         const auto top = x.origin == StatOrigin::Socket ? std::nullopt : mods.best(itemClass, x.key);
-        result.contributions.append({x.key, s->label, x.value, int(roundHalfUp(quality * 100)),
-                                     roundTo(importanceOf(*s, slot, options) * quality * factor, 1),
-                                     top ? top->high : 0, x.origin});
+        result.contributions.append(
+            {x.key, s->label, x.value, int(roundHalfUp(quality * 100)),
+             roundTo(importanceOf(*s, slot, options) * quality * factor, 1), top ? top->high : 0, x.origin,
+             x.origin == StatOrigin::Mod ? rolledTier(mods, item, itemClass, x.key) : std::nullopt});
     }
 
     std::stable_sort(
@@ -274,39 +275,65 @@ QString notScoredNote(const GearScore &gear)
     return u"Not in the gear score: "_s + notScoredStats(gear).join(u", "_s) + u'.';
 }
 
-QStringList weakRolls(const GearScore &gear, int underPercent)
+namespace {
+
+// One stat can come from several mods.
+struct WeakPart
 {
-    // one stat can come from several mods
-    struct Part
-    {
-        QString label;
-        int quality = 0;
-        double value = 0;
-        double best = 0;
-        int mods = 0;
-    };
-    QList<Part> parts;
+    QString label;
+    int quality = 0;
+    double value = 0;
+    double best = 0;
+    int mods = 0;
+    std::optional<StatTier> tier; // of the last mod
+};
+
+// The weakest three stats under that share of an excellent roll.
+QList<WeakPart> weakParts(const GearScore &gear, int underPercent)
+{
+    QList<WeakPart> parts;
     for (const GearContribution &c : gear.contributions) {
         if (c.origin == StatOrigin::Socket)
             continue;
-        auto it = std::ranges::find(parts, c.label, &Part::label);
+        auto it = std::ranges::find(parts, c.label, &WeakPart::label);
         if (it == parts.end())
-            it = parts.insert(parts.end(), Part{.label = c.label});
+            it = parts.insert(parts.end(), WeakPart{.label = c.label});
         it->quality += c.quality;
         it->value += c.value;
         it->best = c.best;
+        it->tier = c.tier;
         ++it->mods;
     }
-    parts.removeIf([underPercent](const Part &p) { return p.quality >= underPercent; });
-    std::ranges::stable_sort(parts, {}, &Part::quality);
+    parts.removeIf([underPercent](const WeakPart &p) { return p.quality >= underPercent; });
+    std::ranges::stable_sort(parts, {}, &WeakPart::quality);
+    return parts.first(std::min<qsizetype>(3, parts.size()));
+}
+
+} // namespace
+
+QStringList weakRolls(const GearScore &gear, int underPercent)
+{
     QStringList out;
-    for (qsizetype i = 0; i < std::min<qsizetype>(3, parts.size()); ++i) {
-        const Part &p = parts.at(i);
+    for (const WeakPart &p : weakParts(gear, underPercent)) {
         // the most one mod rolls says little of two
-        if (p.best > 0 && p.mods == 1)
-            out << u"%1 %2 of up to %3"_s.arg(p.label, rollText(p.value), rollText(p.best));
-        else
+        if (p.best > 0 && p.mods == 1) {
+            QString text = u"%1 %2 of up to %3"_s.arg(p.label, rollText(p.value), rollText(p.best));
+            if (p.tier)
+                text += u", "_s + tierText(*p.tier);
+            out << text;
+        } else {
             out << u"%1 %2% of an excellent roll"_s.arg(p.label).arg(p.quality);
+        }
+    }
+    return out;
+}
+
+QStringList nextTiers(const GearScore &gear, int underPercent)
+{
+    QStringList out;
+    for (const WeakPart &p : weakParts(gear, underPercent)) {
+        if (p.mods == 1 && p.tier && true)
+            out << p.label + u", "_s + nextTierText(*p.tier);
     }
     return out;
 }

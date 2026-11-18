@@ -253,6 +253,25 @@ private Q_SLOTS:
                                      {u"Weak rolls"_s, weakRolls(score).join(u", "_s)}}));
     }
 
+    void aWeakRollSaysItsTierAndTheNext()
+    {
+        Gear g;
+        const Item boots = item(u"Boots"_s, u"Rare"_s, u"Dusk Step"_s, u"Plated Greaves"_s,
+                                u"+45 to maximum Life"_s);
+        const Character c = wearing({{u"Boots"_s, boots}});
+        g.play(c);
+        const QList<QStringList> notes = notesOf(g.in(u"Boots"_s, GearList::NotesRole));
+        QStringList weak, next;
+        for (const QStringList &note : notes) {
+            if (note.at(0) == u"Weak rolls"_s)
+                weak << note.at(1);
+            if (note.at(0) == u"Next tier"_s)
+                next << note.at(1);
+        }
+        QCOMPARE(weak, QStringList{u"Life 45 of up to 149, tier 6 of 9"_s});
+        QCOMPARE(next, QStringList{u"Life, tier 5 (60 to 69) at item level 33 or higher"_s});
+    }
+
     void whatTheBuildWantsInAnEmptySlot()
     {
         Gear g;
