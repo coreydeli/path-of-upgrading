@@ -17,6 +17,7 @@
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 using namespace pou;
 using namespace resultsite;
 
@@ -509,6 +510,7 @@ private Q_SLOTS:
     void keepsWhatItHasWhenAPageFails()
     {
         Site site;
+        site.client.setRest(0ms);
         const TradeFinder::Found found = foundBy(25);
         site.network.answers = {
             fetched(found.listingIds.first(10)), {.status = 500}, fetched(found.listingIds.mid(10, 10))};
@@ -532,6 +534,7 @@ private Q_SLOTS:
     void asksAgainForTheFirstPageAfterAFailure()
     {
         Site site;
+        site.client.setRest(0ms);
         const TradeFinder::Found found = foundBy(25);
         site.network.answers = {{.status = 500}, fetched(found.listingIds.first(10))};
         site.results.setSearch(found);
@@ -782,7 +785,8 @@ private Q_SLOTS:
         QStringList labels;
         for (const ReportFigure &figure : verdictIn(site, 0).figures)
             labels << figure.label;
-        QCOMPARE(labels, (QStringList{u"Cold Resistance"_s, u"Lightning Resistance"_s, u"Chaos Resistance"_s, u"Life"_s}));
+        QCOMPARE(labels, (QStringList{u"Cold Resistance"_s, u"Lightning Resistance"_s, u"Chaos Resistance"_s,
+                                      u"Life"_s}));
     }
 
     // with cold and fire resistance on the helmet you wear

@@ -8,6 +8,8 @@
 #include <QTest>
 #include <QTimer>
 #include <cstring>
+#include <functional>
+#include <optional>
 #include <utility>
 
 // A network for tests, which answers each request with the next of the
@@ -100,14 +102,21 @@ public:
     };
 
     QList<FakeAnswer> answers;
+    // what it says to the requests it knows by what they ask for, before
+    // the answers are used, so the order they come in doesn't matter
+    std::function<std::optional<FakeAnswer>(const QNetworkRequest &)> route;
     QList<Sent> sent;
 
 protected:
     QNetworkReply *createRequest(Operation operation, const QNetworkRequest &request,
                                  QIODevice *outgoingData) override
     {
-        auto *reply =
-            new FakeReply(operation, request, answers.isEmpty() ? FakeAnswer() : answers.takeFirst(), this);
+        std::optional<FakeAnswer> routed;
+        if (route)
+            routed = route(request);
+        if (!routed && !answers.isEmpty())
+            routed = answers.takeFirst();
+        auto *reply = new FakeReply(operation, request, routed.value_or(FakeAnswer()), this);
         sent << Sent{operation, request, outgoingData ? outgoingData->readAll() : QByteArray(), reply};
         return reply;
     }
