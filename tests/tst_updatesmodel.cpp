@@ -128,7 +128,7 @@ private Q_SLOTS:
     {
         Setup s;
         s.look({u"0.6.0"_s});
-        QCOMPARE(s.updates.status(), u"You have the newest version."_s);
+        QCOMPARE(s.updates.status(), u"You're on the newest version."_s);
         QVERIFY(!s.updates.isPending());
     }
 

@@ -36,7 +36,7 @@ ColumnsPage {
     ]
 
     title: qsTr("General")
-    description: qsTr("Your hotkeys, how the popup looks, your league, and starting with the desktop.")
+    description: qsTr("Set your hotkeys, how the popup looks, your league, and whether the app starts with your desktop.")
 
     SectionHeader {
         title: qsTr("Hotkeys")
@@ -46,7 +46,7 @@ ColumnsPage {
         KeyField {
             objectName: "checkKey"
             label: qsTr("Check an item")
-            description: qsTr("Press it while hovering an item in the game. An F key works best, because letter keys reach the game too.")
+            description: qsTr("Press it while hovering an item in the game. An F key works best, since letter keys reach the game too.")
             key: overlayPage.options.checkKey
             onChosen: key => overlayPage.refused = !overlayPage.options.setCheckKey(key)
         }
@@ -72,7 +72,7 @@ ColumnsPage {
             id: gameOnlyText
             objectName: "gameOnlyNote"
             visible: overlayPage.options.hotkeysFollowGame
-            text: qsTr("These keys only work while Path of Exile 2 is running. Otherwise other programs get them, so you can use them as usual.")
+            text: qsTr("These keys only work while Path of Exile 2 is running. Otherwise other programs get them, so they work as usual.")
             textItem.wrapMode: Text.Wrap
         }
 
@@ -104,7 +104,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "advancedCopySwitch"
             text: qsTr("Use advanced copy")
-            description: qsTr("Copies with Ctrl+Alt+C, which also shows which mods are prefixes and which are suffixes, for crafting.")
+            description: qsTr("Copies with Ctrl+Alt+C, which also marks which mods are prefixes and which are suffixes, for crafting.")
             checked: overlayPage.options.advancedCopy
             onToggled: overlayPage.options.advancedCopy = checked
         }
@@ -114,7 +114,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "putBackSwitch"
             text: qsTr("Put your clipboard back")
-            description: qsTr("After the hotkey copies an item, so what you had copied before is still there to paste.")
+            description: qsTr("After the hotkey copies an item, the app puts back what you had copied before, so you can still paste it.")
             checked: overlayPage.options.putBackClipboard
             onToggled: overlayPage.options.putBackClipboard = checked
         }
@@ -124,7 +124,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "clipboardSwitch"
             text: qsTr("Also check gear you copy yourself")
-            description: qsTr("When you press Ctrl+C over an item in the game.")
+            description: qsTr("Pressing Ctrl+C over gear in the game checks it too, not just the hotkey.")
             checked: overlayPage.options.watchClipboard
             onToggled: overlayPage.options.watchClipboard = checked
         }
@@ -195,7 +195,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "compactSwitch"
             text: qsTr("Compact popup")
-            description: qsTr("Hides the details that hardly matter behind Show More.")
+            description: qsTr("Keeps the details that hardly matter behind Show More.")
             checked: overlayPage.options.compact
             onToggled: overlayPage.options.compact = checked
         }
@@ -205,7 +205,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "colorblindSwitch"
             text: qsTr("Colorblind-friendly colors")
-            description: qsTr("Blue for better and orange for worse, in place of green and red.")
+            description: qsTr("Shows blue for better and orange for worse, in place of green and red.")
             checked: overlayPage.options.colorblind
             onToggled: overlayPage.options.colorblind = checked
         }
@@ -243,7 +243,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "startSwitch"
             text: qsTr("Start with your desktop")
-            description: qsTr("Waits in the tray when you log in, without the window.")
+            description: qsTr("Waits in the tray when you log in, with no window.")
             checked: overlayPage.options.startWithDesktop
             onToggled: overlayPage.options.startWithDesktop = checked
         }

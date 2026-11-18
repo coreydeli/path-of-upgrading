@@ -4382,7 +4382,7 @@ private Q_SLOTS:
         for (int i = 0; i < 4; ++i)
             QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QCOMPARE(text(w.inGuide(u"hotkeyText"_s)),
-                 u"The key to check an item isn't set. Choose one on the General page."_s);
+                 u"You haven't set a key to check an item. Choose one on the General page."_s);
     }
 
     // as --setup asks
@@ -4571,7 +4571,7 @@ private Q_SLOTS:
         QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
         w.network->answers = {{.body = fakeReleases({fakeRelease(u"0.0.1"_s)})}};
         QVERIFY(click(now));
-        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You have the newest version."_s, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(w.app->updates()->status() == u"You're on the newest version."_s, 5000);
     }
 
     // in the background, as it is at login

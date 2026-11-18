@@ -40,7 +40,7 @@ ColumnsPage {
     readonly property string textName: appearance.textFont === "" ? appearance.textFamily : appearance.textFont
 
     title: qsTr("Appearance")
-    description: qsTr("Colors, decorations and fonts.")
+    description: qsTr("Change how the app looks.")
 
     SectionHeader {
         title: qsTr("Theme")
@@ -124,7 +124,7 @@ ColumnsPage {
             objectName: "textSize"
             visible: appearancePage.appearance.textSize > 0
             label: qsTr("Text size")
-            description: qsTr("In points. The controls and the spacing grow with it.")
+            description: qsTr("Measured in points. The controls and the spacing grow with it.")
             value: appearancePage.appearance.textSize
             minimum: 6
             maximum: 32
