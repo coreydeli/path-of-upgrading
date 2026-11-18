@@ -323,6 +323,8 @@ struct GearPart
     double points = 0;
     int quality = 0; // percent of an excellent roll
     bool runes = false;
+    int mods = 0;
+    std::optional<StatTier> tier; // of the last mod
 };
 
 // By the stat's label in the build profile, as it can come from several mods.
@@ -335,6 +337,8 @@ QHash<QString, GearPart> gearPartsByLabel(const GearScore &gear)
         part.points += c.points * scale;
         part.quality += c.quality;
         part.runes = part.runes || c.origin == StatOrigin::Socket;
+        part.tier = c.tier;
+        ++part.mods;
     }
     return parts;
 }
@@ -344,6 +348,9 @@ QString gearPartNote(const GearPart &part)
     QStringList notes;
     if (part.quality > 0)
         notes << u"%1% of an excellent roll"_s.arg(part.quality);
+    // one mod's tier says nothing of several
+    if (part.mods == 1 && part.tier)
+        notes << tierText(*part.tier);
     if (part.runes)
         notes << u"runes count half"_s;
     return notes.join(u", "_s);

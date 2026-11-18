@@ -67,8 +67,9 @@ private Q_SLOTS:
         // the same minimums a craft base search asks for
         QCOMPARE(boots.at(0).minimum, searchMinimum(35));
         QCOMPARE(boots.at(1).minimum, searchMinimum(100));
-        QCOMPARE(wantedText(boots), u"Movement Speed 19 or more (up to 35), Life 55 or more (up to 149), "
-                                    u"Fire Resistance 24 or more (up to 45)"_s);
+        QCOMPARE(wantedText(boots), u"Movement Speed 19 or more (up to 35, tier 4 or better), "
+                                    u"Life 55 or more (up to 149, tier 6 or better), "
+                                    u"Fire Resistance 24 or more (up to 45, tier 5 or better)"_s);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 5).size(), 5);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 1).size(), 1);
     }
@@ -85,8 +86,9 @@ private Q_SLOTS:
     {
         const Item boots = item(u"Boots"_s, lifeAndSpeed);
         QCOMPARE(wantedText(wantedStats(u"Boots"_s, &boots, {})),
-                 u"Fire Resistance 24 or more (up to 45), Cold Resistance 24 or more (up to 45), "
-                 u"Lightning Resistance 24 or more (up to 45)"_s);
+                 u"Fire Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Cold Resistance 24 or more (up to 45, tier 5 or better), "
+                 u"Lightning Resistance 24 or more (up to 45, tier 5 or better)"_s);
 
         // exactly the minimum is enough
         const Item exact = item(u"Boots"_s, u"+55 to maximum Life\n19% increased Movement Speed"_s);
@@ -130,6 +132,20 @@ private Q_SLOTS:
         };
         QVERIFY(life(boots));
         QVERIFY(!life(canRoll(u"Boots"_s, nullptr, {.tweaks = {{u"Life"_s, 0}}})));
+    }
+
+    void aWantedStatSaysTheTierItNeeds()
+    {
+        const auto boots = wantedStats(u"Boots"_s, nullptr, {}, 2);
+        // 19 movement speed needs the 20 tier, which is the fourth of six
+        QCOMPARE(boots.at(0).tier, 4);
+        QCOMPARE(wantedText({WantedStat{.label = u"Life"_s, .minimum = 120, .best = 149, .tier = 1}}),
+                 u"Life 120 or more (up to 149, tier 1 or better)"_s);
+        // with no table to go by there is no tier to say
+        const SlotMods none;
+        const auto bare = wantedStats(u"Boots"_s, nullptr, {.mods = &none}, 2);
+        QCOMPARE(bare.at(0).tier, 0);
+        QCOMPARE(wantedText(bare).contains(u"tier"_s), false);
     }
 
     void aStatTheSlotCantRollIsNotWanted()
@@ -212,8 +228,9 @@ private Q_SLOTS:
         options.resistNeed[Element::Lightning] = 80;
         const QList<WantedStat> wants = wantedStats(u"Helmet"_s, nullptr, options, 5);
         // cold is capped, fire needs 11 at most, and lightning the usual
-        QCOMPARE(wantedText(wants), u"Life 55 or more (up to 174), Fire Resistance 11 or more (up to 45), "
-                                    u"Lightning Resistance 24 or more (up to 45)"_s);
+        QCOMPARE(wantedText(wants), u"Life 55 or more (up to 174, tier 7 or better), "
+                                    u"Fire Resistance 11 or more (up to 45, tier 7 or better), "
+                                    u"Lightning Resistance 24 or more (up to 45, tier 5 or better)"_s);
     }
 
     void thePickedSlotsGoByTheirScores()
