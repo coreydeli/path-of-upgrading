@@ -16,6 +16,11 @@ QtObject {
     property bool appColors: false
     // the family the page titles are set in
     property string headingFamily: "Big Shoulders Display"
+    // Which design is on: Dossier, the app's own, or Material Design 3. The
+    // controls draw both, from the same colors.
+    property bool material: false
+    // whether the colors on the app are dark, which Material's depend on
+    property bool dark: true
     // Whether the plates are square, which is when the decorations are plain.
     property bool plain: false
 
@@ -27,6 +32,20 @@ QtObject {
     readonly property color ink: Look.ink
 
     onHeadingFamilyChanged: Look.headingFamily = headingFamily
+    onMaterialChanged: Look.material = material
+    onDarkChanged: Look.dark = dark
+
+    // Material's shape scale: small, medium, large and extra large corners
+    readonly property real shapeSmall: 8
+    readonly property real shapeMedium: 12
+    readonly property real shapeLarge: 16
+    readonly property real shapeExtraLarge: 28
+
+    // Material's motion: how long it takes, and the easing it follows
+    // (standard, cubic-bezier 0.2, 0, 0, 1). Plain decorations stop it.
+    readonly property int shortDuration: plain ? 0 : 200
+    readonly property int mediumDuration: plain ? 0 : 300
+    readonly property var standardEasing: [0.2, 0, 0, 1, 1, 1]
 
     // the item colors the game's players read at a glance
     function rarity(rarity: string, theme): color {

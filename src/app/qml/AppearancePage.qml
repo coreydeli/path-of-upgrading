@@ -10,6 +10,30 @@ ColumnsPage {
     id: appearancePage
 
     required property Appearance appearance
+    readonly property var designChoices: [
+        {
+            value: "dossier",
+            text: qsTr("Dossier")
+        },
+        {
+            value: "material",
+            text: qsTr("Material")
+        }
+    ]
+    readonly property var brightnessChoices: [
+        {
+            value: "desktop",
+            text: qsTr("Your desktop's")
+        },
+        {
+            value: "light",
+            text: qsTr("Light")
+        },
+        {
+            value: "dark",
+            text: qsTr("Dark")
+        }
+    ]
     readonly property var colorChoices: [
         {
             value: "app",
@@ -40,7 +64,7 @@ ColumnsPage {
     readonly property string textName: appearance.textFont === "" ? appearance.textFamily : appearance.textFont
 
     title: qsTr("Appearance")
-    description: qsTr("Change how the app looks.")
+    description: qsTr("Pick a design, colors and fonts.")
 
     SectionHeader {
         title: qsTr("Theme")
@@ -48,14 +72,45 @@ ColumnsPage {
 
     Sheet {
         FormCard.FormComboBoxDelegate {
+            objectName: "designBox"
+            text: qsTr("Design")
+            description: qsTr("Dossier is the app's own look. Material follows Google's Material Design 3. It changes right away.")
+            textRole: "text"
+            valueRole: "value"
+            model: appearancePage.designChoices
+            currentIndex: appearancePage.designChoices.findIndex(choice => choice.value === appearancePage.appearance.design)
+            onActivated: appearancePage.appearance.design = currentValue
+        }
+
+        RowRule {}
+
+        FormCard.FormComboBoxDelegate {
             objectName: "colorsBox"
             text: qsTr("Colors")
-            description: qsTr("The app's own dark colors, or the ones your desktop uses.")
+            description: appearancePage.appearance.material ? qsTr("Material's own colors, or the ones your desktop uses.") : qsTr("The app's own dark colors, or the ones your desktop uses.")
             textRole: "text"
             valueRole: "value"
             model: appearancePage.colorChoices
             currentIndex: appearancePage.colorChoices.findIndex(choice => choice.value === appearancePage.appearance.colors)
             onActivated: appearancePage.appearance.colors = currentValue
+        }
+
+        RowRule {
+            visible: brightnessBox.visible
+        }
+
+        FormCard.FormComboBoxDelegate {
+            id: brightnessBox
+
+            objectName: "brightnessBox"
+            visible: appearancePage.appearance.material && appearancePage.appearance.colors === "app"
+            text: qsTr("Light or dark")
+            description: qsTr("Material's colors can be light or dark, or follow your desktop.")
+            textRole: "text"
+            valueRole: "value"
+            model: appearancePage.brightnessChoices
+            currentIndex: appearancePage.brightnessChoices.findIndex(choice => choice.value === appearancePage.appearance.brightness)
+            onActivated: appearancePage.appearance.brightness = currentValue
         }
 
         RowRule {
@@ -182,7 +237,10 @@ ColumnsPage {
         current: appearancePage.appearance.headingFont
         onAboutToShow: families = appearancePage.appearance.families()
         specials: [
-            {
+            appearancePage.appearance.material ? {
+                value: "",
+                text: qsTr("Your desktop's")
+            } : {
                 value: "",
                 text: qsTr("Big Shoulders Display"),
                 family: "Big Shoulders Display"
@@ -203,7 +261,10 @@ ColumnsPage {
         current: appearancePage.appearance.textFont
         onAboutToShow: families = appearancePage.appearance.families()
         specials: [
-            {
+            appearancePage.appearance.material ? {
+                value: "",
+                text: qsTr("Your desktop's")
+            } : {
                 value: "",
                 text: qsTr("Spectral"),
                 family: "Spectral"

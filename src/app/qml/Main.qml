@@ -270,6 +270,18 @@ Kirigami.ApplicationWindow {
 
     Binding {
         target: Style
+        property: "material"
+        value: root.app.appearance.material
+    }
+
+    Binding {
+        target: Style
+        property: "dark"
+        value: root.app.appearance.dark
+    }
+
+    Binding {
+        target: Style
         property: "headingFamily"
         value: root.app.appearance.headingFamily
     }

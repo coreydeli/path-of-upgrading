@@ -11,6 +11,12 @@ QtObject {
     readonly property color paper: "#ece6da"
     readonly property color ink: "#0e0e0f"
 
+    // Which design is on, which the app sets from the settings. The controls
+    // draw both: the app's own, Dossier, and Material Design 3.
+    property bool material: false
+    // whether the colors on the app are dark
+    property bool dark: true
+
     // the family the page titles are in, which the app sets from the settings
     property string headingFamily: "Big Shoulders Display"
 
