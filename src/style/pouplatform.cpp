@@ -7,6 +7,7 @@
 #include <Kirigami/Platform/PlatformPluginFactory>
 #include <Kirigami/Platform/PlatformTheme>
 #include <Kirigami/Platform/Units>
+#include <QDynamicPropertyChangeEvent>
 #include <QGuiApplication>
 
 using namespace Kirigami::Platform;
@@ -117,14 +118,31 @@ private:
     }
 };
 
-// Square corners, as the plates are
+// Square corners, as the plates are, unless the app says its corners are
+// round, which Material's are. It says so in a property on the application.
 class SquareUnits : public Units
 {
 public:
     explicit SquareUnits(QObject *parent)
         : Units(parent)
     {
-        setcornerRadius(0);
+        follow();
+        qGuiApp->installEventFilter(this);
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (watched == qGuiApp && event->type() == QEvent::DynamicPropertyChange &&
+            static_cast<QDynamicPropertyChangeEvent *>(event)->propertyName() == "POU_ROUND_CORNERS")
+            follow();
+        return Units::eventFilter(watched, event);
+    }
+
+private:
+    void follow()
+    {
+        setcornerRadius(qGuiApp->property("POU_ROUND_CORNERS").toBool() ? gridUnit() * 2 / 3 : 0);
     }
 };
 

@@ -4,7 +4,7 @@ import QtQuick.Templates as T
 import org.kde.kirigami as Kirigami
 import PouStyle
 
-// A button's words, in small capitals.
+// A button's words, in small capitals, or in Material's label style.
 Text {
     id: words
 
@@ -18,5 +18,9 @@ Text {
     verticalAlignment: Text.AlignVCenter
     elide: Text.ElideRight
     opacity: control.enabled ? 1 : 0.4
-    color: primary || control.down ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor
+    color: {
+        if (Look.material)
+            return primary ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.highlightColor;
+        return primary || control.down ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor;
+    }
 }

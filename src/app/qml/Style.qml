@@ -25,7 +25,7 @@ QtObject {
     property bool plain: false
 
     // how much is cut off the corners of a plate
-    readonly property real cut: plain ? 0 : 12
+    readonly property real cut: plain || material ? 0 : 12
 
     // the paper the slabs and the fields are, and the ink on it
     readonly property color paper: Look.paper
@@ -33,19 +33,16 @@ QtObject {
 
     onHeadingFamilyChanged: Look.headingFamily = headingFamily
     onMaterialChanged: Look.material = material
+    onPlainChanged: Look.animated = !plain
     onDarkChanged: Look.dark = dark
 
-    // Material's shape scale: small, medium, large and extra large corners
-    readonly property real shapeSmall: 8
-    readonly property real shapeMedium: 12
-    readonly property real shapeLarge: 16
-    readonly property real shapeExtraLarge: 28
-
-    // Material's motion: how long it takes, and the easing it follows
-    // (standard, cubic-bezier 0.2, 0, 0, 1). Plain decorations stop it.
-    readonly property int shortDuration: plain ? 0 : 200
-    readonly property int mediumDuration: plain ? 0 : 300
-    readonly property var standardEasing: [0.2, 0, 0, 1, 1, 1]
+    // Material's shape scale and motion are in Look, as the controls draw them
+    readonly property real shapeSmall: Look.shapeSmall
+    readonly property real shapeMedium: Look.shapeMedium
+    readonly property real shapeLarge: Look.shapeLarge
+    readonly property real shapeExtraLarge: Look.shapeExtraLarge
+    readonly property int shortDuration: Look.shortDuration
+    readonly property int mediumDuration: Look.mediumDuration
 
     // the item colors the game's players read at a glance
     function rarity(rarity: string, theme): color {
@@ -104,11 +101,12 @@ QtObject {
 
     // the line round a plate, and the finer one inside it
     function frame(theme): color {
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.28);
+        // Material's outline variant
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, material ? 0.2 : 0.28);
     }
 
     function inner(theme): color {
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, 0.14);
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, material ? 0.12 : 0.14);
     }
 
     // the one color besides the text, which is teal in the app's scheme

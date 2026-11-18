@@ -3,7 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// A card on a page, drawn by the app: a cut-corner plate with its rows in it.
+// A card on a page, drawn by the app: a cut-corner plate with its rows in it,
+// or in Material a filled card with rounded corners.
 // The rows go in as they would in a FormCard, and it takes the same
 // maximumWidth, which ColumnsPage sets.
 Item {
@@ -34,7 +35,8 @@ Item {
         Plate {
             anchors.fill: parent
             fill: Kirigami.Theme.backgroundColor
-            line: Style.frame(Kirigami.Theme)
+            // Material's cards are filled with a tint, not framed
+            line: Style.material ? "transparent" : Style.frame(Kirigami.Theme)
             lineWidth: 1
         }
 

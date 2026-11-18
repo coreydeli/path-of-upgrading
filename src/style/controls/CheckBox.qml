@@ -2,6 +2,7 @@
 import QtQuick
 import QtQuick.Templates as T
 import org.kde.kirigami as Kirigami
+import PouStyle
 
 T.CheckBox {
     id: root

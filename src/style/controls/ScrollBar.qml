@@ -18,6 +18,7 @@ T.ScrollBar {
     contentItem: Rectangle {
         implicitWidth: 6
         implicitHeight: 6
+        radius: Look.material ? width / 2 : 0
         color: control.pressed ? Kirigami.Theme.highlightColor
                                : Look.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.35)
         opacity: control.policy === T.ScrollBar.AlwaysOn || (control.active && control.size < 1.0) ? 1 : 0
