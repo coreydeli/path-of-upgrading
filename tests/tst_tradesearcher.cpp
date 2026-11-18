@@ -260,7 +260,7 @@ private Q_SLOTS:
         QTest::newRow("rate limited")
             << FakeAnswer{.status = 429, .headers = {{"Retry-After", "30"}}}
             << TradeSearch::Error::RateLimited
-            << u"The trade site has had too many requests from you. Try again in 30 seconds."_s << false;
+            << u"You've sent the trade site too many requests. Try again in 30 seconds."_s << false;
         QTest::newRow("too complex") << siteError(u"Query is too complex."_s)
                                      << TradeSearch::Error::TooComplex
                                      << u"The trade site says the search has too many filters."_s << false;
@@ -394,7 +394,7 @@ private Q_SLOTS:
         QCOMPARE(fetch->error(), TradeReply::Error::RateLimited);
         QCOMPARE(fetch->retryAfter(), 5s);
         QCOMPARE(fetch->errorString(),
-                 u"The trade site has had too many requests from you. Try again in 5 seconds."_s);
+                 u"You've sent the trade site too many requests. Try again in 5 seconds."_s);
         // with what came before it
         QCOMPARE(fetch->fetched(), 10);
         QCOMPARE(fetch->answer(), listings(ids.first(10)));

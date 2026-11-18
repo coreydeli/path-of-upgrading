@@ -22,10 +22,10 @@ QString whyNothing(GameInput::Failure why, const QString &detail, const QString 
         return detail.isEmpty() ? u"Items can't be copied out of the game here."_s : detail;
     case GameInput::Failure::NotInFront:
         if (detail.isEmpty()) {
-            return u"Path of Exile 2 wasn't the active window, so it didn't copy the item. Click once in "
+            return u"Path of Exile 2 wasn't the active window, so nothing was copied. Click once in "
                    "the game, then press %1 again."_s.arg(hotkey);
         }
-        return u"Path of Exile 2 wasn't the active window, %1 was, so it didn't copy the item. Click "
+        return u"Path of Exile 2 wasn't the active window (%1 was), so nothing was copied. Click "
                "once in the game, then press %2 again."_s.arg(detail, hotkey);
     case GameInput::Failure::KeyHeld:
         return u"A key was still down after %1, so the game wasn't asked to copy. Let go of the other "
@@ -114,7 +114,7 @@ void ItemReader::copied(const QString &text, const std::optional<ScreenPoint> &m
         Q_EMIT itemRead(*item, mouse);
         return;
     }
-    Q_EMIT failed(u"That wasn't an item, the game copied something else. Hover an item until its tooltip "
+    Q_EMIT failed(u"That wasn't an item, so the game copied something else. Hover an item until its tooltip "
                   "shows, then press %1."_s.arg(hotkey()),
                   mouse);
 }

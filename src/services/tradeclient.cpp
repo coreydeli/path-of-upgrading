@@ -35,7 +35,7 @@ QString duration(std::chrono::seconds time)
 
 QString tooMany(std::chrono::seconds retryAfter)
 {
-    return u"The trade site has had too many requests from you. Try again in %1."_s.arg(duration(retryAfter));
+    return u"You've sent the trade site too many requests. Try again in %1."_s.arg(duration(retryAfter));
 }
 
 // How long the site is left alone after its nth failure in a row: the first

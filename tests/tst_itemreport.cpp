@@ -201,7 +201,7 @@ private Q_SLOTS:
         QCOMPARE(report.score, QString());
         QCOMPARE(report.versus, QString());
         QVERIFY(report.notes.contains(
-            u"Nothing saved for Helmet yet. Check the item you have equipped there and press Equip as Helmet."_s));
+            u"Nothing saved for Helmet yet. Check the item you have equipped there, then press Equip as Helmet."_s));
 
         report = reportOn(helmetOld, wearing({{u"Helmet"_s, helmetOld}}));
         QCOMPARE(report.verdict, u"Already equipped"_s);
@@ -1186,12 +1186,12 @@ private Q_SLOTS:
         build.health = 9000;
         ItemCheck check{.item = waystone};
         check.map = checkMap(waystone, MapKind::Waystone, build);
-        QVERIFY(reportOf(check).mapBuild.startsWith(u"Checked against your character"_s));
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"The marked mods are bad news for your character"_s));
 
         build.health = 2000;
         const Item thin = item(maptexts::header + u"12% increased Monster Damage\n"_s);
         check.map = checkMap(thin, MapKind::Waystone, build);
-        QVERIFY(reportOf(check).mapBuild.startsWith(u"Checked against your character"_s));
+        QVERIFY(reportOf(check).mapBuild.startsWith(u"Nothing here is bad news for your character"_s));
         QVERIFY(!reportOf(check).mapMods.first().buildNote.isEmpty());
     }
 
