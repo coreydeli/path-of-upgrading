@@ -71,8 +71,8 @@ in QML.
   - `u"Searches need the trade site's list of stats, and it sent an empty one."_s`
 - When the message can't say the fix, the control beside it can. On the Build
   Review page, `Path of Building isn't anywhere the app looks.` sits above
-  the Update button, whose description says `Use it after you install Path of Building, or after
-  you first open it for Path of Exile 2.`
+  the Update button, whose description says `Use it after you install Path of
+  Building, or after you first open it for Path of Exile 2.`
 - Log text is short and plain too. Pass a `QString` to `%s` through
   `qPrintable()`, as `ItemPopup::makeWindow` does.
 
