@@ -14,6 +14,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTest>
+#include <algorithm>
 #include <cmath>
 #include <memory>
 
@@ -37,6 +38,8 @@ const char *probe = "import QtQuick\n"
                     "import PathOfUpgrading\n"
                     "Item {\n"
                     "    function rarity(name) { return Style.rarity(name, Kirigami.Theme); }\n"
+                    "    function rarityOnLight(name) { return Style.rarity(name, "
+                    "{ backgroundColor: \"#fef7ff\", textColor: \"#1d1b20\" }); }\n"
                     "    function grade(name) { return Style.grade(name, Kirigami.Theme); }\n"
                     "    function tone(tone, blind) { return Style.tone(tone, blind, Kirigami.Theme); }\n"
                     "    function frame() { return Style.frame(Kirigami.Theme); }\n"
@@ -56,6 +59,19 @@ const char *probe = "import QtQuick\n"
                     "    readonly property color neutral: Kirigami.Theme.neutralTextColor\n"
                     "    readonly property color disabled: Kirigami.Theme.disabledTextColor\n"
                     "}\n";
+
+// WCAG contrast ratio
+double contrast(const QColor &a, const QColor &b)
+{
+    auto lum = [](const QColor &c) {
+        auto lin = [](double v) {
+            return v <= 0.03928 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4);
+        };
+        return 0.2126 * lin(c.redF()) + 0.7152 * lin(c.greenF()) + 0.0722 * lin(c.blueF());
+    };
+    const double x = lum(a), y = lum(b);
+    return (std::max(x, y) + 0.05) / (std::min(x, y) + 0.05);
+}
 
 QColor hex(const char *name)
 {
@@ -94,6 +110,7 @@ private Q_SLOTS:
     void cleanup()
     {
         m_style->setProperty("plain", false);
+        m_style->setProperty("material", false);
         m_style->setProperty("appColors", false);
         m_style->setProperty("headingFamily", u"Big Shoulders Display"_s);
     }
@@ -113,6 +130,25 @@ private Q_SLOTS:
         m_style->setProperty("appColors", true);
         QCOMPARE(rarity(u"Rare"_s), hex("#ffff77"));
         QCOMPARE(rarity(u"Magic"_s), hex("#8888ff"));
+    }
+
+    void rarityIsReadableOnLightMaterial()
+    {
+        m_style->setProperty("material", true);
+        const QColor surface = hex("#fef7ff");
+        for (const QString &name :
+             {u"Normal"_s, u"Magic"_s, u"Rare"_s, u"Unique"_s, u"Currency"_s, u"Gem"_s}) {
+            const QColor c = call(u"rarityOnLight"_s, {name}).value<QColor>();
+            QVERIFY2(contrast(c, surface) >= 4.5, qPrintable(name));
+        }
+        m_style->setProperty("material", false);
+    }
+
+    void rarityKeepsTheGamesColorsOnDarkMaterial()
+    {
+        m_style->setProperty("material", true);
+        QCOMPARE(rarity(u"Rare"_s), hex("#ffff77"));
+        m_style->setProperty("material", false);
     }
 
     void anUnknownRarityIsText()
