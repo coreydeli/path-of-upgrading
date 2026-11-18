@@ -371,6 +371,43 @@ private Q_SLOTS:
         QCOMPARE(changed.size(), 1);
         QCOMPARE(o.options.searchedLeague(), u"Runes of Aldur"_s);
     }
+
+    void refreshAsksTheSiteOnlyOnTheButton()
+    {
+        Options o;
+        // not by its being there, nor by the pages that show it
+        QVERIFY(o.network.sent.isEmpty());
+        QVERIFY(!o.options.isRefreshing());
+        QCOMPARE(o.options.unavailable(), QString());
+
+        const auto json = [](const QJsonObject &object) {
+            return QJsonDocument(object).toJson();
+        };
+        const QJsonArray league{QJsonObject{{u"id"_s, u"Standard"_s}, {u"realm"_s, u"poe2"_s}}};
+        o.network.answers = {{.body = json(tradefixtures::stats())},
+                             {.body = json(tradefixtures::filters())},
+                             {.body = json(QJsonObject{{u"result"_s, league}})}};
+        QSignalSpy refreshed(&o.data, &TradeDataStore::refreshed);
+        QSignalSpy changed(&o.options, &TradeOptions::changed);
+        o.options.refresh();
+        QVERIFY(o.options.isRefreshing());
+        QVERIFY(changed.size() >= 1);
+        // once, however often it's pressed
+        o.options.refresh();
+        QVERIFY(refreshed.wait());
+        QVERIFY(!o.options.isRefreshing());
+        QCOMPARE(o.network.sent.size(), 3);
+    }
+
+    void refreshDoesNothingWhenTradeIsOff()
+    {
+        Options o(false);
+        QVERIFY(!o.options.unavailable().isEmpty());
+        o.options.refresh();
+        QVERIFY(!o.options.isRefreshing());
+        QCoreApplication::processEvents();
+        QVERIFY(o.network.sent.isEmpty());
+    }
 };
 
 QTEST_GUILESS_MAIN(TestTradeOptions)

@@ -51,6 +51,14 @@ void TradeDataStore::load()
     m_read = true;
 }
 
+bool TradeDataStore::isStale()
+{
+    load();
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    return std::any_of(m_sources.begin(), m_sources.end(),
+                       [&now](const Source &source) { return !fresh(source.fetched, now); });
+}
+
 void TradeDataStore::refresh(bool force)
 {
     // that one's done when what's asked for comes in
@@ -109,11 +117,20 @@ void TradeDataStore::answered(Source &source)
     source.reply.clear();
 
     const bool stats = source.name == u"stats";
-    if (reply->error() != TradeReply::Error::None) {
+    if (reply->error() == TradeReply::Error::Unavailable) {
+        // trade was turned off, which isn't the site's doing
+        for (Source &other : m_sources)
+            delete other.reply;
+    } else if (reply->error() != TradeReply::Error::None) {
         qCWarning(lcTrade, "Couldn't get the trade site's %s: %s", qUtf8Printable(source.name),
                   qUtf8Printable(reply->errorString()));
         if (stats)
             m_errorString = u"Searches need the trade site's list of stats. %1"_s.arg(reply->errorString());
+        // no use asking the rest of a site that isn't there
+        if (reply->error() != TradeReply::Error::Rejected) {
+            for (Source &other : m_sources)
+                delete other.reply;
+        }
     } else if (!take(source, reply->answer())) {
         qCWarning(lcTrade, "The trade site's %s came back empty", qUtf8Printable(source.name));
         if (stats)
