@@ -1,14 +1,19 @@
 # The website
 
-The site at https://coreydeli.github.io/path-of-upgrading/ is made here and
-published by `.github/workflows/pages.yml`. You don't build it by hand to
-change it, but you can.
+The site at https://getpou.app/ is made here and published by
+`.github/workflows/pages.yml`. You don't build it by hand to change it, but
+you can.
 
 ## How it's made
 
 - **GitHub Pages** hosts plain files for free. A workflow builds the files and
   hands them to Pages. Pages is on for this repository (Source: GitHub
   Actions), and its `github-pages` environment only allows deploys from `main`.
+- **The address** is `getpou.app`, set in the repository's Pages settings. Its
+  DNS at Cloudflare points straight at GitHub Pages (not proxied), so GitHub
+  makes its certificate. `pathofupgrading.app` is a Cloudflare redirect rule
+  that sends every page to the same path on `getpou.app`. A site deployed by
+  a workflow needs no `CNAME` file.
 - **Zensical** (a Python tool, pinned in `requirements.txt`) turns markdown
   into the pages, with search that runs in the visitor's browser. Nothing is
   tracked, no fonts or scripts come from other sites, and the header doesn't
