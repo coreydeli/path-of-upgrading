@@ -57,6 +57,8 @@ Item {
         }
         height: names.implicitHeight + 2 * Kirigami.Units.largeSpacing
         color: Style.tint(Kirigami.Theme.backgroundColor, card.accent, 0.14)
+        topLeftRadius: Style.material ? Style.shapeLarge : 0
+        topRightRadius: topLeftRadius
 
         HoverHandler {
             cursorShape: Qt.SizeAllCursor
