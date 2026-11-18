@@ -3,7 +3,8 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// The title over a card, a small slab of paper. It stands in for FormHeader,
+// The title over a card, a small slab of paper, or in Material a line of text
+// in the primary color. It stands in for FormHeader,
 // and takes the same title and maximumWidth, which ColumnsPage sets.
 Item {
     id: header
@@ -37,9 +38,9 @@ Item {
 
         Rectangle {
             Layout.maximumWidth: content.width
-            implicitWidth: slab.implicitWidth + 2 * Kirigami.Units.smallSpacing + 2
+            implicitWidth: slab.implicitWidth + (Style.material ? 0 : 2 * Kirigami.Units.smallSpacing + 2)
             implicitHeight: slab.implicitHeight + 2
-            color: Style.paper
+            color: Style.material ? "transparent" : Style.paper
             Accessible.role: Accessible.Heading
             Accessible.name: header.title
 
@@ -47,10 +48,10 @@ Item {
                 id: slab
 
                 anchors.centerIn: parent
-                width: Math.min(implicitWidth, parent.width - 2 * Kirigami.Units.smallSpacing)
+                width: Math.min(implicitWidth, parent.width - (Style.material ? 0 : 2 * Kirigami.Units.smallSpacing))
                 elide: Text.ElideRight
                 font: Style.sectionFont(Kirigami.Theme.defaultFont)
-                color: Style.ink
+                color: Style.material ? Kirigami.Theme.highlightColor : Style.ink
                 text: header.title
             }
         }

@@ -4,8 +4,8 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-// The top of a page: its title in a slab of paper, and a line saying what the
-// page is for.
+// The top of a page: its title in a slab of paper (in Material, plain), and a
+// line saying what the page is for.
 ColumnLayout {
     id: header
 
@@ -26,10 +26,10 @@ ColumnLayout {
 
         Rectangle {
             x: header.inset
-            width: Math.min(slab.implicitWidth + 2 * Kirigami.Units.largeSpacing,
+            width: Math.min(slab.implicitWidth + (Style.material ? 0 : 2 * Kirigami.Units.largeSpacing),
                             parent.width - 2 * header.inset)
             height: parent.height
-            color: Style.paper
+            color: Style.material ? "transparent" : Style.paper
             Accessible.role: Accessible.Heading
             Accessible.name: header.title
 
@@ -37,10 +37,10 @@ ColumnLayout {
                 id: slab
 
                 anchors.centerIn: parent
-                width: Math.min(implicitWidth, parent.width - 2 * Kirigami.Units.largeSpacing)
+                width: Math.min(implicitWidth, parent.width - (Style.material ? 0 : 2 * Kirigami.Units.largeSpacing))
                 elide: Text.ElideRight
                 font: Style.titleFont(Kirigami.Theme.defaultFont, 1.8)
-                color: Style.ink
+                color: Style.material ? Kirigami.Theme.textColor : Style.ink
                 text: header.title
             }
         }
@@ -54,7 +54,7 @@ ColumnLayout {
         objectName: "pageDescription"
         visible: header.description !== ""
         color: Kirigami.Theme.disabledTextColor
-        font.italic: true
+        font.italic: !Style.material
         text: header.description
         wrapMode: Text.WordWrap
     }

@@ -23,6 +23,7 @@ qt_add_qml_module(pou_style
         controls/Mark.qml
         controls/RadioButton.qml
         controls/ScrollBar.qml
+        controls/StateLayer.qml
         controls/SpinBox.qml
         controls/Switch.qml
         controls/TextField.qml

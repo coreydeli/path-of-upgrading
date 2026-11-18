@@ -17,6 +17,7 @@ Rectangle {
 
     implicitWidth: label.implicitWidth + 2 * Kirigami.Units.smallSpacing + 2
     implicitHeight: label.implicitHeight + 2
+    radius: Style.material ? Style.shapeSmall : 0
     color: tint
 
     QQC2.Label {
@@ -24,7 +25,7 @@ Rectangle {
 
         anchors.centerIn: parent
         // dark type on the tone, as on the verdict block
-        color: Style.ink
+        color: Style.material ? Kirigami.Theme.backgroundColor : Style.ink
         font: Style.labelFont(Kirigami.Theme.smallFont)
         text: pill.text
     }

@@ -154,6 +154,8 @@ void Appearance::follow()
         }
     }
     followFonts();
+    // Kirigami's corners are round in Material
+    qApp->setProperty("POU_ROUND_CORNERS", isMaterial());
     // what the colors and fonts came to, and the choices that go with them
     const bool different = appearance() != m_seen;
     m_seen = appearance();
