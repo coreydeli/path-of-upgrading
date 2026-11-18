@@ -55,6 +55,18 @@ RANGE = re.compile(r"\((-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)\)")
 FIXED = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?![\w.])")
 
 
+# two numbers or ranges joined by "to", counted as one stat
+PAIR = re.compile(
+    r"(?P<lo>\((?:-?\d+(?:\.\d+)?)-(?:-?\d+(?:\.\d+)?)\)|\d+(?:\.\d+)?) to "
+    r"(?P<hi>\((?:-?\d+(?:\.\d+)?)-(?:-?\d+(?:\.\d+)?)\)|\d+(?:\.\d+)?)(?![\w.%])"
+)
+
+
+def fold(key):
+    """The key the app gives a stat, which writes reduced as increased and less as more."""
+    return re.sub(r"\bless\b", "more", re.sub(r"\breduced\b", "increased", key))
+
+
 def item_class(kind, tags):
     if kind == "Shield":
         return "Bucklers" if "buckler" in tags else "Shields"
@@ -107,17 +119,22 @@ def read_mods(folder):
         lines = re.findall(r'"([^"]+)"', head.split("affix =", 1)[1])[1:]
         stats = []
         for stat in lines:
-            # one number or range, and not "Adds # to # damage"
-            if stat.startswith("Adds "):
+            pair = PAIR.search(stat)
+            if pair:
+                # "Adds (1-3) to (5-8) Fire Damage": the app counts the average
+                low = [float(x) for x in pair.group("lo").strip("()").split("-")]
+                high = [float(x) for x in pair.group("hi").strip("()").split("-")]
+                key = fold(stat[: pair.start()] + "# to #" + stat[pair.end() :]).lstrip("+")
+                stats.append((key, (low[0] + high[0]) / 2, (low[-1] + high[-1]) / 2))
                 continue
             ranges = RANGE.findall(stat)
             if len(ranges) == 1:
-                key = RANGE.sub("#", stat).lstrip("+")
+                key = fold(RANGE.sub("#", stat).lstrip("+"))
                 stats.append((key, float(ranges[0][0]), float(ranges[0][1])))
                 continue
             fixed = FIXED.findall(stat)
             if not ranges and len(fixed) == 1:
-                key = FIXED.sub("#", stat).lstrip("+")
+                key = fold(FIXED.sub("#", stat).lstrip("+"))
                 stats.append((key, float(fixed[0]), float(fixed[0])))
         if stats:
             mods.append((level, keys, weights, stats))
