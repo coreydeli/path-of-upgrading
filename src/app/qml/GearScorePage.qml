@@ -18,7 +18,7 @@ ColumnsPage {
     readonly property real levelWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Gear Score")
-    description: qsTr("How items are scored for your character, and how much each stat counts.")
+    description: qsTr("See how items are scored for your character, and change how much each stat counts.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
@@ -70,7 +70,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "weighAgainButton"
             text: scorePage.scoring.weighing ? qsTr("Weighing Your Build") : qsTr("Weigh Again")
-            description: qsTr("Asks Path of Building to weigh your build again.")
+            description: qsTr("Changed your build? Have Path of Building weigh it again.")
             icon.name: "view-refresh"
             enabled: scorePage.scoring.canWeigh && !scorePage.scoring.weighing
             onClicked: scorePage.scoring.weighAgain()
@@ -103,7 +103,7 @@ ColumnsPage {
     SectionText {
         objectName: "scoreHelp"
         visible: stats.visible
-        text: qsTr("The gear score rates an item from 0 to 100 by how much of what your build wants in that slot it has. Below, you can change how much each stat adds, for this character only.")
+        text: qsTr("The gear score rates an item from 0 to 100 by how much of what your build wants in that slot it has. You can change how much each stat adds below, for this character only.")
     }
 
     SectionHeader {
@@ -114,7 +114,7 @@ ColumnsPage {
     SectionText {
         objectName: "impactHelp"
         visible: stats.visible
-        text: qsTr("Each stat's points are multiplied by this number. Normal (1x) is how your build has it, Not at all (0x) leaves the stat out and Three times (3x) triples it.")
+        text: qsTr("Each stat's points are multiplied by this number. Normal (1x) keeps your build's setting, Not at all (0x) leaves the stat out, and Three times (3x) triples it.")
     }
 
     Sheet {

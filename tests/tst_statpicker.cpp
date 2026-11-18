@@ -135,8 +135,8 @@ private Q_SLOTS:
         QCOMPARE(p.of(u"[Weapon] Total DPS"_s, StatPicker::NoteRole).toString(),
                  u"The weapon's own, mods included"_s);
         QCOMPARE(p.picker.message(),
-                 u"The trade site's list of stats comes with trade search, so here are only "
-                 u"the item's own and those on the items you've checked."_s);
+                 u"Trade search brings the trade site's list of stats, so for now you only see "
+                 u"the item's own stats and those on items you've checked."_s);
         QVERIFY(p.network.sent.isEmpty());
 
         // said once, as it's the same the next time
@@ -180,8 +180,8 @@ private Q_SLOTS:
         QVERIFY(!p.data.isRefreshing());
         QCOMPARE(p.keys(), properties);
         QCOMPARE(p.picker.message(),
-                 u"The trade site's list of stats comes with your first trade search, or when you press "
-                 u"Refresh on the Trade page. Until then, here are only the item's own and those on the "
+                 u"You get the trade site's list of stats with your first trade search, or when you press "
+                 u"Refresh on the Trade page. Until then you only see the item's own stats and those on "
                  u"items you've checked."_s);
     }
 
@@ -192,8 +192,8 @@ private Q_SLOTS:
         QVERIFY(p.refreshFromSite());
         QCOMPARE(p.keys(), properties);
         QCOMPARE(p.picker.message(),
-                 u"Couldn't get the trade site's list of stats, so here are only the item's "
-                 u"own and those on the items you've checked."_s);
+                 u"Couldn't get the trade site's list of stats, so you only see the item's "
+                 u"own stats and those on items you've checked."_s);
     }
 
     void keptStats()

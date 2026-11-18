@@ -20,7 +20,7 @@ ColumnsPage {
     readonly property real modeWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Ignored Stats")
-    description: qsTr("Stats you want left out of the score.")
+    description: qsTr("Pick the stats you want left out of the score.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 

@@ -336,7 +336,7 @@ private Q_SLOTS:
         QCOMPARE(s.of(chaos, GearScoring::LevelRole).toInt(), 0);
         QVERIFY(s.of(chaos, GearScoring::WhereRole)
                     .toString()
-                    .endsWith(u". It starts at Not at all, as your build has Chaos Inoculation."_s));
+                    .endsWith(u". It starts at Not at all, because your build has Chaos Inoculation."_s));
         QVERIFY(!s.of(u"Life"_s, GearScoring::WhereRole).toString().contains(u"Chaos"_s));
         QVERIFY(!s.scoring.isTweaked());
 

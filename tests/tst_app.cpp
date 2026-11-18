@@ -1010,7 +1010,8 @@ private Q_SLOTS:
         r.app.tradeOptions()->unavailable();
         QTest::qWait(50);
         QVERIFY(r.tradeAsked().isEmpty());
-        QVERIFY(r.app.statPicker()->message().startsWith(u"The trade site's list of stats comes with"_s));
+        QVERIFY(r.app.statPicker()->message().startsWith(
+            u"Trade search brings the trade site's list of stats"_s));
     }
 
     void refreshButtonAsksTheTradeSite()

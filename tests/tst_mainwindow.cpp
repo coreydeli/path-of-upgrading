@@ -2253,9 +2253,10 @@ private Q_SLOTS:
         QVERIFY(click(w.find(u"addStatButton"_s)));
         QObject *message = w.find(u"pickerMessage"_s);
         QVERIFY(isVisible(message));
-        QCOMPARE(text(message), u"The trade site's list of stats comes with your first trade search, or when "
-                                u"you press Refresh on the Trade page. Until then, here are only the item's "
-                                u"own and those on the items you've checked."_s);
+        QCOMPARE(text(message),
+                 u"You get the trade site's list of stats with your first trade search, or when "
+                 u"you press Refresh on the Trade page. Until then you only see the item's "
+                 u"own stats and those on items you've checked."_s);
         QCOMPARE(w.app->statPicker()->rowCount(), equipmentKeys().size());
         QTest::qWait(30);
         QVERIFY(w.network->sent.isEmpty() ||

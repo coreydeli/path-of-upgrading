@@ -214,7 +214,7 @@ BuildProfile lifeAndResistances()
     BuildProfile p{
         defaultBuildProfile.toString(),
         u"Life and resistances"_s,
-        u"A safe all-rounder for any build: life, resistances, Armour or Evasion and movement speed. "
+        u"A safe all-rounder for any build: Life, resistances, Armour or Evasion and movement speed. "
         "Weapons are rated by damage per second."_s,
         {
             weaponDps(),
@@ -258,8 +258,9 @@ BuildProfile energyShieldCaster()
     BuildProfile p{
         energyShieldProfile.toString(),
         u"Energy Shield spellcaster"_s,
-        u"Spell skill levels, spell and elemental damage, cast speed and critical hits on weapons. "
-        "Energy Shield and resistances on armour."_s,
+        u"On weapons it looks for spell skill levels, spell and elemental damage, cast speed and critical "
+        u"hits. "
+        "On armour it wants Energy Shield and resistances."_s,
         {
             stat(u"Spell skill levels"_s,
                  uR"(^# to Level of all (Spell|Fire Spell|Cold Spell|Lightning Spell|Chaos Spell) Skills$)"_s,
@@ -302,7 +303,7 @@ BuildProfile energyShieldAttacker()
     BuildProfile p{
         energyShieldAttackerProfile.toString(),
         u"Energy Shield attacker"_s,
-        u"Weapon damage, attack speed, critical hits and added damage to attacks, with Energy Shield, "
+        u"It wants weapon damage, attack speed, critical hits and added damage, plus Energy Shield, "
         "resistances and movement speed to stay alive."_s,
         {
             weaponDps(),
@@ -388,8 +389,8 @@ BuildProfile minionSummoner()
     return {
         minionProfile.toString(),
         u"Minion summoner on Energy Shield"_s,
-        u"Minion skill levels and Spirit first, then ally and minion damage, Energy Shield and "
-        "resistances. Movement speed on boots."_s,
+        u"It wants minion skill levels and Spirit first, then ally and minion damage, Energy Shield and "
+        "resistances, with movement speed on boots."_s,
         {
             exact(u"Minion skill levels"_s, u"# to Level of all Minion Skills"_s,
                   PerSlot({{u"Weapon"_s, 10}, {u"Offhand"_s, 10}, {u"Amulet"_s, 10}, {u"Helmet"_s, 9}}),
