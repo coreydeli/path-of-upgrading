@@ -151,7 +151,7 @@ private Q_SLOTS:
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.importer.message(),
                  u"Imported the level 70 Witch build for Wren. It has no items equipped. "
-                 u"The gear score is a general start until Path of Building weighs the build."_s);
+                 u"The gear score is a rough starting point until Path of Building has weighed the build."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-caster"_s);
 
         // nothing more to say when it's the one it has
@@ -161,7 +161,7 @@ private Q_SLOTS:
 
         i.importer.importText(witch(true));
         QVERIFY(i.importer.message().endsWith(
-            u"The gear score is a general start until Path of Building weighs the build."_s));
+            u"The gear score is a rough starting point until Path of Building has weighed the build."_s));
         QCOMPARE(i.store.find(wren)->buildProfile, u"minion-es"_s);
     }
 
@@ -173,7 +173,7 @@ private Q_SLOTS:
         QVERIFY(!i.importer.hasFailed());
         QCOMPARE(i.importer.message(),
                  u"Imported the level 60 Monk build for Wren. It has no items equipped. "
-                 u"The gear score is a general start until Path of Building weighs the build."_s);
+                 u"The gear score is a rough starting point until Path of Building has weighed the build."_s);
         QCOMPARE(i.store.find(wren)->buildProfile, u"es-attacker"_s);
     }
 
@@ -186,7 +186,7 @@ private Q_SLOTS:
         QVERIFY(i.store.save(wren, weighed));
 
         i.importer.importText(witch());
-        QVERIFY(!i.importer.message().contains(u"general start"_s));
+        QVERIFY(!i.importer.message().contains(u"rough starting point"_s));
     }
 
     void saysNothingOfAPickedProfile()
@@ -270,23 +270,23 @@ private Q_SLOTS:
         QTest::newRow("one")
             << ranger({u"Weapon 1"_s}) << false
             << u"Imported the level 40 Ranger build for Wren. Wren now has 1 item equipped from it. "
-               u"Copy your weapon in the game once, as the build doesn't include its damage."_s;
+               u"Copy your weapon in the game once, since the build doesn't include its damage."_s;
         QTest::newRow("two")
             << ranger({u"Weapon 1"_s, u"Weapon 2"_s}) << false
             << u"Imported the level 40 Ranger build for Wren. Wren now has 2 items equipped from it. "
-               u"Copy your weapons in the game once, as the build doesn't include their "
+               u"Copy your weapons in the game once, since the build doesn't include their "
                u"damage."_s;
         QTest::newRow("kept one") << ranger({u"Weapon 1"_s}) << true
                                   << u"Imported the level 40 Ranger build for Wren. Kept 1 item you copied "
-                                     u"in the game, which says more."_s;
+                                     u"in the game, as it says more than the build."_s;
         QTest::newRow("kept two") << ranger({u"Weapon 1"_s, u"Weapon 2"_s}) << true
                                   << u"Imported the level 40 Ranger build for Wren. Kept 2 items you copied "
-                                     u"in the game, which say more."_s;
+                                     u"in the game, as they say more than the build."_s;
         QTest::newRow("kept one of two")
             << ranger({u"Weapon 1"_s, u"Ring 1"_s}) << true
             << u"Imported the level 40 Ranger build for Wren. Wren now has 1 "
-               u"item equipped from it. Kept 1 item you copied in the game, which says "
-               u"more."_s;
+               u"item equipped from it. Kept 1 item you copied in the game, as it says "
+               u"more than the build."_s;
         QTest::newRow("empty") << u"<PathOfBuilding2/>"_s << false
                                << u"Imported the build for Wren. It has no items equipped."_s;
     }

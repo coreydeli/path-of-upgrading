@@ -26,7 +26,7 @@ ColumnsPage {
     }
 
     title: qsTr("Item History")
-    description: qsTr("The items you checked, to look at again.")
+    description: qsTr("Items you've checked, in case you want another look.")
     maxColumns: wide ? 2 : 3
 
     // checking an item again moves it to the top
@@ -95,12 +95,12 @@ ColumnsPage {
     SectionHeader {
         objectName: "checkedHeader"
         column: checkedPage.wide ? 0 : -1
-        title: qsTr("Newest First")
+        title: qsTr("Recently checked")
     }
 
     SectionText {
         objectName: "historyIntro"
-        text: qsTr("The items you check in the game are kept here, the newest first, up to the last %1: those you check with the hotkey, and gear you copy yourself while \"Also check gear you copy yourself\" is on. When the list is full, the oldest drops off.").arg(checkedPage.checkedItems.limit)
+        text: qsTr("Items you check in the game land here, newest first, up to the last %1. That means items you check with the hotkey, and gear you copy yourself while \"Also check gear you copy yourself\" is on. When the list is full, the oldest one drops off.").arg(checkedPage.checkedItems.limit)
     }
 
     Sheet {
@@ -117,7 +117,7 @@ ColumnsPage {
             objectName: "noItemsText"
             visible: itemRows.count === 0
             text: qsTr("You haven't checked any items yet.")
-            description: checkedPage.key !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in Path of Exile 2 and press the hotkey for checking one. You can set it on the General page.")
+            description: checkedPage.key !== "" ? qsTr("Hover over an item in Path of Exile 2 and press %1.").arg(checkedPage.key) : qsTr("Hover over an item in Path of Exile 2 and press your check hotkey. You can set it on the General page.")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
         }
@@ -139,14 +139,14 @@ ColumnsPage {
     SectionText {
         objectName: "checkedHelp"
         visible: itemRows.count > 0
-        text: qsTr("Check Again shows an item in the popup again, judged for the character you play now. Forgetting the items doesn't forget their stats, which the stat picker still offers.")
+        text: qsTr("Check Again shows an item in the popup again, judged for the character you play now. Forgetting the items doesn't forget their stats, so the stat picker still offers them.")
     }
 
     SectionHeader {
         objectName: "detailHeader"
         visible: checkedPage.wide && itemRows.count > 0
         column: checkedPage.wide ? 1 : -1
-        title: qsTr("The Item")
+        title: qsTr("Item details")
     }
 
     ItemPanel {

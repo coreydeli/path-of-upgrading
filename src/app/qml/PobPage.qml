@@ -17,7 +17,7 @@ ColumnsPage {
     property bool showPlaces: false
 
     title: qsTr("Build Review")
-    description: qsTr("Which Path of Building is used to judge items, and what matters when it does.")
+    description: qsTr("How items are judged with Path of Building, and which copy of it is used.")
 
     SectionText {
         objectName: "analysisIntro"
@@ -30,14 +30,14 @@ ColumnsPage {
         SwitchRow {
             objectName: "enabledSwitch"
             text: qsTr("Judge items with Path of Building")
-            description: qsTr("By its own numbers for your build, once you've imported one.")
+            description: qsTr("Uses its own numbers for your build, once you've imported one.")
             checked: pobPage.options.enabled
             onToggled: pobPage.options.enabled = checked
         }
     }
 
     SectionHeader {
-        title: qsTr("Where It Is")
+        title: qsTr("Where Path of Building is installed")
     }
 
     Sheet {
@@ -55,7 +55,7 @@ ColumnsPage {
             id: installedAtText
             objectName: "installedAtText"
             visible: pobPage.options.installedAt !== ""
-            text: qsTr("Program files")
+            text: qsTr("Installed at")
             description: pobPage.options.installedAt
         }
 
@@ -67,7 +67,7 @@ ColumnsPage {
             id: buildsAtText
             objectName: "buildsAtText"
             visible: pobPage.options.buildsAt !== ""
-            text: qsTr("Your builds")
+            text: qsTr("Where your builds are")
             description: pobPage.options.buildsAt
         }
 
@@ -79,7 +79,7 @@ ColumnsPage {
             id: stepsText
             objectName: "stepsText"
             visible: pobPage.options.steps.length > 0
-            text: qsTr("What to do")
+            text: qsTr("What to do next")
             description: pobPage.options.steps.join("\n")
         }
 
@@ -92,7 +92,7 @@ ColumnsPage {
             objectName: "discoverButton"
             visible: pobPage.options.offersFlatpak
             text: qsTr("Open in Discover")
-            description: qsTr("Install it from Discover, the app store on KDE Plasma.")
+            description: qsTr("Installs it from Discover, the app store on KDE Plasma.")
             icon.name: "plasmadiscover"
             onClicked: pobPage.options.openDiscover()
         }
@@ -105,8 +105,8 @@ ColumnsPage {
             id: flathubButton
             objectName: "flathubButton"
             visible: pobPage.options.offersFlatpak
-            text: qsTr("Open Flathub in the Browser")
-            description: qsTr("Its page on Flathub, for any other app store.")
+            text: qsTr("Open Flathub")
+            description: qsTr("Its Flathub page, for installing it some other way.")
             icon.name: "internet-web-browser"
             onClicked: pobPage.options.openFlathub()
         }
@@ -134,7 +134,7 @@ ColumnsPage {
             objectName: "installerButton"
             visible: pobPage.options.offersInstaller
             text: qsTr("Open the Download Page")
-            description: qsTr("Its releases page on GitHub, with the installer.")
+            description: qsTr("Its releases page on GitHub, where the installer is.")
             icon.name: "internet-web-browser"
             onClicked: pobPage.options.openInstaller()
         }
@@ -144,8 +144,8 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "updateButton"
             text: qsTr("Update")
-            description: qsTr("Look in the usual places again, and for the builds you've saved since. "
-                              + "Use it after you install Path of Building, or open it for Path of Exile 2 "
+            description: qsTr("Looks in the usual places again, and for builds you've saved since. "
+                              + "Use it after you install Path of Building, or after you open it for Path of Exile 2 "
                               + "for the first time.")
             icon.name: "view-refresh"
             onClicked: pobPage.app.updatePob()
@@ -157,7 +157,7 @@ ColumnsPage {
             id: folderField
             objectName: "folderField"
             label: qsTr("Folder")
-            placeholderText: qsTr("Leave empty to use the one found")
+            placeholderText: qsTr("Leave empty to use the one it found")
             // Set from the options by hand, as Kirigami Addons 1.7 drops a
             // binding on this one
             Component.onCompleted: text = pobPage.options.location
@@ -186,7 +186,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "chooseFolderButton"
             text: qsTr("Choose a Folder")
-            description: qsTr("The one with HeadlessWrapper.lua in it, or its repository.")
+            description: qsTr("The folder that has HeadlessWrapper.lua in it, or the whole repository.")
             icon.name: "document-open-folder"
             onClicked: folderDialog.open()
         }
@@ -200,7 +200,7 @@ ColumnsPage {
             objectName: "usualPlacesButton"
             visible: pobPage.options.location !== ""
             text: qsTr("Use the Usual Places")
-            description: qsTr("Clears the folder, and goes back to the one found.")
+            description: qsTr("Clears the folder and goes back to the one it found.")
             icon.name: "edit-clear"
             onClicked: pobPage.options.useUsualPlaces()
         }
@@ -210,7 +210,7 @@ ColumnsPage {
         FormCard.FormButtonDelegate {
             objectName: "placesButton"
             text: pobPage.showPlaces ? qsTr("Hide Where It Looks") : qsTr("Show Where It Looks")
-            description: qsTr("Every place it looks in, and whether Path of Building is there.")
+            description: qsTr("Every place it looks, and whether Path of Building is in each.")
             icon.name: pobPage.showPlaces ? "arrow-up" : "arrow-down"
             onClicked: pobPage.showPlaces = !pobPage.showPlaces
         }
@@ -229,7 +229,7 @@ ColumnsPage {
     }
 
     SectionHeader {
-        title: qsTr("What Matters Most")
+        title: qsTr("What counts most when judging items")
     }
 
     // These only weigh Path of Building's numbers, so they wait for it to be on.
@@ -245,7 +245,7 @@ ColumnsPage {
 
                 QQC2.Label {
                     Layout.fillWidth: true
-                    text: qsTr("Damage against survivability")
+                    text: qsTr("Lean towards defences or damage")
                     wrapMode: Text.Wrap
                 }
 
@@ -265,7 +265,7 @@ ColumnsPage {
                         snapMode: QQC2.Slider.SnapAlways
                         value: pobPage.options.damageWeight
                         onMoved: pobPage.options.damageWeight = value
-                        Accessible.name: qsTr("Damage against survivability")
+                        Accessible.name: qsTr("Lean towards defences or damage")
                     }
 
                     QQC2.Label {
@@ -280,7 +280,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "resistsSwitch"
             text: qsTr("Cap my resistances first")
-            description: qsTr("While one is under the cap, items that fill it score much higher.")
+            description: qsTr("While a resistance is under the cap, items that raise it score much higher.")
             checked: pobPage.options.resistsFirst
             onToggled: pobPage.options.resistsFirst = checked
         }
@@ -329,8 +329,8 @@ ColumnsPage {
 
         SwitchRow {
             objectName: "attributesSwitch"
-            text: qsTr("Keep attribute requirements met")
-            description: qsTr("The Strength, Dexterity and Intelligence your gear and skills need.")
+            text: qsTr("Keep my attribute requirements met")
+            description: qsTr("So you always have the Strength, Dexterity and Intelligence your gear and skills need.")
             checked: pobPage.options.attributes
             onToggled: pobPage.options.attributes = checked
         }
@@ -338,7 +338,7 @@ ColumnsPage {
 
     FolderDialog {
         id: folderDialog
-        title: qsTr("Path of Building's Folder")
+        title: qsTr("Choose Path of Building's Folder")
         onAccepted: pobPage.options.setLocationUrl(selectedFolder)
     }
 }

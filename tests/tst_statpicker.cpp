@@ -131,9 +131,9 @@ private Q_SLOTS:
         QCOMPARE(p.keys(), properties);
         QCOMPARE(p.of(u"[Base] Armour"_s, StatPicker::NameRole).toString(), u"Armour"_s);
         QCOMPARE(p.of(u"[Base] Armour"_s, StatPicker::NoteRole).toString(),
-                 u"The item's own, with its mods"_s);
+                 u"The item's own, mods included"_s);
         QCOMPARE(p.of(u"[Weapon] Total DPS"_s, StatPicker::NoteRole).toString(),
-                 u"The weapon's own, with its mods"_s);
+                 u"The weapon's own, mods included"_s);
         QCOMPARE(p.picker.message(),
                  u"The trade site's list of stats comes with trade search, so here are only "
                  u"the item's own and those on the items you've checked."_s);
@@ -232,7 +232,7 @@ private Q_SLOTS:
         QCOMPARE(p.of(rarity, StatPicker::NoteRole).toString(),
                  u"Not on the trade site. On one of the items you've checked"_s);
         QCOMPARE(p.of(u"[Base] Evasion Rating"_s, StatPicker::NoteRole).toString(),
-                 u"The item's own, with its mods. On one of the items you've checked"_s);
+                 u"The item's own, mods included. On one of the items you've checked"_s);
     }
 
     void seenProperty()
@@ -244,7 +244,7 @@ private Q_SLOTS:
         QCOMPARE(p.of(chaos, StatPicker::NameRole).toString(), u"Chaos DPS"_s);
         QCOMPARE(
             p.of(chaos, StatPicker::NoteRole).toString(),
-            u"The weapon's own, with its mods. Not on the trade site. On one of the items you've checked"_s);
+            u"The weapon's own, mods included. Not on the trade site. On one of the items you've checked"_s);
         QVERIFY(p.keys().indexOf(chaos) < properties.size());
         QCOMPARE(p.picker.rowCount(), properties.size() + 5);
     }

@@ -20,7 +20,7 @@ ColumnsPage {
     readonly property real modeWidth: Kirigami.Units.gridUnit * 12
 
     title: qsTr("Ignored Stats")
-    description: qsTr("Stats you don't want counted.")
+    description: qsTr("Stats you want left out of the score.")
     maxColumns: wide ? 1 : 3
     maxColumnWidth: Kirigami.Units.gridUnit * (wide ? 66 : 40)
 
@@ -94,14 +94,14 @@ ColumnsPage {
             objectName: "nobodyText"
             visible: ignoredPage.ignored.character === ""
             text: qsTr("You haven't picked a character yet.")
-            description: qsTr("Change anything here and a character is made for you. Or add one, or import a build, under Gear Settings, Import Character.")
+            description: qsTr("Change anything here and a character gets made for you. Or add one yourself, or import a build, under Gear Settings, Characters.")
         }
 
         TableHeader {
             objectName: "groupsHeader"
             visible: ignoredPage.wide
             first: qsTr("Group")
-            second: qsTr("Stats in it")
+            second: qsTr("What's in it")
             third: qsTr("Counts as")
             descriptionWidth: ignoredPage.noteWidth
             controlsWidth: ignoredPage.modeWidth
@@ -133,12 +133,12 @@ ColumnsPage {
 
     SectionText {
         objectName: "ignoredHelp"
-        text: qsTr("An ignored stat counts for nothing in the gear score and your weights, and the trade searches leave it out. An excluded one is ignored too, and the trade searches skip every listing that has it.")
+        text: qsTr("An ignored stat doesn't count towards the gear score or your weights, and trade searches leave it out. An excluded stat is ignored too, and trade searches also skip every listing that has it.")
     }
 
     SectionHeader {
         visible: singleStats.visible
-        title: qsTr("One by One")
+        title: qsTr("Single stats")
     }
 
     Sheet {
@@ -169,7 +169,7 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             objectName: "noSingleText"
             visible: statRows.count === 0
-            text: qsTr("You ignore no stat by itself.")
+            text: qsTr("You haven't ignored any single stats.")
         }
 
         RowRule {}
@@ -189,7 +189,7 @@ ColumnsPage {
         title: qsTr("Ignore a Stat")
         picker: ignoredPage.picker
         taken: ignoredPage.ignored.keys
-        takenNote: qsTr("You ignore it already")
+        takenNote: qsTr("You're ignoring it already")
         onPicked: key => ignoredPage.ignored.add(key)
     }
 }

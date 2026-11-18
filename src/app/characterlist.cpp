@@ -115,7 +115,7 @@ QVariant CharacterList::data(const QModelIndex &index, int role) const
             return u"Judged by your stat weights alone"_s;
         if (character->weighed)
             return u"Weighed by Path of Building for your build"_s;
-        return u"A general start, until Path of Building weighs your build"_s;
+        return u"A rough starting point until Path of Building has weighed your build"_s;
     }
     case ScoreRole:
     case GradeRole: {

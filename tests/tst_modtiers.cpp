@@ -46,7 +46,7 @@ private Q_SLOTS:
         QCOMPARE(tier->number, 2);
         QCOMPARE(tierText(*tier), u"tier 2 of 3"_s);
         QCOMPARE(tier->better->level, 60);
-        QCOMPARE(nextTierText(*tier), u"tier 1 (120 to 149) at item level 60 or higher"_s);
+        QCOMPARE(nextTierText(*tier), u"tier 1 (120 to 149) from item level 60"_s);
     }
 
     void theEdgesBelongToTheTier()

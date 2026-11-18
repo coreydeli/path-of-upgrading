@@ -709,10 +709,9 @@ private Q_SLOTS:
         const TradeData &data = site.data.data();
         QCOMPARE(site.searched(0),
                  upgrades(helmet, data, character, u"Helmet"_s, clearlyBetter, {}, smaller(4)).body);
-        QCOMPARE(
-            site.finder.found()->note,
-            u"Signed out, the trade site only takes a simple search, so each has at least 1 of these at a "
-            u"decent roll: Life. Cheapest first."_s);
+        QCOMPARE(site.finder.found()->note, u"Signed out, the trade site only takes simple searches, so each "
+                                            u"result has at least 1 of these at a "
+                                            u"decent roll: Life. Cheapest first."_s);
 
         // and signing in makes them full size again
         site.finder.setSignedIn(true);
@@ -782,9 +781,10 @@ private Q_SLOTS:
         QCOMPARE(site.network.sent.size(), 6);
         QCOMPARE(site.searched(5), site.searched(4));
         QCOMPARE(site.finder.found()->total, 0);
-        QCOMPARE(site.finder.found()->note,
-                 u"The trade site only takes a simple search, so each has at least 1 of these at a decent "
-                 u"roll: Life. Cheapest first."_s);
+        QCOMPARE(
+            site.finder.found()->note,
+            u"The trade site only takes simple searches, so each result has at least 1 of these at a decent "
+            u"roll: Life. Cheapest first."_s);
     }
 
     void weighedByPathOfBuilding()
@@ -1271,7 +1271,7 @@ private Q_SLOTS:
         QCOMPARE(site.network.sent.size(), 1);
         const TradeFinder::Found &found = *site.finder.found();
         QCOMPARE(found.kind, Kind::Weighted);
-        QCOMPARE(found.title, u"Beats your Doom Visage by your weights"_s);
+        QCOMPARE(found.title, u"Better than your Doom Visage by your weights"_s);
         QCOMPARE(found.note, QString());
         QCOMPARE(found.total, 0);
     }

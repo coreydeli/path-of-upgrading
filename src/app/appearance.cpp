@@ -166,7 +166,7 @@ bool Appearance::activateScheme()
         return true;
     m_error.clear();
     if (!QFileInfo::exists(m_schemeFile)) {
-        m_error = u"The app's colors are missing, so it has your desktop's."_s;
+        m_error = u"The app's colors couldn't be found, so your desktop's are used."_s;
         return false;
     }
     // The color scheme manager only knows the schemes in the data folders, and
@@ -174,7 +174,7 @@ bool Appearance::activateScheme()
     // from the file.
     const KSharedConfigPtr config = KSharedConfig::openConfig(m_schemeFile, KConfig::SimpleConfig);
     if (!config->hasGroup(u"Colors:Window"_s)) {
-        m_error = u"The app's colors couldn't be loaded, so it has your desktop's."_s;
+        m_error = u"The app's colors couldn't be loaded, so your desktop's are used."_s;
         return false;
     }
     // The Plasma style takes its colors from the scheme this names, not from

@@ -29,7 +29,7 @@ FormCard.FormCardDialog {
     onDiscarded: app.updates.skip()
 
     width: Math.min(parent.width - Kirigami.Units.gridUnit * 2, Kirigami.Units.gridUnit * 30)
-    title: qsTr("A New Version Is Out")
+    title: qsTr("There's a New Version")
     standardButtons: QQC2.Dialog.Ok | QQC2.Dialog.Cancel | QQC2.Dialog.Discard
     closePolicy: QQC2.Popup.CloseOnEscape
 

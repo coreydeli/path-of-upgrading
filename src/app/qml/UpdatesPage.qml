@@ -9,7 +9,7 @@ ColumnsPage {
     required property Updates updates
 
     title: qsTr("Updates")
-    description: qsTr("Choose whether the app looks for a newer version, or look right now.")
+    description: qsTr("Choose whether the app checks for a newer version, or check right now.")
 
     SectionHeader {
         title: qsTr("Looking for updates")
