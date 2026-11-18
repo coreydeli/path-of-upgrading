@@ -291,6 +291,12 @@ Kirigami.ApplicationWindow {
         app: root.app
     }
 
+    StartOverDialog {
+        id: startOverDialog
+        objectName: "startOverDialog"
+        startOver: root.app.startOver
+    }
+
     // The pages wait here while they aren't shown, so they keep where you
     // were on them.
     Item {
@@ -346,6 +352,8 @@ Kirigami.ApplicationWindow {
             options: root.app.overlayOptions
             tradeOffered: root.app.tradeOffered
             tradeOptions: root.app.tradeOptions
+            startOver: root.app.startOver
+            onStartOverAsked: startOverDialog.open()
         }
 
         AppearancePage {
