@@ -18,7 +18,9 @@ already on it.
 ## Reporting a bug or asking for a feature
 
 Use the issue forms, and search the open issues first in case it's already
-known.
+known. An issue's title starts with its kind, as a pull request's does
+(`Bug:`, `Feature:`, `Docs:`, `CI:` or `Maintenance:`), and the forms fill
+that in.
 
 For a bug, give the version, your desktop, how you installed the app and the
 steps that cause the problem. If it's about an item, paste the item text.
