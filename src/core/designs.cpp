@@ -68,6 +68,16 @@ const QList<DesignInfo> &designs()
          .hasLight = true,
          .roundCorners = false,
          .swatch = {u"#0d0c0f"_s, u"#16141a"_s, u"#d4a95a"_s, u"#ece6d8"_s}},
+        {.design = Design::Cinder,
+         .id = u"cinder"_s,
+         .name = u"Cinder"_s,
+         .note = u"Square and bold, with hard shadows and monospace labels"_s,
+         .headingFont = u"Space Grotesk"_s,
+         .textFont = u"Space Grotesk"_s,
+         .schemeName = u"Cinder"_s,
+         .hasLight = true,
+         .roundCorners = false,
+         .swatch = {u"#120f0d"_s, u"#1c1613"_s, u"#f0762c"_s, u"#f1e7dd"_s}},
     };
     return all;
 }
