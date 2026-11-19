@@ -36,6 +36,21 @@ QList<GearNote> notesOf(const GearScore &gear)
     return notes;
 }
 
+// A unique has no gear score, so say what judges it instead. These are plain
+// sentences, so no stats, and the first matches the popup's.
+QList<GearNote> uniqueNotes()
+{
+    return {
+        GearNote{.label = u"Unique"_s,
+                 .text = u"Uniques have fixed mods, so they don't get a gear score."_s,
+                 .stats = {}},
+        GearNote{.label = u"Judged by"_s,
+                 .text = u"What it does for your damage and defences in Path of Building, once a build is "
+                         u"loaded. Without that it gets no verdict."_s,
+                 .stats = {}},
+    };
+}
+
 // What the build wants most in a slot with nothing in it.
 QList<GearNote> wantedIn(const QString &slot, const GearScoreOptions &options)
 {
@@ -161,6 +176,8 @@ void GearList::refresh()
             row.score = score->score;
             row.grade = score->grade;
             row.notes = notesOf(*score);
+        } else if (score && score->unrated == GearScore::Unrated::Unique) {
+            row.notes = uniqueNotes();
         }
         m_rows << row;
     }
