@@ -47,6 +47,8 @@ bool addBundledFonts()
         u"Cinzel-Variable"_s,
         u"IBMPlexSans-Variable"_s,
         u"Inter-Variable"_s,
+        u"JetBrainsMono-Variable"_s,
+        u"SpaceGrotesk-Variable"_s,
         u"Spectral-Bold"_s,
         u"Spectral-Italic"_s,
         u"Spectral-Medium"_s,

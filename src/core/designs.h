@@ -12,8 +12,9 @@ namespace pou {
 // follows Google's Material Design 3, and Slate is a dense, calm panel,
 // Pocket is rounded and roomy,
 // and Edge is flat with a colored edge for the meaning,
-// and Gilt is quiet and premium, with thin gold lines.
-enum class Design { Dossier, Material, Slate, Pocket, Edge, Gilt };
+// and Gilt is quiet and premium, with thin gold lines,
+// and Cinder is square and bold, with hard shadows and monospace labels.
+enum class Design { Dossier, Material, Slate, Pocket, Edge, Gilt, Cinder };
 
 // What the app knows of a look outside its drawing: what the pickers say about
 // it, the faces its headings and text are set in, and its color schemes. The
