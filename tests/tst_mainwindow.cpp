@@ -1789,6 +1789,43 @@ private Q_SLOTS:
         QVERIFY(!w.find(u"tile:Helmet"_s)->property("chosen").toBool());
     }
 
+    void uniqueSlotNotes()
+    {
+        const Item belt = item(u"Item Class: Belts\nRarity: Unique\nCoil of Ash\nRawhide Belt\n--------\n+40 "
+                               u"to maximum Life"_s);
+        // the slot list
+        {
+            Window w;
+            QVERIFY(w.show(u"gearAction"_s));
+            w.play({{u"Belt"_s, belt}});
+            QObject *slot = w.find(u"slot:Belt"_s);
+            const QList<QObject *> labels = findAll(slot, u"noteLabel"_s);
+            const QList<QObject *> sentences = findAll(slot, u"noteSentence"_s);
+            QCOMPARE(labels.size(), 2);
+            QCOMPARE(sentences.size(), 2);
+            QCOMPARE(text(labels.at(0)), u"Unique"_s);
+            QVERIFY(isVisible(sentences.at(0)));
+            QCOMPARE(text(sentences.at(0)), u"Uniques have fixed mods, so they don't get a gear score."_s);
+            QCOMPARE(text(labels.at(1)), u"Judged by"_s);
+            QVERIFY(text(sentences.at(1)).contains(u"Path of Building"_s));
+            // no chips for a sentence
+            QVERIFY(findAll(slot, u"statChip"_s).isEmpty());
+        }
+        // the slot panel
+        {
+            Window w;
+            QVERIFY(wide(w));
+            w.play({{u"Belt"_s, belt}});
+            QVERIFY(w.settled());
+            QVERIFY(click(w.find(u"tile:Belt"_s)));
+            QVERIFY(w.settled());
+            const QList<QObject *> labels = findAll(w.find(u"panelNotes"_s), u"noteLabel"_s);
+            QCOMPARE(labels.size(), 2);
+            QCOMPARE(text(labels.first()), u"Unique"_s);
+            QVERIFY(isVisible(findAll(w.find(u"panelNotes"_s), u"noteSentence"_s).first()));
+        }
+    }
+
     void equipmentPanelEmptySlot()
     {
         Window w;

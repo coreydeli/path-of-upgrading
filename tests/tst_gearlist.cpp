@@ -185,6 +185,26 @@ private Q_SLOTS:
         QCOMPARE(g.in(u"Belt"_s, GearList::GradeRole).toString(), QString());
     }
 
+    void uniqueSaysHowItIsJudged()
+    {
+        Gear g;
+        g.play(wearing({{u"Belt"_s, belt}, {u"Helmet"_s, helmet}}));
+        const auto notes = g.in(u"Belt"_s, GearList::NotesRole).value<QList<GearNote>>();
+        QCOMPARE(notes.size(), 2);
+        QCOMPARE(notes.at(0).label, u"Unique"_s);
+        // the popup's own words
+        QCOMPARE(notes.at(0).text, u"Uniques have fixed mods, so they don't get a gear score."_s);
+        QCOMPARE(notes.at(1).label, u"Judged by"_s);
+        QVERIFY(notes.at(1).text.contains(u"Path of Building"_s));
+        // sentences, with no stats to make chips of
+        QVERIFY(notes.at(0).stats.isEmpty());
+        QVERIFY(notes.at(1).stats.isEmpty());
+        // a rare isn't told it's a unique
+        const auto rare = g.in(u"Helmet"_s, GearList::NotesRole).value<QList<GearNote>>();
+        for (const GearNote &note : rare)
+            QVERIFY(note.label != u"Unique"_s);
+    }
+
     void overall()
     {
         // over the main slots
@@ -237,8 +257,11 @@ private Q_SLOTS:
         QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.notScored.isEmpty()) +
                                    int(!weakRolls(score).isEmpty()));
 
-        // a unique has no gear score, so nothing to improve
-        QCOMPARE(notesOf(g.in(u"Belt"_s, GearList::NotesRole)), QList<QStringList>());
+        // a unique has no gear score, so nothing to improve, only why and how it's judged
+        const QList<QStringList> unique = notesOf(g.in(u"Belt"_s, GearList::NotesRole));
+        QCOMPARE(unique.size(), 2);
+        QCOMPARE(unique.at(0).first(), u"Unique"_s);
+        QCOMPARE(unique.at(1).first(), u"Judged by"_s);
         QVERIFY(!notesOf(g.in(u"Jewel 3"_s, GearList::NotesRole)).isEmpty());
     }
 
