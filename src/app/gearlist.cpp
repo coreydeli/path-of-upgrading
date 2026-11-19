@@ -15,18 +15,23 @@ using namespace Qt::Literals::StringLiterals;
 namespace pou {
 namespace {
 
+GearNote noteOf(const QString &label, const QStringList &stats, const QString &between = u", "_s)
+{
+    return {.label = label, .text = stats.join(between), .stats = stats};
+}
+
 // The ways a gear score falls short, a note each.
 QList<GearNote> notesOf(const GearScore &gear)
 {
     QList<GearNote> notes;
     if (!gear.missing.isEmpty())
-        notes << GearNote{.label = u"Missing stats"_s, .text = missingStats(gear).join(u", "_s)};
+        notes << noteOf(u"Missing stats"_s, missingStats(gear));
     if (!gear.notScored.isEmpty())
-        notes << GearNote{.label = u"Not counted"_s, .text = notScoredStats(gear).join(u", "_s)};
+        notes << noteOf(u"Not counted"_s, notScoredStats(gear));
     if (const QStringList weak = weakRolls(gear); !weak.isEmpty())
-        notes << GearNote{.label = u"Weak rolls"_s, .text = weak.join(u", "_s)};
+        notes << noteOf(u"Weak rolls"_s, weak);
     if (const QStringList next = nextTiers(gear); !next.isEmpty())
-        notes << GearNote{.label = u"Next tier"_s, .text = next.join(u"; "_s)};
+        notes << noteOf(u"Next tier"_s, next, u"; "_s);
     return notes;
 }
 
@@ -42,7 +47,7 @@ QList<GearNote> wantedIn(const QString &slot, const GearScoreOptions &options)
     }
     if (labels.isEmpty())
         return {};
-    return {GearNote{.label = u"Your build wants"_s, .text = labels.join(u", "_s)}};
+    return {noteOf(u"Your build wants"_s, labels)};
 }
 
 } // namespace

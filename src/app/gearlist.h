@@ -6,6 +6,7 @@
 #include <QAbstractListModel>
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <QtQmlIntegration/qqmlintegration.h>
 #include <optional>
 
@@ -22,10 +23,12 @@ struct GearNote
 
     Q_PROPERTY(QString label MEMBER label)
     Q_PROPERTY(QString text MEMBER text)
+    Q_PROPERTY(QStringList stats MEMBER stats)
 
 public:
-    QString label; // "Weak rolls"
-    QString text;  // "Mana 13%, Fire Resistance 33%"
+    QString label;     // "Weak rolls"
+    QString text;      // "Mana 13%, Fire Resistance 33%"
+    QStringList stats; // the same one by one, which the window shows apart
 
     friend bool operator==(const GearNote &, const GearNote &) = default;
 };

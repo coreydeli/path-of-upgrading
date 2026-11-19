@@ -228,6 +228,11 @@ private Q_SLOTS:
         QVERIFY(!score.missing.isEmpty());
         const QList<QStringList> notes = notesOf(g.in(u"Helmet"_s, GearList::NotesRole));
         QCOMPARE(notes.first(), (QStringList{u"Missing stats"_s, missingStats(score).join(u", "_s)}));
+        // and one by one, for the window's chips
+        const auto each = g.in(u"Helmet"_s, GearList::NotesRole).value<QList<GearNote>>();
+        QCOMPARE(each.first().stats, missingStats(score));
+        for (const GearNote &note : each)
+            QVERIFY2(!note.stats.isEmpty(), qPrintable(note.label));
         QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.notScored.isEmpty()) +
                                    int(!weakRolls(score).isEmpty()));
 
