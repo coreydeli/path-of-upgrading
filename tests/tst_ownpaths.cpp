@@ -88,6 +88,31 @@ private Q_SLOTS:
             !isOwnPath(QFileInfo(home).absolutePath(), QFileInfo(QFileInfo(home).absolutePath()).fileName()));
     }
 
+    void theCacheOnWindowsIsTheAppsFolderItIsIn()
+    {
+        const QString m = u"path-of-upgrading"_s;
+        QCOMPARE(ownFolderOf(u"C:/Users/someone/AppData/Local/path-of-upgrading/cache"_s, m),
+                 u"C:/Users/someone/AppData/Local/path-of-upgrading"_s);
+        QCOMPARE(ownFolderOf(u"C:\\Users\\someone\\AppData\\Local\\path-of-upgrading\\cache"_s, m),
+                 u"C:/Users/someone/AppData/Local/path-of-upgrading"_s);
+        // one that is its own is kept as it is
+        QCOMPARE(ownFolderOf(u"/home/someone/.cache/path-of-upgrading"_s, m),
+                 u"/home/someone/.cache/path-of-upgrading"_s);
+    }
+
+    void aFolderTwoDownOrInAnotherAppsIsntTakenUp()
+    {
+        const QString m = u"path-of-upgrading"_s;
+        for (const QString &path :
+             {u"C:/Users/someone/AppData/Local/path-of-upgrading/cache/trade"_s,
+              u"C:/Users/someone/AppData/Local/other-app/cache"_s, u"C:/Users/someone/AppData/Local"_s,
+              u"/path-of-upgrading/cache"_s, u"C:/path-of-upgrading/cache"_s,
+              u"data/path-of-upgrading/cache"_s, u"//server/path-of-upgrading/cache"_s, QString()}) {
+            QCOMPARE(ownFolderOf(path, m), path);
+            QVERIFY2(!isOwnPath(ownFolderOf(path, m), m), qPrintable(path));
+        }
+    }
+
     // From here on, only what these make in a temporary folder is touched.
     void removesFilesAndFoldersWithWhatIsInThem()
     {
