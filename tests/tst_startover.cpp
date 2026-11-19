@@ -100,6 +100,24 @@ private Q_SLOTS:
         QVERIFY(QFileInfo::exists(s.dir.filePath(u"made-up-neighbour"_s)));
     }
 
+    void theCacheInACacheFolderGoesWithTheAppsFolder()
+    {
+        Setup s;
+        // as Qt has it on Windows, AppData/Local/path-of-upgrading/cache
+        const QString own = s.dir.filePath(u"made-up-app-local"_s);
+        s.places.cache = own + u"/cache"_s;
+        QVERIFY(write(s.places.cache + u"/trade/stats.json"_s));
+        const auto start = s.make();
+
+        start->run();
+        QVERIFY(s.finished(*start));
+
+        QVERIFY2(start->problems().isEmpty(), qPrintable(start->problems().join(u'\n')));
+        QVERIFY(!QFileInfo::exists(own));
+        QVERIFY(QFileInfo::exists(s.dir.filePath(u"made-up-neighbour"_s)));
+        QCOMPARE(s.restarts, 1);
+    }
+
     void aReleaseDoesNothing()
     {
         Setup s;
