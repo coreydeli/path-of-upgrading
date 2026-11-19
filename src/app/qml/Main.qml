@@ -15,7 +15,8 @@ Kirigami.ApplicationWindow {
 
     // The group in the sidebar that holds a page, if one does
     function groupOf(page: Item): Kirigami.Action {
-        if (page === charactersPage || page === gearScorePage || page === weightsPage || page === ignoredPage)
+        if (page === pobPage || page === charactersPage || page === gearScorePage || page === weightsPage
+            || page === ignoredPage)
             return gearGroupAction;
         if (page === overlayPage || page === appearancePage || page === updatesPage
             || page === helpPage || page === aboutPage)
@@ -117,7 +118,18 @@ Kirigami.ApplicationWindow {
                 text: qsTr("Gear Settings")
                 icon.name: "rating"
                 // lit while one of its pages is shown
-                checked: charactersAction.checked || gearScoreAction.checked || weightsAction.checked || ignoredAction.checked
+                checked: pobAction.checked || charactersAction.checked || gearScoreAction.checked
+                    || weightsAction.checked || ignoredAction.checked
+
+                Kirigami.Action {
+                    id: pobAction
+                    objectName: "pobAction"
+                    text: qsTr("Build Review")
+                    icon.name: "office-chart-line"
+                    checkable: true
+                    QQC2.ActionGroup.group: pages
+                    onTriggered: root.show(pobPage)
+                }
 
                 Kirigami.Action {
                     id: charactersAction
@@ -175,14 +187,6 @@ Kirigami.ApplicationWindow {
                 checkable: true
                 QQC2.ActionGroup.group: pages
                 onTriggered: root.show(tradePage)
-            },
-            Kirigami.Action {
-                objectName: "pobAction"
-                text: qsTr("Build Review")
-                icon.name: "office-chart-line"
-                checkable: true
-                QQC2.ActionGroup.group: pages
-                onTriggered: root.show(pobPage)
             },
             // popup and hotkeys, and how it looks, one level down
             Kirigami.Action {

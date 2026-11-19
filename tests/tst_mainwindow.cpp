@@ -2550,21 +2550,27 @@ private Q_SLOTS:
         QCOMPARE(text(w.find(u"enabledSwitch"_s)), u"Judge items with Path of Building"_s);
     }
 
-    void buildReviewSitsApart()
+    void buildReviewTopsGearSettings()
     {
         Window w;
         QVERIFY(w.shown());
-        // a top level row, below Trade and well away from the gear entries
+        // not a row of its own at the top, but the first in Gear Settings
+        QTRY_VERIFY(w.sidebarRow(u"Gear Settings"_s));
+        QVERIFY(!w.sidebarRow(u"Build Review"_s));
+        QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Build Review"_s));
         const auto top = [&](const QString &text) {
             QQuickItem *row = w.sidebarRow(text);
             return row ? row->mapToScene(QPointF(0, 0)).y() : -1.0;
         };
-        QVERIFY(top(u"Build Review"_s) > top(u"Trade"_s));
-        QVERIFY(top(u"Build Review"_s) > top(u"Item History"_s));
-        QVERIFY(top(u"Your Gear"_s) < top(u"Gear Settings"_s));
-        QVERIFY(top(u"Build Review"_s) - top(u"Gear Settings"_s) >
-                2 * (top(u"Gear Settings"_s) - top(u"Your Gear"_s)));
+        QVERIFY(top(u"Build Review"_s) > top(u"Back"_s));
+        QVERIFY(top(u"Build Review"_s) < top(u"Characters"_s));
+        // and the sidebar stays there while it's shown
+        QVERIFY(w.clickRow(u"Build Review"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Build Review"_s);
+        QTest::qWait(500);
+        QVERIFY(w.sidebarRow(u"Back"_s));
+        QCOMPARE(w.sidebarRow(u"Build Review"_s)->property("checked").toBool(), true);
     }
 
     void itemHistoryName()
@@ -3576,15 +3582,15 @@ private Q_SLOTS:
         QCOMPARE(style->property("plain").toBool(), false);
     }
 
-    // Gear Score, Stat Weights and Ignored Stats are one level down, under Gear
+    // Build Review, Characters, Gear Score, Stat Weights and Ignored Stats are one level down, under Gear
     void gearPagesAreUnderGear()
     {
         Window w;
         QObject *group = w.window->findChild<QObject *>(u"gearGroupAction"_s);
         QVERIFY(group);
         QCOMPARE(group->property("text").toString(), u"Gear Settings"_s);
-        for (const QString &name :
-             {u"charactersAction"_s, u"gearScoreAction"_s, u"weightsAction"_s, u"ignoredAction"_s}) {
+        for (const QString &name : {u"pobAction"_s, u"charactersAction"_s, u"gearScoreAction"_s,
+                                    u"weightsAction"_s, u"ignoredAction"_s}) {
             QObject *action = w.window->findChild<QObject *>(name);
             QVERIFY2(action, qPrintable(name));
             QCOMPARE(action->parent(), group);
@@ -3603,6 +3609,8 @@ private Q_SLOTS:
         QVERIFY(w.show(u"gearScoreAction"_s));
         QCOMPARE(group->property("checked").toBool(), true);
         QVERIFY(w.show(u"charactersAction"_s));
+        QCOMPARE(group->property("checked").toBool(), true);
+        QVERIFY(w.show(u"pobAction"_s));
         QCOMPARE(group->property("checked").toBool(), true);
         QVERIFY(w.show(u"checkedAction"_s));
         QCOMPARE(group->property("checked").toBool(), false);
