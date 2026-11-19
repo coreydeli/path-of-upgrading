@@ -1789,6 +1789,40 @@ private Q_SLOTS:
         QVERIFY(!w.find(u"tile:Helmet"_s)->property("chosen").toBool());
     }
 
+    // Whether the slot panel's frame goes round all it shows, down to its
+    // last chip, and the board round the panel.
+    static bool holdsItsContent(Window &w)
+    {
+        auto *panel = qobject_cast<QQuickItem *>(w.find(u"slotPanel"_s));
+        auto *board = qobject_cast<QQuickItem *>(w.find(u"equipment"_s));
+        if (!panel || !board)
+            return false;
+        const QList<QObject *> shown = findAll(panel, u"panelContent"_s) + findAll(panel, u"statChip"_s);
+        for (QObject *o : shown) {
+            auto *item = qobject_cast<QQuickItem *>(o);
+            if (item && item->isVisible() &&
+                item->mapToItem(panel, QPointF(0, item->height())).y() > panel->height())
+                return false;
+        }
+        return !shown.isEmpty() &&
+               panel->mapToItem(board, QPointF(0, panel->height())).y() <= board->height();
+    }
+
+    void equipmentPanelHoldsItsContent()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+        // a short slot first, so the taller ones after it have to grow the panel
+        for (const QString &slot : {u"Weapon"_s, u"Helmet"_s, u"Gloves"_s, u"Helmet"_s}) {
+            QVERIFY(click(w.find(u"tile:"_s + slot)));
+            QTRY_COMPARE(text(w.find(u"panelSlot"_s)), slot);
+            QVERIFY(w.settled());
+            QVERIFY2(holdsItsContent(w), qPrintable(slot));
+        }
+    }
+
     void uniqueSlotNotes()
     {
         const Item belt = item(u"Item Class: Belts\nRarity: Unique\nCoil of Ash\nRawhide Belt\n--------\n+40 "

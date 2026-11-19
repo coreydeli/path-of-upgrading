@@ -16,7 +16,10 @@ Item {
 
     // whether there's a slot to show yet
     readonly property bool picked: shown.count > 0
-    readonly property real contentHeight: picked ? shown.itemAt(0).implicitHeight : hint.implicitHeight
+    // From the column holding the slot, not from the Repeater's item, as a
+    // binding to that one keeps the first slot's height when another takes
+    // its place.
+    readonly property real contentHeight: picked ? body.implicitHeight : hint.implicitHeight
 
     implicitWidth: Kirigami.Units.gridUnit * 20
     implicitHeight: contentHeight + 2 * Kirigami.Units.gridUnit
@@ -51,175 +54,182 @@ Item {
         text: qsTr("Pick a slot to see what would improve it.")
     }
 
-    Repeater {
-        id: shown
+    ColumnLayout {
+        id: body
 
-        model: panel.upgrades.chosen !== "" ? chosenSlot : 0
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: parent.top
+            margins: Kirigami.Units.gridUnit
+        }
+        spacing: 0
 
-        delegate: ColumnLayout {
-            id: content
+        Repeater {
+            id: shown
 
-            required property string slot
-            required property string name
-            required property string base
-            required property bool fromPob
-            required property string rarity
-            required property string score
-            required property string grade
-            required property var notes
+            model: panel.upgrades.chosen !== "" ? chosenSlot : 0
 
-            anchors {
-                left: parent.left
-                right: parent.right
-                top: parent.top
-                margins: Kirigami.Units.gridUnit
-            }
-            spacing: Kirigami.Units.largeSpacing
-            objectName: "panelContent"
+            delegate: ColumnLayout {
+                id: content
 
-            RowLayout {
+                required property string slot
+                required property string name
+                required property string base
+                required property bool fromPob
+                required property string rarity
+                required property string score
+                required property string grade
+                required property var notes
+
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.largeSpacing
+                objectName: "panelContent"
 
-                ColumnLayout {
+                RowLayout {
                     Layout.fillWidth: true
-                    spacing: 0
+                    spacing: Kirigami.Units.largeSpacing
 
-                    QQC2.Label {
-                        objectName: "panelSlot"
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        text: Words.slot(content.slot)
-                        color: Style.accent(Kirigami.Theme)
-                        font: Style.sectionFont(Kirigami.Theme.defaultFont)
-                        elide: Text.ElideRight
-                        Accessible.role: Accessible.Heading
-                    }
+                        spacing: 0
 
-                    QQC2.Label {
-                        objectName: "panelItem"
-                        Layout.fillWidth: true
-                        text: content.name !== "" ? content.name : qsTr("Nothing saved yet")
-                        color: content.name !== "" ? Style.rarity(content.rarity, Kirigami.Theme) : Kirigami.Theme.disabledTextColor
-                        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
-                        wrapMode: Text.Wrap
-                    }
-
-                    QQC2.Label {
-                        objectName: "panelBase"
-                        Layout.fillWidth: true
-                        visible: text !== ""
-                        text: {
-                            const parts = [];
-                            if (content.name !== "" && content.base !== "")
-                                parts.push(content.base);
-                            if (content.name !== "" && content.fromPob)
-                                parts.push(qsTr("from Path of Building"));
-                            return parts.join(", ");
+                        QQC2.Label {
+                            objectName: "panelSlot"
+                            Layout.fillWidth: true
+                            text: Words.slot(content.slot)
+                            color: Style.accent(Kirigami.Theme)
+                            font: Style.sectionFont(Kirigami.Theme.defaultFont)
+                            elide: Text.ElideRight
+                            Accessible.role: Accessible.Heading
                         }
-                        color: Kirigami.Theme.disabledTextColor
-                        font: Kirigami.Theme.smallFont
-                        wrapMode: Text.Wrap
+
+                        QQC2.Label {
+                            objectName: "panelItem"
+                            Layout.fillWidth: true
+                            text: content.name !== "" ? content.name : qsTr("Nothing saved yet")
+                            color: content.name !== "" ? Style.rarity(content.rarity, Kirigami.Theme) : Kirigami.Theme.disabledTextColor
+                            font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                            wrapMode: Text.Wrap
+                        }
+
+                        QQC2.Label {
+                            objectName: "panelBase"
+                            Layout.fillWidth: true
+                            visible: text !== ""
+                            text: {
+                                const parts = [];
+                                if (content.name !== "" && content.base !== "")
+                                    parts.push(content.base);
+                                if (content.name !== "" && content.fromPob)
+                                    parts.push(qsTr("from Path of Building"));
+                                return parts.join(", ");
+                            }
+                            color: Kirigami.Theme.disabledTextColor
+                            font: Kirigami.Theme.smallFont
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    ScoreGauge {
+                        objectName: "panelGauge"
+                        Layout.alignment: Qt.AlignTop
+                        visible: content.score !== ""
+                        score: content.score
+                        grade: content.grade
+                        size: "medium"
                     }
                 }
 
-                ScoreGauge {
-                    objectName: "panelGauge"
-                    Layout.alignment: Qt.AlignTop
-                    visible: content.score !== ""
-                    score: content.score
-                    grade: content.grade
-                    size: "medium"
-                }
-            }
+                RowRule {}
 
-            RowRule {}
-
-            SlotNotes {
-                objectName: "panelNotes"
-                Layout.fillWidth: true
-                visible: content.notes.length > 0
-                lines: content.notes
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                visible: lookFor.text !== ""
-                spacing: Kirigami.Units.largeSpacing
-
-                NoteLabel {
-                    objectName: "panelLookForLabel"
-                    text: qsTr("Look for")
-                    help: panel.upgrades.lookForHelp
-                }
-
-                StatChips {
-                    id: lookFor
-
-                    objectName: "panelLookFor"
+                SlotNotes {
+                    objectName: "panelNotes"
                     Layout.fillWidth: true
-                    stats: panel.upgrades.chosenLookForStats
-                    text: panel.upgrades.chosenLookFor
-                }
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                visible: panel.upgrades.chosenCanRoll.length > 0
-                spacing: Kirigami.Units.largeSpacing
-
-                NoteLabel {
-                    objectName: "panelCanRollLabel"
-                    text: qsTr("Can roll")
-                    help: panel.upgrades.canRollHelp
+                    visible: content.notes.length > 0
+                    lines: content.notes
                 }
 
-                StatChips {
-                    objectName: "panelCanRoll"
+                RowLayout {
                     Layout.fillWidth: true
-                    stats: panel.upgrades.chosenCanRoll
-                    text: panel.upgrades.chosenCanRoll.join("\n")
-                }
-            }
+                    visible: lookFor.text !== ""
+                    spacing: Kirigami.Units.largeSpacing
 
-            TradeStatus {
-                objectName: "panelTradeStatus"
-                Layout.fillWidth: true
-                trade: panel.upgrades.chosenTrade
-            }
+                    NoteLabel {
+                        objectName: "panelLookForLabel"
+                        text: qsTr("Look for")
+                        help: panel.upgrades.lookForHelp
+                    }
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Kirigami.Units.smallSpacing
+                    StatChips {
+                        id: lookFor
 
-                QQC2.Button {
-                    objectName: "panelFind"
-                    highlighted: true
-                    visible: panel.upgrades.tradeAvailable && panel.upgrades.chosenWorn
-                    enabled: !panel.upgrades.chosenTrade.busy
-                    text: qsTr("Find an Upgrade")
-                    icon.name: "edit-find"
-                    onClicked: panel.upgrades.findChosen()
+                        objectName: "panelLookFor"
+                        Layout.fillWidth: true
+                        stats: panel.upgrades.chosenLookForStats
+                        text: panel.upgrades.chosenLookFor
+                    }
                 }
 
-                QQC2.Button {
-                    objectName: "panelShowResults"
-                    visible: panel.upgrades.chosenTrade.listed
-                    text: qsTr("Show Results")
-                    icon.name: "view-list-details"
-                    onClicked: panel.upgrades.showChosenResults()
-                }
-
-                Item {
+                RowLayout {
                     Layout.fillWidth: true
+                    visible: panel.upgrades.chosenCanRoll.length > 0
+                    spacing: Kirigami.Units.largeSpacing
+
+                    NoteLabel {
+                        objectName: "panelCanRollLabel"
+                        text: qsTr("Can roll")
+                        help: panel.upgrades.canRollHelp
+                    }
+
+                    StatChips {
+                        objectName: "panelCanRoll"
+                        Layout.fillWidth: true
+                        stats: panel.upgrades.chosenCanRoll
+                        text: panel.upgrades.chosenCanRoll.join("\n")
+                    }
                 }
 
-                QQC2.Button {
-                    objectName: "panelTakeOff"
-                    visible: content.name !== ""
-                    text: qsTr("Unequip")
-                    icon.name: "list-remove"
-                    Accessible.name: qsTr("Unequip %1").arg(Words.slot(content.slot))
-                    onClicked: panel.gear.takeOff(content.slot)
+                TradeStatus {
+                    objectName: "panelTradeStatus"
+                    Layout.fillWidth: true
+                    trade: panel.upgrades.chosenTrade
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Kirigami.Units.smallSpacing
+
+                    QQC2.Button {
+                        objectName: "panelFind"
+                        highlighted: true
+                        visible: panel.upgrades.tradeAvailable && panel.upgrades.chosenWorn
+                        enabled: !panel.upgrades.chosenTrade.busy
+                        text: qsTr("Find an Upgrade")
+                        icon.name: "edit-find"
+                        onClicked: panel.upgrades.findChosen()
+                    }
+
+                    QQC2.Button {
+                        objectName: "panelShowResults"
+                        visible: panel.upgrades.chosenTrade.listed
+                        text: qsTr("Show Results")
+                        icon.name: "view-list-details"
+                        onClicked: panel.upgrades.showChosenResults()
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    QQC2.Button {
+                        objectName: "panelTakeOff"
+                        visible: content.name !== ""
+                        text: qsTr("Unequip")
+                        icon.name: "list-remove"
+                        Accessible.name: qsTr("Unequip %1").arg(Words.slot(content.slot))
+                        onClicked: panel.gear.takeOff(content.slot)
+                    }
                 }
             }
         }
