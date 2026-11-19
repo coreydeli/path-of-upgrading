@@ -2559,6 +2559,9 @@ private Q_SLOTS:
         QVERIFY(!w.sidebarRow(u"Build Review"_s));
         QVERIFY(w.clickRow(u"Gear Settings"_s));
         QTRY_VERIFY(w.sidebarRow(u"Build Review"_s));
+        // the top level's rows linger while the group slides in, Your Gear where Build Review goes
+        QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
+        QTRY_VERIFY(!w.sidebarRow(u"Your Gear"_s));
         const auto top = [&](const QString &text) {
             QQuickItem *row = w.sidebarRow(text);
             return row ? row->mapToScene(QPointF(0, 0)).y() : -1.0;
@@ -3691,9 +3694,11 @@ private Q_SLOTS:
         QTRY_VERIFY(w.sidebarRow(u"Gear Score"_s));
         QTRY_VERIFY(!w.sidebarRow(u"Item History"_s));
 
-        // Back, then the four pages
+        // Back, then the five pages
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Back"_s);
+        QTest::keyClick(w.window.get(), Qt::Key_Tab);
+        QCOMPARE(w.focusedRow(), u"Build Review"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
         QCOMPARE(w.focusedRow(), u"Characters"_s);
         QTest::keyClick(w.window.get(), Qt::Key_Tab);
