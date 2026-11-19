@@ -90,6 +90,13 @@ QtObject {
             label: { family: "Cinzel", weight: Font.Medium, caps: false, spacing: 1.2, scale: 0.92 },
             figure: { family: "Cinzel", weight: Font.DemiBold, scale: 1.7 },
             title: { weight: Font.DemiBold, caps: false, spacing: 1, scale: 1.4 }
+        },
+        "cinder": {
+            xs: 0, s: 0, m: 0, l: 0, xl: 0, button: 0, pill: false,
+            line: 0.3, rule: 0.16, framed: true, chip: "box", shadow: 4,
+            label: { family: "JetBrains Mono", weight: Font.Medium, caps: true, spacing: 0.9, scale: 0.85 },
+            figure: { family: "JetBrains Mono", weight: Font.Bold, scale: 1.6 },
+            title: { weight: Font.Bold, caps: true, spacing: 0.8, scale: 1.35 }
         }
     })
     readonly property var spec: looks[design] ?? looks["dossier"]
@@ -104,8 +111,10 @@ QtObject {
     readonly property bool pill: spec.pill
     // whether the cards have a line round them
     readonly property bool framed: spec.framed
-    // how a stat chip is drawn: plate, outline, tick, pill, edge or hairline
+    // how a stat chip is drawn: plate, outline, tick, pill, edge, hairline
+    // or box, and `shadow` is the width in pixels of a hard shadow under a card, if it has one
     readonly property string chip: spec.chip
+    readonly property real shadow: spec.shadow ?? 0
 
     // the family the page titles are in, which the app sets from the settings
     property string headingFamily: "Big Shoulders Display"
