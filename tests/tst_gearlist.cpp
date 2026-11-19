@@ -257,8 +257,11 @@ private Q_SLOTS:
         QCOMPARE(notes.size(), int(!score.missing.isEmpty()) + int(!score.notScored.isEmpty()) +
                                    int(!weakRolls(score).isEmpty()));
 
-        // a unique has no gear score, so nothing to improve
-        QCOMPARE(notesOf(g.in(u"Belt"_s, GearList::NotesRole)), QList<QStringList>());
+        // a unique has no gear score, so nothing to improve, only why and how it's judged
+        const QList<QStringList> unique = notesOf(g.in(u"Belt"_s, GearList::NotesRole));
+        QCOMPARE(unique.size(), 2);
+        QCOMPARE(unique.at(0).first(), u"Unique"_s);
+        QCOMPARE(unique.at(1).first(), u"Judged by"_s);
         QVERIFY(!notesOf(g.in(u"Jewel 3"_s, GearList::NotesRole)).isEmpty());
     }
 
