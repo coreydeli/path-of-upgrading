@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "core/item.h"
+
 #include <QJsonObject>
 #include <QList>
 #include <QString>
@@ -36,6 +38,9 @@ public:
     // class isn't in the table. Keys go by case, as the game's text has
     // "damage" and "Damage" for the same stat.
     QList<ModTier> tiers(const QString &itemClass, const QString &key) const;
+    // Whether a class rolls the stat as a prefix or a suffix. Unknown when the
+    // class or stat isn't in the table, or when the class has it as both.
+    AffixKind kind(const QString &itemClass, const QString &key) const;
     // False when the table has the class and the class can't roll the stat as
     // a prefix or suffix. A class the table doesn't have (the weapon slot,
     // jewels) is allowed anything, as nothing says otherwise.
@@ -53,6 +58,7 @@ public:
 private:
     // lower case class, then lower case key
     QHash<QString, QHash<QString, QList<ModTier>>> m_classes;
+    QHash<QString, QHash<QString, AffixKind>> m_kinds;
     QString m_version;
     QString m_date;
 };

@@ -48,12 +48,29 @@ SlotMods SlotMods::fromJson(const QJsonObject &table)
                 into.insert(key.key().toLower(), tiers);
         }
     }
+    const QJsonObject kinds = table.value(u"kinds").toObject();
+    for (auto cls = kinds.constBegin(); cls != kinds.constEnd(); ++cls) {
+        const QJsonObject keys = cls.value().toObject();
+        QHash<QString, AffixKind> &into = mods.m_kinds[cls.key().toLower()];
+        for (auto key = keys.constBegin(); key != keys.constEnd(); ++key) {
+            const QString kind = key.value().toString();
+            if (kind == u"p")
+                into.insert(key.key().toLower(), AffixKind::Prefix);
+            else if (kind == u"s")
+                into.insert(key.key().toLower(), AffixKind::Suffix);
+        }
+    }
     return mods;
 }
 
 QList<ModTier> SlotMods::tiers(const QString &itemClass, const QString &key) const
 {
     return m_classes.value(itemClass.trimmed().toLower()).value(key.toLower());
+}
+
+AffixKind SlotMods::kind(const QString &itemClass, const QString &key) const
+{
+    return m_kinds.value(itemClass.trimmed().toLower()).value(key.toLower(), AffixKind::Unknown);
 }
 
 bool SlotMods::allows(const QString &itemClass, const QString &key) const

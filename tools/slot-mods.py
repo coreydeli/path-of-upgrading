@@ -14,6 +14,10 @@ For each item class it lists the prefixes and suffixes a base of that class
 can roll, by the stat text with its numbers taken out, as the app keys item
 stats, and each one's tiers as [item level, low, high], with a 1 on the end for
 those of hybrid mods (more than one stat), whose ranges are their own.
+
+It also says whether each stat is a prefix ("p") or a suffix ("s") on that
+class, under "kinds". A stat that is a prefix on one mod and a suffix on
+another of the same class is left out, as nothing says which one an item has.
 """
 import datetime
 import json
@@ -110,6 +114,7 @@ def read_mods(folder):
     mods = []
     for line in MOD.finditer((folder / "Data" / "ModItem.lua").read_text(encoding="utf-8")):
         text = line.group(0)
+        kind = "p" if line.group(1) == "Prefix" else "s"
         level = int(re.search(r"level = (\d+)", text).group(1))
         keys = re.search(r"weightKey = \{([^}]*)\}", text).group(1)
         weights = re.search(r"weightVal = \{([^}]*)\}", text).group(1)
@@ -139,7 +144,7 @@ def read_mods(folder):
                 stats.append((key, float(fixed[0]), float(fixed[0])))
         if stats:
             # a hybrid mod gives more than one stat, and its ranges are its own
-            mods.append((level, keys, weights, stats, len(lines) > 1))
+            mods.append((level, keys, weights, stats, len(lines) > 1, kind))
     return mods
 
 
@@ -158,14 +163,18 @@ def main(folder, out):
     bases = read_bases(folder)
     mods = read_mods(folder)
     classes = {}
+    kinds = {}
     for cls in sorted({cls for cls, _ in bases}):
         tag_sets = [tags for c, tags in bases if c == cls]
         found = {}
-        for level, keys, weights, stats, hybrid in mods:
+        seen = {}
+        for level, keys, weights, stats, hybrid, kind in mods:
             if not any(weight_for(keys, weights, tags) > 0 for tags in tag_sets):
                 continue
             for key, low, high in stats:
                 found.setdefault(key, set()).add((level, number(low), number(high), hybrid))
+                seen.setdefault(key, set()).add(kind)
+        kinds[cls] = {key: next(iter(k)) for key, k in sorted(seen.items()) if len(k) == 1}
         classes[cls] = {key: [tier(t) for t in sorted(tiers, reverse=True)] for key, tiers in sorted(found.items())}
 
     version = re.search(r'number="([^"]+)"', (folder / "manifest.xml").read_text(encoding="utf-8"))
@@ -174,7 +183,9 @@ def main(folder, out):
         "version": version.group(1) if version else "unknown",
         "date": datetime.date.today().isoformat(),
         "tiers": "[item level, low, high], the highest item level first, with a 1 on the end when the mod is a hybrid",
+        "kindsNote": "p for a prefix and s for a suffix, by class and stat, left out when a class has the stat as both",
         "classes": classes,
+        "kinds": kinds,
     }
     Path(out).write_text(json.dumps(table, separators=(",", ":"), ensure_ascii=False) + "\n", encoding="utf-8")
 
