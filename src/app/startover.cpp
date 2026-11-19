@@ -44,7 +44,8 @@ void StartOver::removeFiles()
 {
     m_problems << removeOwnPaths({{.what = u"your settings"_s, .path = m_places.settings},
                                   {.what = u"your characters and items"_s, .path = m_places.data},
-                                  {.what = u"the saved site data and downloads"_s, .path = m_places.cache}},
+                                  {.what = u"the saved site data and downloads"_s,
+                                   .path = ownFolderOf(m_places.cache, m_places.marker)}},
                                  m_places.marker);
     m_busy = false;
     if (m_problems.isEmpty() && (!m_restart || !m_restart()))
