@@ -7,8 +7,8 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Goes through what a new user sets first: the league, trade searches, a
-// character, and the key to press over an item. It opens on the first run, or
+// Goes through what a new user sets first: the league, the look, trade
+// searches, a character, and the key to press over an item. It opens on the first run, or
 // with --setup, once the window is up. Skipping it counts as done.
 FormCard.FormCardDialog {
     id: guide
@@ -20,7 +20,7 @@ FormCard.FormCardDialog {
     property string step: "welcome"
     // There's no trading in solo self-found, so the trade step is left out,
     // and a release has no trade at all.
-    readonly property var steps: app.tradeOffered && !app.tradeOptions.soloSelfFound ? ["welcome", "league", "trade", "character", "done"] : ["welcome", "league", "character", "done"]
+    readonly property var steps: app.tradeOffered && !app.tradeOptions.soloSelfFound ? ["welcome", "league", "trade", "character", "look", "done"] : ["welcome", "league", "character", "look", "done"]
     readonly property bool wanted: windowShown && app.onboarding.pending
 
     function begin(): void {
@@ -53,6 +53,8 @@ FormCard.FormCardDialog {
         switch (step) {
         case "league":
             return qsTr("Pick Your League");
+        case "look":
+            return qsTr("Pick a Look");
         case "trade":
             return qsTr("Searching the Trade Site");
         case "character":
@@ -119,6 +121,13 @@ FormCard.FormCardDialog {
                 Layout.fillWidth: true
                 options: guide.app.tradeOptions
                 tradeOffered: guide.app.tradeOffered
+            }
+
+            SetupLookStep {
+                objectName: "lookStep"
+                visible: guide.step === "look"
+                Layout.fillWidth: true
+                appearance: guide.app.appearance
             }
 
             SetupTradeStep {

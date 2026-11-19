@@ -2825,7 +2825,7 @@ private Q_SLOTS:
         QObject *guide = w.guide();
         QTRY_VERIFY(guide->property("opened").toBool());
         QCOMPARE(guide->property("steps").toStringList(),
-                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
+                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"look"_s, u"done"_s}));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QCOMPARE(guide->property("title").toString(), u"Pick Your League"_s);
         QVERIFY(isVisible(w.inGuide(u"leagueStep"_s)));
@@ -2858,7 +2858,7 @@ private Q_SLOTS:
         QVERIFY(!w.app->trade().unavailable().isEmpty());
         QVERIFY(!w.app->checker().popup().isTradeAvailable());
         QCOMPARE(guide->property("steps").toStringList(),
-                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"done"_s}));
+                 (QStringList{u"welcome"_s, u"league"_s, u"character"_s, u"look"_s, u"done"_s}));
         QVERIFY(w.inGuide(u"setupSoloSwitch"_s)
                     ->property("description")
                     .toString()
@@ -3436,13 +3436,19 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.design, Design::Dossier);
     }
 
+    // every look, light and dark where it has both
     void everyPageLoadsUnderEachDesign_data()
     {
         QTest::addColumn<QString>("design");
         QTest::addColumn<QString>("brightness");
-        QTest::newRow("dossier") << u"dossier"_s << u"desktop"_s;
-        QTest::newRow("material light") << u"material"_s << u"light"_s;
-        QTest::newRow("material dark") << u"material"_s << u"dark"_s;
+        for (const DesignInfo &info : designs()) {
+            if (!info.hasLight) {
+                QTest::newRow(qPrintable(info.id)) << info.id << u"desktop"_s;
+                continue;
+            }
+            QTest::newRow(qPrintable(info.id + u" light"_s)) << info.id << u"light"_s;
+            QTest::newRow(qPrintable(info.id + u" dark"_s)) << info.id << u"dark"_s;
+        }
     }
 
     // QTest::failOnWarning() would catch a page that can't load or bind
@@ -3459,6 +3465,51 @@ private Q_SLOTS:
             QVERIFY2(w.show(action), qPrintable(action));
             QVERIFY(w.settled());
         }
+    }
+
+    void thePopupLoadsUnderEachDesign_data() { everyPageLoadsUnderEachDesign_data(); }
+
+    // the popup is another window on the same engine
+    void thePopupLoadsUnderEachDesign()
+    {
+        QFETCH(QString, design);
+        QFETCH(QString, brightness);
+        Window w(true, false, QStringLiteral(COLORS));
+        w.play({{u"Helmet"_s, item(itemtexts::helmetOld)}});
+        w.app->appearance()->setBrightness(brightness);
+        w.app->appearance()->setDesign(design);
+        QVERIFY(w.shown());
+        w.app->history().add(item(itemtexts::helmetNew));
+        QVERIFY(w.show(u"checkedAction"_s));
+        ItemPopup &popup = w.app->checker().popup();
+        QVERIFY(click(w.find(u"checked:0"_s)->findChild<QObject *>(u"checkAgainButton"_s)));
+        QVERIFY(popup.isVisible());
+        QVERIFY(QQuickTest::qWaitForPolish(popup.window()));
+    }
+
+    void theLookIsPickedInTheSetupGuideToo()
+    {
+        Window w(true, false, QStringLiteral(COLORS), std::nullopt, false);
+        QObject *guide = w.guide();
+        QTRY_VERIFY(guide->property("opened").toBool());
+        // welcome, league, character, then the look
+        for (int i = 0; i < 3; ++i)
+            QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QCOMPARE(guide->property("title").toString(), u"Pick a Look"_s);
+        QVERIFY(isVisible(w.inGuide(u"lookStep"_s)));
+        // a swatch for each, with the one it has picked
+        for (const DesignInfo &info : designs())
+            QVERIFY2(w.inGuide(u"lookSwatch:"_s + info.id), qPrintable(info.id));
+        QCOMPARE(w.settings().appearance.design, Design::Dossier);
+        QVERIFY(w.inGuide(u"lookSwatch:dossier"_s)->property("current").toBool());
+
+        QVERIFY(click(w.inGuide(u"lookSwatch:material"_s)));
+        QCOMPARE(w.settings().appearance.design, Design::Material);
+        QVERIFY(w.inGuide(u"lookSwatch:material"_s)->property("current").toBool());
+        QVERIFY(!w.inGuide(u"lookSwatch:dossier"_s)->property("current").toBool());
+        // which is the choice Appearance has
+        QVERIFY(w.show(u"appearanceAction"_s));
+        QCOMPARE(w.find(u"designBox"_s)->property("currentText").toString(), u"Material"_s);
     }
 
     void styleFollowsTheDesign()
@@ -4236,6 +4287,10 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.inGuide(u"characterStep"_s)));
 
         QVERIFY(click(next));
+        QCOMPARE(guide->property("title").toString(), u"Pick a Look"_s);
+        QVERIFY(isVisible(w.inGuide(u"lookStep"_s)));
+
+        QVERIFY(click(next));
         QCOMPARE(guide->property("title").toString(), u"You're All Set"_s);
         QVERIFY(isVisible(w.inGuide(u"doneStep"_s)));
         QCOMPARE(text(next), u"Finish"_s);
@@ -4458,6 +4513,8 @@ private Q_SLOTS:
         QCOMPARE(text(code), u"nonsense"_s);
         QCOMPARE(w.app->characterList()->rowCount(), 0);
         // and it can be left for later
+        QVERIFY(click(w.inGuide(u"nextButton"_s)));
+        QVERIFY(isVisible(w.inGuide(u"lookStep"_s)));
         QVERIFY(click(w.inGuide(u"nextButton"_s)));
         QVERIFY(isVisible(w.inGuide(u"doneStep"_s)));
     }

@@ -106,6 +106,7 @@ qt_add_qml_module(pou_app
         qml/SetupCharacterStep.qml
         qml/SetupGuide.qml
         qml/SetupLeagueStep.qml
+        qml/SetupLookStep.qml
         qml/SetupTradeStep.qml
         qml/Style.qml
         qml/SwitchRow.qml
