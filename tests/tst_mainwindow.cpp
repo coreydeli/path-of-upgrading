@@ -1129,6 +1129,9 @@ private Q_SLOTS:
         for (qsizetype i = 0; i < notes.size(); ++i) {
             QVERIFY(isVisible(labels.at(i)));
             QCOMPARE(text(labels.at(i)), notes.at(i).label);
+            // which says what it means when hovered
+            QVERIFY(!notes.at(i).help.isEmpty());
+            QCOMPARE(labels.at(i)->property("help").toString(), notes.at(i).help);
             QCOMPARE(text(texts.at(i)), notes.at(i).text);
             // a chip to each stat
             QStringList chips;
@@ -1149,6 +1152,7 @@ private Q_SLOTS:
         QObject *wantsLabel = findAll(gloves, u"noteLabel"_s).value(0);
         QVERIFY(isVisible(wantsLabel));
         QCOMPARE(text(wantsLabel), u"Your build wants"_s);
+        QVERIFY(!wantsLabel->property("help").toString().isEmpty());
         QVERIFY(!text(findAll(gloves, u"noteText"_s).value(0)).isEmpty());
         QVERIFY(!isVisible(search(gloves, [](QObject *o) { return o->objectName() == u"gearScore"; })));
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"takeOffButton"_s)));
@@ -1180,6 +1184,8 @@ private Q_SLOTS:
             const QString lookFor = upgrades->index(i).data(RecommendedUpgrades::LookForRole).toString();
             QVERIFY(lookFor.contains(u" or more"_s));
             QCOMPARE(text(row->findChild<QObject *>(u"lookFor"_s)), lookFor);
+            QCOMPARE(row->findChild<QObject *>(u"lookForLabel"_s)->property("help").toString(),
+                     upgrades->lookForHelp());
             QVERIFY(!isVisible(row->findChild<QObject *>(u"findButton"_s)));
             QVERIFY(!isVisible(row->findChild<QObject *>(u"tradeStatus"_s)));
         }
@@ -1760,6 +1766,8 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
         QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u" at item level "_s));
         QCOMPARE(text(w.find(u"panelCanRoll"_s)), upgrades->chosenCanRoll().join(u'\n'));
+        QCOMPARE(w.find(u"panelLookForLabel"_s)->property("help").toString(), upgrades->lookForHelp());
+        QCOMPARE(w.find(u"panelCanRollLabel"_s)->property("help").toString(), upgrades->canRollHelp());
         QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());
         QVERIFY(!w.find(u"tile:Gloves"_s)->property("chosen").toBool());
 

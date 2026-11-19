@@ -24,11 +24,13 @@ struct GearNote
     Q_PROPERTY(QString label MEMBER label)
     Q_PROPERTY(QString text MEMBER text)
     Q_PROPERTY(QStringList stats MEMBER stats)
+    Q_PROPERTY(QString help MEMBER help)
 
 public:
     QString label;     // "Weak rolls"
     QString text;      // "Mana 13%, Fire Resistance 33%"
     QStringList stats; // the same one by one, which the window shows apart
+    QString help;      // what the label means, for its tooltip
 
     friend bool operator==(const GearNote &, const GearNote &) = default;
 };

@@ -2,6 +2,7 @@
 #include "app/recommendedupgrades.h"
 
 #include "app/activecharacter.h"
+#include "app/notehelp.h"
 #include "app/settingsstore.h"
 #include "app/traderesults.h"
 #include "core/evaluation.h"
@@ -146,6 +147,16 @@ QStringList RecommendedUpgrades::chosenCanRoll() const
 bool RecommendedUpgrades::chosenWorn() const
 {
     return m_active->character().gear.contains(m_chosen);
+}
+
+QString RecommendedUpgrades::lookForHelp()
+{
+    return noteHelp(u"Look for");
+}
+
+QString RecommendedUpgrades::canRollHelp()
+{
+    return noteHelp(u"Can roll");
 }
 
 void RecommendedUpgrades::findChosen()
