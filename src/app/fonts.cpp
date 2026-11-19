@@ -44,6 +44,7 @@ bool addBundledFonts()
         u"BigShouldersText-Medium"_s,
         u"BigShouldersText-Regular"_s,
         u"BigShouldersText-SemiBold"_s,
+        u"Cinzel-Variable"_s,
         u"IBMPlexSans-Variable"_s,
         u"Inter-Variable"_s,
         u"Spectral-Bold"_s,
