@@ -2,6 +2,7 @@
 #include "core/parser.h"
 
 #include "core/numbers.h"
+#include "core/slotmods.h"
 #include "core/slots.h"
 
 #include <QHash>
@@ -150,6 +151,14 @@ QString headerTag(const QString &header)
     return u"explicit"_s;
 }
 
+// Mods with these tags are prefixes or suffixes. Implicits, runes and
+// enchants are neither.
+bool isAffixTag(const QString &tag)
+{
+    return tag == u"explicit" || tag == u"fractured" || tag == u"desecrated" || tag == u"crafted" ||
+           tag == u"mutated";
+}
+
 QList<QStringList> splitBlocks(const QString &text)
 {
     static const QRegularExpression separator(uR"(^-{4,}\s*$)"_s);
@@ -211,6 +220,7 @@ std::optional<Item> parseItem(const QString &input)
 
     static const QRegularExpression classLine(uR"(^Item Class:\s*(.+)$)"_s, CaseInsensitive);
     static const QRegularExpression rarityLine(uR"(^Rarity:\s*(.+)$)"_s, CaseInsensitive);
+    static const QRegularExpression qualityLine(uR"(^Quality(?: \([^)]*\))?:\s*\+?(\d+))"_s, CaseInsensitive);
     static const QRegularExpression itemLevelLine(uR"(^Item Level:\s*(\d+))"_s, CaseInsensitive);
     static const QRegularExpression levelLine(uR"(^Level:\s*(\d+))"_s, CaseInsensitive);
     static const QRegularExpression requiresLine(uR"(^Requires:?\s*Level\s*(\d+))"_s, CaseInsensitive);
@@ -272,6 +282,7 @@ std::optional<Item> parseItem(const QString &input)
     for (qsizetype b = 1; b < blocks.size(); ++b) {
         const QStringList &block = blocks.at(b);
         QString blockTag;
+        AffixKind blockAffix = AffixKind::Unknown;
         for (const QString &line : block) {
             if (line.startsWith(u'{')) {
                 sawHeaders = true;
@@ -280,11 +291,18 @@ std::optional<Item> parseItem(const QString &input)
                 else if (line.contains(u"Suffix Modifier", Qt::CaseInsensitive))
                     ++suffixes;
                 blockTag = headerTag(line);
+                blockAffix = line.contains(u"Prefix Modifier", Qt::CaseInsensitive)   ? AffixKind::Prefix
+                             : line.contains(u"Suffix Modifier", Qt::CaseInsensitive) ? AffixKind::Suffix
+                                                                                      : AffixKind::Unknown;
                 continue;
             }
             // advanced text also shows the roll range: +89(80-99) to maximum Life
             const QString clean = QString(line).replace(rollRange, QString()).replace(unscalable, QString());
 
+            if (const auto m = qualityLine.match(clean); m.hasMatch()) {
+                item.quality = m.captured(1).toInt();
+                continue;
+            }
             if (const auto m = itemLevelLine.match(clean); m.hasMatch()) {
                 item.itemLevel = m.captured(1).toInt();
                 continue;
@@ -347,13 +365,21 @@ std::optional<Item> parseItem(const QString &input)
             QString tag = tagMatch.hasMatch() ? tagMatch.captured(1).toLower() : blockTag;
             if (tag.isEmpty())
                 tag = u"explicit"_s;
+            // a header says it, else the table does, for the item's class
+            const auto affixOf = [&](const QString &key) {
+                if (!isAffixTag(tag))
+                    return AffixKind::Unknown;
+                if (blockAffix != AffixKind::Unknown || key.isEmpty())
+                    return blockAffix;
+                return SlotMods::builtIn().kind(item.itemClass, key);
+            };
             const QString modText =
                 QString(clean).replace(tagPattern(), QString()).replace(tagPattern(), QString()).trimmed();
 
             if (const auto m = legacyLine.match(modText);
                 m.hasMatch() && mageLegacies().contains(m.captured(1).toLower())) {
                 legacyNames << capitalized(m.captured(1));
-                item.lines << ItemLine{line, {}, 0, tag};
+                item.lines << ItemLine{line, {}, 0, tag, affixOf({})};
                 continue;
             }
 
@@ -361,11 +387,11 @@ std::optional<Item> parseItem(const QString &input)
             if (!stat) {
                 // flavour text and keyword mods without numbers
                 if (block.size() <= 6 && item.rarity != u"Unique")
-                    item.lines << ItemLine{line, {}, 0, tag};
+                    item.lines << ItemLine{line, {}, 0, tag, affixOf({})};
                 continue;
             }
             add(stat->first, stat->second);
-            item.lines << ItemLine{line, stat->first, stat->second, tag};
+            item.lines << ItemLine{line, stat->first, stat->second, tag, affixOf(stat->first)};
         }
     }
 

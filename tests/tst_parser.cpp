@@ -139,6 +139,54 @@ private Q_SLOTS:
         QCOMPARE(lineWith(*it, u"Mana").tag, u"explicit"_s);
     }
 
+    void headersSayPrefixOrSuffix()
+    {
+        const auto it =
+            parseItem(u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSorcerer Gloves\n--------\n"
+                      "{ Implicit Modifier }\n+5% to Fire Resistance\n--------\n"
+                      "{ Prefix Modifier \"Hale\" (Tier: 3) — Life }\n+33(33-41) to maximum Life\n"
+                      "{ Prefix Modifier \"Shining\" (Tier: 2) — Defences, Energy Shield }\n"
+                      "75(68-79)% increased Energy Shield\n+20(18-22) to maximum Energy Shield\n"
+                      "{ Suffix Modifier \"of the Squall\" (Tier: 3) — Resistance }\n"
+                      "+39(36-40)% to Lightning Resistance"_s);
+        QCOMPARE(lineWith(*it, u"Life").affix, AffixKind::Prefix);
+        // both lines of a hybrid mod
+        QCOMPARE(lineWith(*it, u"increased Energy Shield").affix, AffixKind::Prefix);
+        QCOMPARE(lineWith(*it, u"to maximum Energy Shield").affix, AffixKind::Prefix);
+        QCOMPARE(lineWith(*it, u"Lightning").affix, AffixKind::Suffix);
+        QCOMPARE(lineWith(*it, u"Fire").affix, AffixKind::Unknown);
+    }
+
+    void aHeaderBeatsTheTable()
+    {
+        // the table has maximum Life as a prefix on gloves
+        const auto it = parseItem(u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSorcerer Gloves\n--------\n"
+                                  "{ Suffix Modifier \"of Odd\" (Tier: 1) }\n+33(33-41) to maximum Life"_s);
+        QCOMPARE(lineWith(*it, u"Life").affix, AffixKind::Suffix);
+    }
+
+    void plainCopiesTakeTheKindFromTheTable()
+    {
+        const auto it = parseItem(u"Item Class: Rings\nRarity: Rare\nEmpyrean Gyre\nIron Ring\n--------\n"
+                                  "Item Level: 81\n--------\n+5% to Fire Resistance (rune)\n--------\n"
+                                  "+56 to maximum Mana\n+39% to Lightning Resistance (fractured)\n"
+                                  "Adds 1 to 4 Physical Damage to Attacks"_s);
+        QVERIFY(!it->affixes.known);
+        QCOMPARE(lineWith(*it, u"Lightning").affix, AffixKind::Suffix);
+        QCOMPARE(lineWith(*it, u"Lightning").tag, u"fractured"_s);
+        QCOMPARE(lineWith(*it, u"Physical").affix, AffixKind::Prefix);
+        // a rune is neither
+        QCOMPARE(lineWith(*it, u"Fire").affix, AffixKind::Unknown);
+    }
+
+    void qualityIsRead()
+    {
+        QCOMPARE(parseItem(itemtexts::helmetNew)->quality, 20);
+        const auto none =
+            parseItem(u"Item Class: Rings\nRarity: Rare\nA\nIron Ring\n--------\n+5 to Dexterity"_s);
+        QCOMPARE(none->quality, 0);
+    }
+
     void weaponDps()
     {
         const auto mace = parseItem(itemtexts::twoHandMace);
