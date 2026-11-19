@@ -79,7 +79,8 @@ private Q_SLOTS:
         }
         QVERIFY(names.contains(u"Big Shoulders"_s));
         QVERIFY(names.contains(u"Spectral"_s));
-        QVERIFY(!names.contains(u"Cinzel"_s));
+        // Gilt brings it back for its titles
+        QVERIFY(names.contains(u"Cinzel"_s));
         QVERIFY(names.contains(u"Path of Building Community"_s));
     }
 

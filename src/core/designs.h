@@ -11,8 +11,9 @@ namespace pou {
 // The looks the app has. Dossier is the app's own and the default, Material
 // follows Google's Material Design 3, and Slate is a dense, calm panel,
 // Pocket is rounded and roomy,
-// and Edge is flat with a colored edge for the meaning.
-enum class Design { Dossier, Material, Slate, Pocket, Edge };
+// and Edge is flat with a colored edge for the meaning,
+// and Gilt is quiet and premium, with thin gold lines.
+enum class Design { Dossier, Material, Slate, Pocket, Edge, Gilt };
 
 // What the app knows of a look outside its drawing: what the pickers say about
 // it, the faces its headings and text are set in, and its color schemes. The
