@@ -5,7 +5,8 @@ import org.kde.kirigami as Kirigami
 
 // One stat in a box of its own, so a list of them reads one at a time. In
 // Dossier it's a small plate with its corners cut, square when the
-// decorations are plain, and in Material an outlined chip.
+// decorations are plain, in Material an outlined chip, and in Slate a plain
+// row with a square tick and a hairline under it.
 Item {
     id: chip
 
@@ -13,15 +14,19 @@ Item {
     // what it may take up before its text wraps
     property real maxWidth: Infinity
 
+    readonly property bool tick: Style.chip === "tick"
+    // room for the tick
+    readonly property real lead: tick ? Kirigami.Units.smallSpacing * 3 : 0
     readonly property real across: Kirigami.Units.smallSpacing * 2
     readonly property real down: Kirigami.Units.smallSpacing
 
-    implicitWidth: label.implicitWidth + 2 * across
+    implicitWidth: label.implicitWidth + 2 * across + lead
     implicitHeight: label.implicitHeight + 2 * down
     width: Math.min(implicitWidth, maxWidth)
     height: label.height + 2 * down
 
     Plate {
+        visible: !chip.tick
         anchors.fill: parent
         fill: Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.06)
         line: Style.inner(Kirigami.Theme)
@@ -29,12 +34,29 @@ Item {
         radius: Style.shapeSmall
     }
 
+    Rectangle {
+        visible: chip.tick
+        x: 0
+        y: (parent.height - height) / 2
+        width: Kirigami.Units.smallSpacing * 1.5
+        height: width
+        color: Kirigami.Theme.highlightColor
+    }
+
+    Rectangle {
+        visible: chip.tick
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: 1
+        color: Style.inner(Kirigami.Theme)
+    }
+
     QQC2.Label {
         id: label
 
-        x: chip.across
+        x: chip.across + chip.lead
         y: chip.down
-        width: Math.max(0, chip.width - 2 * chip.across)
+        width: Math.max(0, chip.width - 2 * chip.across - chip.lead)
         text: chip.text
         wrapMode: Text.Wrap
     }
