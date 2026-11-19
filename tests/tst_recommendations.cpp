@@ -70,6 +70,11 @@ private Q_SLOTS:
         QCOMPARE(wantedText(boots), u"Movement Speed 19 or more (up to 35, tier 4 or better), "
                                     u"Life 55 or more (up to 149, tier 6 or better), "
                                     u"Fire Resistance 24 or more (up to 45, tier 5 or better)"_s);
+        // one each, for the window's chips
+        QCOMPARE(wantedParts(boots),
+                 (QStringList{u"Movement Speed 19 or more (up to 35, tier 4 or better)"_s,
+                              u"Life 55 or more (up to 149, tier 6 or better)"_s,
+                              u"Fire Resistance 24 or more (up to 45, tier 5 or better)"_s}));
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 5).size(), 5);
         QCOMPARE(wantedStats(u"Boots"_s, nullptr, {}, 1).size(), 1);
     }
@@ -80,6 +85,7 @@ private Q_SLOTS:
         QVERIFY(wantedStats(u"Weapon"_s, nullptr, {}).isEmpty());
         QVERIFY(wantedStats(u"Boots"_s, nullptr, {.build = u"nothing like it"_s}).isEmpty());
         QCOMPARE(wantedText({}), QString());
+        QVERIFY(wantedParts({}).isEmpty());
     }
 
     void whatTheWornItemHasIsLeftOut()

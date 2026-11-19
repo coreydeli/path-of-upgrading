@@ -449,6 +449,11 @@ private Q_SLOTS:
         QVERIFY(site.upgrades.chosenWorn());
         QCOMPARE(site.upgrades.chosenLookFor(),
                  site.in(u"Helmet"_s, RecommendedUpgrades::LookForRole).toString());
+        // and one stat each
+        const QStringList each = site.upgrades.chosenLookForStats();
+        QVERIFY(each.size() > 1);
+        QCOMPARE(each.join(u", "_s), site.upgrades.chosenLookFor());
+        QCOMPARE(site.in(u"Helmet"_s, RecommendedUpgrades::LookForStatsRole).toStringList(), each);
         site.upgrades.choose(u"Helmet"_s);
         QCOMPARE(changed.size(), 1);
 

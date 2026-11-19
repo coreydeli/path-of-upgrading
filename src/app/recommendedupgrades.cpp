@@ -72,6 +72,8 @@ QVariant RecommendedUpgrades::data(const QModelIndex &index, int role) const
         return wantedText(row.wants);
     case TradeRole:
         return QVariant::fromValue(m_states.value(row.slot).report);
+    case LookForStatsRole:
+        return wantedParts(row.wants);
     }
     return {};
 }
@@ -79,8 +81,10 @@ QVariant RecommendedUpgrades::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> RecommendedUpgrades::roleNames() const
 {
     return {
-        {SlotRole, "slot"},   {NameRole, "name"},       {BaseRole, "base"},   {ScoreRole, "score"},
-        {GradeRole, "grade"}, {LookForRole, "lookFor"}, {TradeRole, "trade"},
+        {SlotRole, "slot"},   {NameRole, "name"},
+        {BaseRole, "base"},   {ScoreRole, "score"},
+        {GradeRole, "grade"}, {LookForRole, "lookFor"},
+        {TradeRole, "trade"}, {LookForStatsRole, "lookForStats"},
     };
 }
 
@@ -102,6 +106,11 @@ void RecommendedUpgrades::choose(const QString &slot)
 
 QString RecommendedUpgrades::chosenLookFor() const
 {
+    return chosenLookForStats().join(u", "_s);
+}
+
+QStringList RecommendedUpgrades::chosenLookForStats() const
+{
     if (m_chosen.isEmpty())
         return {};
     const Character &character = m_active->character();
@@ -111,13 +120,13 @@ QString RecommendedUpgrades::chosenLookFor() const
         // a two-handed weapon leaves the offhand empty
         if (offhandOutOfUse(character.gear, character.wielding, m_chosen))
             return {};
-        return wantedText(wantedStats(m_chosen, nullptr, options));
+        return wantedParts(wantedStats(m_chosen, nullptr, options));
     }
     // an item with no gear score, like a unique, has nothing to look for
     const std::optional<GearScore> score = gearScore(*worn, options);
     if (!score || !score->isRated())
         return {};
-    return wantedText(wantedStats(m_chosen, &*worn, options));
+    return wantedParts(wantedStats(m_chosen, &*worn, options));
 }
 
 QStringList RecommendedUpgrades::chosenCanRoll() const

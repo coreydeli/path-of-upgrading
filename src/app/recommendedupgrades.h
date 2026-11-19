@@ -40,6 +40,8 @@ class RecommendedUpgrades : public QAbstractListModel
     // what its search is up to. Empty until one is picked.
     Q_PROPERTY(QString chosen READ chosen WRITE choose NOTIFY chosenChanged)
     Q_PROPERTY(QString chosenLookFor READ chosenLookFor NOTIFY chosenChanged)
+    // the same, one stat each
+    Q_PROPERTY(QStringList chosenLookForStats READ chosenLookForStats NOTIFY chosenChanged)
     Q_PROPERTY(pou::TradeReport chosenTrade READ chosenTrade NOTIFY chosenChanged)
     // What the slot can roll of those stats, one line each, empty when the
     // table has nothing for the slot.
@@ -56,6 +58,7 @@ public:
         GradeRole,                   // "D"
         LookForRole,                 // "Life 55 or more, Fire Resistance 24 or more"
         TradeRole,                   // a tradeReport, what its search is up to
+        LookForStatsRole,            // the same as LookForRole, one stat each
     };
 
     // They have to outlive it.
@@ -76,6 +79,7 @@ public:
     QString chosen() const { return m_chosen; }
     void choose(const QString &slot);
     QString chosenLookFor() const;
+    QStringList chosenLookForStats() const;
     QStringList chosenCanRoll() const;
     TradeReport chosenTrade() const { return m_states.value(m_chosen).report; }
     bool chosenWorn() const;

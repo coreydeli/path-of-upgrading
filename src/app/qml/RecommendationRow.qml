@@ -19,6 +19,8 @@ FormCard.AbstractFormDelegate {
     required property string grade
     // "Life 55 or more, Fire Resistance 24 or more"
     required property string lookFor
+    // the same, one stat each
+    required property list<string> lookForStats
     // what its trade search is up to
     required property tradeReport trade
     // whether trade searches are on
@@ -113,15 +115,16 @@ FormCard.AbstractFormDelegate {
                 QQC2.Label {
                     Layout.alignment: Qt.AlignTop
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+                    topPadding: Kirigami.Units.smallSpacing
                     text: qsTr("Look for")
                     color: Kirigami.Theme.disabledTextColor
                 }
 
-                QQC2.Label {
+                StatChips {
                     objectName: "lookFor"
                     Layout.fillWidth: true
+                    stats: row.lookForStats
                     text: row.lookFor
-                    wrapMode: Text.Wrap
                 }
             }
 

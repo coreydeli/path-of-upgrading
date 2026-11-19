@@ -1130,6 +1130,16 @@ private Q_SLOTS:
             QVERIFY(isVisible(labels.at(i)));
             QCOMPARE(text(labels.at(i)), notes.at(i).label);
             QCOMPARE(text(texts.at(i)), notes.at(i).text);
+            // a chip to each stat
+            QStringList chips;
+            for (QObject *chip : findAll(texts.at(i), u"statChip"_s)) {
+                QVERIFY(isVisible(chip));
+                chips << text(chip);
+            }
+            QStringList stats = notes.at(i).stats;
+            chips.sort();
+            stats.sort();
+            QCOMPARE(chips, stats);
         }
 
         QObject *gloves = w.find(u"slot:Gloves"_s);
@@ -1744,6 +1754,9 @@ private Q_SLOTS:
         const QString lookFor = text(w.find(u"panelLookFor"_s));
         QVERIFY(lookFor.contains(u" or more"_s));
         QCOMPARE(lookFor, upgrades->chosenLookFor());
+        QCOMPARE(findAll(w.find(u"panelLookFor"_s), u"statChip"_s).size(),
+                 upgrades->chosenLookForStats().size());
+        QCOMPARE(findAll(w.find(u"panelCanRoll"_s), u"statChip"_s).size(), upgrades->chosenCanRoll().size());
         QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
         QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u" at item level "_s));
         QCOMPARE(text(w.find(u"panelCanRoll"_s)), upgrades->chosenCanRoll().join(u'\n'));
