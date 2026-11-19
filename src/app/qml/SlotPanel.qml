@@ -78,6 +78,7 @@ Item {
                 required property string base
                 required property bool fromPob
                 required property string rarity
+                required property int itemLevel
                 required property string score
                 required property string grade
                 required property var notes
@@ -121,6 +122,8 @@ Item {
                                 const parts = [];
                                 if (content.name !== "" && content.base !== "")
                                     parts.push(content.base);
+                                if (content.name !== "" && content.itemLevel > 0)
+                                    parts.push(qsTr("item level %1").arg(content.itemLevel));
                                 if (content.name !== "" && content.fromPob)
                                     parts.push(qsTr("from Path of Building"));
                                 return parts.join(", ");
