@@ -76,6 +76,13 @@ QtObject {
             label: { weight: Font.DemiBold, caps: false, spacing: 0, scale: 1 },
             figure: { weight: Font.Bold, scale: 1.7 },
             title: { weight: Font.Bold, caps: false, spacing: 0, scale: 1.5 }
+        },
+        "edge": {
+            xs: 3, s: 3, m: 3, l: 3, xl: 3, button: 3, pill: false,
+            line: 0.2, rule: 0.12, framed: true, chip: "edge",
+            label: { family: "Barlow Semi Condensed", weight: Font.Medium, caps: true, spacing: 0.6, scale: 1 },
+            figure: { family: "Barlow Semi Condensed", weight: Font.Bold, scale: 1.6 },
+            title: { weight: Font.Bold, caps: false, spacing: 0.2, scale: 1.5 }
         }
     })
     readonly property var spec: looks[design] ?? looks["dossier"]
@@ -90,7 +97,7 @@ QtObject {
     readonly property bool pill: spec.pill
     // whether the cards have a line round them
     readonly property bool framed: spec.framed
-    // how a stat chip is drawn: plate, outline, tick or pill
+    // how a stat chip is drawn: plate, outline, tick, pill or edge
     readonly property string chip: spec.chip
 
     // the family the page titles are in, which the app sets from the settings
