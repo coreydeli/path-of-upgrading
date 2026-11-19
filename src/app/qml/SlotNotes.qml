@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
@@ -25,14 +24,10 @@ ColumnLayout {
             Layout.fillWidth: true
             spacing: Kirigami.Units.largeSpacing
 
-            QQC2.Label {
+            NoteLabel {
                 objectName: "noteLabel"
-                Layout.alignment: Qt.AlignTop
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                // level with the text in the first chip
-                topPadding: Kirigami.Units.smallSpacing
                 text: note.modelData.label
-                color: Kirigami.Theme.disabledTextColor
+                help: note.modelData.help
             }
 
             StatChips {

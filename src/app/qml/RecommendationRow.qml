@@ -25,6 +25,8 @@ FormCard.AbstractFormDelegate {
     required property tradeReport trade
     // whether trade searches are on
     required property bool tradeAvailable
+    // what "Look for" means
+    required property string lookForHelp
     // the first of its card, which has no line above it
     required property bool first
 
@@ -112,12 +114,10 @@ FormCard.AbstractFormDelegate {
                 visible: row.lookFor !== ""
                 spacing: Kirigami.Units.largeSpacing
 
-                QQC2.Label {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                    topPadding: Kirigami.Units.smallSpacing
+                NoteLabel {
+                    objectName: "lookForLabel"
                     text: qsTr("Look for")
-                    color: Kirigami.Theme.disabledTextColor
+                    help: row.lookForHelp
                 }
 
                 StatChips {

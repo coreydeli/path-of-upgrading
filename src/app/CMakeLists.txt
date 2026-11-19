@@ -89,6 +89,7 @@ qt_add_qml_module(pou_app
         qml/ResultRow.qml
         qml/ResultsCard.qml
         qml/ResultsWindow.qml
+        qml/NoteLabel.qml
         qml/Notice.qml
         qml/Plate.qml
         qml/RowRule.qml
