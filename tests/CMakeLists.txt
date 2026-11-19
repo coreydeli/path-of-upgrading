@@ -39,6 +39,7 @@ endfunction()
 
 pou_add_test(tst_mapcheck maptexts.h)
 pou_add_test(tst_hands)
+pou_add_test(tst_designs)
 pou_add_test(tst_slots)
 pou_add_test(tst_slotmods)
 pou_add_test(tst_modtiers)

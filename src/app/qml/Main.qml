@@ -270,8 +270,8 @@ Kirigami.ApplicationWindow {
 
     Binding {
         target: Style
-        property: "material"
-        value: root.app.appearance.material
+        property: "design"
+        value: root.app.appearance.design
     }
 
     Binding {

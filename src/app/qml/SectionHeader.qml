@@ -38,9 +38,9 @@ Item {
 
         Rectangle {
             Layout.maximumWidth: content.width
-            implicitWidth: slab.implicitWidth + (Style.material ? 0 : 2 * Kirigami.Units.smallSpacing + 2)
+            implicitWidth: slab.implicitWidth + (Style.flat ? 0 : 2 * Kirigami.Units.smallSpacing + 2)
             implicitHeight: slab.implicitHeight + 2
-            color: Style.material ? "transparent" : Style.paper
+            color: Style.flat ? "transparent" : Style.paper
             Accessible.role: Accessible.Heading
             Accessible.name: header.title
 
@@ -48,10 +48,10 @@ Item {
                 id: slab
 
                 anchors.centerIn: parent
-                width: Math.min(implicitWidth, parent.width - (Style.material ? 0 : 2 * Kirigami.Units.smallSpacing))
+                width: Math.min(implicitWidth, parent.width - (Style.flat ? 0 : 2 * Kirigami.Units.smallSpacing))
                 elide: Text.ElideRight
                 font: Style.sectionFont(Kirigami.Theme.defaultFont)
-                color: Style.material ? Kirigami.Theme.highlightColor : Style.ink
+                color: Style.flat ? Kirigami.Theme.highlightColor : Style.ink
                 text: header.title
             }
         }
