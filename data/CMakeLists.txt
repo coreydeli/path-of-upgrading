@@ -10,9 +10,12 @@ if(NOT WIN32)
     install(FILES color-schemes/PathOfUpgrading.colors
         color-schemes/PathOfUpgradingMaterialLight.colors
         color-schemes/PathOfUpgradingMaterialDark.colors
+        color-schemes/PathOfUpgradingSlateLight.colors
+        color-schemes/PathOfUpgradingSlateDark.colors
         DESTINATION ${CMAKE_INSTALL_DATADIR}/path-of-upgrading/color-schemes)
     # the fonts in the program have their licenses with them
     install(FILES fonts/OFL-Spectral.txt fonts/OFL-BigShoulders.txt
+        fonts/OFL-AlegreyaSC.txt fonts/OFL-Inter.txt
         DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${CMAKE_PROJECT_NAME})
 endif()
 

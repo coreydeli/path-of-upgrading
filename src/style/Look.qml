@@ -44,23 +44,31 @@ QtObject {
     // large for the popup and extra large for the sidebar's picked row, and
     // `button` is a button's, unless the look is a `pill`, which makes buttons,
     // chips and scroll bars fully round. `line` and `rule` say how much of the
-    // text's color the frame and the finer rules have. The fonts are for labels (small, in
-    // `caps` or not), figures (the score) and titles, whose family is the
-    // heading font's; a missing family is the text's.
+    // text's color the frame and the finer rules have, and `chip` is how a
+    // stat chip is drawn. The fonts are for labels (small, in `caps` or not),
+    // figures (the score) and titles, whose family is the heading font's; a
+    // missing family is the text's.
     readonly property var looks: ({
         "dossier": {
             xs: 0, s: 0, m: 0, l: 0, xl: 0, button: 0, pill: false,
-            line: 0.28, rule: 0.14, framed: true,
+            line: 0.28, rule: 0.14, framed: true, chip: "plate",
             label: { family: "Big Shoulders Text", weight: Font.Bold, caps: true, spacing: 1.4, scale: 1.02 },
             figure: { family: "Big Shoulders Display", weight: Font.Black, scale: 1.5 },
             title: { weight: Font.ExtraBold, caps: true, spacing: 0.5, scale: 1.45 }
         },
         "material": {
             xs: 4, s: 8, m: 12, l: 16, xl: 28, button: 20, pill: true,
-            line: 0.2, rule: 0.12, framed: false,
+            line: 0.2, rule: 0.12, framed: false, chip: "outline",
             label: { weight: Font.Medium, caps: false, spacing: 0.1, scale: 1 },
             figure: { weight: Font.Medium, scale: 1.5 },
             title: { weight: Font.Normal, caps: false, spacing: 0, scale: 1.5 }
+        },
+        "slate": {
+            xs: 2, s: 2, m: 2, l: 2, xl: 2, button: 2, pill: false,
+            line: 0.18, rule: 0.12, framed: true, chip: "tick",
+            label: { weight: Font.Medium, caps: false, spacing: 0.2, scale: 1 },
+            figure: { weight: Font.Bold, scale: 1.5 },
+            title: { weight: Font.Bold, caps: false, spacing: 0.3, scale: 1.45 }
         }
     })
     readonly property var spec: looks[design] ?? looks["dossier"]
@@ -75,6 +83,8 @@ QtObject {
     readonly property bool pill: spec.pill
     // whether the cards have a line round them
     readonly property bool framed: spec.framed
+    // how a stat chip is drawn: plate, outline or tick
+    readonly property string chip: spec.chip
 
     // the family the page titles are in, which the app sets from the settings
     property string headingFamily: "Big Shoulders Display"
