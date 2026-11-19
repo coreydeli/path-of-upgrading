@@ -13,6 +13,7 @@
 #include <QGuiApplication>
 #include <QModelIndex>
 #include <QStyleHints>
+#include <QVariantMap>
 #include <algorithm>
 
 using namespace Qt::Literals::StringLiterals;
@@ -27,7 +28,7 @@ Appearance::Appearance(SettingsStore *settings, const QString &schemeFile, QObje
     , m_font(m_desktopFont)
 {
     connect(settings, &SettingsStore::changed, this, &Appearance::follow);
-    // Material's colors follow the desktop's light or dark
+    // the colors of a look with both follow the desktop's light or dark
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, &Appearance::follow);
     follow();
 }
@@ -77,6 +78,16 @@ QString Appearance::design() const
     return designId(appearance().design);
 }
 
+QVariantList Appearance::designList() const
+{
+    QVariantList list;
+    for (const DesignInfo &info : designs()) {
+        list << QVariantMap{
+            {u"id"_s, info.id}, {u"name"_s, info.name}, {u"note"_s, info.note}, {u"swatch"_s, info.swatch}};
+    }
+    return list;
+}
+
 void Appearance::setDesign(const QString &design)
 {
     change([&](AppearanceSettings &appearance) { appearance.design = designFromId(design); });
@@ -94,7 +105,7 @@ void Appearance::setBrightness(const QString &brightness)
 
 bool Appearance::isDark() const
 {
-    if (!isMaterial())
+    if (!hasLight())
         return true;
     switch (appearance().brightness) {
     case Brightness::Light:
@@ -154,8 +165,8 @@ void Appearance::follow()
         }
     }
     followFonts();
-    // Kirigami's corners are round in Material
-    qApp->setProperty("POU_ROUND_CORNERS", isMaterial());
+    // Kirigami's corners are round in the looks that are
+    qApp->setProperty("POU_ROUND_CORNERS", designInfo(appearance().design).roundCorners);
     // what the colors and fonts came to, and the choices that go with them
     const bool different = appearance() != m_seen;
     m_seen = appearance();
@@ -168,10 +179,11 @@ void Appearance::followFonts()
     const AppearanceSettings &chosen = appearance();
     QStringList missing;
 
-    // The app's own face unless another is chosen, and Material has the
+    // The look's own face unless another is chosen, and some have the
     // desktop's.
+    const DesignInfo &design = designInfo(chosen.design);
     QFont font = m_desktopFont;
-    const QString standard = isMaterial() ? m_desktopFont.family() : textFontFamily();
+    const QString standard = design.textFont.isEmpty() ? m_desktopFont.family() : design.textFont;
     QString family = chosen.textFont.isEmpty() ? standard : chosen.textFont;
     if (!QFontDatabase::hasFamily(family)) {
         if (!chosen.textFont.isEmpty())
@@ -188,13 +200,13 @@ void Appearance::followFonts()
     }
 
     if (chosen.headingFont.isEmpty()) {
-        m_headingFamily = isMaterial() ? font.family() : headingFontFamily();
+        m_headingFamily = design.headingFont.isEmpty() ? font.family() : design.headingFont;
     } else if (chosen.headingFont == sameAsText) {
         m_headingFamily = font.family();
     } else if (QFontDatabase::hasFamily(chosen.headingFont)) {
         m_headingFamily = chosen.headingFont;
     } else {
-        m_headingFamily = isMaterial() ? font.family() : headingFontFamily();
+        m_headingFamily = design.headingFont.isEmpty() ? font.family() : design.headingFont;
         missing << chosen.headingFont;
     }
 
@@ -209,10 +221,10 @@ void Appearance::followFonts()
 
 QString Appearance::schemeFile() const
 {
-    if (!isMaterial())
+    const QString &look = designInfo(appearance().design).schemeName;
+    if (look.isEmpty())
         return m_schemeFile;
-    const QString name =
-        m_dark ? u"PathOfUpgradingMaterialDark.colors"_s : u"PathOfUpgradingMaterialLight.colors"_s;
+    const QString name = u"PathOfUpgrading"_s + look + (m_dark ? u"Dark.colors"_s : u"Light.colors"_s);
     return QFileInfo(m_schemeFile).dir().filePath(name);
 }
 
