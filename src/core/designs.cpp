@@ -48,6 +48,16 @@ const QList<DesignInfo> &designs()
          .hasLight = true,
          .roundCorners = true,
          .swatch = {u"#0b0b0d"_s, u"#161618"_s, u"#4aa3ff"_s, u"#f2f2f4"_s}},
+        {.design = Design::Edge,
+         .id = u"edge"_s,
+         .name = u"Edge"_s,
+         .note = u"Flat and high contrast, with a colored edge that says it at a glance"_s,
+         .headingFont = u"Barlow Semi Condensed"_s,
+         .textFont = u"IBM Plex Sans"_s,
+         .schemeName = u"Edge"_s,
+         .hasLight = true,
+         .roundCorners = false,
+         .swatch = {u"#06080a"_s, u"#10161c"_s, u"#2dd4a8"_s, u"#e5e8eb"_s}},
     };
     return all;
 }

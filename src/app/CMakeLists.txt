@@ -123,6 +123,8 @@ qt_add_qml_module(pou_app
 set(POU_FONTS
     AlegreyaSC-Bold.ttf
     AlegreyaSC-Medium.ttf
+    BarlowSemiCondensed-Bold.ttf
+    BarlowSemiCondensed-Medium.ttf
     BigShouldersDisplay-Black.ttf
     BigShouldersDisplay-Bold.ttf
     BigShouldersDisplay-ExtraBold.ttf
@@ -131,6 +133,7 @@ set(POU_FONTS
     BigShouldersText-Medium.ttf
     BigShouldersText-Regular.ttf
     BigShouldersText-SemiBold.ttf
+    IBMPlexSans-Variable.ttf
     Inter-Variable.ttf
     Spectral-Bold.ttf
     Spectral-Italic.ttf
