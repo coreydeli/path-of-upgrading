@@ -18,11 +18,14 @@ if(NOT WIN32)
         color-schemes/PathOfUpgradingEdgeDark.colors
         color-schemes/PathOfUpgradingGiltLight.colors
         color-schemes/PathOfUpgradingGiltDark.colors
+        color-schemes/PathOfUpgradingCinderLight.colors
+        color-schemes/PathOfUpgradingCinderDark.colors
         DESTINATION ${CMAKE_INSTALL_DATADIR}/path-of-upgrading/color-schemes)
     # the fonts in the program have their licenses with them
     install(FILES fonts/OFL-Spectral.txt fonts/OFL-BigShoulders.txt
         fonts/OFL-AlegreyaSC.txt fonts/OFL-Inter.txt
         fonts/OFL-IBMPlexSans.txt fonts/OFL-Barlow.txt fonts/OFL-Cinzel.txt
+        fonts/OFL-JetBrainsMono.txt fonts/OFL-SpaceGrotesk.txt
         DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${CMAKE_PROJECT_NAME})
 endif()
 
