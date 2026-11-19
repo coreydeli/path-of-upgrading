@@ -28,6 +28,16 @@ const QList<DesignInfo> &designs()
          .hasLight = true,
          .roundCorners = true,
          .swatch = {u"#141218"_s, u"#211f26"_s, u"#d0bcff"_s, u"#e6e0e9"_s}},
+        {.design = Design::Slate,
+         .id = u"slate"_s,
+         .name = u"Slate"_s,
+         .note = u"A dense, calm panel for reading a lot of mods quickly"_s,
+         .headingFont = u"Alegreya SC"_s,
+         .textFont = u"Inter"_s,
+         .schemeName = u"Slate"_s,
+         .hasLight = true,
+         .roundCorners = false,
+         .swatch = {u"#1b2230"_s, u"#243044"_s, u"#e0b45a"_s, u"#dfe6f2"_s}},
     };
     return all;
 }
