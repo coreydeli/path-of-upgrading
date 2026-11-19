@@ -23,6 +23,7 @@ Sheet {
             required property int index
 
             tradeAvailable: card.upgrades.tradeAvailable
+            lookForHelp: card.upgrades.lookForHelp
             first: index === 0
             onFindAsked: card.upgrades.find(index)
             onShowResultsAsked: card.upgrades.showResults(index)

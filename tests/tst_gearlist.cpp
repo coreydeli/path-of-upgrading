@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "app/activecharacter.h"
 #include "app/gearlist.h"
+#include "app/notehelp.h"
 #include "app/settingsstore.h"
 #include "core/evaluation.h"
 #include "core/parser.h"
@@ -295,6 +296,35 @@ private Q_SLOTS:
         }
         QCOMPARE(weak, QStringList{u"Life 45 (up to 149, tier 6 of 9)"_s});
         QCOMPARE(next, QStringList{u"Life, tier 5 (60 to 69) from item level 33"_s});
+    }
+
+    void eachNoteSaysWhatItMeans()
+    {
+        Gear g;
+        const Item boots =
+            item(u"Boots"_s, u"Rare"_s, u"Dusk Step"_s, u"Plated Greaves"_s, u"+45 to maximum Life"_s);
+        g.play(wearing({{u"Boots"_s, boots}}));
+        QList<GearNote> notes = g.in(u"Boots"_s, GearList::NotesRole).value<QList<GearNote>>();
+        notes << g.in(u"Gloves"_s, GearList::NotesRole).value<QList<GearNote>>();
+        QStringList labels;
+        for (const GearNote &note : std::as_const(notes)) {
+            labels << note.label;
+            QVERIFY2(!note.help.isEmpty(), qPrintable(note.label));
+            QCOMPARE(note.help, noteHelp(note.label));
+        }
+        QVERIFY(labels.contains(u"Weak rolls"_s));
+        QVERIFY(labels.contains(u"Your build wants"_s));
+
+        // and every one has its own
+        QStringList all;
+        for (const QString &label : {u"Missing stats"_s, u"Not counted"_s, u"Weak rolls"_s, u"Next tier"_s,
+                                     u"Look for"_s, u"Can roll"_s, u"Your build wants"_s}) {
+            QVERIFY2(!noteHelp(label).isEmpty(), qPrintable(label));
+            all << noteHelp(label);
+        }
+        all.removeDuplicates();
+        QCOMPARE(all.size(), 7);
+        QCOMPARE(noteHelp(u"Something else"), QString());
     }
 
     void whatTheBuildWantsInAnEmptySlot()
