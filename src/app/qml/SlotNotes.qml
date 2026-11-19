@@ -5,14 +5,14 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
 // What would raise a slot's score, or what an empty slot wants: a labelled
-// line each, with the stats beside the label.
+// line each, with the stats beside the label as chips.
 ColumnLayout {
     id: notes
 
-    // { label, text } each
+    // gearNotes
     property var lines: []
 
-    spacing: Kirigami.Units.smallSpacing
+    spacing: Kirigami.Units.largeSpacing
 
     Repeater {
         model: notes.lines
@@ -29,15 +29,17 @@ ColumnLayout {
                 objectName: "noteLabel"
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+                // level with the text in the first chip
+                topPadding: Kirigami.Units.smallSpacing
                 text: note.modelData.label
                 color: Kirigami.Theme.disabledTextColor
             }
 
-            QQC2.Label {
+            StatChips {
                 objectName: "noteText"
                 Layout.fillWidth: true
+                stats: note.modelData.stats
                 text: note.modelData.text
-                wrapMode: Text.Wrap
             }
         }
     }

@@ -149,17 +149,18 @@ Item {
                 QQC2.Label {
                     Layout.alignment: Qt.AlignTop
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+                    topPadding: Kirigami.Units.smallSpacing
                     text: qsTr("Look for")
                     color: Kirigami.Theme.disabledTextColor
                 }
 
-                QQC2.Label {
+                StatChips {
                     id: lookFor
 
                     objectName: "panelLookFor"
                     Layout.fillWidth: true
+                    stats: panel.upgrades.chosenLookForStats
                     text: panel.upgrades.chosenLookFor
-                    wrapMode: Text.Wrap
                 }
             }
 
@@ -171,15 +172,16 @@ Item {
                 QQC2.Label {
                     Layout.alignment: Qt.AlignTop
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 5
+                    topPadding: Kirigami.Units.smallSpacing
                     text: qsTr("Can roll")
                     color: Kirigami.Theme.disabledTextColor
                 }
 
-                QQC2.Label {
+                StatChips {
                     objectName: "panelCanRoll"
                     Layout.fillWidth: true
+                    stats: panel.upgrades.chosenCanRoll
                     text: panel.upgrades.chosenCanRoll.join("\n")
-                    wrapMode: Text.Wrap
                 }
             }
 
