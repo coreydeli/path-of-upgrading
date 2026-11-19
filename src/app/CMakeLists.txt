@@ -117,6 +117,7 @@ qt_add_qml_module(pou_app
         qml/TonePill.qml
         qml/TradePage.qml
         qml/TradeStatus.qml
+        qml/WornMods.qml
 )
 
 # the fonts the program carries

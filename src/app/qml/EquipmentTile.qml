@@ -17,6 +17,8 @@ QQC2.AbstractButton {
     required property bool fromPob
     required property string rarity
     required property int itemLevel
+    required property bool corrupted
+    required property bool fractured
     required property string score
     required property string grade
 
@@ -35,6 +37,10 @@ QQC2.AbstractButton {
             parts.push(qsTr("item level %1").arg(itemLevel));
         if (fromPob)
             parts.push(qsTr("from Path of Building"));
+        if (fractured)
+            parts.push(qsTr("fractured"));
+        if (corrupted)
+            parts.push(qsTr("corrupted"));
         return parts.join(", ");
     }
     // the frame is lit when it's the one picked, or it's about to be
@@ -170,6 +176,24 @@ QQC2.AbstractButton {
                 font.italic: tile.empty
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
+                elide: Text.ElideRight
+                Accessible.ignored: true
+            }
+
+            QQC2.Label {
+                objectName: "tileMarks"
+                Layout.fillWidth: true
+                visible: text !== ""
+                text: {
+                    const marks = [];
+                    if (tile.fractured)
+                        marks.push(qsTr("Fractured"));
+                    if (tile.corrupted)
+                        marks.push(qsTr("Corrupted"));
+                    return marks.join(", ");
+                }
+                color: tile.corrupted ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.neutralTextColor
+                font: Kirigami.Theme.smallFont
                 elide: Text.ElideRight
                 Accessible.ignored: true
             }

@@ -51,6 +51,7 @@ add_library(pou_core STATIC
     weighedprofile.cpp weighedprofile.h
     weights.cpp weights.h
     wearing.cpp wearing.h
+    wornmods.cpp wornmods.h
 )
 
 target_include_directories(pou_core PUBLIC ${PROJECT_SOURCE_DIR}/src)

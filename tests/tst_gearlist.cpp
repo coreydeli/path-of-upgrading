@@ -189,6 +189,60 @@ private Q_SLOTS:
         QCOMPARE(g.list.roleNames().value(GearList::ItemLevelRole), QByteArray("itemLevel"));
     }
 
+    void wornMods()
+    {
+        const Item gloves =
+            parseItem(u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSorcerer Gloves\n--------\n"
+                      "Quality: +20% (augmented)\nEnergy Shield: 280\n--------\n"
+                      "{ Implicit Modifier }\n+5% to Fire Resistance (implicit)\n--------\n"
+                      "{ Suffix Modifier \"of the Squall\" (Tier: 3) }\n+39(36-40)% to Lightning Resistance\n"
+                      "{ Prefix Modifier \"Hale\" (Tier: 3) }\n+33(33-41) to maximum Life (fractured)\n"
+                      "--------\nCorrupted"_s)
+                .value();
+        Gear g;
+        g.play(wearing({{u"Gloves"_s, gloves}, {u"Helmet"_s, helmet}}));
+
+        const auto mods = g.in(u"Gloves"_s, GearList::ModsRole).value<QList<ModLine>>();
+        QCOMPARE(mods.size(), 3);
+        QCOMPARE(mods.at(0).group, u"Implicit"_s);
+        QCOMPARE(mods.at(1).group, u"Prefixes"_s);
+        QCOMPARE(mods.at(1).text, u"+33 to maximum Life"_s);
+        QVERIFY(mods.at(1).fractured);
+        QCOMPARE(mods.at(2).group, u"Suffixes"_s);
+        QVERIFY(!mods.at(2).fractured);
+        // each is under a heading of its own
+        QVERIFY(mods.at(0).starts && mods.at(1).starts && mods.at(2).starts);
+        QCOMPARE(g.in(u"Gloves"_s, GearList::QualityRole).toInt(), 20);
+        QVERIFY(g.in(u"Gloves"_s, GearList::CorruptedRole).toBool());
+        QVERIFY(g.in(u"Gloves"_s, GearList::FracturedRole).toBool());
+
+        // a plain item, and an empty slot, have none of it
+        QVERIFY(!g.in(u"Helmet"_s, GearList::CorruptedRole).toBool());
+        QVERIFY(!g.in(u"Helmet"_s, GearList::FracturedRole).toBool());
+        QCOMPARE(g.in(u"Helmet"_s, GearList::QualityRole).toInt(), 0);
+        const auto plain = g.in(u"Helmet"_s, GearList::ModsRole).value<QList<ModLine>>();
+        QCOMPARE(plain.size(), 2);
+        QCOMPARE(plain.at(0).group, u"Prefixes"_s);
+        QVERIFY(plain.at(0).starts);
+        QCOMPARE(plain.at(1).group, u"Suffixes"_s);
+        QVERIFY(g.in(u"Boots"_s, GearList::ModsRole).value<QList<ModLine>>().isEmpty());
+        QCOMPARE(g.in(u"Boots"_s, GearList::QualityRole).toInt(), 0);
+        QVERIFY(!g.in(u"Boots"_s, GearList::CorruptedRole).toBool());
+    }
+
+    void modsShareAHeading()
+    {
+        Gear g;
+        g.play(wearing({{u"Belt"_s, item(u"Belts"_s, u"Unique"_s, u"Coil of Ash"_s, u"Rawhide Belt"_s,
+                                         u"+40 to maximum Life\n+30% to Fire Resistance"_s)}}));
+        const auto mods = g.in(u"Belt"_s, GearList::ModsRole).value<QList<ModLine>>();
+        QCOMPARE(mods.size(), 2);
+        QVERIFY(mods.at(0).starts);
+        QCOMPARE(mods.at(0).group, u"Mods"_s);
+        QCOMPARE(mods.at(1).group, u"Mods"_s);
+        QVERIFY(!mods.at(1).starts);
+    }
+
     void unique()
     {
         Gear g;

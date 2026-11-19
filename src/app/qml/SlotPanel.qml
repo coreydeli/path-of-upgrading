@@ -79,6 +79,10 @@ Item {
                 required property bool fromPob
                 required property string rarity
                 required property int itemLevel
+                required property int quality
+                required property bool corrupted
+                required property bool fractured
+                required property var mods
                 required property string score
                 required property string grade
                 required property var notes
@@ -124,6 +128,8 @@ Item {
                                     parts.push(content.base);
                                 if (content.name !== "" && content.itemLevel > 0)
                                     parts.push(qsTr("item level %1").arg(content.itemLevel));
+                                if (content.name !== "")
+                                    parts.push(content.quality > 0 ? qsTr("quality %1%").arg(content.quality) : qsTr("no quality"));
                                 if (content.name !== "" && content.fromPob)
                                     parts.push(qsTr("from Path of Building"));
                                 return parts.join(", ");
@@ -131,6 +137,22 @@ Item {
                             color: Kirigami.Theme.disabledTextColor
                             font: Kirigami.Theme.smallFont
                             wrapMode: Text.Wrap
+                        }
+
+                        QQC2.Label {
+                            objectName: "panelMarks"
+                            Layout.fillWidth: true
+                            visible: text !== ""
+                            text: {
+                                const marks = [];
+                                if (content.fractured)
+                                    marks.push(qsTr("Fractured"));
+                                if (content.corrupted)
+                                    marks.push(qsTr("Corrupted"));
+                                return marks.join(", ");
+                            }
+                            color: content.corrupted ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.neutralTextColor
+                            font: Kirigami.Theme.smallFont
                         }
                     }
 
@@ -142,6 +164,13 @@ Item {
                         grade: content.grade
                         size: "medium"
                     }
+                }
+
+                WornMods {
+                    objectName: "panelMods"
+                    Layout.fillWidth: true
+                    visible: content.mods.length > 0
+                    lines: content.mods
                 }
 
                 RowRule {}
