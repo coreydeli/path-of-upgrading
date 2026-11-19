@@ -58,6 +58,16 @@ const QList<DesignInfo> &designs()
          .hasLight = true,
          .roundCorners = false,
          .swatch = {u"#06080a"_s, u"#10161c"_s, u"#2dd4a8"_s, u"#e5e8eb"_s}},
+        {.design = Design::Gilt,
+         .id = u"gilt"_s,
+         .name = u"Gilt"_s,
+         .note = u"Quiet and premium, with thin gold lines and serif titles"_s,
+         .headingFont = u"Cinzel"_s,
+         .textFont = u"Inter"_s,
+         .schemeName = u"Gilt"_s,
+         .hasLight = true,
+         .roundCorners = false,
+         .swatch = {u"#0d0c0f"_s, u"#16141a"_s, u"#d4a95a"_s, u"#ece6d8"_s}},
     };
     return all;
 }

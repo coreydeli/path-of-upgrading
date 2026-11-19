@@ -47,6 +47,8 @@ QList<Credit> creditList()
          u"SIL Open Font License 1.1"_s, u"https://github.com/jpt/barlow"_s},
         {u"IBM Plex Sans"_s, u"The font for text in the Edge look, by IBM Corp."_s,
          u"SIL Open Font License 1.1"_s, u"https://github.com/IBM/plex"_s},
+        {u"Cinzel"_s, u"The font for titles in the Gilt look, by The Cinzel Project Authors."_s,
+         u"SIL Open Font License 1.1"_s, u"https://github.com/NDISCOVER/Cinzel"_s},
         {u"poe.ninja"_s, u"Where the currency prices come from."_s, QString(), u"https://poe.ninja"_s},
         {u"Path of Exile trade site"_s, u"Where the listings come from."_s, QString(),
          u"https://www.pathofexile.com/trade2"_s},

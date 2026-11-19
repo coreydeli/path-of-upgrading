@@ -133,6 +133,7 @@ set(POU_FONTS
     BigShouldersText-Medium.ttf
     BigShouldersText-Regular.ttf
     BigShouldersText-SemiBold.ttf
+    Cinzel-Variable.ttf
     IBMPlexSans-Variable.ttf
     Inter-Variable.ttf
     Spectral-Bold.ttf
