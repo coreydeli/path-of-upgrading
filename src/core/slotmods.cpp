@@ -10,11 +10,19 @@
 
 using namespace Qt::Literals::StringLiterals;
 
+// The parser asks for the table, and items can be parsed while the program
+// starts, before Qt has registered the resource by itself.
+static void registerTable()
+{
+    Q_INIT_RESOURCE(slotmods);
+}
+
 namespace pou {
 
 const SlotMods &SlotMods::builtIn()
 {
     static const SlotMods table = [] {
+        registerTable();
         // a resource built into the program, not one of the user's files, so it
         // can be read here in core
         QFile file(u":/pou/slotmods.json"_s);
