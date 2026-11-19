@@ -179,6 +179,14 @@ private Q_SLOTS:
         QCOMPARE(lineWith(*it, u"Fire").affix, AffixKind::Unknown);
     }
 
+    void uniquesHaveNoAffixes()
+    {
+        const auto it = parseItem(u"Item Class: Rings\nRarity: Unique\nDusk Loop\nIron Ring\n--------\n"
+                                  "+39% to Lightning Resistance\n+56 to maximum Mana"_s);
+        QCOMPARE(lineWith(*it, u"Lightning").affix, AffixKind::Unknown);
+        QCOMPARE(lineWith(*it, u"Mana").affix, AffixKind::Unknown);
+    }
+
     void qualityIsRead()
     {
         QCOMPARE(parseItem(itemtexts::helmetNew)->quality, 20);
