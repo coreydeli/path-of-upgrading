@@ -369,7 +369,9 @@ std::optional<Item> parseItem(const QString &input)
             const auto affixOf = [&](const QString &key) {
                 if (!isAffixTag(tag))
                     return AffixKind::Unknown;
-                if (blockAffix != AffixKind::Unknown || key.isEmpty())
+                // uniques and normal items have no prefixes or suffixes
+                if (blockAffix != AffixKind::Unknown || key.isEmpty() ||
+                    (rarity != u"rare" && rarity != u"magic"))
                     return blockAffix;
                 return SlotMods::builtIn().kind(item.itemClass, key);
             };
