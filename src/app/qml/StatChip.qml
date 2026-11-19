@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 // One stat in a box of its own, so a list of them reads one at a time. In
 // Dossier it's a small plate with its corners cut, square when the
 // decorations are plain, in Material an outlined chip, and in Slate a plain
-// row with a square tick and a hairline under it.
+// row with a square tick and a hairline under it, and in Pocket a round pill.
 Item {
     id: chip
 
@@ -17,7 +17,7 @@ Item {
     readonly property bool tick: Style.chip === "tick"
     // room for the tick
     readonly property real lead: tick ? Kirigami.Units.smallSpacing * 3 : 0
-    readonly property real across: Kirigami.Units.smallSpacing * 2
+    readonly property real across: Kirigami.Units.smallSpacing * (Style.chip === "pill" ? 3 : 2)
     readonly property real down: Kirigami.Units.smallSpacing
 
     implicitWidth: label.implicitWidth + 2 * across + lead
@@ -25,8 +25,18 @@ Item {
     width: Math.min(implicitWidth, maxWidth)
     height: label.height + 2 * down
 
+    Rectangle {
+        visible: Style.chip === "pill"
+        anchors.fill: parent
+        // a wrapped chip stays a rounded box, not a tall capsule
+        radius: Math.min(height / 2, Kirigami.Units.gridUnit)
+        color: "transparent"
+        border.width: 1
+        border.color: Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.7)
+    }
+
     Plate {
-        visible: !chip.tick
+        visible: Style.chip === "plate" || Style.chip === "outline"
         anchors.fill: parent
         fill: Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.06)
         line: Style.inner(Kirigami.Theme)

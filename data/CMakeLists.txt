@@ -12,6 +12,8 @@ if(NOT WIN32)
         color-schemes/PathOfUpgradingMaterialDark.colors
         color-schemes/PathOfUpgradingSlateLight.colors
         color-schemes/PathOfUpgradingSlateDark.colors
+        color-schemes/PathOfUpgradingPocketLight.colors
+        color-schemes/PathOfUpgradingPocketDark.colors
         DESTINATION ${CMAKE_INSTALL_DATADIR}/path-of-upgrading/color-schemes)
     # the fonts in the program have their licenses with them
     install(FILES fonts/OFL-Spectral.txt fonts/OFL-BigShoulders.txt

@@ -38,6 +38,16 @@ const QList<DesignInfo> &designs()
          .hasLight = true,
          .roundCorners = false,
          .swatch = {u"#1b2230"_s, u"#243044"_s, u"#e0b45a"_s, u"#dfe6f2"_s}},
+        {.design = Design::Pocket,
+         .id = u"pocket"_s,
+         .name = u"Pocket"_s,
+         .note = u"Rounded, roomy cards with one loud color"_s,
+         .headingFont = u"Inter"_s,
+         .textFont = u"Inter"_s,
+         .schemeName = u"Pocket"_s,
+         .hasLight = true,
+         .roundCorners = true,
+         .swatch = {u"#0b0b0d"_s, u"#161618"_s, u"#4aa3ff"_s, u"#f2f2f4"_s}},
     };
     return all;
 }
