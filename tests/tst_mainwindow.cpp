@@ -1754,8 +1754,12 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"panelHint"_s)));
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
         QCOMPARE(text(w.find(u"panelItem"_s)), u"Grim Crown"_s);
-        QCOMPARE(text(w.find(u"panelBase"_s)), u"Visored Helm, item level 50"_s);
+        QCOMPARE(text(w.find(u"panelBase"_s)), u"Visored Helm, item level 50, no quality"_s);
         QVERIFY(isVisible(w.find(u"panelGauge"_s)));
+        // its mods, which a plain copy says the kind of from the table
+        QVERIFY(isVisible(w.find(u"panelMods"_s)));
+        QCOMPARE(findAll(w.find(u"panelMods"_s), u"modText"_s).size(), 3);
+        QVERIFY(!isVisible(w.find(u"panelMarks"_s)));
         const auto notes = w.app->gearList()->index(2).data(GearList::NotesRole).value<QList<GearNote>>();
         QVERIFY(!notes.isEmpty());
         const QList<QObject *> labels = findAll(w.find(u"panelNotes"_s), u"noteLabel"_s);
@@ -1791,6 +1795,56 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"panelTradeStatus"_s)));
         QVERIFY(w.find(u"tile:Boots"_s)->property("chosen").toBool());
         QVERIFY(!w.find(u"tile:Helmet"_s)->property("chosen").toBool());
+    }
+
+    void equipmentShowsMods()
+    {
+        Window w;
+        QVERIFY(wide(w));
+        w.play({{u"Gloves"_s, item(u"Item Class: Gloves\nRarity: Rare\nDoom Vise\nSorcerer Gloves\n--------\n"
+                                   "Quality: +20% (augmented)\nEnergy Shield: 280\n--------\n"
+                                   "Item Level: 81\n--------\n"
+                                   "{ Suffix Modifier \"of the Squall\" (Tier: 3) }\n"
+                                   "+39(36-40)% to Lightning Resistance\n"
+                                   "{ Prefix Modifier \"Hale\" (Tier: 3) }\n"
+                                   "+33(33-41) to maximum Life (fractured)\n"
+                                   "--------\nCorrupted"_s)},
+                {u"Helmet"_s, item(itemtexts::helmetOld)}});
+        QVERIFY(w.settled());
+
+        // the tile marks it, and a plain one has no mark
+        QCOMPARE(text(w.find(u"tile:Gloves"_s)->findChild<QObject *>(u"tileMarks"_s)),
+                 u"Fractured, Corrupted"_s);
+        QVERIFY(!isVisible(w.find(u"tile:Helmet"_s)->findChild<QObject *>(u"tileMarks"_s)));
+        QVERIFY(w.find(u"tile:Gloves"_s)
+                    ->property("description")
+                    .toString()
+                    .endsWith(u", fractured, corrupted"_s));
+
+        QVERIFY(click(w.find(u"tile:Gloves"_s)));
+        QVERIFY(w.settled());
+        QCOMPARE(text(w.find(u"panelBase"_s)), u"Sorcerer Gloves, item level 81, quality 20%"_s);
+        QCOMPARE(text(w.find(u"panelMarks"_s)), u"Fractured, Corrupted"_s);
+
+        // the game's order, each under its heading, the fractured one marked
+        QVERIFY(isVisible(w.find(u"panelMods"_s)));
+        QStringList groups;
+        for (QObject *group : findAll(w.find(u"panelMods"_s), u"modGroup"_s))
+            groups << text(group);
+        QCOMPARE(groups, (QStringList{u"Prefixes"_s, u"Suffixes"_s}));
+        const QList<QObject *> mods = findAll(w.find(u"panelMods"_s), u"modText"_s);
+        QCOMPARE(mods.size(), 2);
+        QCOMPARE(text(mods.at(0)), u"+33 to maximum Life"_s);
+        QCOMPARE(text(mods.at(1)), u"+39% to Lightning Resistance"_s);
+        QCOMPARE(findAll(w.find(u"panelMods"_s), u"modFractured"_s).size(), 2);
+        QVERIFY(isVisible(findAll(w.find(u"panelMods"_s), u"modFractured"_s).first()));
+        QVERIFY(!isVisible(findAll(w.find(u"panelMods"_s), u"modFractured"_s).last()));
+
+        // and an empty slot shows none of it
+        QVERIFY(click(w.find(u"tile:Boots"_s)));
+        QTRY_COMPARE(text(w.find(u"panelSlot"_s)), u"Boots"_s);
+        QVERIFY(!isVisible(w.find(u"panelMods"_s)));
+        QVERIFY(!isVisible(w.find(u"panelMarks"_s)));
     }
 
     // Whether the slot panel's frame goes round all it shows, down to its

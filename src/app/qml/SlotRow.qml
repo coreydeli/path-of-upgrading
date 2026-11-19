@@ -17,6 +17,8 @@ FormCard.AbstractFormDelegate {
     required property string base
     required property bool fromPob
     required property int itemLevel
+    required property bool corrupted
+    required property bool fractured
     required property string score
     required property string grade
     // the ways the item falls short, or what an empty slot wants: { label, text }
@@ -35,6 +37,10 @@ FormCard.AbstractFormDelegate {
             parts.push(qsTr("item level %1").arg(itemLevel));
         if (fromPob)
             parts.push(qsTr("from Path of Building"));
+        if (fractured)
+            parts.push(qsTr("fractured"));
+        if (corrupted)
+            parts.push(qsTr("corrupted"));
         return parts.join(", ");
     }
     readonly property bool wide: width >= Kirigami.Units.gridUnit * 38
@@ -106,6 +112,10 @@ FormCard.AbstractFormDelegate {
                         parts.push(qsTr("item level %1").arg(row.itemLevel));
                     if (row.name !== "" && row.fromPob)
                         parts.push(qsTr("from Path of Building"));
+                    if (row.fractured)
+                        parts.push(qsTr("fractured"));
+                    if (row.corrupted)
+                        parts.push(qsTr("corrupted"));
                     return parts.join(", ");
                 }
                 color: Kirigami.Theme.disabledTextColor
