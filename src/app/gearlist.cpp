@@ -8,6 +8,7 @@
 #include "core/evaluation.h"
 #include "core/hands.h"
 #include "core/slots.h"
+#include "core/wornmods.h"
 
 #include <algorithm>
 
@@ -66,6 +67,18 @@ QList<GearNote> wantedIn(const QString &slot, const GearScoreOptions &options)
     return {noteOf(u"Your build wants"_s, labels)};
 }
 
+QList<ModLine> modLinesOf(const Item &item)
+{
+    QList<ModLine> lines;
+    for (const WornMod &mod : wornMods(item)) {
+        lines << ModLine{.group = mod.group,
+                         .text = mod.text,
+                         .fractured = mod.fractured,
+                         .starts = lines.isEmpty() || lines.last().group != mod.group};
+    }
+    return lines;
+}
+
 } // namespace
 
 GearList::GearList(ActiveCharacter *active, SettingsStore *settings, QObject *parent)
@@ -118,6 +131,14 @@ QVariant GearList::data(const QModelIndex &index, int role) const
         return worn ? item->rarity : QString();
     case ItemLevelRole:
         return worn ? item->itemLevel : 0;
+    case ModsRole:
+        return worn ? QVariant::fromValue(modLinesOf(*item)) : QVariant::fromValue(QList<ModLine>());
+    case QualityRole:
+        return worn ? item->quality : 0;
+    case CorruptedRole:
+        return worn && item->corrupted;
+    case FracturedRole:
+        return worn && hasFracturedMod(*item);
     case FirstRole:
         return index.row() == 0 ||
                mainSlots().contains(m_rows.at(index.row() - 1).slot) != mainSlots().contains(row.slot);
@@ -128,9 +149,11 @@ QVariant GearList::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> GearList::roleNames() const
 {
     return {
-        {SlotRole, "slot"},   {NameRole, "name"},     {BaseRole, "base"},           {FromPobRole, "fromPob"},
-        {ScoreRole, "score"}, {GradeRole, "grade"},   {ExtraRole, "extra"},         {NotesRole, "notes"},
-        {FirstRole, "first"}, {RarityRole, "rarity"}, {ItemLevelRole, "itemLevel"},
+        {SlotRole, "slot"},       {NameRole, "name"},           {BaseRole, "base"},
+        {FromPobRole, "fromPob"}, {ScoreRole, "score"},         {GradeRole, "grade"},
+        {ExtraRole, "extra"},     {NotesRole, "notes"},         {FirstRole, "first"},
+        {RarityRole, "rarity"},   {ItemLevelRole, "itemLevel"}, {ModsRole, "mods"},
+        {QualityRole, "quality"}, {CorruptedRole, "corrupted"}, {FracturedRole, "fractured"},
     };
 }
 

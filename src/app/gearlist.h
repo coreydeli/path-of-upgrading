@@ -35,6 +35,26 @@ public:
     friend bool operator==(const GearNote &, const GearNote &) = default;
 };
 
+// One mod of a worn item, under its heading.
+struct ModLine
+{
+    Q_GADGET
+    QML_VALUE_TYPE(modLine)
+
+    Q_PROPERTY(QString group MEMBER group)
+    Q_PROPERTY(QString text MEMBER text)
+    Q_PROPERTY(bool fractured MEMBER fractured)
+    Q_PROPERTY(bool starts MEMBER starts)
+
+public:
+    QString group; // "Prefixes"
+    QString text;  // "+33 to maximum Life"
+    bool fractured = false;
+    bool starts = false; // the first of its group, where its heading goes
+
+    friend bool operator==(const ModLine &, const ModLine &) = default;
+};
+
 // What the character you play wears, as the window lists it: each of the
 // main slots, worn or not, then the second weapon set, flasks, charms and
 // jewels it has on.
@@ -69,6 +89,10 @@ public:
         FirstRole,     // the first of the main slots, or of the others
         RarityRole,    // "Rare", empty when there is nothing on
         ItemLevelRole, // 82, or 0 when there is nothing on or the item doesn't say
+        ModsRole,      // QList<ModLine>: its mods in the game's order, empty when nothing is on
+        QualityRole,   // 20, or 0 when it has none or nothing is on
+        CorruptedRole,
+        FracturedRole, // any of its mods is fractured
     };
 
     // They have to outlive it.
