@@ -25,6 +25,7 @@ qt_add_library(pou_app STATIC
     itemreader.cpp itemreader.h
     itemreport.cpp itemreport.h
     listingjudge.cpp listingjudge.h
+    notehelp.cpp notehelp.h
     onboarding.cpp onboarding.h
     ownstyle.cpp ownstyle.h
     overlayoptions.cpp overlayoptions.h
@@ -88,6 +89,7 @@ qt_add_qml_module(pou_app
         qml/ResultRow.qml
         qml/ResultsCard.qml
         qml/ResultsWindow.qml
+        qml/NoteLabel.qml
         qml/Notice.qml
         qml/Plate.qml
         qml/RowRule.qml

@@ -454,6 +454,10 @@ private Q_SLOTS:
         QVERIFY(each.size() > 1);
         QCOMPARE(each.join(u", "_s), site.upgrades.chosenLookFor());
         QCOMPARE(site.in(u"Helmet"_s, RecommendedUpgrades::LookForStatsRole).toStringList(), each);
+        // with what those mean, for their tooltips
+        QVERIFY(!site.upgrades.lookForHelp().isEmpty());
+        QVERIFY(!site.upgrades.canRollHelp().isEmpty());
+        QCOMPARE_NE(site.upgrades.lookForHelp(), site.upgrades.canRollHelp());
         site.upgrades.choose(u"Helmet"_s);
         QCOMPARE(changed.size(), 1);
 
