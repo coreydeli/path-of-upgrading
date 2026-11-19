@@ -176,6 +176,19 @@ private Q_SLOTS:
         QCOMPARE(g.list.roleNames().value(GearList::RarityRole), QByteArray("rarity"));
     }
 
+    void itemLevel()
+    {
+        Item crown = helmet;
+        crown.itemLevel = 82;
+        Gear g;
+        g.play(wearing({{u"Helmet"_s, crown}, {u"Belt"_s, belt}}));
+        // 0 for an empty slot, and for an item that doesn't say
+        QCOMPARE(g.in(u"Helmet"_s, GearList::ItemLevelRole).toInt(), 82);
+        QCOMPARE(g.in(u"Belt"_s, GearList::ItemLevelRole).toInt(), 0);
+        QCOMPARE(g.in(u"Gloves"_s, GearList::ItemLevelRole).toInt(), 0);
+        QCOMPARE(g.list.roleNames().value(GearList::ItemLevelRole), QByteArray("itemLevel"));
+    }
+
     void unique()
     {
         Gear g;

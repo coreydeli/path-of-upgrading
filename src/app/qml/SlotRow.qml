@@ -16,6 +16,7 @@ FormCard.AbstractFormDelegate {
     required property string name
     required property string base
     required property bool fromPob
+    required property int itemLevel
     required property string score
     required property string grade
     // the ways the item falls short, or what an empty slot wants: { label, text }
@@ -30,6 +31,8 @@ FormCard.AbstractFormDelegate {
         const parts = [name];
         if (base !== "")
             parts.push(base);
+        if (itemLevel > 0)
+            parts.push(qsTr("item level %1").arg(itemLevel));
         if (fromPob)
             parts.push(qsTr("from Path of Building"));
         return parts.join(", ");
@@ -99,6 +102,8 @@ FormCard.AbstractFormDelegate {
                     const parts = [];
                     if (row.name !== "" && row.base !== "")
                         parts.push(row.base);
+                    if (row.name !== "" && row.itemLevel > 0)
+                        parts.push(qsTr("item level %1").arg(row.itemLevel));
                     if (row.name !== "" && row.fromPob)
                         parts.push(qsTr("from Path of Building"));
                     return parts.join(", ");

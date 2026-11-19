@@ -16,6 +16,7 @@ QQC2.AbstractButton {
     required property string base
     required property bool fromPob
     required property string rarity
+    required property int itemLevel
     required property string score
     required property string grade
 
@@ -30,6 +31,8 @@ QQC2.AbstractButton {
         const parts = [name];
         if (base !== "")
             parts.push(base);
+        if (itemLevel > 0)
+            parts.push(qsTr("item level %1").arg(itemLevel));
         if (fromPob)
             parts.push(qsTr("from Path of Building"));
         return parts.join(", ");
@@ -132,14 +135,28 @@ QQC2.AbstractButton {
             Layout.fillHeight: true
             spacing: 0
 
-            QQC2.Label {
-                objectName: "slotName"
+            RowLayout {
                 Layout.fillWidth: true
-                text: Words.slot(tile.slot)
-                color: Kirigami.Theme.disabledTextColor
-                font: Kirigami.Theme.smallFont
-                elide: Text.ElideRight
-                Accessible.ignored: true
+                spacing: Kirigami.Units.smallSpacing
+
+                QQC2.Label {
+                    objectName: "slotName"
+                    Layout.fillWidth: true
+                    text: Words.slot(tile.slot)
+                    color: Kirigami.Theme.disabledTextColor
+                    font: Kirigami.Theme.smallFont
+                    elide: Text.ElideRight
+                    Accessible.ignored: true
+                }
+
+                QQC2.Label {
+                    objectName: "tileItemLevel"
+                    visible: !tile.empty && tile.itemLevel > 0
+                    text: qsTr("Item level %1").arg(tile.itemLevel)
+                    color: Kirigami.Theme.disabledTextColor
+                    font: Kirigami.Theme.smallFont
+                    Accessible.ignored: true
+                }
             }
 
             QQC2.Label {
