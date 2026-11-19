@@ -48,6 +48,9 @@ class RecommendedUpgrades : public QAbstractListModel
     Q_PROPERTY(QStringList chosenCanRoll READ chosenCanRoll NOTIFY chosenChanged)
     // Whether there's an item in it to search upgrades for.
     Q_PROPERTY(bool chosenWorn READ chosenWorn NOTIFY chosenChanged)
+    // What "Look for" and "Can roll" mean, for their tooltips.
+    Q_PROPERTY(QString lookForHelp READ lookForHelp CONSTANT)
+    Q_PROPERTY(QString canRollHelp READ canRollHelp CONSTANT)
 
 public:
     enum Role {
@@ -83,6 +86,8 @@ public:
     QStringList chosenCanRoll() const;
     TradeReport chosenTrade() const { return m_states.value(m_chosen).report; }
     bool chosenWorn() const;
+    static QString lookForHelp();
+    static QString canRollHelp();
     // The same as find() and showResults() for the chosen slot.
     Q_INVOKABLE void findChosen();
     Q_INVOKABLE void showChosenResults();
