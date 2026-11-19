@@ -146,12 +146,10 @@ Item {
                 visible: lookFor.text !== ""
                 spacing: Kirigami.Units.largeSpacing
 
-                QQC2.Label {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                    topPadding: Kirigami.Units.smallSpacing
+                NoteLabel {
+                    objectName: "panelLookForLabel"
                     text: qsTr("Look for")
-                    color: Kirigami.Theme.disabledTextColor
+                    help: panel.upgrades.lookForHelp
                 }
 
                 StatChips {
@@ -169,12 +167,10 @@ Item {
                 visible: panel.upgrades.chosenCanRoll.length > 0
                 spacing: Kirigami.Units.largeSpacing
 
-                QQC2.Label {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                    topPadding: Kirigami.Units.smallSpacing
+                NoteLabel {
+                    objectName: "panelCanRollLabel"
                     text: qsTr("Can roll")
-                    color: Kirigami.Theme.disabledTextColor
+                    help: panel.upgrades.canRollHelp
                 }
 
                 StatChips {
