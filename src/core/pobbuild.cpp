@@ -82,7 +82,6 @@ bool isMetadata(const QString &name)
         u"Suffix"_s,
         u"Catalyst"_s,
         u"CatalystQuality"_s,
-        u"Quality"_s,
         u"Sockets"_s,
         u"Rune"_s,
         u"Radius"_s,
@@ -550,6 +549,11 @@ PobItemText convertPobItem(const QString &raw, const QString &slot)
                     hasAlt[n] = value == u"true";
                 else
                     alt[n] = value.toInt();
+                continue;
+            }
+            if (name == u"Quality") {
+                if (const int quality = value.toInt(); quality > 0)
+                    properties << u"Quality: +"_s + QString::number(quality) + u"% (augmented)"_s;
                 continue;
             }
             if (name == u"Item Level") {

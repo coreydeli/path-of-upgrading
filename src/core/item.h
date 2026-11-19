@@ -11,6 +11,10 @@
 
 namespace pou {
 
+// Whether a mod is a prefix or a suffix. Unknown for a mod that is neither
+// (implicit, rune, enchant) and for one nothing says which it is.
+enum class AffixKind { Unknown, Prefix, Suffix };
+
 // One line of item text, as listed in the popup.
 struct ItemLine
 {
@@ -20,6 +24,9 @@ struct ItemLine
     // explicit, implicit, rune, enchant, crafted, fractured, desecrated, augmented,
     // unmet, veiled, mutated; "base" for base properties and "info" for other properties
     QString tag;
+    // From the advanced copy's header above the mod, else from what the mod
+    // table says the item's class rolls the stat as.
+    AffixKind affix = AffixKind::Unknown;
 };
 
 // Prefix and suffix counts. Only advanced copies (Ctrl+Alt+C) say which mod
@@ -52,6 +59,7 @@ struct Item
     bool twoHanded = false;
     int itemLevel = 0; // 0 when the text doesn't show one
     int requiredLevel = 0;
+    int quality = 0; // percent, 0 when the item has none
     bool corrupted = false;
     bool unidentified = false;
     StatMap stats; // what gets scored

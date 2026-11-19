@@ -111,6 +111,31 @@ private Q_SLOTS:
         QCOMPARE(rollText(35.5), u"35.5"_s);
     }
 
+    void kindsComeFromTheTable()
+    {
+        const auto json =
+            QJsonDocument::fromJson("{\"classes\":{},\"kinds\":{\"Boots\":{\"# to maximum Life\":\"p\","
+                                    "\"#% to Cold Resistance\":\"s\",\"# to Spirit\":\"x\"}}}");
+        const auto mods = SlotMods::fromJson(json.object());
+        QCOMPARE(mods.kind(u"Boots"_s, u"# to maximum Life"_s), AffixKind::Prefix);
+        QCOMPARE(mods.kind(u"boots"_s, u"#% to cold resistance"_s), AffixKind::Suffix);
+        // not in the table, not a kind it knows, or a class it hasn't got
+        QCOMPARE(mods.kind(u"Boots"_s, u"# to Dexterity"_s), AffixKind::Unknown);
+        QCOMPARE(mods.kind(u"Boots"_s, u"# to Spirit"_s), AffixKind::Unknown);
+        QCOMPARE(mods.kind(u"Gloves"_s, u"# to maximum Life"_s), AffixKind::Unknown);
+        QCOMPARE(SlotMods().kind(u"Boots"_s, u"# to maximum Life"_s), AffixKind::Unknown);
+    }
+
+    void theShippedTableSaysPrefixOrSuffix()
+    {
+        const auto &mods = SlotMods::builtIn();
+        QCOMPARE(mods.kind(u"Rings"_s, u"#% to Lightning Resistance"_s), AffixKind::Suffix);
+        QCOMPARE(mods.kind(u"Rings"_s, u"Adds # to # Physical Damage to Attacks"_s), AffixKind::Prefix);
+        QCOMPARE(mods.kind(u"Boots"_s, u"# to maximum Life"_s), AffixKind::Prefix);
+        // a prefix and a suffix on different mods of the same class is left unknown
+        QCOMPARE(mods.kind(u"Boots"_s, u"# to Stun Threshold"_s), AffixKind::Unknown);
+    }
+
     void theShippedTableIsThere()
     {
         const auto &mods = SlotMods::builtIn();

@@ -10,11 +10,19 @@
 
 using namespace Qt::Literals::StringLiterals;
 
+// The parser asks for the table, and items can be parsed while the program
+// starts, before Qt has registered the resource by itself.
+static void registerTable()
+{
+    Q_INIT_RESOURCE(slotmods);
+}
+
 namespace pou {
 
 const SlotMods &SlotMods::builtIn()
 {
     static const SlotMods table = [] {
+        registerTable();
         // a resource built into the program, not one of the user's files, so it
         // can be read here in core
         QFile file(u":/pou/slotmods.json"_s);
@@ -48,12 +56,29 @@ SlotMods SlotMods::fromJson(const QJsonObject &table)
                 into.insert(key.key().toLower(), tiers);
         }
     }
+    const QJsonObject kinds = table.value(u"kinds").toObject();
+    for (auto cls = kinds.constBegin(); cls != kinds.constEnd(); ++cls) {
+        const QJsonObject keys = cls.value().toObject();
+        QHash<QString, AffixKind> &into = mods.m_kinds[cls.key().toLower()];
+        for (auto key = keys.constBegin(); key != keys.constEnd(); ++key) {
+            const QString kind = key.value().toString();
+            if (kind == u"p")
+                into.insert(key.key().toLower(), AffixKind::Prefix);
+            else if (kind == u"s")
+                into.insert(key.key().toLower(), AffixKind::Suffix);
+        }
+    }
     return mods;
 }
 
 QList<ModTier> SlotMods::tiers(const QString &itemClass, const QString &key) const
 {
     return m_classes.value(itemClass.trimmed().toLower()).value(key.toLower());
+}
+
+AffixKind SlotMods::kind(const QString &itemClass, const QString &key) const
+{
+    return m_kinds.value(itemClass.trimmed().toLower()).value(key.toLower(), AffixKind::Unknown);
 }
 
 bool SlotMods::allows(const QString &itemClass, const QString &key) const
