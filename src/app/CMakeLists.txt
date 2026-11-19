@@ -136,6 +136,8 @@ set(POU_FONTS
     Cinzel-Variable.ttf
     IBMPlexSans-Variable.ttf
     Inter-Variable.ttf
+    JetBrainsMono-Variable.ttf
+    SpaceGrotesk-Variable.ttf
     Spectral-Bold.ttf
     Spectral-Italic.ttf
     Spectral-Medium.ttf

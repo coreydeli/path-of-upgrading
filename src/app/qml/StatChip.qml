@@ -6,7 +6,8 @@ import org.kde.kirigami as Kirigami
 // One stat in a box of its own, so a list of them reads one at a time. In
 // Dossier it's a small plate with its corners cut, square when the
 // decorations are plain, in Material an outlined chip, and in Slate a plain
-// row with a square tick and a hairline under it, in Pocket a round pill, in Edge a box with a colored edge, and in Gilt a box with a gold hairline.
+// row with a square tick and a hairline under it, in Pocket a round pill, in Edge a box with a colored edge, in Gilt a box with a gold hairline, and in Cinder a square box with
+// uppercase text.
 Item {
     id: chip
 
@@ -61,6 +62,14 @@ Item {
         border.color: Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.4)
     }
 
+    Rectangle {
+        visible: Style.chip === "box"
+        anchors.fill: parent
+        color: "transparent"
+        border.width: 1
+        border.color: Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.6)
+    }
+
     Plate {
         visible: Style.chip === "plate" || Style.chip === "outline"
         anchors.fill: parent
@@ -95,5 +104,7 @@ Item {
         width: Math.max(0, chip.width - 2 * chip.across - chip.lead)
         text: chip.text
         wrapMode: Text.Wrap
+        font.capitalization: Style.chip === "box" ? Font.AllUppercase : Font.MixedCase
+        font.letterSpacing: Style.chip === "box" ? 0.8 : 0
     }
 }
