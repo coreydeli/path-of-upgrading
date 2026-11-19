@@ -119,6 +119,8 @@ qt_add_qml_module(pou_app
 
 # the fonts the program carries
 set(POU_FONTS
+    AlegreyaSC-Bold.ttf
+    AlegreyaSC-Medium.ttf
     BigShouldersDisplay-Black.ttf
     BigShouldersDisplay-Bold.ttf
     BigShouldersDisplay-ExtraBold.ttf
@@ -127,6 +129,7 @@ set(POU_FONTS
     BigShouldersText-Medium.ttf
     BigShouldersText-Regular.ttf
     BigShouldersText-SemiBold.ttf
+    Inter-Variable.ttf
     Spectral-Bold.ttf
     Spectral-Italic.ttf
     Spectral-Medium.ttf
