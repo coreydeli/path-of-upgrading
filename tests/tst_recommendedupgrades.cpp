@@ -418,6 +418,8 @@ private Q_SLOTS:
         const QStringList boots = site.upgrades.chosenCanRoll();
         QVERIFY(!boots.isEmpty());
         QVERIFY(boots.first().contains(u" at item level "_s));
+        QCOMPARE(site.upgrades.chosenCanRollKinds().size(), boots.size());
+        QVERIFY(site.upgrades.chosenCanRollKinds().contains(u"Suffix"_s));
 
         // an empty slot with a class
         site.upgrades.choose(u"Belt"_s);
@@ -454,6 +456,12 @@ private Q_SLOTS:
         QVERIFY(each.size() > 1);
         QCOMPARE(each.join(u", "_s), site.upgrades.chosenLookFor());
         QCOMPARE(site.in(u"Helmet"_s, RecommendedUpgrades::LookForStatsRole).toStringList(), each);
+        // each a prefix or a suffix, in the same order
+        const QStringList kinds = site.upgrades.chosenLookForKinds();
+        QCOMPARE(kinds.size(), each.size());
+        for (const QString &kind : kinds)
+            QVERIFY(kind == u"Prefix"_s || kind == u"Suffix"_s);
+        QCOMPARE(site.in(u"Helmet"_s, RecommendedUpgrades::LookForKindsRole).toStringList(), kinds);
         // with what those mean, for their tooltips
         QVERIFY(!site.upgrades.lookForHelp().isEmpty());
         QVERIFY(!site.upgrades.canRollHelp().isEmpty());

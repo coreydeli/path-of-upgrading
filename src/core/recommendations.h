@@ -18,8 +18,9 @@ struct WantedStat
 {
     QString label; // "Life"
     double minimum = 0;
-    double best = 0; // the most the slot's items roll of it, 0 when that's not known
-    int tier = 0;    // the lowest tier that rolls the minimum, 0 when that's not known
+    double best = 0;                     // the most the slot's items roll of it, 0 when that's not known
+    int tier = 0;                        // the lowest tier that rolls the minimum, 0 when that's not known
+    AffixKind kind = AffixKind::Unknown; // whether the item class rolls it as a prefix or a suffix
 
     friend bool operator==(const WantedStat &, const WantedStat &) = default;
 };
@@ -35,6 +36,8 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
 // "Life 60 or more (up to 149, tier 3 or better)" and "Cold Resistance 25 or
 // more", one each.
 QStringList wantedParts(const QList<WantedStat> &stats);
+// "Prefix" or "Suffix" for each of them, empty where the table can't say.
+QStringList wantedKinds(const QList<WantedStat> &stats);
 // The same, joined: "Life 60 or more (up to 149, tier 3 or better), Cold
 // Resistance 25 or more".
 QString wantedText(const QList<WantedStat> &stats);
@@ -45,6 +48,7 @@ struct RollRange
 {
     QString label; // "Life"
     ModTier top;
+    AffixKind kind = AffixKind::Unknown;
 
     friend bool operator==(const RollRange &, const RollRange &) = default;
 };
@@ -59,6 +63,8 @@ QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreO
 
 // "Life 100 to 149 at item level 82", or one number when the tier has no range.
 QString rollRangeText(const RollRange &range);
+// "Prefix" or "Suffix" for each of them, empty where the table can't say.
+QStringList rollKinds(const QList<RollRange> &ranges);
 
 struct Recommendation
 {

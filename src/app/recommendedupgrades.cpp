@@ -75,6 +75,8 @@ QVariant RecommendedUpgrades::data(const QModelIndex &index, int role) const
         return QVariant::fromValue(m_states.value(row.slot).report);
     case LookForStatsRole:
         return wantedParts(row.wants);
+    case LookForKindsRole:
+        return wantedKinds(row.wants);
     }
     return {};
 }
@@ -82,10 +84,15 @@ QVariant RecommendedUpgrades::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> RecommendedUpgrades::roleNames() const
 {
     return {
-        {SlotRole, "slot"},   {NameRole, "name"},
-        {BaseRole, "base"},   {ScoreRole, "score"},
-        {GradeRole, "grade"}, {LookForRole, "lookFor"},
-        {TradeRole, "trade"}, {LookForStatsRole, "lookForStats"},
+        {SlotRole, "slot"},
+        {NameRole, "name"},
+        {BaseRole, "base"},
+        {ScoreRole, "score"},
+        {GradeRole, "grade"},
+        {LookForRole, "lookFor"},
+        {TradeRole, "trade"},
+        {LookForStatsRole, "lookForStats"},
+        {LookForKindsRole, "lookForKinds"},
     };
 }
 
@@ -112,6 +119,16 @@ QString RecommendedUpgrades::chosenLookFor() const
 
 QStringList RecommendedUpgrades::chosenLookForStats() const
 {
+    return wantedParts(chosenWants());
+}
+
+QStringList RecommendedUpgrades::chosenLookForKinds() const
+{
+    return wantedKinds(chosenWants());
+}
+
+QList<WantedStat> RecommendedUpgrades::chosenWants() const
+{
     if (m_chosen.isEmpty())
         return {};
     const Character &character = m_active->character();
@@ -121,16 +138,29 @@ QStringList RecommendedUpgrades::chosenLookForStats() const
         // a two-handed weapon leaves the offhand empty
         if (offhandOutOfUse(character.gear, character.wielding, m_chosen))
             return {};
-        return wantedParts(wantedStats(m_chosen, nullptr, options));
+        return wantedStats(m_chosen, nullptr, options);
     }
     // an item with no gear score, like a unique, has nothing to look for
     const std::optional<GearScore> score = gearScore(*worn, options);
     if (!score || !score->isRated())
         return {};
-    return wantedParts(wantedStats(m_chosen, &*worn, options));
+    return wantedStats(m_chosen, &*worn, options);
 }
 
 QStringList RecommendedUpgrades::chosenCanRoll() const
+{
+    QStringList lines;
+    for (const RollRange &r : chosenRolls())
+        lines << rollRangeText(r);
+    return lines;
+}
+
+QStringList RecommendedUpgrades::chosenCanRollKinds() const
+{
+    return rollKinds(chosenRolls());
+}
+
+QList<RollRange> RecommendedUpgrades::chosenRolls() const
 {
     if (m_chosen.isEmpty())
         return {};
@@ -138,10 +168,7 @@ QStringList RecommendedUpgrades::chosenCanRoll() const
     const auto worn = character.gear.constFind(m_chosen);
     const bool isWorn = worn != character.gear.cend();
     const GearScoreOptions options = gearScoreOptions(character, m_chosen, m_priorities);
-    QStringList lines;
-    for (const RollRange &r : canRoll(m_chosen, isWorn ? &*worn : nullptr, options))
-        lines << rollRangeText(r);
-    return lines;
+    return canRoll(m_chosen, isWorn ? &*worn : nullptr, options);
 }
 
 bool RecommendedUpgrades::chosenWorn() const

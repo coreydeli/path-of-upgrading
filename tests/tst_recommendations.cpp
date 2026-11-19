@@ -110,6 +110,18 @@ private Q_SLOTS:
         QVERIFY(wantedStats(u"Boots"_s, &rolled, {}).isEmpty());
     }
 
+    void eachStatSaysPrefixOrSuffix()
+    {
+        const QList<WantedStat> boots = wantedStats(u"Boots"_s, nullptr, {});
+        QCOMPARE(wantedKinds(boots), (QStringList{u"Prefix"_s, u"Prefix"_s, u"Suffix"_s}));
+        QCOMPARE(boots.at(2).kind, AffixKind::Suffix);
+
+        const QList<RollRange> rolls = canRoll(u"Boots"_s, nullptr, {});
+        QCOMPARE(rollKinds(rolls).size(), rolls.size());
+        QCOMPARE(rollKinds(rolls).first(), u"Prefix"_s);
+        QCOMPARE(rollKinds(rolls).at(2), u"Suffix"_s);
+    }
+
     void whatASlotCanRollIsItsTopTiers()
     {
         const QList<RollRange> boots = canRoll(u"Boots"_s, nullptr, {});

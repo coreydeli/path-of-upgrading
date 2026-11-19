@@ -67,7 +67,8 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
         out << WantedStat{.label = w.label,
                           .minimum = minimum,
                           .best = top ? top->high : 0,
-                          .tier = tierFor(mods, itemClass, w.key, minimum).value_or(0)};
+                          .tier = tierFor(mods, itemClass, w.key, minimum).value_or(0),
+                          .kind = mods.kind(itemClass, w.key)};
         if (out.size() == count)
             break;
     }
@@ -85,6 +86,14 @@ QStringList wantedParts(const QList<WantedStat> &stats)
     return parts;
 }
 
+QStringList wantedKinds(const QList<WantedStat> &stats)
+{
+    QStringList kinds;
+    for (const WantedStat &s : stats)
+        kinds << affixName(s.kind);
+    return kinds;
+}
+
 QString wantedText(const QList<WantedStat> &stats)
 {
     return wantedParts(stats).join(u", "_s);
@@ -97,7 +106,7 @@ QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreO
     QList<RollRange> out;
     for (const SearchWeight &w : wantedWeights(slot, itemClass, options)) {
         if (const auto top = mods.best(itemClass, w.key))
-            out << RollRange{.label = w.label, .top = *top};
+            out << RollRange{.label = w.label, .top = *top, .kind = mods.kind(itemClass, w.key)};
         if (out.size() == count)
             break;
     }
@@ -109,6 +118,14 @@ QString rollRangeText(const RollRange &range)
     const ModTier &t = range.top;
     const QString roll = t.low == t.high ? rollText(t.high) : rollText(t.low) + u" to "_s + rollText(t.high);
     return range.label + u' ' + roll + u" at item level "_s + QString::number(t.level);
+}
+
+QStringList rollKinds(const QList<RollRange> &ranges)
+{
+    QStringList kinds;
+    for (const RollRange &r : ranges)
+        kinds << affixName(r.kind);
+    return kinds;
 }
 
 QList<Recommendation> recommendedUpgrades(const Character &character, const PobPriorities &priorities,
