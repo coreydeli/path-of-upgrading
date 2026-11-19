@@ -74,7 +74,7 @@ QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearS
     return out;
 }
 
-QString wantedText(const QList<WantedStat> &stats)
+QStringList wantedParts(const QList<WantedStat> &stats)
 {
     QStringList parts;
     for (const WantedStat &s : stats)
@@ -82,7 +82,12 @@ QString wantedText(const QList<WantedStat> &stats)
                      (s.best > 0 ? u" (up to "_s + rollText(s.best) +
                                        (s.tier > 0 ? u", tier %1 or better"_s.arg(s.tier) : QString()) + u')'
                                  : QString());
-    return parts.join(u", "_s);
+    return parts;
+}
+
+QString wantedText(const QList<WantedStat> &stats)
+{
+    return wantedParts(stats).join(u", "_s);
 }
 
 QList<RollRange> canRoll(const QString &slot, const Item *worn, const GearScoreOptions &options, int count)

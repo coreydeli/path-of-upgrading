@@ -32,7 +32,11 @@ struct WantedStat
 QList<WantedStat> wantedStats(const QString &slot, const Item *worn, const GearScoreOptions &options,
                               int count = 3);
 
-// "Life 60 or more (up to 149, tier 3 or better), Cold Resistance 25 or more".
+// "Life 60 or more (up to 149, tier 3 or better)" and "Cold Resistance 25 or
+// more", one each.
+QStringList wantedParts(const QList<WantedStat> &stats);
+// The same, joined: "Life 60 or more (up to 149, tier 3 or better), Cold
+// Resistance 25 or more".
 QString wantedText(const QList<WantedStat> &stats);
 
 // What a slot can roll of a stat the build wants: the top tier's range, and the
