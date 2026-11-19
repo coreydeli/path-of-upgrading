@@ -18,14 +18,14 @@ Item {
     readonly property color ink: Kirigami.Theme.textColor
     readonly property color ground: Kirigami.Theme.backgroundColor
 
-    implicitWidth: Look.material ? (twoCells ? 52 : 40) * Look.dp : twoCells ? cells.implicitWidth : Kirigami.Units.gridUnit
-    implicitHeight: Look.material ? (twoCells ? 32 : 40) * Look.dp : Kirigami.Units.gridUnit
+    implicitWidth: Look.flat ? (twoCells ? 52 : 40) * Look.dp : twoCells ? cells.implicitWidth : Kirigami.Units.gridUnit
+    implicitHeight: Look.flat ? (twoCells ? 32 : 40) * Look.dp : Kirigami.Units.gridUnit
     opacity: control.enabled ? 1 : 0.4
 
     Row {
         id: cells
 
-        visible: mark.twoCells && !Look.material
+        visible: mark.twoCells && !Look.flat
         anchors.centerIn: parent
 
         Repeater {
@@ -55,7 +55,7 @@ Item {
     }
 
     Rectangle {
-        visible: !mark.twoCells && !Look.material
+        visible: !mark.twoCells && !Look.flat
         anchors.centerIn: parent
         width: Math.round(Kirigami.Units.gridUnit * 0.7)
         height: width
@@ -70,7 +70,7 @@ Item {
     Rectangle {
         id: track
 
-        visible: Look.material && mark.twoCells
+        visible: Look.flat && mark.twoCells
         anchors.centerIn: parent
         width: 52 * Look.dp
         height: 32 * Look.dp
@@ -128,7 +128,7 @@ Item {
     Rectangle {
         id: box
 
-        visible: Look.material && !mark.twoCells
+        visible: Look.flat && !mark.twoCells
         anchors.centerIn: parent
         width: 18 * Look.dp
         height: width

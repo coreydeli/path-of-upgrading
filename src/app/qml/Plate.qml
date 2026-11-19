@@ -19,7 +19,7 @@ Item {
     readonly property real h: lineWidth / 2
 
     Rectangle {
-        visible: Style.material
+        visible: Style.flat
         anchors.fill: parent
         radius: plate.radius
         color: plate.fill
@@ -29,7 +29,7 @@ Item {
 
     Shape {
         anchors.fill: parent
-        visible: !Style.material
+        visible: !Style.flat
         preferredRendererType: Shape.CurveRenderer
 
         ShapePath {

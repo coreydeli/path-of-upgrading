@@ -112,7 +112,7 @@ private Q_SLOTS:
     void cleanup()
     {
         m_style->setProperty("plain", false);
-        m_style->setProperty("material", false);
+        m_style->setProperty("design", u"dossier"_s);
         m_style->setProperty("appColors", false);
         m_style->setProperty("headingFamily", u"Big Shoulders Display"_s);
     }
@@ -136,21 +136,21 @@ private Q_SLOTS:
 
     void rarityIsReadableOnLightMaterial()
     {
-        m_style->setProperty("material", true);
+        m_style->setProperty("design", u"material"_s);
         const QColor surface = hex("#fef7ff");
         for (const QString &name :
              {u"Normal"_s, u"Magic"_s, u"Rare"_s, u"Unique"_s, u"Currency"_s, u"Gem"_s}) {
             const QColor c = call(u"rarityOnLight"_s, {name}).value<QColor>();
             QVERIFY2(contrast(c, surface) >= 4.5, qPrintable(name));
         }
-        m_style->setProperty("material", false);
+        m_style->setProperty("design", u"dossier"_s);
     }
 
     void rarityKeepsTheGamesColorsOnDarkMaterial()
     {
-        m_style->setProperty("material", true);
+        m_style->setProperty("design", u"material"_s);
         QCOMPARE(call(u"rarityOnDark"_s, {u"Rare"_s}).value<QColor>(), hex("#ffff77"));
-        m_style->setProperty("material", false);
+        m_style->setProperty("design", u"dossier"_s);
     }
 
     void anUnknownRarityIsText()

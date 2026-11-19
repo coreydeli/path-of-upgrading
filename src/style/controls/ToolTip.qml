@@ -28,7 +28,7 @@ T.ToolTip {
     }
 
     background: Rectangle {
-        radius: Look.material ? Look.shapeExtraSmall : 0
+        radius: Look.flat ? Look.shapeExtraSmall : 0
         color: Kirigami.Theme.backgroundColor
     }
 }

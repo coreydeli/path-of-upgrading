@@ -36,7 +36,7 @@ Rectangle {
     implicitWidth: Kirigami.Units.gridUnit * 26
     implicitHeight: content.implicitHeight + 2 * Kirigami.Units.largeSpacing
     color: Kirigami.Theme.backgroundColor
-    radius: Style.material ? Style.shapeLarge : 0
+    radius: Style.flat ? Style.shapeLarge : 0
 
     ColumnLayout {
         id: content

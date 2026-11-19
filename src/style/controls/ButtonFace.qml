@@ -18,14 +18,14 @@ Item {
     readonly property color ground: Kirigami.Theme.backgroundColor
 
     implicitWidth: 3 * Kirigami.Units.gridUnit
-    implicitHeight: Look.material ? 40 * Look.dp : Kirigami.Units.gridUnit + 2 * Kirigami.Units.smallSpacing
+    implicitHeight: Look.flat ? 40 * Look.dp : Kirigami.Units.gridUnit + 2 * Kirigami.Units.smallSpacing
 
-    // Material: a pill, filled when it's the one to press, outlined otherwise
-    // and bare when flat
+    // The soft looks: a pill or a corner of the look's own, filled when it's
+    // the one to press, outlined otherwise and bare when flat
     Rectangle {
-        visible: Look.material
+        visible: Look.flat
         anchors.fill: parent
-        radius: height / 2
+        radius: Look.pill ? height / 2 : Look.shapeButton
         color: face.primary ? Kirigami.Theme.highlightColor : "transparent"
         opacity: face.control.enabled ? 1 : 0.5
         border.width: face.primary || face.flat ? 0 : 1
@@ -41,7 +41,7 @@ Item {
     }
 
     Rectangle {
-        visible: !Look.material
+        visible: !Look.flat
         anchors.fill: parent
         color: {
             if (face.control.down)

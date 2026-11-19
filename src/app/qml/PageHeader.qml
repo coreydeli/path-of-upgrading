@@ -26,10 +26,10 @@ ColumnLayout {
 
         Rectangle {
             x: header.inset
-            width: Math.min(slab.implicitWidth + (Style.material ? 0 : 2 * Kirigami.Units.largeSpacing),
+            width: Math.min(slab.implicitWidth + (Style.flat ? 0 : 2 * Kirigami.Units.largeSpacing),
                             parent.width - 2 * header.inset)
             height: parent.height
-            color: Style.material ? "transparent" : Style.paper
+            color: Style.flat ? "transparent" : Style.paper
             Accessible.role: Accessible.Heading
             Accessible.name: header.title
 
@@ -37,10 +37,10 @@ ColumnLayout {
                 id: slab
 
                 anchors.centerIn: parent
-                width: Math.min(implicitWidth, parent.width - (Style.material ? 0 : 2 * Kirigami.Units.largeSpacing))
+                width: Math.min(implicitWidth, parent.width - (Style.flat ? 0 : 2 * Kirigami.Units.largeSpacing))
                 elide: Text.ElideRight
                 font: Style.titleFont(Kirigami.Theme.defaultFont, 1.8)
-                color: Style.material ? Kirigami.Theme.textColor : Style.ink
+                color: Style.flat ? Kirigami.Theme.textColor : Style.ink
                 text: header.title
             }
         }
@@ -54,7 +54,7 @@ ColumnLayout {
         objectName: "pageDescription"
         visible: header.description !== ""
         color: Kirigami.Theme.disabledTextColor
-        font.italic: !Style.material
+        font.italic: Style.dossier
         text: header.description
         wrapMode: Text.WordWrap
     }
