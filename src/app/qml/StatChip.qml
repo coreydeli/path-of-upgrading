@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 // One stat in a box of its own, so a list of them reads one at a time. In
 // Dossier it's a small plate with its corners cut, square when the
 // decorations are plain, in Material an outlined chip, and in Slate a plain
-// row with a square tick and a hairline under it, in Pocket a round pill, and in Edge a box with a colored edge.
+// row with a square tick and a hairline under it, in Pocket a round pill, in Edge a box with a colored edge, and in Gilt a box with a gold hairline.
 Item {
     id: chip
 
@@ -49,6 +49,16 @@ Item {
         width: 3
         height: parent.height
         color: Kirigami.Theme.highlightColor
+    }
+
+    Rectangle {
+        visible: Style.chip === "hairline"
+        anchors.fill: parent
+        radius: Style.shapeSmall
+        color: "transparent"
+        border.width: 1
+        // dim gold, as the accent is
+        border.color: Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.4)
     }
 
     Plate {
