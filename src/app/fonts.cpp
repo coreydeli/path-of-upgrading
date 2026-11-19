@@ -34,6 +34,8 @@ bool addBundledFonts()
     const QStringList files = {
         u"AlegreyaSC-Bold"_s,
         u"AlegreyaSC-Medium"_s,
+        u"BarlowSemiCondensed-Bold"_s,
+        u"BarlowSemiCondensed-Medium"_s,
         u"BigShouldersDisplay-Black"_s,
         u"BigShouldersDisplay-Bold"_s,
         u"BigShouldersDisplay-ExtraBold"_s,
@@ -42,6 +44,7 @@ bool addBundledFonts()
         u"BigShouldersText-Medium"_s,
         u"BigShouldersText-Regular"_s,
         u"BigShouldersText-SemiBold"_s,
+        u"IBMPlexSans-Variable"_s,
         u"Inter-Variable"_s,
         u"Spectral-Bold"_s,
         u"Spectral-Italic"_s,
