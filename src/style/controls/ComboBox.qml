@@ -17,7 +17,7 @@ T.ComboBox {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding,
                              implicitIndicatorHeight + topPadding + bottomPadding)
-    leftPadding: Look.material ? 16 * Look.dp : Kirigami.Units.smallSpacing * 2
+    leftPadding: Look.flat ? 16 * Look.dp : Kirigami.Units.smallSpacing * 2
     rightPadding: (indicator ? indicator.width : 0) + Kirigami.Units.smallSpacing * 2
     topPadding: Kirigami.Units.smallSpacing
     bottomPadding: Kirigami.Units.smallSpacing
@@ -36,13 +36,13 @@ T.ComboBox {
         contentItem: Text {
             text: model[control.textRole] ?? model.modelData ?? ""
             font: control.font
-            color: parent.highlighted && !Look.material ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor
+            color: parent.highlighted && !Look.flat ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle {
             color: {
-                if (Look.material)
+                if (Look.flat)
                     return parent.highlighted ? Look.tint(control.ground, control.ink, 0.1) : "transparent";
                 return parent.highlighted ? Kirigami.Theme.highlightColor : "transparent";
             }
@@ -91,11 +91,11 @@ T.ComboBox {
 
     background: Item {
         implicitWidth: 7 * Kirigami.Units.gridUnit
-        implicitHeight: Look.material ? 40 * Look.dp : Kirigami.Units.gridUnit + 2 * Kirigami.Units.smallSpacing
+        implicitHeight: Look.flat ? 40 * Look.dp : Kirigami.Units.gridUnit + 2 * Kirigami.Units.smallSpacing
 
         // Material: an outlined box
         Rectangle {
-            visible: Look.material
+            visible: Look.flat
             anchors.fill: parent
             radius: Look.shapeExtraSmall
             color: "transparent"
@@ -105,7 +105,7 @@ T.ComboBox {
         }
 
         Rectangle {
-            visible: !Look.material
+            visible: !Look.flat
             anchors {
                 left: parent.left
                 right: parent.right
@@ -133,10 +133,10 @@ T.ComboBox {
 
         // Material's menu is a rounded surface a step up from the page
         background: Rectangle {
-            radius: Look.material ? Look.shapeExtraSmall : 0
-            color: Look.material ? Look.tint(control.ground, control.ink, 0.06) : Kirigami.Theme.backgroundColor
+            radius: Look.flat ? Look.shapeExtraSmall : 0
+            color: Look.flat ? Look.tint(control.ground, control.ink, 0.06) : Kirigami.Theme.backgroundColor
             border.width: 1
-            border.color: Look.material ? Look.tint(control.ground, control.ink, 0.2) : control.ink
+            border.color: Look.flat ? Look.tint(control.ground, control.ink, 0.2) : control.ink
         }
     }
 }

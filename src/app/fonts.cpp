@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "app/fonts.h"
 
+#include "core/designs.h"
+
 #include <QFontDatabase>
 
 using namespace Qt::Literals::StringLiterals;
@@ -9,12 +11,12 @@ namespace pou {
 
 QString headingFontFamily()
 {
-    return u"Big Shoulders Display"_s;
+    return designInfo(Design::Dossier).headingFont;
 }
 
 QString textFontFamily()
 {
-    return u"Spectral"_s;
+    return designInfo(Design::Dossier).textFont;
 }
 
 QStringList scalableFamilies()

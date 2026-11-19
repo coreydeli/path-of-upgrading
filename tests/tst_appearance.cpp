@@ -507,22 +507,69 @@ private Q_SLOTS:
         QCOMPARE(window(), before);
     }
 
-    void theMaterialSchemesAreFilledIn()
+    // every look that has a light and a dark has both files
+    void theLooksSchemesAreFilledIn()
     {
         const QStringList sets = {u"Button"_s,  u"Complementary"_s, u"Header"_s, u"Selection"_s,
                                   u"Tooltip"_s, u"View"_s,          u"Window"_s};
-        for (const QString &name : {u"MaterialLight"_s, u"MaterialDark"_s}) {
-            const QString file =
-                QFileInfo(colorsFile).dir().filePath(u"PathOfUpgrading"_s + name + u".colors"_s);
-            const KSharedConfigPtr config = KSharedConfig::openConfig(file, KConfig::SimpleConfig);
-            QVERIFY2(config->hasGroup(u"General"_s), qPrintable(file));
-            for (const QString &set : sets) {
-                const KConfigGroup group = config->group(u"Colors:"_s + set);
-                for (const char *key : {"BackgroundNormal", "BackgroundAlternate", "ForegroundNormal",
-                                        "ForegroundInactive", "DecorationFocus", "DecorationHover"})
-                    QVERIFY2(group.hasKey(key), qPrintable(name + u"/"_s + set));
+        int checked = 0;
+        for (const DesignInfo &info : designs()) {
+            if (info.schemeName.isEmpty())
+                continue;
+            for (const QString &brightness : {u"Light"_s, u"Dark"_s}) {
+                const QString name = info.schemeName + brightness;
+                const QString file =
+                    QFileInfo(colorsFile).dir().filePath(u"PathOfUpgrading"_s + name + u".colors"_s);
+                const KSharedConfigPtr config = KSharedConfig::openConfig(file, KConfig::SimpleConfig);
+                QVERIFY2(config->hasGroup(u"General"_s), qPrintable(file));
+                for (const QString &set : sets) {
+                    const KConfigGroup group = config->group(u"Colors:"_s + set);
+                    for (const char *key : {"BackgroundNormal", "BackgroundAlternate", "ForegroundNormal",
+                                            "ForegroundInactive", "DecorationFocus", "DecorationHover"})
+                        QVERIFY2(group.hasKey(key), qPrintable(name + u"/"_s + set));
+                }
+                ++checked;
             }
         }
+        QVERIFY(checked >= 2);
+    }
+
+    void listsEveryLookForThePickers()
+    {
+        Look look;
+        const QVariantList list = look.appearance.designList();
+        QCOMPARE(list.size(), designs().size());
+        for (int i = 0; i < list.size(); ++i) {
+            const QVariantMap entry = list.at(i).toMap();
+            QCOMPARE(entry.value(u"id"_s).toString(), designs().at(i).id);
+            QCOMPARE(entry.value(u"name"_s).toString(), designs().at(i).name);
+            QCOMPARE(entry.value(u"swatch"_s).toStringList().size(), 4);
+        }
+    }
+
+    void onlyTheLooksWithALightPaletteHaveABrightness()
+    {
+        Settings first;
+        first.appearance.brightness = Brightness::Light;
+        Look dossier(first);
+        QVERIFY(!dossier.appearance.hasLight());
+        // always dark, whatever was chosen
+        QVERIFY(dossier.appearance.isDark());
+
+        first.appearance.design = Design::Material;
+        Look material(first);
+        QVERIFY(material.appearance.hasLight());
+        QVERIFY(!material.appearance.isDark());
+    }
+
+    void aLooksOwnFontsComeFromItsTable()
+    {
+        Look dossier;
+        QCOMPARE(dossier.appearance.designHeadingFont(), u"Big Shoulders Display"_s);
+        QCOMPARE(dossier.appearance.designTextFont(), u"Spectral"_s);
+        dossier.appearance.setDesign(u"material"_s);
+        QCOMPARE(dossier.appearance.designHeadingFont(), QString());
+        QCOMPARE(dossier.appearance.designTextFont(), QString());
     }
 
     // The scheme in the source is what the design says it is.

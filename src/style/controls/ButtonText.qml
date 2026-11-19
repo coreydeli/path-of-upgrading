@@ -19,7 +19,7 @@ Text {
     elide: Text.ElideRight
     opacity: control.enabled ? 1 : 0.4
     color: {
-        if (Look.material)
+        if (Look.flat)
             return primary ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.linkColor;
         return primary || control.down ? Kirigami.Theme.backgroundColor : Kirigami.Theme.textColor;
     }

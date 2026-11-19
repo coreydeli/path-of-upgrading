@@ -117,8 +117,7 @@ sh ../.github/scripts/run-tests.sh
 %files
 %license LICENSE
 %doc README.md
-%license %{_datadir}/licenses/%{name}/OFL-Spectral.txt
-%license %{_datadir}/licenses/%{name}/OFL-BigShoulders.txt
+%license %{_datadir}/licenses/%{name}/OFL-*.txt
 %{_bindir}/%{name}
 %{_libdir}/qt6/plugins/kf6/kirigami/platform/PouStyle.so
 %{_datadir}/applications/io.github.coreydeli.PathOfUpgrading.desktop

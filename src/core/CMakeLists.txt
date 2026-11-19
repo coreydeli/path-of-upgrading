@@ -8,6 +8,7 @@ add_library(pou_core STATIC
     catalog.cpp catalog.h
     character.cpp character.h
     characterdata.cpp characterdata.h
+    designs.cpp designs.h
     evaluation.cpp evaluation.h
     firstrun.cpp firstrun.h
     gearscore.cpp gearscore.h

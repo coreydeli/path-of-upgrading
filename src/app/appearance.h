@@ -6,6 +6,7 @@
 #include <QFont>
 #include <QObject>
 #include <QString>
+#include <QVariantList>
 #include <QtQmlIntegration/qqmlintegration.h>
 
 class KColorSchemeManager;
@@ -30,13 +31,18 @@ class Appearance : public QObject
     Q_PROPERTY(QString colors READ colors WRITE setColors NOTIFY changed)
     // "full" or "plain"
     Q_PROPERTY(QString decorations READ decorations WRITE setDecorations NOTIFY changed)
-    // "dossier" or "material"
+    // the id of one of the `designs`
     Q_PROPERTY(QString design READ design WRITE setDesign NOTIFY changed)
-    // "desktop", "light" or "dark", which only Material has a say in
+    // Every look, for the pickers: its id, name, note and the four colors of
+    // its swatch.
+    Q_PROPERTY(QVariantList designs READ designList CONSTANT)
+    // "desktop", "light" or "dark", for the looks that have both
     Q_PROPERTY(QString brightness READ brightness WRITE setBrightness NOTIFY changed)
     Q_PROPERTY(bool material READ isMaterial NOTIFY changed)
-    // Whether the colors on the app are dark: always in Dossier, and in
-    // Material as it's chosen, or as the desktop is.
+    // whether the look has a light palette, so there's a choice
+    Q_PROPERTY(bool hasLight READ hasLight NOTIFY changed)
+    // Whether the colors on the app are dark: always in a look with no light
+    // palette, and in the others as it's chosen, or as the desktop is.
     Q_PROPERTY(bool dark READ isDark NOTIFY changed)
     // Whether the app's colors are on, which they aren't when it's the
     // desktop's you chose or the scheme couldn't be found.
@@ -51,6 +57,9 @@ class Appearance : public QObject
     Q_PROPERTY(QString textFont READ textFont WRITE setTextFont NOTIFY changed)
     // In points, or 0 for the desktop's.
     Q_PROPERTY(double textSize READ textSize WRITE setTextSize NOTIFY changed)
+    // The look's own heading and text fonts, or empty for the desktop's.
+    Q_PROPERTY(QString designHeadingFont READ designHeadingFont NOTIFY changed)
+    Q_PROPERTY(QString designTextFont READ designTextFont NOTIFY changed)
     // The families the headings and the text are in now, after what isn't
     // installed has fallen back, and the desktop's size.
     Q_PROPERTY(QString headingFamily READ headingFamily NOTIFY changed)
@@ -61,8 +70,9 @@ class Appearance : public QObject
 
 public:
     // The scheme file is a KDE color scheme, read when the app's colors are
-    // wanted. The Material design's light and dark ones are in the same
-    // folder, as PathOfUpgradingMaterialLight.colors and ...Dark.colors.
+    // wanted. The other looks' light and dark ones are in the same folder, as
+    // PathOfUpgradingMaterialLight.colors and ...Dark.colors, named for the
+    // look's `schemeName`.
     Appearance(SettingsStore *settings, const QString &schemeFile, QObject *parent = nullptr);
     // Puts the desktop's font back.
     ~Appearance() override;
@@ -75,7 +85,11 @@ public:
     void setDesign(const QString &design);
     QString brightness() const;
     void setBrightness(const QString &brightness);
+    QVariantList designList() const;
     bool isMaterial() const { return appearance().design == Design::Material; }
+    bool hasLight() const { return designInfo(appearance().design).hasLight; }
+    QString designHeadingFont() const { return designInfo(appearance().design).headingFont; }
+    QString designTextFont() const { return designInfo(appearance().design).textFont; }
     bool isDark() const;
     bool hasAppColors() const { return m_appColors; }
     bool isPlain() const { return appearance().decorations == Decorations::Plain; }

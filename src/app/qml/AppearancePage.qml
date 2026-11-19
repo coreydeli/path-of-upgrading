@@ -10,16 +10,12 @@ ColumnsPage {
     id: appearancePage
 
     required property Appearance appearance
-    readonly property var designChoices: [
-        {
-            value: "dossier",
-            text: qsTr("Dossier")
-        },
-        {
-            value: "material",
-            text: qsTr("Material")
-        }
-    ]
+    readonly property var designChoices: appearance.designs.map(design => ({
+                value: design.id,
+                text: design.name
+            }))
+    // what the look picked says of itself
+    readonly property string designNote: appearance.designs.find(design => design.id === appearance.design)?.note ?? ""
     readonly property var brightnessChoices: [
         {
             value: "desktop",
@@ -64,7 +60,7 @@ ColumnsPage {
     readonly property string textName: appearance.textFont === "" ? appearance.textFamily : appearance.textFont
 
     title: qsTr("Appearance")
-    description: qsTr("Pick a design, colors and fonts.")
+    description: qsTr("Pick a look, colors and fonts.")
 
     SectionHeader {
         title: qsTr("Theme")
@@ -73,8 +69,8 @@ ColumnsPage {
     Sheet {
         FormCard.FormComboBoxDelegate {
             objectName: "designBox"
-            text: qsTr("Design")
-            description: qsTr("Dossier is the app's own look. Material follows Google's Material Design 3. It changes right away.")
+            text: qsTr("Look")
+            description: qsTr("%1. It changes right away.").arg(appearancePage.designNote)
             textRole: "text"
             valueRole: "value"
             model: appearancePage.designChoices
@@ -87,7 +83,7 @@ ColumnsPage {
         FormCard.FormComboBoxDelegate {
             objectName: "colorsBox"
             text: qsTr("Colors")
-            description: appearancePage.appearance.material ? qsTr("Material's own colors, or the ones your desktop uses.") : qsTr("The app's own dark colors, or the ones your desktop uses.")
+            description: appearancePage.appearance.hasLight ? qsTr("The look's own colors, or the ones your desktop uses.") : qsTr("The app's own dark colors, or the ones your desktop uses.")
             textRole: "text"
             valueRole: "value"
             model: appearancePage.colorChoices
@@ -103,9 +99,9 @@ ColumnsPage {
             id: brightnessBox
 
             objectName: "brightnessBox"
-            visible: appearancePage.appearance.material && appearancePage.appearance.colors === "app"
+            visible: appearancePage.appearance.hasLight && appearancePage.appearance.colors === "app"
             text: qsTr("Light or dark")
-            description: qsTr("Material's colors can be light or dark, or follow your desktop.")
+            description: qsTr("The look's colors can be light or dark, or follow your desktop.")
             textRole: "text"
             valueRole: "value"
             model: appearancePage.brightnessChoices
@@ -130,7 +126,7 @@ ColumnsPage {
         FormCard.FormComboBoxDelegate {
             objectName: "decorationsBox"
             text: qsTr("Decorations")
-            description: appearancePage.appearance.material ? qsTr("Plain leaves out the animation.") : qsTr("Plain gives square corners and no animation.")
+            description: appearancePage.appearance.design === "dossier" ? qsTr("Plain gives square corners and no animation.") : qsTr("Plain leaves out the animation.")
             textRole: "text"
             valueRole: "value"
             model: appearancePage.decorationChoices
@@ -237,13 +233,13 @@ ColumnsPage {
         current: appearancePage.appearance.headingFont
         onAboutToShow: families = appearancePage.appearance.families()
         specials: [
-            appearancePage.appearance.material ? {
+            appearancePage.appearance.designHeadingFont === "" ? {
                 value: "",
                 text: qsTr("Your desktop's")
             } : {
                 value: "",
-                text: qsTr("Big Shoulders Display"),
-                family: "Big Shoulders Display"
+                text: appearancePage.appearance.designHeadingFont,
+                family: appearancePage.appearance.designHeadingFont
             },
             {
                 value: "text",
@@ -261,13 +257,13 @@ ColumnsPage {
         current: appearancePage.appearance.textFont
         onAboutToShow: families = appearancePage.appearance.families()
         specials: [
-            appearancePage.appearance.material ? {
+            appearancePage.appearance.designTextFont === "" ? {
                 value: "",
                 text: qsTr("Your desktop's")
             } : {
                 value: "",
-                text: qsTr("Spectral"),
-                family: "Spectral"
+                text: appearancePage.appearance.designTextFont,
+                family: appearancePage.appearance.designTextFont
             }
         ]
         onPicked: value => appearancePage.appearance.textFont = value

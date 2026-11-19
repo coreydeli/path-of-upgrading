@@ -13,8 +13,8 @@ T.Button {
                             implicitContentWidth + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
-    verticalPadding: Look.material ? Kirigami.Units.smallSpacing : Kirigami.Units.smallSpacing + 1
-    horizontalPadding: Look.material ? 24 * Look.dp : Kirigami.Units.largeSpacing + 2
+    verticalPadding: Look.flat ? Kirigami.Units.smallSpacing : Kirigami.Units.smallSpacing + 1
+    horizontalPadding: Look.flat ? 24 * Look.dp : Kirigami.Units.largeSpacing + 2
     hoverEnabled: true
 
     contentItem: ButtonText {

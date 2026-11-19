@@ -16,27 +16,36 @@ QtObject {
     property bool appColors: false
     // the family the page titles are set in
     property string headingFamily: "Big Shoulders Display"
-    // Which design is on: Dossier, the app's own, or Material Design 3. The
-    // controls draw both, from the same colors.
-    property bool material: false
+    // Which look is on, by its id: Dossier, the app's own, Material Design 3
+    // and the rest. Each has its entry in Look's table, and the controls draw
+    // them all from the same colors.
+    property string design: "dossier"
+    readonly property bool dossier: Look.dossier
+    readonly property bool material: Look.material
+    // Whether it's drawn on the window's own background in soft shapes, as
+    // every look but Dossier is, and whether it has round pills and its cards
+    // framed.
+    readonly property bool flat: Look.flat
+    readonly property bool pill: Look.pill
+    readonly property bool framed: Look.framed
     // whether the colors on the app are dark, which Material's depend on
     property bool dark: true
     // Whether the plates are square, which is when the decorations are plain.
     property bool plain: false
 
     // how much is cut off the corners of a plate
-    readonly property real cut: plain || material ? 0 : 12
+    readonly property real cut: plain || !dossier ? 0 : 12
 
     // the paper the slabs and the fields are, and the ink on it
     readonly property color paper: Look.paper
     readonly property color ink: Look.ink
 
     onHeadingFamilyChanged: Look.headingFamily = headingFamily
-    onMaterialChanged: Look.material = material
+    onDesignChanged: Look.design = design
     onPlainChanged: Look.animated = !plain
     onDarkChanged: Look.dark = dark
 
-    // Material's shape scale and motion are in Look, as the controls draw them
+    // The shape scale and the motion are in Look, as the controls draw them
     readonly property real shapeSmall: Look.shapeSmall
     readonly property real shapeMedium: Look.shapeMedium
     readonly property real shapeLarge: Look.shapeLarge
@@ -44,10 +53,10 @@ QtObject {
     readonly property int shortDuration: Look.shortDuration
     readonly property int mediumDuration: Look.mediumDuration
 
-    // The item colors the game's players read at a glance. On a light Material
-    // surface they're darkened, each to 4.5 to 1 or better against Material's surfaces.
+    // The item colors the game's players read at a glance. On a light surface
+    // they're darkened, each to 4.5 to 1 or better against Material's.
     function rarity(rarity: string, theme): color {
-        const light = material && theme.backgroundColor.hslLightness > 0.6;
+        const light = !dossier && theme.backgroundColor.hslLightness > 0.6;
         switch (rarity) {
         case "Normal":
             return light ? "#4a4a4a" : "#c8c8c8";
@@ -103,12 +112,11 @@ QtObject {
 
     // the line round a plate, and the finer one inside it
     function frame(theme): color {
-        // Material's outline variant
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, material ? 0.2 : 0.28);
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, Look.spec.line);
     }
 
     function inner(theme): color {
-        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, material ? 0.12 : 0.14);
+        return Kirigami.ColorUtils.linearInterpolation(theme.backgroundColor, theme.textColor, Look.spec.rule);
     }
 
     // the one color besides the text, which is teal in the app's scheme

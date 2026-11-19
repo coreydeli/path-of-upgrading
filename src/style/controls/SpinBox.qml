@@ -31,9 +31,9 @@ T.SpinBox {
         z: 2
         text: control.displayText
         font: Look.figureFont(control.font, 0.8)
-        color: Look.material ? control.ink : Look.ink
+        color: Look.flat ? control.ink : Look.ink
         selectionColor: Kirigami.Theme.highlightColor
-        selectedTextColor: Look.material ? Kirigami.Theme.highlightedTextColor : control.ground
+        selectedTextColor: Look.flat ? Kirigami.Theme.highlightedTextColor : control.ground
         horizontalAlignment: Qt.AlignHCenter
         verticalAlignment: Qt.AlignVCenter
         readOnly: !control.editable
@@ -58,7 +58,7 @@ T.SpinBox {
             anchors.centerIn: parent
             font: Look.figureFont(control.font, 0.8)
             text: stepItem.up ? "+" : "-"
-            color: stepItem.pressed || stepItem.hovered || Look.material ? Kirigami.Theme.highlightColor
+            color: stepItem.pressed || stepItem.hovered || Look.flat ? Kirigami.Theme.highlightColor
                                                                          : Look.tint(control.ground, control.ink, 0.7)
         }
     }
@@ -81,13 +81,13 @@ T.SpinBox {
 
         // Dossier: paper between the steps. Material: one outlined box.
         Rectangle {
-            x: Look.material ? 0 : control.step
-            width: Look.material ? parent.width : parent.width - 2 * control.step
+            x: Look.flat ? 0 : control.step
+            width: Look.flat ? parent.width : parent.width - 2 * control.step
             height: parent.height
-            radius: Look.material ? Look.shapeExtraSmall : 0
-            color: Look.material ? "transparent" : Look.paper
-            border.width: Look.material ? (control.activeFocus ? 2 : 1) : control.activeFocus ? 2 : 0
-            border.color: Look.material && !control.activeFocus ? Look.tint(control.ground, control.ink, 0.5)
+            radius: Look.flat ? Look.shapeExtraSmall : 0
+            color: Look.flat ? "transparent" : Look.paper
+            border.width: Look.flat ? (control.activeFocus ? 2 : 1) : control.activeFocus ? 2 : 0
+            border.color: Look.flat && !control.activeFocus ? Look.tint(control.ground, control.ink, 0.5)
                                                                 : Kirigami.Theme.highlightColor
         }
     }

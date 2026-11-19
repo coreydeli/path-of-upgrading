@@ -25,16 +25,6 @@ Decorations decorationsFromId(QStringView id)
     return id == u"plain" ? Decorations::Plain : Decorations::Full;
 }
 
-QString designId(Design design)
-{
-    return design == Design::Material ? u"material"_s : u"dossier"_s;
-}
-
-Design designFromId(QStringView id)
-{
-    return id == u"material" ? Design::Material : Design::Dossier;
-}
-
 QString brightnessId(Brightness brightness)
 {
     switch (brightness) {

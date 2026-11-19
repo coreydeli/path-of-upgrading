@@ -35,8 +35,8 @@ Item {
         Plate {
             anchors.fill: parent
             fill: Kirigami.Theme.backgroundColor
-            // Material's cards are filled with a tint, not framed
-            line: Style.material ? "transparent" : Style.frame(Kirigami.Theme)
+            // some looks fill the cards with a tint and leave them unframed
+            line: Style.framed ? Style.frame(Kirigami.Theme) : "transparent"
             lineWidth: 1
         }
 

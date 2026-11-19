@@ -39,6 +39,7 @@ endfunction()
 
 pou_add_test(tst_mapcheck maptexts.h)
 pou_add_test(tst_hands)
+pou_add_test(tst_designs)
 pou_add_test(tst_slots)
 pou_add_test(tst_slotmods)
 pou_add_test(tst_modtiers)
@@ -204,3 +205,5 @@ pou_use_fakepob(tst_mainwindow)
 target_compile_definitions(tst_mainwindow PRIVATE
     COLORS="${PROJECT_SOURCE_DIR}/data/color-schemes/PathOfUpgrading.colors")
 target_link_libraries(tst_mainwindow PRIVATE KF6::I18nQml)
+# the longest test by far, so it starts first and gets longer than the rest
+set_tests_properties(tst_mainwindow PROPERTIES COST 1000 TIMEOUT 1800)
