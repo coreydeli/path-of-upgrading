@@ -1082,7 +1082,8 @@ private Q_SLOTS:
         // and wearing something makes a character
         QVERIFY(w.app->character().wear(u"Helmet"_s, item(itemtexts::helmetOld)));
         QVERIFY(!isVisible(w.find(u"nobodyText"_s)));
-        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QCOMPARE(w.find(u"slot:Helmet"_s)->property("description").toString(),
+                 u"Grim Crown, Visored Helm, item level 50"_s);
         QVERIFY(isVisible(w.find(u"overallScore"_s)));
     }
 
@@ -1099,13 +1100,13 @@ private Q_SLOTS:
         QObject *helmet = w.find(u"slot:Helmet"_s);
         QVERIFY(isVisible(helmet));
         QCOMPARE(text(helmet), u"Helmet"_s);
-        QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm, item level 50"_s);
         // the slot, then the item and its base, each on its own line
         QCOMPARE(text(helmet->findChild<QObject *>(u"slotName"_s)), u"Helmet"_s);
         QCOMPARE(text(helmet->findChild<QObject *>(u"itemName"_s)), u"Grim Crown"_s);
         QObject *base = helmet->findChild<QObject *>(u"itemBase"_s);
         QVERIFY(isVisible(base));
-        QCOMPARE(text(base), u"Visored Helm"_s);
+        QCOMPARE(text(base), u"Visored Helm, item level 50"_s);
         QObject *score = search(helmet, [](QObject *o) { return o->objectName() == u"gearScore"; });
         QVERIFY(isVisible(score));
         const QString number = w.app->gearList()->index(2).data(GearList::ScoreRole).toString();
@@ -1115,7 +1116,7 @@ private Q_SLOTS:
         QVERIFY(isVisible(helmet->findChild<QObject *>(u"takeOffButton"_s)));
 
         QCOMPARE(w.find(u"slot:Ring 1"_s)->property("description").toString(),
-                 u"Storm Loop, Sapphire Ring, from Path of Building"_s);
+                 u"Storm Loop, Sapphire Ring, item level 75, from Path of Building"_s);
 
         // what would raise its score, and what an empty slot should have
         // each way it falls short on a line of its own, with the stats beside the label
@@ -1691,11 +1692,13 @@ private Q_SLOTS:
         QObject *helmet = w.find(u"tile:Helmet"_s);
         QCOMPARE(text(helmet->findChild<QObject *>(u"slotName"_s)), u"Helmet"_s);
         QCOMPARE(text(helmet->findChild<QObject *>(u"itemName"_s)), u"Grim Crown"_s);
-        QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm"_s);
+        QCOMPARE(helmet->property("description").toString(), u"Grim Crown, Visored Helm, item level 50"_s);
         QCOMPARE(spoken(helmet), u"Helmet"_s);
         QVERIFY(isVisible(helmet->findChild<QObject *>(u"tileGauge"_s)));
+        QCOMPARE(text(helmet->findChild<QObject *>(u"tileItemLevel"_s)), u"Item level 50"_s);
+        QVERIFY(isVisible(helmet->findChild<QObject *>(u"tileItemLevel"_s)));
         QCOMPARE(w.find(u"tile:Ring 1"_s)->property("description").toString(),
-                 u"Storm Loop, Sapphire Ring, from Path of Building"_s);
+                 u"Storm Loop, Sapphire Ring, item level 75, from Path of Building"_s);
 
         // and an empty one is a dashed frame that says so, with no score
         QObject *gloves = w.find(u"tile:Gloves"_s);
@@ -1703,6 +1706,7 @@ private Q_SLOTS:
         QCOMPARE(text(gloves->findChild<QObject *>(u"itemName"_s)), u"Empty"_s);
         QCOMPARE(gloves->property("description").toString(), u"Nothing saved yet"_s);
         QVERIFY(!isVisible(gloves->findChild<QObject *>(u"tileGauge"_s)));
+        QVERIFY(!isVisible(gloves->findChild<QObject *>(u"tileItemLevel"_s)));
         QVERIFY(!helmet->property("empty").toBool());
 
         // each slot once
@@ -1750,7 +1754,7 @@ private Q_SLOTS:
         QVERIFY(!isVisible(w.find(u"panelHint"_s)));
         QCOMPARE(text(w.find(u"panelSlot"_s)), u"Helmet"_s);
         QCOMPARE(text(w.find(u"panelItem"_s)), u"Grim Crown"_s);
-        QCOMPARE(text(w.find(u"panelBase"_s)), u"Visored Helm"_s);
+        QCOMPARE(text(w.find(u"panelBase"_s)), u"Visored Helm, item level 50"_s);
         QVERIFY(isVisible(w.find(u"panelGauge"_s)));
         const auto notes = w.app->gearList()->index(2).data(GearList::NotesRole).value<QList<GearNote>>();
         QVERIFY(!notes.isEmpty());
