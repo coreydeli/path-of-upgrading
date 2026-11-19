@@ -2,6 +2,7 @@
 #pragma once
 
 #include "core/budget.h"
+#include "core/designs.h"
 #include "core/league.h"
 #include "core/placement.h"
 #include "core/pobverdict.h"
@@ -101,13 +102,8 @@ enum class Decorations {
 QString decorationsId(Decorations decorations);
 Decorations decorationsFromId(QStringView id);
 
-// Which look the app has. Dossier is the app's own, Material follows Google's
-// Material Design 3.
-enum class Design { Dossier, Material };
-QString designId(Design design);
-Design designFromId(QStringView id);
-
-// Whether Material's colors are light or dark, or follow the desktop.
+// Whether a look's colors are light or dark, or follow the desktop, for those
+// that have both.
 enum class Brightness { Desktop, Light, Dark };
 QString brightnessId(Brightness brightness);
 Brightness brightnessFromId(QStringView id);
@@ -124,7 +120,7 @@ struct AppearanceSettings
     ColorTheme colors = ColorTheme::App;
     Decorations decorations = Decorations::Full;
     Design design = Design::Dossier;
-    Brightness brightness = Brightness::Desktop; // only Material has a light and a dark
+    Brightness brightness = Brightness::Desktop; // only some looks have a light and a dark
     // Empty is the app's own heading font, "text" is the text font, and else
     // a font family.
     QString headingFont;
