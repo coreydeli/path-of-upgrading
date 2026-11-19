@@ -22,6 +22,12 @@ struct OwnPath
 // tried with made-up paths.
 bool isOwnPath(const QString &path, const QString &marker);
 
+// The path when isOwnPath says it's the app's, or else the folder it's in when
+// that one is, or else the path as it is (which isOwnPath then refuses). Qt
+// puts the cache on Windows in a "cache" folder inside the app's own,
+// AppData/Local/path-of-upgrading/cache, so that's the folder to remove.
+QString ownFolderOf(const QString &path, const QString &marker);
+
 // Removes each, with all that's in a folder, once isOwnPath says it's the
 // app's. A path that isn't there is already gone, and one that can't be
 // removed doesn't stop the rest. Gives back a sentence for each that was left

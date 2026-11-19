@@ -52,6 +52,15 @@ bool isOwnPath(const QString &path, const QString &marker)
                                home.startsWith(clean + u'/', Qt::CaseInsensitive));
 }
 
+QString ownFolderOf(const QString &path, const QString &marker)
+{
+    if (isOwnPath(path, marker))
+        return path;
+    const QString clean = absoluteClean(path);
+    const QString up = clean.left(clean.lastIndexOf(u'/'));
+    return isOwnPath(up, marker) ? up : path;
+}
+
 QStringList removeOwnPaths(const QList<OwnPath> &paths, const QString &marker)
 {
     QStringList problems;
