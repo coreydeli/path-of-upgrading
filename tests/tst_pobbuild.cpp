@@ -200,6 +200,7 @@ private Q_SLOTS:
                                 u"Sorcerer Gloves"_s,
                                 separator,
                                 u"Energy Shield: 98"_s,
+                                u"Quality: +20% (augmented)"_s,
                                 separator,
                                 u"Requires: Level 65"_s,
                                 separator,
@@ -213,7 +214,9 @@ private Q_SLOTS:
                                 u"75% increased Energy Shield"_s,
                             }));
         QVERIFY(!item.missingDamage);
-        QVERIFY(parseItem(item.text));
+        const auto parsed = parseItem(item.text);
+        QVERIFY(parsed);
+        QCOMPARE(parsed->quality, 20);
     }
 
     void stateLines()
