@@ -2,6 +2,7 @@
 #include "app/gearlist.h"
 
 #include "app/activecharacter.h"
+#include "app/notehelp.h"
 #include "app/settingsstore.h"
 #include "core/character.h"
 #include "core/evaluation.h"
@@ -17,7 +18,7 @@ namespace {
 
 GearNote noteOf(const QString &label, const QStringList &stats, const QString &between = u", "_s)
 {
-    return {.label = label, .text = stats.join(between), .stats = stats};
+    return {.label = label, .text = stats.join(between), .stats = stats, .help = noteHelp(label)};
 }
 
 // The ways a gear score falls short, a note each.
