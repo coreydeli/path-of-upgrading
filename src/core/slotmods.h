@@ -63,6 +63,9 @@ private:
     QString m_date;
 };
 
+// "Prefix" or "Suffix", empty for Unknown.
+QString affixName(AffixKind kind);
+
 // The item class a slot holds, when it holds only one: "Helmet" is
 // "Helmets". Empty for the weapon, the offhand, jewels, flasks and charms.
 QString classOfSlot(const QString &slot);

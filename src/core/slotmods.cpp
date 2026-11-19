@@ -127,6 +127,19 @@ QString classOfSlot(const QString &slot)
     return classes.value(groupOf(slot));
 }
 
+QString affixName(AffixKind kind)
+{
+    switch (kind) {
+    case AffixKind::Prefix:
+        return u"Prefix"_s;
+    case AffixKind::Suffix:
+        return u"Suffix"_s;
+    case AffixKind::Unknown:
+        break;
+    }
+    return {};
+}
+
 QString rollText(double value)
 {
     return formatNumber(roundTo(value, 2));

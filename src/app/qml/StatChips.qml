@@ -7,6 +7,8 @@ Item {
     id: chips
 
     property list<string> stats
+    // "Prefix" or "Suffix" for each of them, empty where it isn't known
+    property list<string> kinds
     // all of them as one line, for screen readers
     property string text: stats.join(", ")
 
@@ -20,7 +22,13 @@ Item {
     implicitHeight: flow.implicitHeight
 
     Accessible.role: Accessible.StaticText
-    Accessible.name: text
+    Accessible.name: {
+        // "Life 60 or more, prefix", with the kind said after the stat
+        const spoken = [];
+        for (let i = 0; i < stats.length; ++i)
+            spoken.push(kinds[i] ? qsTr("%1, %2").arg(stats[i]).arg(kinds[i].toLowerCase()) : stats[i]);
+        return kinds.length > 0 ? spoken.join("; ") : text;
+    }
 
     Flow {
         id: flow
@@ -35,9 +43,11 @@ Item {
 
             delegate: StatChip {
                 required property string modelData
+                required property int index
 
                 objectName: "statChip"
                 text: modelData
+                kind: chips.kinds[index] ?? ""
                 // nothing to go by until it's laid out
                 maxWidth: chips.width > 0 ? chips.width : Infinity
                 Accessible.ignored: true

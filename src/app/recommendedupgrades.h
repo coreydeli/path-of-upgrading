@@ -42,10 +42,13 @@ class RecommendedUpgrades : public QAbstractListModel
     Q_PROPERTY(QString chosenLookFor READ chosenLookFor NOTIFY chosenChanged)
     // the same, one stat each
     Q_PROPERTY(QStringList chosenLookForStats READ chosenLookForStats NOTIFY chosenChanged)
+    // "Prefix" or "Suffix" for each of them, empty where it isn't known
+    Q_PROPERTY(QStringList chosenLookForKinds READ chosenLookForKinds NOTIFY chosenChanged)
     Q_PROPERTY(pou::TradeReport chosenTrade READ chosenTrade NOTIFY chosenChanged)
     // What the slot can roll of those stats, one line each, empty when the
     // table has nothing for the slot.
     Q_PROPERTY(QStringList chosenCanRoll READ chosenCanRoll NOTIFY chosenChanged)
+    Q_PROPERTY(QStringList chosenCanRollKinds READ chosenCanRollKinds NOTIFY chosenChanged)
     // Whether there's an item in it to search upgrades for.
     Q_PROPERTY(bool chosenWorn READ chosenWorn NOTIFY chosenChanged)
     // What "Look for" and "Can roll" mean, for their tooltips.
@@ -62,6 +65,7 @@ public:
         LookForRole,                 // "Life 55 or more, Fire Resistance 24 or more"
         TradeRole,                   // a tradeReport, what its search is up to
         LookForStatsRole,            // the same as LookForRole, one stat each
+        LookForKindsRole,            // "Prefix" or "Suffix" for each of those, or empty
     };
 
     // They have to outlive it.
@@ -83,7 +87,9 @@ public:
     void choose(const QString &slot);
     QString chosenLookFor() const;
     QStringList chosenLookForStats() const;
+    QStringList chosenLookForKinds() const;
     QStringList chosenCanRoll() const;
+    QStringList chosenCanRollKinds() const;
     TradeReport chosenTrade() const { return m_states.value(m_chosen).report; }
     bool chosenWorn() const;
     static QString lookForHelp();
@@ -112,6 +118,8 @@ private:
         QString worn; // the name of what it searched for
     };
 
+    QList<WantedStat> chosenWants() const;
+    QList<RollRange> chosenRolls() const;
     void refresh();
     void take(const QList<Recommendation> &rows);
     void searched();

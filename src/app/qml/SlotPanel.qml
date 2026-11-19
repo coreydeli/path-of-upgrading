@@ -199,6 +199,7 @@ Item {
                         objectName: "panelLookFor"
                         Layout.fillWidth: true
                         stats: panel.upgrades.chosenLookForStats
+                        kinds: panel.upgrades.chosenLookForKinds
                         text: panel.upgrades.chosenLookFor
                     }
                 }
@@ -218,6 +219,7 @@ Item {
                         objectName: "panelCanRoll"
                         Layout.fillWidth: true
                         stats: panel.upgrades.chosenCanRoll
+                        kinds: panel.upgrades.chosenCanRollKinds
                         text: panel.upgrades.chosenCanRoll.join("\n")
                     }
                 }

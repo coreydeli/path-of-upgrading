@@ -1774,6 +1774,14 @@ private Q_SLOTS:
         QVERIFY(isVisible(w.find(u"panelCanRoll"_s)));
         QVERIFY(text(w.find(u"panelCanRoll"_s)).contains(u" at item level "_s));
         QCOMPARE(text(w.find(u"panelCanRoll"_s)), upgrades->chosenCanRoll().join(u'\n'));
+        // and each says prefix or suffix, to those who listen too
+        QCOMPARE(w.find(u"panelLookFor"_s)->property("kinds").toStringList(), upgrades->chosenLookForKinds());
+        QCOMPARE(w.find(u"panelCanRoll"_s)->property("kinds").toStringList(), upgrades->chosenCanRollKinds());
+        QVERIFY(spoken(w.find(u"panelLookFor"_s)).contains(u", prefix"_s) ||
+                spoken(w.find(u"panelLookFor"_s)).contains(u", suffix"_s));
+        QVERIFY(spoken(w.find(u"panelCanRoll"_s)).contains(u" at item level "_s));
+        QCOMPARE(findAll(w.find(u"panelCanRoll"_s), u"statChip"_s).first()->property("kind").toString(),
+                 upgrades->chosenCanRollKinds().first());
         QCOMPARE(w.find(u"panelLookForLabel"_s)->property("help").toString(), upgrades->lookForHelp());
         QCOMPARE(w.find(u"panelCanRollLabel"_s)->property("help").toString(), upgrades->canRollHelp());
         QVERIFY(w.find(u"tile:Helmet"_s)->property("chosen").toBool());

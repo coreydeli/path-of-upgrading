@@ -21,6 +21,7 @@ FormCard.AbstractFormDelegate {
     required property string lookFor
     // the same, one stat each
     required property list<string> lookForStats
+    required property list<string> lookForKinds
     // what its trade search is up to
     required property tradeReport trade
     // whether trade searches are on
@@ -124,6 +125,7 @@ FormCard.AbstractFormDelegate {
                     objectName: "lookFor"
                     Layout.fillWidth: true
                     stats: row.lookForStats
+                    kinds: row.lookForKinds
                     text: row.lookFor
                 }
             }

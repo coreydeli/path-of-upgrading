@@ -12,6 +12,8 @@ Item {
     id: chip
 
     property string text
+    // "Prefix" or "Suffix", empty when it isn't known
+    property string kind
     // what it may take up before its text wraps
     property real maxWidth: Infinity
 
@@ -20,6 +22,7 @@ Item {
     readonly property real lead: tick ? Kirigami.Units.smallSpacing * 3 : Style.chip === "edge" ? 3 : 0
     readonly property real across: Kirigami.Units.smallSpacing * (Style.chip === "pill" ? 3 : 2)
     readonly property real down: Kirigami.Units.smallSpacing
+    readonly property string escaped: text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 
     implicitWidth: label.implicitWidth + 2 * across + lead
     implicitHeight: label.implicitHeight + 2 * down
@@ -102,7 +105,9 @@ Item {
         x: chip.across + chip.lead
         y: chip.down
         width: Math.max(0, chip.width - 2 * chip.across - chip.lead)
-        text: chip.text
+        // the kind comes first and quieter than the stat
+        text: chip.kind === "" ? chip.text : "<font color=\"" + Kirigami.Theme.disabledTextColor + "\">" + chip.kind + "</font> " + chip.escaped
+        textFormat: chip.kind === "" ? Text.PlainText : Text.StyledText
         wrapMode: Text.Wrap
         font.capitalization: Style.chip === "box" ? Font.AllUppercase : Font.MixedCase
         font.letterSpacing: Style.chip === "box" ? 0.8 : 0
