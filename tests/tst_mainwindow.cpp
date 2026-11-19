@@ -3436,8 +3436,20 @@ private Q_SLOTS:
         QCOMPARE(w.settings().appearance.design, Design::Dossier);
     }
 
-    // every look, light and dark where it has both
+    // Every look once, as light and dark only swap the color scheme, but
+    // Material's own colors follow the brightness too. Each row loads every
+    // page, so this keeps the test within its time.
     void everyPageLoadsUnderEachDesign_data()
+    {
+        QTest::addColumn<QString>("design");
+        QTest::addColumn<QString>("brightness");
+        for (const DesignInfo &info : designs())
+            QTest::newRow(qPrintable(info.id)) << info.id << (info.hasLight ? u"dark"_s : u"desktop"_s);
+        QTest::newRow("material light") << u"material"_s << u"light"_s;
+    }
+
+    // every look, light and dark where it has both
+    void thePopupLoadsUnderEachDesign_data()
     {
         QTest::addColumn<QString>("design");
         QTest::addColumn<QString>("brightness");
@@ -3466,8 +3478,6 @@ private Q_SLOTS:
             QVERIFY(w.settled());
         }
     }
-
-    void thePopupLoadsUnderEachDesign_data() { everyPageLoadsUnderEachDesign_data(); }
 
     // the popup is another window on the same engine
     void thePopupLoadsUnderEachDesign()
