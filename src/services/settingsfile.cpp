@@ -92,6 +92,7 @@ Settings loadSettings(const QSettings &store, bool beta)
     read(store, u"updates/checkOnLaunch"_s, updates.checkOnLaunch);
     read(store, u"updates/includeBetas"_s, updates.includeBetas);
     read(store, u"updates/skipped"_s, updates.skipped);
+    read(store, u"updates/reopenPage"_s, updates.reopenPage);
 
     AppearanceSettings &appearance = s.appearance;
     appearance.colors = colorThemeFromId(store.value(u"appearance/theme"_s).toString());
@@ -158,6 +159,10 @@ void saveSettings(QSettings &store, const Settings &s, bool beta)
     if (updates.includeBetas != beta || store.contains(u"updates/includeBetas"_s))
         store.setValue(u"updates/includeBetas"_s, updates.includeBetas);
     store.setValue(u"updates/skipped"_s, updates.skipped);
+    if (updates.reopenPage.isEmpty())
+        store.remove(u"updates/reopenPage"_s);
+    else
+        store.setValue(u"updates/reopenPage"_s, updates.reopenPage);
 
     const AppearanceSettings &appearance = s.appearance;
     store.setValue(u"appearance/theme"_s, colorThemeId(appearance.colors));

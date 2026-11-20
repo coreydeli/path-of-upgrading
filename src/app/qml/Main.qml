@@ -37,6 +37,19 @@ Kirigami.ApplicationWindow {
         return null;
     }
 
+    // After an update restarted the app, it opens the page you were on.
+    function reopen(): void {
+        const name = app.updates.reopenPage;
+        if (name.length === 0)
+            return;
+        for (const action of pages.actions) {
+            if (action.objectName === name) {
+                action.trigger();
+                return;
+            }
+        }
+    }
+
     // an Item, as Qt 6.8 warns that it can't check a Kirigami.Page argument
     function show(page: Item): void {
         pageStack.clear();
@@ -258,6 +271,16 @@ Kirigami.ApplicationWindow {
     QQC2.ActionGroup {
         id: pages
     }
+
+    // for an update's restart
+    Binding {
+        target: root.app.updates
+        property: "shownPage"
+        value: pages.checkedAction ? pages.checkedAction.objectName : ""
+    }
+
+    // once the sidebar is made, so it can go to the page's group
+    Component.onCompleted: Qt.callLater(reopen)
 
     // the popup and the results window are in this engine too
     Binding {

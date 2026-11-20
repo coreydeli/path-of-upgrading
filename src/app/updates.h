@@ -27,8 +27,7 @@ enum Stage {
     Idle,
     Downloading,
     Installing,
-    Manual,    // downloaded, and you run the command
-    Installed, // a package is in, and the app asks to restart
+    Manual, // downloaded, and you run the command
     Failed,
 };
 Q_ENUM_NS(Stage)
@@ -65,6 +64,12 @@ class Updates : public QObject
     Q_PROPERTY(QString installError READ installError NOTIFY changed)
     // For the kinds of install that need a terminal: the command to run
     Q_PROPERTY(QString command READ command NOTIFY changed)
+    // The window's page, like "updatesAction", which an update's restart opens
+    // again
+    Q_PROPERTY(QString shownPage READ shownPage WRITE setShownPage)
+    // The page to open, when an update has just restarted the app. Empty
+    // otherwise.
+    Q_PROPERTY(QString reopenPage READ reopenPage CONSTANT)
 
 public:
     // They have to outlive it. The opener may be null, and then it opens nothing.
@@ -96,15 +101,17 @@ public:
     double progress() const { return m_progress; }
     QString installError() const { return m_error; }
     QString command() const { return m_command; }
+    QString shownPage() const { return m_shownPage; }
+    void setShownPage(const QString &page) { m_shownPage = page; }
+    QString reopenPage() const { return m_reopenPage; }
 
     // Looks now, and offers the release again if it was skipped or put off.
     Q_INVOKABLE void checkNow();
     // Takes the newer release. It downloads the file for how the program was
-    // installed and checks it, then installs it, or shows the command for it.
-    // With no file for that, it opens the release's page on GitHub.
+    // installed and checks it, then installs it and starts the new version,
+    // or shows the command for it. With no file for that, it opens the
+    // release's page on GitHub.
     Q_INVOKABLE void updateNow();
-    // After a package is installed: starts the new version.
-    Q_INVOKABLE void restart();
     // Stops a download, or closes what it said.
     Q_INVOKABLE void dismiss();
     Q_INVOKABLE void copyCommand();
@@ -140,6 +147,8 @@ private:
     QString m_error;
     QString m_command;
     QString m_file;
+    QString m_shownPage;
+    QString m_reopenPage;
 };
 
 } // namespace pou

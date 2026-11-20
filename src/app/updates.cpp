@@ -23,7 +23,11 @@ Updates::Updates(UpdateChecker *checker, SettingsStore *settings, Opener *opener
     , m_opener(opener)
     , m_downloader(downloader)
     , m_kind(installedKind(qEnvironmentVariable("APPIMAGE")))
+    , m_reopenPage(settings->settings().updates.reopenPage)
 {
+    // only the first start after the update
+    if (!m_reopenPage.isEmpty())
+        change([](UpdateSettings &updates) { updates.reopenPage.clear(); });
     if (downloader) {
         connect(downloader, &UpdateDownloader::progress, this, [this](qint64 received, qint64 total) {
             m_progress = total > 0 ? double(received) / double(total) : -1;
@@ -175,12 +179,7 @@ void Updates::downloaded(const QString &file)
             }
             return;
         }
-        if (m_installer->after() == PackageInstaller::After::Offer) {
-            m_stage = UpdateStage::Installed;
-            Q_EMIT changed();
-        } else {
-            finish(m_installer->after());
-        }
+        finish(m_installer->after());
     });
 }
 
@@ -191,16 +190,13 @@ void Updates::fail(const QString &why)
     Q_EMIT changed();
 }
 
-void Updates::restart()
-{
-    if (m_stage == UpdateStage::Installed)
-        finish(PackageInstaller::After::Restart);
-}
-
 void Updates::finish(PackageInstaller::After after)
 {
+    // the new version opens where you were
+    change([&](UpdateSettings &updates) { updates.reopenPage = m_shownPage; });
     if (!m_finish || m_finish(after))
         return;
+    change([](UpdateSettings &updates) { updates.reopenPage.clear(); });
     fail(u"Version %1 is installed, but the app couldn't restart by itself. "
          u"Quit it from the tray icon, then start it again."_s.arg(newVersion()));
 }

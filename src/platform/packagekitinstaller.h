@@ -24,8 +24,9 @@ public:
     PackageKitInstaller(const QDBusConnection &bus, const QString &service);
     ~PackageKitInstaller() override;
 
-    // The package is in place, and the running program is the old one.
-    After after() const override { return After::Offer; }
+    // The package is in place and the running program is the old one, so the
+    // new one starts as it goes.
+    After after() const override { return After::Restart; }
     // Without PackageKit, or when it fails or you cancel, there's the command.
     bool fallsBackToCommand() const override { return true; }
     void install(const QString &file, const Done &done) override;

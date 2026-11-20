@@ -129,10 +129,10 @@ private Q_SLOTS:
         QCOMPARE(m_transaction.flagsSeen, 0u);
     }
 
-    void offersARestartAndFallsBackToTheCommand()
+    void restartsAndFallsBackToTheCommand()
     {
         PackageKitInstaller installer;
-        QCOMPARE(installer.after(), PackageInstaller::After::Offer);
+        QCOMPARE(installer.after(), PackageInstaller::After::Restart);
         QVERIFY(installer.fallsBackToCommand());
     }
 
