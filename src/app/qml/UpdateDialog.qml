@@ -44,22 +44,47 @@ FormCard.FormCardDialog {
     }
 
     FormCard.FormTextDelegate {
+        id: intro
+
+        objectName: "updateIntro"
         text: qsTr("Version %1 of Path of Upgrading is out. You have %2.").arg(dialog.app.updates.newVersion).arg(dialog.app.updates.version)
         textItem.wrapMode: Text.Wrap
     }
 
     QQC2.ScrollView {
+        id: notesView
+
+        // longer than the room it has, so the bar stays up to say there's more
+        readonly property bool overflows: notes.implicitHeight > height
+
+        objectName: "updateNotes"
         Layout.fillWidth: true
+        // in line with the text above
+        Layout.leftMargin: intro.leftPadding
+        Layout.rightMargin: intro.rightPadding
+        Layout.bottomMargin: Kirigami.Units.largeSpacing
         Layout.preferredHeight: Math.min(notes.implicitHeight, dialog.parent.height * 0.4)
         contentWidth: availableWidth
         clip: true
         visible: notes.text.length > 0
         QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
+        QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+            id: notesBar
+
+            objectName: "updateNotesBar"
+            parent: notesView
+            x: notesView.width - width
+            height: notesView.height
+            policy: notesView.overflows ? QQC2.ScrollBar.AlwaysOn : QQC2.ScrollBar.AlwaysOff
+        }
 
         QQC2.Label {
             id: notes
 
+            objectName: "updateNotesText"
             width: parent.width
+            // the bar is drawn over the notes, so they stop short of it
+            rightPadding: notesView.overflows ? notesBar.width + Kirigami.Units.smallSpacing : 0
             text: dialog.app.updates.notes
             wrapMode: Text.Wrap
         }
