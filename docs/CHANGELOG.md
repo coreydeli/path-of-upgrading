@@ -25,6 +25,9 @@ version that comes out.
   when it has none.
 - Fractured and corrupted items are marked on their tile, their row and in the slot
   panel. A fractured mod is marked in the panel too.
+- Five more looks: Slate, Pocket, Edge, Gilt and Cinder, beside Dossier and Material.
+  Pick one under Look on the Appearance page, or in the new "Pick a Look" step of the
+  setup guide, which comes after Your Character. Dossier stays the default.
 
 ### Changed
 
@@ -34,6 +37,11 @@ version that comes out.
 - Look for and Can roll say Prefix or Suffix before each stat that the item's class
   can roll only one way, such as lightning resistance as a suffix. A stat a class can
   roll either way has no label.
+- When PackageKit installs an update for a Debian 13 or Fedora package, the app restarts
+  by itself when the install is done, as the AppImage does, and the window opens on the
+  page you were on. The update window no longer offers Restart Now. Arch still shows the
+  install command.
+- Build Review is the first page under Gear Settings in the sidebar.
 
 ### Fixed
 
@@ -41,6 +49,8 @@ version that comes out.
   AppData\Local\path-of-upgrading. It used to leave it behind.
 - Items imported from Path of Building now carry their quality, so the slot panel
   shows it.
+- The new version's release notes in the update window line up with the text above
+  them. A scroll bar stays up while the notes are longer than the room they have.
 
 ## [0.8.0] - 2026-11-18
 

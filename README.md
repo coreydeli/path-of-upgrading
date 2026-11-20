@@ -26,8 +26,9 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
 - Works without a build too. Equip gear or set stat weights before you add a
   character, and the app makes one called My character and plays it.
 - Opens a setup guide the first time the window opens, for your league, trade
-  searches (in a beta), a first character and the key that checks an item.
-  Start the program with `path-of-upgrading --setup` to see it again.
+  searches (in a beta), a first character, the look you want and the key that
+  checks an item. Start the program with `path-of-upgrading --setup` to see it
+  again.
 - Judges what an item costs you as well as what it gives. A big drop in
   damage, Effective HP, Life or Energy Shield counts against it, and "Never
   lose damage" and "Never lose defences" make either one mean an item is never
@@ -56,6 +57,7 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   installer on Windows, or in a folder you choose. When it can't be found or
   won't work, the Build Review page says why and what to do, with buttons
   for Discover, Flathub, the install command and, on Windows, the download page.
+  It is the first page under Gear Settings in the sidebar.
 - Searches the trade site from the popup for upgrades, for items with the same
   stats or better, for items that are better by your weights, and for bases to
   craft on. Searches stay within your budget, in the currency you pick, and
@@ -69,8 +71,9 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   for the character you play, by how much and what it changes, the way the popup
   does, with its price, what that comes to in exalts or divines, the seller and
   how long ago it was listed.
-- Draws the popup and the results window in the app's own look, with cut-corner
-  panels, or Material's rounded ones under the Design setting. The popup's
+- Draws the popup and the results window in the look you pick on the Appearance
+  page. Dossier, the default, has cut-corner panels, and Material and Pocket have
+  rounded ones. The popup's
   title takes the item's rarity color, and it has a verdict
   banner. Each gain or loss in the popup's table has a bar under its figure,
   sized against the biggest change. The popup fades in and rises a little when
@@ -135,18 +138,23 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   downloads the file for how you installed the app and checks it against the
   release's checksums. Nothing is installed until you press Update Now. Turn the
   check off, or include betas, on the Updates page in the sidebar's Settings group.
-- Has two designs, picked on the Appearance page in the sidebar's Settings group.
-  Dossier, the default, is the app's own, with its own controls, colors and
-  fonts, so it looks the same on every desktop. Material follows Google's
-  Material Design 3, light or dark or following your desktop. Either way the
-  colors can be the design's own or your desktop's. The Appearance page also
-  picks the heading font (Big Shoulders Display by default), the text font
-  (Spectral by default) and the text size. The text size follows your desktop's
-  unless you set one, from 6 to 32 points. The font list only shows fonts that
-  scale smoothly, each in its own face. Decorations can be set to Full, the
-  default, or Plain. In Dossier, Plain squares off the cut corners, leaves out
-  the popup's fade and rise, and shows a listing's gear score as text rather
-  than in a ring. In Material, Plain leaves out the animation.
+- Has seven looks, picked under Look on the Appearance page in the sidebar's
+  Settings group, or in the setup guide. Dossier, the default, is the app's own,
+  with its own controls, colors and fonts, so it looks the same on every desktop.
+  The others are Material (Google's Material Design 3), Slate (a dense, calm
+  panel for reading a lot of mods quickly), Pocket (rounded, roomy cards with one
+  loud color), Edge (flat and high contrast, with a colored edge), Gilt (quiet and
+  premium, with thin gold lines and serif titles) and Cinder (square and bold,
+  with hard shadows and monospace labels). All of them but Dossier also have a
+  light version, which Light or dark sets. The colors can be the look's own or
+  your desktop's. The Appearance page also picks the heading font and the text
+  font. Each look has its own unless you pick another, and Material uses your
+  desktop's. The text size follows your desktop's unless you set one, from 6 to
+  32 points. The font list only shows fonts that scale smoothly, each in its own
+  face. Decorations can be set to Full, the default, or Plain. In Dossier, Plain
+  squares off the cut corners, leaves out the popup's fade and rise, and shows a
+  listing's gear score as text rather than in a ring. In the other looks, Plain
+  leaves out the animation.
 - Has an About page and a Help page in the sidebar's Settings group. About shows the version
   and edition, the license, the Qt and KDE Frameworks versions, where Path of Building was
   found, links to the source, the releases and the issue tracker, and the credits. Help opens
@@ -205,9 +213,10 @@ Frameworks 6.13 or newer may take it too, but only Debian 13 is tested. If apt
 can't find what it depends on, build it from source instead.
 
 When a newer release is out, Update Now downloads the new package and asks
-PackageKit to install it, with your desktop's password prompt. The update
-window then offers Restart Now. If PackageKit isn't there or fails, the window
-shows the `sudo apt install` command to run instead.
+PackageKit to install it, with your desktop's password prompt. When the install
+is done, the app restarts by itself and opens on the page you were on. If
+PackageKit isn't there or fails, the window shows the `sudo apt install`
+command to run instead.
 
 ### Fedora
 
@@ -222,9 +231,10 @@ sudo dnf install ./path-of-upgrading-*.rpm
 dnf installs what it needs with it. It needs Fedora with KDE Frameworks 6.
 CentOS Stream and RHEL don't have those, so they aren't covered. There is no
 package repository yet. Update Now downloads each new file for you and asks
-PackageKit to install it, with your desktop's password prompt. The update
-window then offers Restart Now. If PackageKit isn't there or fails, it shows
-the `sudo dnf install` command to run instead.
+PackageKit to install it, with your desktop's password prompt. When the install
+is done, the app restarts by itself and opens on the page you were on. If
+PackageKit isn't there or fails, it shows the `sudo dnf install` command to run
+instead.
 
 ### AppImage
 
@@ -492,8 +502,15 @@ IDs are kept in the Windows Credential Manager.
 - [rusty-path-of-building](https://github.com/meehl/rusty-path-of-building)
   (MIT) is what makes Path of Building run on Linux, and it is the Flatpak on
   Flathub. Path of Upgrading finds Path of Building where it puts it.
-- The headings are set in [Big Shoulders Display](https://github.com/xotypeco/big_shoulders)
-  and the text in [Spectral](https://github.com/productiontype/Spectral), by their
+- The looks' fonts are [Big Shoulders Display](https://github.com/xotypeco/big_shoulders),
+  [Spectral](https://github.com/productiontype/Spectral),
+  [Alegreya SC](https://github.com/huertatipografica/Alegreya),
+  [Inter](https://github.com/rsms/inter),
+  [Barlow Semi Condensed](https://github.com/jpt/barlow),
+  [IBM Plex Sans](https://github.com/IBM/plex),
+  [Cinzel](https://github.com/NDISCOVER/Cinzel),
+  [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) and
+  [Space Grotesk](https://github.com/floriankarsten/space-grotesk), by their
   project authors (SIL Open Font License 1.1, in `data/fonts`), which the app
   carries. The Appearance page can set other fonts.
 - Currency prices come from [poe.ninja](https://poe.ninja), and the listings
