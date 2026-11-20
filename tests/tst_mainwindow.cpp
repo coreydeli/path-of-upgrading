@@ -132,6 +132,12 @@ QList<QObject *> findAll(QObject *object, const QString &name)
     return found;
 }
 
+// what a dialog has in it by that name
+QObject *inDialog(QObject *dialog, const QString &name)
+{
+    return dialog ? search(dialog, [&](QObject *o) { return o->objectName() == name; }) : nullptr;
+}
+
 // one of a dialog's buttons, by what it says
 QObject *button(QObject *dialog, const QString &text)
 {
@@ -4768,8 +4774,8 @@ private Q_SLOTS:
         QVERIFY(button(dialog, u"Later"_s));
         QVERIFY(button(dialog, u"Skip This Version"_s));
         // a line of notes needs no bar
-        QVERIFY(isVisible(w.find(u"updateNotes"_s)));
-        QVERIFY(!isVisible(w.find(u"updateNotesBar"_s)));
+        QVERIFY(isVisible(inDialog(dialog, u"updateNotes"_s)));
+        QVERIFY(!isVisible(inDialog(dialog, u"updateNotesBar"_s)));
 
         QVERIFY(click(button(dialog, u"Update Now"_s)));
         QCOMPARE(w.opener->opened, QList<QUrl>{QUrl(releaseBase + u"/tag/v99.0.0"_s)});
@@ -4792,10 +4798,10 @@ private Q_SLOTS:
         QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
         QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
 
-        QObject *notes = w.find(u"updateNotes"_s);
-        QObject *bar = w.find(u"updateNotesBar"_s);
-        QObject *text = w.find(u"updateNotesText"_s);
-        QObject *intro = w.find(u"updateIntro"_s);
+        QObject *notes = inDialog(dialog, u"updateNotes"_s);
+        QObject *bar = inDialog(dialog, u"updateNotesBar"_s);
+        QObject *text = inDialog(dialog, u"updateNotesText"_s);
+        QObject *intro = inDialog(dialog, u"updateIntro"_s);
         QVERIFY(notes && bar && text && intro);
         QTRY_VERIFY(isVisible(bar));
         QVERIFY(text->property("implicitHeight").toDouble() > notes->property("height").toDouble());
