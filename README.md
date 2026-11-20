@@ -96,6 +96,14 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   resistances, from your build or typed in from your character sheet, with a
   maximum for each element and a safety buffer, so an item that leaves one
   under the cap, or closer to it than the buffer, says so.
+- Each gear slot's notes say what the item is missing, what it doesn't count, its weak
+  rolls, the next tier up, what to look for and what the slot can roll. The stats show as
+  outlined chips, and hovering a note's label says what it means. A unique says why it has no
+  gear score and how it's judged instead.
+- Each worn item shows its item level on the gear page. The slot panel also lists
+  the item's mods under the headings the game uses, such as Implicit, Prefixes and
+  Suffixes, and shows its quality. Look for and Can roll say Prefix or Suffix before
+  each stat that can only be one of them.
 - Pick the character you play with the Character box at the top of Your Gear. You add
   characters and import builds under Import Character, in the sidebar's Gear Settings group.
 - Spreads the settings pages across a wide window. Their cards flow into up to
