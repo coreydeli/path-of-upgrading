@@ -9,7 +9,38 @@ version that comes out.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Hover a gear note's label, such as "Weak rolls" or "Next tier", to see what it
+  means.
+- A unique in a gear slot has two notes. "Unique" says uniques have fixed mods, so
+  they don't get a gear score. "Judged by" says what it does for your damage and
+  defences in Path of Building, once a build is loaded. Without a build it gets no
+  verdict.
+- Each worn item shows its item level on the gear page: on its tile, in its slot's
+  row and in the slot panel.
+- The slot panel lists a worn item's mods under the headings the game uses, such as
+  Implicit, Prefixes and Suffixes. A unique's mods go under Mods, and mods the app
+  can't place go under Other mods. It also shows the item's quality, or "no quality"
+  when it has none.
+- Fractured and corrupted items are marked on their tile, their row and in the slot
+  panel. A fractured mod is marked in the panel too.
+
+### Changed
+
+- The stats in a gear slot's notes, in the slot panel and in the Recommended
+  Upgrades rows show as small outlined chips, one stat to a chip, in place of a
+  comma list.
+- Look for and Can roll say Prefix or Suffix before each stat that the item's class
+  can roll only one way, such as lightning resistance as a suffix. A stat a class can
+  roll either way has no label.
+
+### Fixed
+
+- On Windows, Start Over now removes the app's cache, in
+  AppData\Local\path-of-upgrading. It used to leave it behind.
+- Items imported from Path of Building now carry their quality, so the slot panel
+  shows it.
 
 ## [0.8.0] - 2026-11-18
 
