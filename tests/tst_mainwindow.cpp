@@ -132,6 +132,12 @@ QList<QObject *> findAll(QObject *object, const QString &name)
     return found;
 }
 
+// what a dialog has in it by that name
+QObject *inDialog(QObject *dialog, const QString &name)
+{
+    return dialog ? search(dialog, [&](QObject *o) { return o->objectName() == name; }) : nullptr;
+}
+
 // one of a dialog's buttons, by what it says
 QObject *button(QObject *dialog, const QString &text)
 {
@@ -4767,10 +4773,42 @@ private Q_SLOTS:
         QVERIFY(button(dialog, u"Update Now"_s));
         QVERIFY(button(dialog, u"Later"_s));
         QVERIFY(button(dialog, u"Skip This Version"_s));
+        // a line of notes needs no bar
+        QVERIFY(isVisible(inDialog(dialog, u"updateNotes"_s)));
+        QVERIFY(!isVisible(inDialog(dialog, u"updateNotesBar"_s)));
 
         QVERIFY(click(button(dialog, u"Update Now"_s)));
         QCOMPARE(w.opener->opened, QList<QUrl>{QUrl(releaseBase + u"/tag/v99.0.0"_s)});
         QTRY_VERIFY(!isVisible(dialog));
+    }
+
+    // Long notes scroll, with the bar up and the text clear of it, in line
+    // with the text above.
+    void updateDialogNotesScroll()
+    {
+        Window w;
+        QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
+        QJsonObject release = fakeRelease(u"99.0.0"_s);
+        QStringList lines;
+        for (int i = 1; i <= 80; ++i)
+            lines << u"Line %1 of what is new."_s.arg(i);
+        release[u"body"_s] = lines.join(u'\n');
+        w.network->answers = {{.body = fakeReleases({release})}};
+        w.app->updateChecker().check();
+        QObject *dialog = w.window->findChild<QObject *>(u"updateDialog"_s);
+        QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
+
+        QObject *notes = inDialog(dialog, u"updateNotes"_s);
+        QObject *bar = inDialog(dialog, u"updateNotesBar"_s);
+        QObject *text = inDialog(dialog, u"updateNotesText"_s);
+        QObject *intro = inDialog(dialog, u"updateIntro"_s);
+        QVERIFY(notes && bar && text && intro);
+        QTRY_VERIFY(isVisible(bar));
+        QVERIFY(text->property("implicitHeight").toDouble() > notes->property("height").toDouble());
+        QVERIFY(text->property("rightPadding").toDouble() >= bar->property("width").toDouble());
+        QVERIFY(intro->property("leftPadding").toDouble() > 0);
+        QCOMPARE(notes->property("x").toDouble(),
+                 intro->property("x").toDouble() + intro->property("leftPadding").toDouble());
     }
 
     void installDialogShowsTheCommand()
