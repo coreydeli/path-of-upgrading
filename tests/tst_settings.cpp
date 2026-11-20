@@ -158,7 +158,10 @@ private Q_SLOTS:
         s.appearance.textFont = u"Sans Mono"_s;
         s.appearance.textSize = 11.5;
         s.overlay.startChosen = true;
-        s.updates = {.checkOnLaunch = false, .includeBetas = !isBetaBuild(), .skipped = u"0.7.0-beta.5"_s};
+        s.updates = {.checkOnLaunch = false,
+                     .includeBetas = !isBetaBuild(),
+                     .skipped = u"0.7.0-beta.5"_s,
+                     .reopenPage = u"updatesAction"_s};
         s.setupDone = true;
 
         QTemporaryDir dir;

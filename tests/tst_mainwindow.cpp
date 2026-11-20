@@ -4850,13 +4850,13 @@ private Q_SLOTS:
         QCOMPARE(w.app->updates()->stage(), UpdateStage::Idle);
     }
 
-    void installDialogOffersARestartAfterAPackage()
+    void installDialogRestartsAfterAPackage()
     {
         // an installer that says it worked
         class Installed : public PackageInstaller
         {
         public:
-            After after() const override { return After::Offer; }
+            After after() const override { return After::Restart; }
             void install(const QString &, const Done &done) override { done({}); }
         };
         Window w;
@@ -4876,13 +4876,25 @@ private Q_SLOTS:
         w.network->answers = {
             {.body = sum + "  " + assetFor(release, InstallKind::Debian)->name.toUtf8() + "\n"},
             {.body = package}};
+        QVERIFY(w.show(u"updatesAction"_s));
         QVERIFY(click(button(dialog, u"Update Now"_s)));
-        QTRY_COMPARE_WITH_TIMEOUT(w.app->updates()->stage(), UpdateStage::Installed, 5000);
-        QObject *restart = w.window->findChild<QObject *>(u"restartButton"_s);
-        QTRY_VERIFY(isVisible(restart));
-        QVERIFY(finished.isEmpty());
-        QVERIFY(click(restart));
-        QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+        // with nothing to press
+        QTRY_COMPARE_WITH_TIMEOUT(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart},
+                                  5000);
+        QCOMPARE(w.settings().updates.reopenPage, u"updatesAction"_s);
+    }
+
+    // after an update restarted the app
+    void windowOpensWhereTheUpdateLeftIt()
+    {
+        Settings saved = used();
+        saved.updates.reopenPage = u"appearanceAction"_s;
+        Window w(true, false, {}, saved);
+        QTRY_VERIFY(w.window->findChild<QObject *>(u"appearanceAction"_s)->property("checked").toBool());
+        QCOMPARE(w.app->updates()->shownPage(), u"appearanceAction"_s);
+        QVERIFY(w.settings().updates.reopenPage.isEmpty());
+        QVERIFY(w.show(u"gearAction"_s));
+        QCOMPARE(w.app->updates()->shownPage(), u"gearAction"_s);
     }
 
     void updateDialogLaterAndSkip()

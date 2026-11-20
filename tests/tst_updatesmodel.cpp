@@ -296,13 +296,13 @@ private Q_SLOTS:
         QCOMPARE(s.updates.stage(), UpdateStage::Idle);
     }
 
-    void aPackageInstallsAndOffersARestart()
+    // with nothing to press
+    void aPackageInstallsAndRestarts()
     {
         Setup s;
         s.updates.setInstallKind(InstallKind::Debian);
         auto installer = std::make_unique<FakeInstaller>();
         installer->fallback = true;
-        installer->m_after = PackageInstaller::After::Offer;
         QList<PackageInstaller::After> finished;
         s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) {
             finished << a;
@@ -311,27 +311,51 @@ private Q_SLOTS:
         s.look({u"0.7.0"_s});
         s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = package}};
         s.updates.updateNow();
-        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Installed; }, 5000));
-        // it waits for you
-        QVERIFY(finished.isEmpty());
-        QVERIFY(s.updates.command().isEmpty());
-        s.updates.restart();
+        QVERIFY(QTest::qWaitFor([&] { return !finished.isEmpty(); }, 5000));
         QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+        QVERIFY(s.updates.command().isEmpty());
+        QVERIFY(s.updates.installError().isEmpty());
+    }
+
+    void theNewVersionOpensWhereYouWere()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        s.updates.setShownPage(u"updatesAction"_s);
+        QString saved;
+        s.updates.setInstaller(std::make_unique<FakeInstaller>(), [&](PackageInstaller::After) {
+            // saved before the app goes
+            saved = s.settings.settings().updates.reopenPage;
+            return true;
+        });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return !saved.isEmpty(); }, 5000));
+        QCOMPARE(saved, u"updatesAction"_s);
+        QVERIFY(s.updates.reopenPage().isEmpty());
+
+        // the next start has it, once
+        Updates next(&s.checker, &s.settings, &s.opener);
+        QCOMPARE(next.reopenPage(), u"updatesAction"_s);
+        QVERIFY(s.settings.settings().updates.reopenPage.isEmpty());
+        Updates after(&s.checker, &s.settings, &s.opener);
+        QVERIFY(after.reopenPage().isEmpty());
     }
 
     void aRestartThatFailsSaysSoAndKeepsRunning()
     {
         Setup s;
         s.updates.setInstallKind(InstallKind::Debian);
-        auto installer = std::make_unique<FakeInstaller>();
-        installer->m_after = PackageInstaller::After::Offer;
-        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return false; });
+        s.updates.setShownPage(u"updatesAction"_s);
+        s.updates.setInstaller(std::make_unique<FakeInstaller>(),
+                               [](PackageInstaller::After) { return false; });
         s.look({u"0.7.0"_s});
         s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = package}};
         s.updates.updateNow();
-        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Installed; }, 5000));
-        s.updates.restart();
-        QCOMPARE(s.updates.stage(), UpdateStage::Failed);
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
+        // the page isn't kept for a start you make later
+        QVERIFY(s.settings.settings().updates.reopenPage.isEmpty());
         QCOMPARE(s.updates.installError(),
                  u"Version 0.7.0 is installed, but the app couldn't restart by itself. Quit it from the tray "
                  "icon, then start it again."_s);
@@ -364,9 +388,6 @@ private Q_SLOTS:
         QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Manual; }, 5000));
         QCOMPARE(s.updates.installError(), u"The install was cancelled."_s);
         QVERIFY(s.updates.command().startsWith(u"sudo dnf install '"_s));
-        // and restarting isn't offered
-        s.updates.restart();
-        QCOMPARE(s.updates.stage(), UpdateStage::Manual);
     }
 
     void aBadDownloadFails()
