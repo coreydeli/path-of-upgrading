@@ -19,7 +19,6 @@ public:
     enum class After {
         Restart, // the new program starts as this one goes
         Quit,    // the installer starts the new program
-        Offer,   // the new one is in place, and the app asks you to restart
     };
 
     // Says how it went: empty when it worked, or why it didn't.

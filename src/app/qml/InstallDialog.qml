@@ -7,8 +7,9 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 
-// Shows an update being taken: the download, then either the install or the
-// command to run for it. It is its own dialog, as Update Now closes the first.
+// Shows an update being taken: the download, then either the install, which
+// restarts the app, or the command to run for it. It is its own dialog, as
+// Update Now closes the first.
 FormCard.FormCardDialog {
     id: dialog
 
@@ -45,12 +46,10 @@ FormCard.FormCardDialog {
             case UpdateStage.Downloading:
                 return qsTr("Downloading version %1 and checking it.").arg(dialog.app.updates.newVersion);
             case UpdateStage.Installing:
-                return qsTr("Installing version %1.").arg(dialog.app.updates.newVersion);
+                return qsTr("Installing version %1. The app restarts by itself when it's done.").arg(dialog.app.updates.newVersion);
             case UpdateStage.Manual:
                 return (dialog.app.updates.installError.length > 0 ? dialog.app.updates.installError + " " : "")
                     + qsTr("Version %1 is downloaded and checked. Run this in a terminal to install it, then start the app again.").arg(dialog.app.updates.newVersion);
-            case UpdateStage.Installed:
-                return qsTr("Version %1 is installed. Restart the app to use it.").arg(dialog.app.updates.newVersion);
             case UpdateStage.Failed:
                 return dialog.app.updates.installError;
             }
@@ -79,14 +78,6 @@ FormCard.FormCardDialog {
         wrapMode: TextEdit.WrapAnywhere
         // Kirigami 6.13 has no fixedWidthFont, and this only shows on Linux
         font.family: "monospace"
-    }
-
-    FormCard.FormButtonDelegate {
-        objectName: "restartButton"
-        visible: dialog.stage === UpdateStage.Installed
-        text: qsTr("Restart Now")
-        icon.name: "view-refresh"
-        onClicked: dialog.app.updates.restart()
     }
 
     FormCard.FormButtonDelegate {
