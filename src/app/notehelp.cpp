@@ -10,7 +10,7 @@ namespace pou {
 
 QString noteHelp(QStringView label)
 {
-    static const std::array<std::pair<QString, QString>, 7> help{{
+    static const std::array<std::pair<QString, QString>, 9> help{{
         {u"Missing stats"_s,
          u"Stats your build counts on that this item doesn't have, with the most its type "
          u"can roll of each."_s},
@@ -25,6 +25,9 @@ QString noteHelp(QStringView label)
                         u"needs."_s},
         {u"Your build wants"_s, u"Nothing is worn here. These are the stats your build wants most in this "
                                 u"slot, with the most each can roll."_s},
+        {u"Unique"_s, u"A unique's mods are fixed, so your gear score doesn't rate it."_s},
+        {u"Judged by"_s, u"A unique is judged by what it does for your damage and defences in Path of "
+                         u"Building, once a build is loaded. Without one it gets no verdict."_s},
     }};
     for (const auto &[name, text] : help) {
         if (name == label)

@@ -41,6 +41,12 @@ debian)
     # the licenses, where Debian looks for them
     head -n 1 /usr/share/doc/path-of-upgrading/copyright |
         grep -qx 'Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/'
+    # and every font whose license is installed is named in it
+    for license in /usr/share/licenses/path-of-upgrading/OFL-*.txt; do
+        name=$(basename "$license" .txt)
+        grep -qx "Files: data/fonts/${name#OFL-}\*" /usr/share/doc/path-of-upgrading/copyright ||
+            { echo "The copyright file doesn't name ${name#OFL-}" >&2; exit 1; }
+    done
     plugins=/usr/lib/x86_64-linux-gnu/qt6/plugins
     ;;
 fedora)
