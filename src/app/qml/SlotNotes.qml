@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
 // What would raise a slot's score, or what an empty slot wants: a labelled
-// line each, with the stats beside the label as chips. A note with no stats
-// is a sentence, which wraps.
+// line each, with the stats beside the label as chips.
 ColumnLayout {
     id: notes
 
@@ -38,15 +36,6 @@ ColumnLayout {
                 visible: note.modelData.stats.length > 0
                 stats: note.modelData.stats
                 text: note.modelData.text
-            }
-
-            QQC2.Label {
-                objectName: "noteSentence"
-                Layout.fillWidth: true
-                visible: note.modelData.stats.length === 0
-                topPadding: Kirigami.Units.smallSpacing
-                text: note.modelData.text
-                wrapMode: Text.Wrap
             }
         }
     }

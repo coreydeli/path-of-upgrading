@@ -263,9 +263,9 @@ private Q_SLOTS:
         QCOMPARE(notes.at(0).text, u"Uniques have fixed mods, so they don't get a gear score."_s);
         QCOMPARE(notes.at(1).label, u"Judged by"_s);
         QVERIFY(notes.at(1).text.contains(u"Path of Building"_s));
-        // sentences, with no stats to make chips of
-        QVERIFY(notes.at(0).stats.isEmpty());
-        QVERIFY(notes.at(1).stats.isEmpty());
+        // short chips, with the sentences kept in the text
+        QCOMPARE(notes.at(0).stats, (QStringList{u"Fixed mods"_s, u"No gear score"_s}));
+        QCOMPARE(notes.at(1).stats, (QStringList{u"Path of Building"_s, u"Damage"_s, u"Defences"_s}));
         // a rare isn't told it's a unique
         const auto rare = g.in(u"Helmet"_s, GearList::NotesRole).value<QList<GearNote>>();
         for (const GearNote &note : rare)
