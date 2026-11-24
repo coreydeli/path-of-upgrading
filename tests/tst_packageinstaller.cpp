@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "platform/packageinstaller.h"
 
+#include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
@@ -46,8 +47,113 @@ private Q_SLOTS:
         QVERIFY(QFile::permissions(target).testFlag(QFileDevice::ExeOwner));
 #endif
         QVERIFY(!QFile::exists(target + u".new"_s));
+        // the old one is kept beside it
+        QCOMPARE(read(target + u".old"_s), QByteArray("old"));
         QVERIFY(QFile::exists(update));
         QCOMPARE(installer.after(), PackageInstaller::After::Restart);
+    }
+
+    void aSecondUpdateReplacesTheOldCopy()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "one");
+        write(dir.filePath(u"two"_s), "two");
+        write(dir.filePath(u"three"_s), "three");
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"two"_s), [](const QString &) {});
+        installer.install(dir.filePath(u"three"_s), [](const QString &) {});
+        QCOMPARE(read(target), QByteArray("three"));
+        QCOMPARE(read(target + u".old"_s), QByteArray("two"));
+    }
+
+    void aNewAppImageThatNeverConfirmsIsReplacedByTheOldOne()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "old");
+        write(dir.filePath(u"new"_s), "new");
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"new"_s), [](const QString &) {});
+
+        // the first start of the new one: nothing to put back yet
+        OldAppImage first(target);
+        QVERIFY(!first.restoreIfUnconfirmed());
+        first.begin();
+        QVERIFY(QFile::exists(first.markerPath()));
+        QCOMPARE(read(target), QByteArray("new"));
+
+        // it didn't confirm, so the next start puts the old one back
+        OldAppImage second(target);
+        QVERIFY(second.restoreIfUnconfirmed());
+        QCOMPARE(read(target), QByteArray("old"));
+        QVERIFY(!QFile::exists(second.oldPath()));
+        QVERIFY(!QFile::exists(second.markerPath()));
+        // and that one starts as usual
+        OldAppImage third(target);
+        QVERIFY(!third.restoreIfUnconfirmed());
+    }
+
+    void aNewAppImageThatConfirmsKeepsItself()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "old");
+        write(dir.filePath(u"new"_s), "new");
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"new"_s), [](const QString &) {});
+        OldAppImage first(target);
+        first.begin();
+        first.confirm();
+        QVERIFY(!QFile::exists(first.oldPath()));
+        QVERIFY(!QFile::exists(first.markerPath()));
+        OldAppImage second(target);
+        QVERIFY(!second.restoreIfUnconfirmed());
+        QCOMPARE(read(target), QByteArray("new"));
+    }
+
+    void aStartThatNeverBeganLeavesTheOldCopyAlone()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "old");
+        write(dir.filePath(u"new"_s), "new");
+        // the old version installs, then quits to restart
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"new"_s), [](const QString &) {});
+        OldAppImage running(target);
+        running.confirm();
+        QCOMPARE(read(running.oldPath()), QByteArray("old"));
+    }
+
+    void aMarkerThatCantBeWrittenMeansNothingToConfirm()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "new");
+        write(target + u".old"_s, "old");
+        // a folder where the marker goes
+        QVERIFY(QDir().mkdir(target + u".starting"_s));
+        OldAppImage hold(target);
+        hold.begin();
+        hold.confirm();
+        QVERIFY(QFile::exists(hold.oldPath()));
+    }
+
+    void anAppImageWithNothingOldLeavesNoMarker()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "current");
+        OldAppImage hold(target);
+        hold.begin();
+        QVERIFY(!QFile::exists(hold.markerPath()));
+        QVERIFY(!hold.restoreIfUnconfirmed());
+        // and no AppImage at all does nothing
+        OldAppImage none{QString()};
+        none.begin();
+        none.confirm();
+        QVERIFY(!none.restoreIfUnconfirmed());
     }
 
     void anAppImageThatIsGoneIsReported()

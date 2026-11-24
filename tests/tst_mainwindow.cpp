@@ -4857,6 +4857,8 @@ private Q_SLOTS:
         };
         Window w;
         w.app->updates()->setInstallKind(InstallKind::Debian);
+        // this is the dialog's own Update Now, not the app taking it by itself
+        w.app->updates()->setInstallByItself(false);
         QList<PackageInstaller::After> finished;
         w.app->setUpdateInstaller(std::make_unique<Installed>(), [&](PackageInstaller::After a) {
             finished << a;
@@ -4952,6 +4954,11 @@ private Q_SLOTS:
         QVERIFY(!w.settings().updates.checkOnLaunch);
         QVERIFY(toggle(betas));
         QCOMPARE(w.settings().updates.includeBetas, betas->property("checked").toBool());
+
+        QObject *itself = w.find(u"installByItselfSwitch"_s);
+        QCOMPARE(itself->property("checked").toBool(), true);
+        QVERIFY(toggle(itself));
+        QVERIFY(!w.settings().updates.installByItself);
 
         QObject *now = w.find(u"checkNowButton"_s);
         QCOMPARE(text(now), u"Check Now"_s);

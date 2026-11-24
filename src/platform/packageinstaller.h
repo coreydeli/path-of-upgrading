@@ -27,6 +27,9 @@ public:
     virtual ~PackageInstaller() = default;
 
     virtual After after() const = 0;
+    // Whether the system asks for your password, so the app waits for you to
+    // say go rather than start it unasked.
+    virtual bool asksForPassword() const { return false; }
     // Whether a failure shows the command to run by hand, in place of the error.
     virtual bool fallsBackToCommand() const { return false; }
     // The file is one the downloader has checked.
@@ -45,6 +48,34 @@ public:
 
 private:
     QString m_target;
+};
+
+// The AppImage an update replaced, kept next to the new one as "<name>.old"
+// until the new one has run for a bit. A start that never gets that far leaves
+// a marker, and the next start puts the old one back.
+class OldAppImage
+{
+public:
+    // The path of the AppImage that is running.
+    explicit OldAppImage(const QString &appImage);
+
+    // The old file's name, and the marker's.
+    QString oldPath() const;
+    QString markerPath() const;
+    // Puts the old one back if the last start of the new one didn't get to
+    // confirm itself. True when it did, and the caller starts the program again.
+    bool restoreIfUnconfirmed();
+    // This start has begun, which stays on record until it confirms. Does
+    // nothing when there's no old file or the marker can't be written.
+    void begin();
+    // The new one works: the old file and the marker go. Only the start that
+    // began does this, as the old version quits to restart and mustn't take
+    // the file it just kept.
+    void confirm();
+
+private:
+    QString m_appImage;
+    bool m_began = false;
 };
 
 // Runs the new setup program without asking anything, which installs it for
