@@ -11,8 +11,10 @@
 // load. In the folder, it counts how many times it's run in a file called
 // runs, and how many times it has stopped once stdin was closed in one called
 // stops. It keeps the items it was last asked to judge in one called
-// asked.json, and the slot and weights it was last asked to weigh in
-// weighed.json.
+// asked.json, the slot and weights it was last asked to weigh in
+// weighed.json, and the character it was last asked to import in
+// imported.json. An import answers with a build of its own, named for the
+// character, and leaves that one loaded.
 //
 // Its own arguments come before LuaJIT's, for going wrong:
 //   --fail           it says it couldn't start
@@ -25,6 +27,7 @@
 //   --hang-on-load   it doesn't answer loading the build, or anything after
 //   --hang-on-equip  it doesn't answer putting on gear, or anything after
 //   --slow-load      it takes half a second to load the build
+//   --fail-import   it can't import a character
 //   --linger         it takes ten seconds to stop once stdin is closed
 //   --once           only the first time it's run
 
@@ -162,6 +165,26 @@ int main(int argc, char *argv[])
         }
         seen.append(command);
         QJsonObject r{{u"id"_s, request.value(u"id")}, {u"ok"_s, true}};
+        if (command == u"importCharacter") {
+            const QJsonObject character = request.value(u"character").toObject();
+            if (QFile file(u"imported.json"_s); file.open(QIODevice::WriteOnly))
+                file.write(QJsonDocument(character).toJson());
+            if (flags.contains("--fail-import")) {
+                r.insert(u"ok"_s, false);
+                r.insert(u"error"_s, u"The fake couldn't import the character."_s);
+                answer(r);
+                continue;
+            }
+            xml = u"<PathOfBuilding2><Build level=\"%1\" className=\"%2\"/></PathOfBuilding2>"_s
+                      .arg(character.value(u"level").toInt())
+                      .arg(character.value(u"class").toString());
+            wearing = QJsonValue();
+            noBuild.clear();
+            r.insert(u"xml"_s, xml);
+            r.insert(u"seen"_s, seen);
+            answer(r);
+            continue;
+        }
         if (command == u"load") {
             xml = request.value(u"xml").toString();
             wearing = QJsonValue();

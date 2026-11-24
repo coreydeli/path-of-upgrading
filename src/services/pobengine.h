@@ -108,6 +108,11 @@ public:
     // by how much it raises those stats. See weigh in pobbridge.lua for the
     // answer, and readPobWeighing() for reading it.
     PobReply *weigh(const QString &slot, const QList<PobStatWeight> &weights);
+    // Imports a character, as the game's account API gives it, into a new
+    // build. The answer has the build's XML, see importCharacter in
+    // pobbridge.lua. It needs no build of its own, and puts back the one
+    // you play afterwards.
+    PobReply *importCharacter(const QJsonObject &character);
     // Starts it if it isn't running, so it loads the build. It is started the
     // first time it's asked something otherwise.
     void load();
@@ -143,7 +148,7 @@ private:
         QPointer<PobReply> reply; // for an eval, null once it's deleted
     };
 
-    PobReply *ask(const QJsonObject &request);
+    PobReply *ask(const QJsonObject &request, bool needsBuild = true);
     void start();
     void sendBuild();
     void send(QJsonObject request, PobReply *reply = nullptr);

@@ -209,6 +209,34 @@ local function load(xml)
     return summary()
 end
 
+-- Starts a new build and imports a character from the game's account API
+-- into it, the passive tree, jewels, gear and skills, the way Path of
+-- Building's own import tab does. Answers with the build's XML, and it is the
+-- build that's loaded, so the app sends its own again when it has one.
+local function importCharacter(character)
+    noBuild = "Path of Building couldn't import the character."
+    launch.main:SetMode("BUILD", false, "")
+    runCallback("OnFrame")
+    local asked = popupError()
+    if asked or launch.main.mode ~= "BUILD" or launch.promptMsg then
+        return {ok = false, error = promptError() or asked or noBuild}
+    end
+    local tab = build.importTab
+    local ok, problem = pcall(function()
+        tab:ImportPassiveTreeAndJewels(character)
+        tab:ImportItemsAndSkills(character)
+    end)
+    if not ok then
+        return {ok = false, error = tostring(problem)}
+    end
+    build.buildFlag = true
+    runCallback("OnFrame")
+    local r = summary()
+    r.xml = build:SaveDB("")
+    noBuild = nil
+    return r
+end
+
 local function equip(items)
     local itemsTab = build.itemsTab
     local equipped, results = {}, {}
@@ -392,6 +420,12 @@ end
 local commands = {
     load = function(request)
         return load(request.xml)
+    end,
+    importCharacter = function(request)
+        if type(request.character) ~= "table" then
+            return {ok = false, error = "There's no character to import."}
+        end
+        return importCharacter(request.character)
     end,
     equip = function(request)
         if noBuild then

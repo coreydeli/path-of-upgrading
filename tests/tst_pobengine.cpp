@@ -299,6 +299,58 @@ private Q_SLOTS:
         QCOMPARE(pob.weighed().value(u"weights"), answer.value(u"weights"));
     }
 
+    void importsACharacter()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        const QJsonObject character{
+            {u"name"_s, u"Testchar"_s}, {u"class"_s, u"Stormweaver"_s}, {u"level"_s, 92}};
+        // with no build of its own
+        const std::unique_ptr<PobReply> reply(engine.importCharacter(character));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        QCOMPARE(pob.imported(), character);
+        QVERIFY(reply->answer().value(u"xml").toString().startsWith(u"<PathOfBuilding2>"));
+        QVERIFY(reply->answer().value(u"xml").toString().contains(u"Stormweaver"));
+        // and nothing was loaded for it
+        QCOMPARE(reply->answer().value(u"seen").toArray(), (QJsonArray{u"importCharacter"_s}));
+    }
+
+    void importPutsTheBuildBack()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install());
+        engine.setBuild(build);
+        const std::unique_ptr<PobReply> imported(
+            engine.importCharacter({{u"class"_s, u"Monk"_s}, {u"level"_s, 80}}));
+        QVERIFY(finishes(imported.get()));
+        // the build you play is loaded again, ahead of the next question
+        const std::unique_ptr<PobReply> reply(engine.evaluate({{.text = helmetOld}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->answer().value(u"seen").toArray(),
+                 (QJsonArray{u"load"_s, u"importCharacter"_s, u"load"_s, u"eval"_s}));
+        QCOMPARE(reply->answer().value(u"xml").toString(), build);
+    }
+
+    void importFails()
+    {
+        FakePob pob;
+        PobEngine engine;
+        engine.setInstall(pob.install({u"--fail-import"_s}));
+        const std::unique_ptr<PobReply> reply(engine.importCharacter({{u"name"_s, u"Testchar"_s}}));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), u"The fake couldn't import the character."_s);
+    }
+
+    void importWithoutPob()
+    {
+        PobEngine engine;
+        const std::unique_ptr<PobReply> reply(engine.importCharacter({}));
+        QCOMPARE(reply->errorString(), u"There's no Path of Building to run."_s);
+    }
+
     void noBuild()
     {
         FakePob pob;
