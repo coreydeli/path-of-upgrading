@@ -37,18 +37,18 @@ QList<GearNote> notesOf(const GearScore &gear)
     return notes;
 }
 
-// A unique has no gear score, so say what judges it instead. These are plain
-// sentences, so no stats, and the first matches the popup's.
+// A unique has no gear score, so say what judges it instead. The chips are
+// short, and the text keeps the full sentence (the first matches the popup's).
 QList<GearNote> uniqueNotes()
 {
     return {
         GearNote{.label = u"Unique"_s,
                  .text = u"Uniques have fixed mods, so they don't get a gear score."_s,
-                 .stats = {}},
+                 .stats = {u"Fixed mods"_s, u"No gear score"_s}},
         GearNote{.label = u"Judged by"_s,
                  .text = u"What it does for your damage and defences in Path of Building, once a build is "
                          u"loaded. Without that it gets no verdict."_s,
-                 .stats = {}},
+                 .stats = {u"Path of Building"_s, u"Damage"_s, u"Defences"_s}},
     };
 }
 
