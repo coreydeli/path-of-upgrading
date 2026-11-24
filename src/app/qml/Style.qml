@@ -93,6 +93,26 @@ QtObject {
         return theme.textColor;
     }
 
+    // Whether the look colors its chips by what the stat is for, which Pocket does.
+    readonly property bool kinded: Look.spec.kinds !== undefined
+
+    // the color of a chip for a ChipKind, the look's accent when it has none
+    function kindColor(kind: int, theme): color {
+        const set = Look.spec.kinds;
+        if (!set)
+            return accent(theme);
+        const colors = Look.dark ? set.dark : set.light;
+        switch (kind) {
+        case ChipKind.Resistance:
+            return colors.resistance;
+        case ChipKind.Damage:
+            return colors.damage;
+        case ChipKind.Defence:
+            return colors.defence;
+        }
+        return colors.other;
+    }
+
     // how far up the grades it is, out of five, for the pips
     function gradeStep(grade: string): int {
         return grade ? "DCBAS".indexOf(grade) + 1 : 0;

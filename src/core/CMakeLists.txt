@@ -41,6 +41,7 @@ add_library(pou_core STATIC
     slotmods.cpp slotmods.h
     slots.cpp slots.h
     statmap.cpp statmap.h
+    statkind.cpp statkind.h
     statnorm.cpp statnorm.h
     statsources.cpp statsources.h
     tradedata.cpp tradedata.h

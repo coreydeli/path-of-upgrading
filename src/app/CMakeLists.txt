@@ -36,6 +36,7 @@ qt_add_library(pou_app STATIC
     resultspanel.cpp resultspanel.h
     settingsstore.cpp settingsstore.h
     startover.cpp startover.h
+    statkinds.cpp statkinds.h
     statpicker.cpp statpicker.h
     statweights.cpp statweights.h
     tradefinder.cpp tradefinder.h
