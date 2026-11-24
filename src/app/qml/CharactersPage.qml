@@ -16,6 +16,8 @@ ColumnsPage {
     required property App app
     readonly property CharacterList characters: app.characterList
     readonly property BuildImporter importer: app.buildImporter
+    readonly property PoeAccount account: app.poeAccount
+    readonly property AccountCharacters accountCharacters: app.accountCharacters
 
     // for the window to show the gear page
     signal gearAsked
@@ -28,8 +30,15 @@ ColumnsPage {
 
     // for builds you've saved in Path of Building since
     onIsCurrentPageChanged: {
-        if (isCurrentPage)
-            importer.refreshBuilds();
+        if (!isCurrentPage)
+            return;
+        importer.refreshBuilds();
+        // the keyring is only asked once someone looks at the card
+        if (account.offered) {
+            account.load();
+            if (account.linked && !accountCharacters.loaded)
+                accountCharacters.refresh();
+        }
     }
 
     SectionHeader {
@@ -193,6 +202,29 @@ ColumnsPage {
             description: charactersPage.characters.problems.join("\n")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
+        }
+    }
+
+    SectionHeader {
+        objectName: "accountHeader"
+        visible: charactersPage.account.offered
+        column: charactersPage.wide ? 0 : -1
+        title: qsTr("Your Path of Exile account")
+    }
+
+    AccountCard {
+        visible: charactersPage.account.offered
+        account: charactersPage.account
+        characters: charactersPage.accountCharacters
+    }
+
+    // the list comes once the link is there
+    Connections {
+        target: charactersPage.account
+
+        function onLinkedChanged() {
+            if (charactersPage.account.linked)
+                charactersPage.accountCharacters.refresh();
         }
     }
 
