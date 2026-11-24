@@ -279,6 +279,13 @@ Kirigami.ApplicationWindow {
         value: pages.checkedAction ? pages.checkedAction.objectName : ""
     }
 
+    // and for whether the restart keeps the window hidden
+    Binding {
+        target: root.app.updates
+        property: "windowShown"
+        value: root.visible
+    }
+
     // once the sidebar is made, so it can go to the page's group
     Component.onCompleted: Qt.callLater(reopen)
 

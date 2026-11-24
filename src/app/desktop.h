@@ -42,6 +42,8 @@ public:
     // Tells you a newer version is out, when the window isn't open. The
     // notification's Update button shows the window, which has the choices.
     void tellAboutUpdate(const QString &version);
+    // Says an update has just been installed, as the new version starts.
+    void tellAboutUpdated(const QString &version);
 
 Q_SIGNALS:
     // It was started again with --setup.
