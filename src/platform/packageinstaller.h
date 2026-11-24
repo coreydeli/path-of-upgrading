@@ -27,6 +27,9 @@ public:
     virtual ~PackageInstaller() = default;
 
     virtual After after() const = 0;
+    // Whether the system asks for your password, so the app waits for you to
+    // say go rather than start it unasked.
+    virtual bool asksForPassword() const { return false; }
     // Whether a failure shows the command to run by hand, in place of the error.
     virtual bool fallsBackToCommand() const { return false; }
     // The file is one the downloader has checked.
