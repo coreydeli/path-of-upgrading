@@ -18,6 +18,8 @@ QString eventId(Notifier::Event event)
         return u"hotkeysUnavailable"_s;
     case Notifier::Event::UpdateAvailable:
         return u"updateAvailable"_s;
+    case Notifier::Event::Updated:
+        return u"updated"_s;
     }
     Q_UNREACHABLE_RETURN({});
 }

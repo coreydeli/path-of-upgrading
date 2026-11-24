@@ -82,15 +82,18 @@ int main(int argc, char *argv[])
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); },
         Qt::QueuedConnection);
-    // after an update restarted it, the window comes back, even when the old
-    // one started with the desktop
-    const bool hidden = commandLine.background() && root.updates()->reopenPage().isEmpty();
+    // after an update restarted it, the window comes back unless it was hidden
+    // too, as it is when the app started with the desktop
+    const bool hidden = commandLine.background() &&
+                        (root.updates()->reopenPage().isEmpty() || root.updates()->reopenHidden());
     engine.setInitialProperties({{u"app"_s, QVariant::fromValue(&root)}, {u"startHidden"_s, hidden}});
     engine.loadFromModule("PathOfUpgrading", "Main");
     QObject::connect(root.updates(), &pou::Updates::offered, &desktop,
                      [&] { desktop.tellAboutUpdate(root.updates()->newVersion()); });
     desktop.setWindow(qobject_cast<QWindow *>(engine.rootObjects().value(0)));
     desktop.reportProblems();
+    if (!root.updates()->justUpdated().isEmpty())
+        desktop.tellAboutUpdated(root.updates()->justUpdated());
     root.setUpdateInstaller(pou::createPackageInstaller(pou::installedKind(qEnvironmentVariable("APPIMAGE")),
                                                         qEnvironmentVariable("APPIMAGE")),
                             [](pou::PackageInstaller::After after) {
