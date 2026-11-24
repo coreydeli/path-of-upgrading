@@ -103,6 +103,8 @@ int main(int argc, char *argv[])
     engine.loadFromModule("PathOfUpgrading", "Main");
     QObject::connect(root.updates(), &pou::Updates::offered, &desktop,
                      [&] { desktop.tellAboutUpdate(root.updates()->newVersion()); });
+    QObject::connect(root.updates(), &pou::Updates::automaticFailed, &desktop,
+                     &pou::Desktop::tellAboutFailedUpdate);
     desktop.setWindow(qobject_cast<QWindow *>(engine.rootObjects().value(0)));
     desktop.reportProblems();
     if (!root.updates()->justUpdated().isEmpty())
