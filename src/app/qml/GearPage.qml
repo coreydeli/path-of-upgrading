@@ -85,11 +85,27 @@ ColumnsPage {
         FormCard.FormTextDelegate {
             id: overall
             objectName: "overallScore"
-            visible: gearPage.gear.overall !== ""
+            visible: gearPage.gear.overall !== "" && Style.tile === "diamonds"
             text: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
             // the headline of the page
             textItem.font: Style.titleFont(Kirigami.Theme.defaultFont, 1.3)
             textItem.color: Style.grade(gearPage.gear.overallGrade, Kirigami.Theme)
+        }
+
+        // the new looks draw the headline score in their own way
+        FormRow {
+            id: overallTile
+
+            objectName: "overallTile"
+            visible: gearPage.gear.overall !== "" && Style.tile !== "diamonds"
+            text: qsTr("Overall gear score")
+            Accessible.name: qsTr("Overall gear score %1 %2").arg(gearPage.gear.overall).arg(gearPage.gear.overallGrade)
+
+            ScoreGauge {
+                score: gearPage.gear.overall
+                grade: gearPage.gear.overallGrade
+                size: "large"
+            }
         }
 
         FormCard.FormTextDelegate {
@@ -101,7 +117,7 @@ ColumnsPage {
         }
 
         RowRule {
-            visible: overall.visible || nobody.visible
+            visible: overall.visible || overallTile.visible || nobody.visible
         }
 
         EquipmentBoard {
