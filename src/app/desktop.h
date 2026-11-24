@@ -44,6 +44,9 @@ public:
     void tellAboutUpdate(const QString &version);
     // Says an update has just been installed, as the new version starts.
     void tellAboutUpdated(const QString &version);
+    // Says an update the program started by itself failed, and why. The
+    // notification's button shows the window, which has the details.
+    void tellAboutFailedUpdate(const QString &version, const QString &why);
 
 Q_SIGNALS:
     // It was started again with --setup.
