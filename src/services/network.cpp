@@ -18,4 +18,17 @@ QNetworkRequest apiRequest(const QUrl &url)
     return request;
 }
 
+QByteArray poeUserAgent(const PoeConfig &config)
+{
+    return "OAuth " + config.clientId.toUtf8() + "/" APP_VERSION " (contact: " + config.contact.toUtf8() +
+           ") (+" APP_HOMEPAGE ")";
+}
+
+QNetworkRequest poeRequest(const QUrl &url, const PoeConfig &config)
+{
+    QNetworkRequest request = apiRequest(url);
+    request.setHeader(QNetworkRequest::UserAgentHeader, poeUserAgent(config));
+    return request;
+}
+
 } // namespace pou
