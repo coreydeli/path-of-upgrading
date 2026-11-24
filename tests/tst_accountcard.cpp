@@ -20,6 +20,7 @@
 #include <QJsonObject>
 #include <QQmlComponent>
 #include <QQmlEngine>
+#include <QQmlExtensionPlugin>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QSet>
