@@ -30,11 +30,13 @@ QString accountSlotOf(const QJsonObject &item)
     if (const auto it = places.constFind(place); it != places.cend())
         return *it;
     if (place == u"Flask") {
-        // the life flask first and the mana flask beside it
-        return x == 0 ? u"Life Flask"_s : x == 1 ? u"Mana Flask"_s : QString();
+        // the life flask first and the mana flask beside it, then the charms
+        if (x == 0)
+            return u"Life Flask"_s;
+        if (x == 1)
+            return u"Mana Flask"_s;
+        return x >= 2 && x <= 4 ? u"Charm %1"_s.arg(x - 1) : QString();
     }
-    if (place == u"Charm" && x >= 0 && x < 3)
-        return u"Charm %1"_s.arg(x + 1);
     if (place == u"PassiveJewels" && x >= 0 && x < jewelSlots)
         return u"Jewel %1"_s.arg(x + 1);
     return {};

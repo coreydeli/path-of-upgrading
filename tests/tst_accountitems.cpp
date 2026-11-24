@@ -67,10 +67,10 @@ private Q_SLOTS:
         QTest::newRow("second ring") << u"Ring2"_s << 0 << u"Ring 2"_s;
         QTest::newRow("life flask") << u"Flask"_s << 0 << u"Life Flask"_s;
         QTest::newRow("mana flask") << u"Flask"_s << 1 << u"Mana Flask"_s;
-        QTest::newRow("no third flask") << u"Flask"_s << 2 << QString();
-        QTest::newRow("charm") << u"Charm"_s << 0 << u"Charm 1"_s;
-        QTest::newRow("third charm") << u"Charm"_s << 2 << u"Charm 3"_s;
-        QTest::newRow("no fourth charm") << u"Charm"_s << 3 << QString();
+        QTest::newRow("charm") << u"Flask"_s << 2 << u"Charm 1"_s;
+        QTest::newRow("third charm") << u"Flask"_s << 4 << u"Charm 3"_s;
+        QTest::newRow("no fourth charm") << u"Flask"_s << 5 << QString();
+        QTest::newRow("no charm place") << u"Charm"_s << 0 << QString();
         QTest::newRow("jewel") << u"PassiveJewels"_s << 0 << u"Jewel 1"_s;
         QTest::newRow("last jewel") << u"PassiveJewels"_s << 5 << u"Jewel 6"_s;
         QTest::newRow("no seventh jewel") << u"PassiveJewels"_s << 6 << QString();
