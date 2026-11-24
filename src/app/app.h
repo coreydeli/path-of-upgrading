@@ -2,6 +2,7 @@
 #pragma once
 
 #include "app/about.h"
+#include "app/accountcharacters.h"
 #include "app/activecharacter.h"
 #include "app/appearance.h"
 #include "app/buildimporter.h"
@@ -38,6 +39,7 @@
 #include "services/characterstore.h"
 #include "services/pobengine.h"
 #include "services/poeauth.h"
+#include "services/poeclient.h"
 #include "services/poeconfig.h"
 #include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
@@ -91,6 +93,7 @@ class App : public QObject
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
     Q_PROPERTY(pou::Updates *updates READ updates CONSTANT)
     Q_PROPERTY(pou::PoeAccount *poeAccount READ poeAccount CONSTANT)
+    Q_PROPERTY(pou::AccountCharacters *accountCharacters READ accountCharacters CONSTANT)
     Q_PROPERTY(pou::StartOver *startOver READ startOver CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
@@ -170,6 +173,7 @@ public:
     Updates *updates() { return &m_updatesModel; }
     StartOver *startOver() { return &m_startOver; }
     PoeAccount *poeAccount() { return &m_poeAccount; }
+    AccountCharacters *accountCharacters() { return &m_accountCharacters; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -222,6 +226,8 @@ private:
     TradeSession m_tradeSession;
     PoeAuth m_poeAuth;
     PoeAccount m_poeAccount;
+    PoeClient m_poeClient;
+    AccountCharacters m_accountCharacters;
     TradeDataStore m_tradeData;
     RatesStore m_rates;
     RatesRefresher m_ratesRefresher;
