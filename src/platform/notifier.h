@@ -18,6 +18,7 @@ public:
     enum class Event {
         HotkeysUnavailable, // the desktop wouldn't take the hotkeys
         UpdateAvailable,    // a newer release is out
+        Updated,            // an update has been installed
     };
 
     // A button on the notification, for desktops that can show one.

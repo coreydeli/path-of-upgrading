@@ -196,6 +196,20 @@ private Q_SLOTS:
         QVERIFY(s.window.isVisible());
     }
 
+    void saysAnUpdateWasInstalled()
+    {
+        Setup s;
+        s.desktop.setWindow(&s.window);
+        // whether or not the window is up
+        s.window.show();
+        s.desktop.tellAboutUpdated(u"0.8.0"_s);
+        QCOMPARE(s.notifier.sent.size(), 1);
+        const FakeNotifier::Sent &sent = s.notifier.sent.first();
+        QCOMPARE(sent.event, Notifier::Event::Updated);
+        QCOMPARE(sent.title, u"Path of Upgrading Was Updated"_s);
+        QCOMPARE(sent.text, u"You're on version 0.8.0 now."_s);
+    }
+
     void leavesTheUpdateToTheWindowWhenItIsOpen()
     {
         Setup s;
