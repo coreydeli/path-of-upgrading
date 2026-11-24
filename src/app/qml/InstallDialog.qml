@@ -17,8 +17,13 @@ FormCard.FormCardDialog {
     readonly property int stage: app.updates.stage
     readonly property bool busy: stage === UpdateStage.Installing
 
-    onStageChanged: {
-        if (stage !== UpdateStage.Idle && !opened)
+    // An update the app takes by itself shows up when it installs, or fails. A
+    // download that's waiting for you is the update dialog's.
+    readonly property bool wanted: stage !== UpdateStage.Idle && stage !== UpdateStage.Ready
+        && !(stage === UpdateStage.Downloading && app.updates.automatic)
+
+    onWantedChanged: {
+        if (wanted && !opened)
             open();
         else if (stage === UpdateStage.Idle && opened)
             close();
@@ -36,7 +41,7 @@ FormCard.FormCardDialog {
         // Cancel while it downloads, and nothing while it installs
         close.text = Qt.binding(() => stage === UpdateStage.Downloading ? qsTr("Cancel") : qsTr("Close"));
         close.enabled = Qt.binding(() => !busy);
-        if (stage !== UpdateStage.Idle)
+        if (wanted)
             open();
     }
 

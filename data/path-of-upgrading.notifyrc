@@ -13,3 +13,8 @@ Action=Popup
 Name=A new version is out
 Comment=A newer release of the app is on GitHub
 Action=Popup
+
+[Event/updated]
+Name=The app was updated
+Comment=An update was installed and the app started again
+Action=Popup

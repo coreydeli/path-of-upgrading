@@ -70,4 +70,10 @@ void Desktop::tellAboutUpdate(const QString &version)
                        {.text = u"Update"_s, .run = [this] { showWindow(); }});
 }
 
+void Desktop::tellAboutUpdated(const QString &version)
+{
+    m_notifier->notify(Notifier::Event::Updated, u"Path of Upgrading Was Updated"_s,
+                       u"You're on version %1 now."_s.arg(version));
+}
+
 } // namespace pou

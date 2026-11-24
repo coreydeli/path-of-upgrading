@@ -27,6 +27,7 @@ enum Stage {
     Idle,
     Downloading,
     Installing,
+    Ready,  // downloaded, and waiting for you to say install
     Manual, // downloaded, and you run the command
     Failed,
 };
@@ -46,6 +47,12 @@ class Updates : public QObject
 
     Q_PROPERTY(bool checkOnLaunch READ checksOnLaunch WRITE setCheckOnLaunch NOTIFY changed)
     Q_PROPERTY(bool includeBetas READ includesBetas WRITE setIncludeBetas NOTIFY changed)
+    // Takes an update and restarts into it without asking
+    Q_PROPERTY(bool installByItself READ installsByItself WRITE setInstallByItself NOTIFY changed)
+    // Whether the update being taken wasn't asked for, so it goes quietly
+    Q_PROPERTY(bool automatic READ isAutomatic NOTIFY changed)
+    // Whether the window is showing, which a restart keeps
+    Q_PROPERTY(bool windowShown READ isWindowShown WRITE setWindowShown)
     // "0.7.0" or "0.7.0-beta.4", the one you have
     Q_PROPERTY(QString version READ version CONSTANT)
     Q_PROPERTY(bool checking READ isChecking NOTIFY changed)
@@ -91,6 +98,11 @@ public:
     void setCheckOnLaunch(bool check);
     bool includesBetas() const;
     void setIncludeBetas(bool include);
+    bool installsByItself() const;
+    void setInstallByItself(bool install);
+    bool isAutomatic() const { return m_automatic; }
+    bool isWindowShown() const { return m_windowShown; }
+    void setWindowShown(bool shown) { m_windowShown = shown; }
     QString version() const;
     bool isChecking() const;
     QString status() const;
@@ -104,10 +116,16 @@ public:
     QString shownPage() const { return m_shownPage; }
     void setShownPage(const QString &page) { m_shownPage = page; }
     QString reopenPage() const { return m_reopenPage; }
+    // Whether the window was hidden when an update restarted the app.
+    bool reopenHidden() const { return m_reopenHidden; }
+    // The version an update has just installed, on the first start after it.
+    // Empty on any other start.
+    QString justUpdated() const { return m_updatedTo == version() ? m_updatedTo : QString(); }
 
     // Looks now, and offers the release again if it was skipped or put off.
     Q_INVOKABLE void checkNow();
-    // Takes the newer release. It downloads the file for how the program was
+    // Takes the newer release, or installs the one that's downloaded and
+    // waiting. It downloads the file for how the program was
     // installed and checks it, then installs it and starts the new version,
     // or shows the command for it. With no file for that, it opens the
     // release's page on GitHub.
@@ -130,7 +148,11 @@ Q_SIGNALS:
 
 private:
     void change(const std::function<void(UpdateSettings &)> &edit);
+    bool canTakeByItself(const Release &release) const;
+    // Automatic when the check did it and you didn't ask.
+    void download(const Release &release, bool automatic);
     void downloaded(const QString &file);
+    void install();
     void fail(const QString &why);
     void finish(PackageInstaller::After after);
 
@@ -149,6 +171,10 @@ private:
     QString m_file;
     QString m_shownPage;
     QString m_reopenPage;
+    bool m_reopenHidden = false;
+    QString m_updatedTo;
+    bool m_windowShown = true;
+    bool m_automatic = false;
 };
 
 } // namespace pou

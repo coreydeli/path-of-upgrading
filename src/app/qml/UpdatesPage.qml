@@ -19,7 +19,7 @@ ColumnsPage {
         SwitchRow {
             objectName: "checkForUpdatesSwitch"
             text: qsTr("Check for updates when the app starts")
-            description: qsTr("Asks GitHub once a day while it runs. Nothing is installed without you saying so.")
+            description: qsTr("Asks GitHub once a day while it runs.")
             checked: updatesPage.updates.checkOnLaunch
             onToggled: updatesPage.updates.checkOnLaunch = checked
         }
@@ -35,6 +35,33 @@ ColumnsPage {
         }
 
         RowRule {}
+
+        SwitchRow {
+            objectName: "installByItselfSwitch"
+            text: qsTr("Install updates for me")
+            description: qsTr("Don't want to be asked? The app downloads a new version, installs it and starts it again. Installs that ask for your password wait for you.")
+            checked: updatesPage.updates.installByItself
+            onToggled: updatesPage.updates.installByItself = checked
+        }
+
+        RowRule {}
+
+        FormRow {
+            objectName: "readyRow"
+            visible: updatesPage.updates.stage === UpdateStage.Ready
+            text: qsTr("Version %1 is ready").arg(updatesPage.updates.newVersion)
+            description: qsTr("It's downloaded and checked.")
+
+            QQC2.Button {
+                objectName: "installReadyButton"
+                text: qsTr("Install")
+                onClicked: updatesPage.updates.updateNow()
+            }
+        }
+
+        RowRule {
+            visible: updatesPage.updates.stage === UpdateStage.Ready
+        }
 
         FormRow {
             text: qsTr("You have version %1").arg(updatesPage.updates.version)

@@ -48,6 +48,8 @@ struct Setup
     {
         // whatever this test machine is
         updates.setInstallKind(InstallKind::Source);
+        // the tests that want it turn it on
+        updates.setInstallByItself(false);
         QObject::connect(&settings, &SettingsStore::changed, &settings,
                          [this] { checker.follow(settings.settings().updates); });
         checker.follow(settings.settings().updates);
@@ -77,6 +79,7 @@ class FakeInstaller : public PackageInstaller
 public:
     After after() const override { return m_after; }
     bool fallsBackToCommand() const override { return fallback; }
+    bool asksForPassword() const override { return password; }
     void install(const QString &file, const Done &done) override
     {
         installed << file;
@@ -86,6 +89,7 @@ public:
     QStringList installed;
     QString error;
     bool fallback = false;
+    bool password = false;
     After m_after = After::Restart;
 };
 
@@ -315,6 +319,143 @@ private Q_SLOTS:
         QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
         QVERIFY(s.updates.command().isEmpty());
         QVERIFY(s.updates.installError().isEmpty());
+    }
+
+    void takesAnUpdateByItselfAndRestarts()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        s.updates.setInstallByItself(true);
+        s.updates.setShownPage(u"updatesAction"_s);
+        s.updates.setWindowShown(false);
+        auto installer = std::make_unique<FakeInstaller>();
+        FakeInstaller *fake = installer.get();
+        QList<PackageInstaller::After> finished;
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) {
+            finished << a;
+            return true;
+        });
+        QSignalSpy offered(&s.updates, &Updates::offered);
+        s.network.answers = {releases({u"0.7.0"_s})};
+        // the sums and the file come after the look
+        s.network.answers << sumsFor(u"0.7.0"_s, InstallKind::AppImage) << FakeAnswer{.body = package};
+        s.updates.checkNow();
+        QVERIFY(QTest::qWaitFor([&] { return !finished.isEmpty(); }, 5000));
+        QCOMPARE(fake->installed.size(), 1);
+        QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+        // nothing asked, and the next start knows what to do
+        QCOMPARE(offered.size(), 0);
+        const UpdateSettings saved = s.settings.settings().updates;
+        QCOMPARE(saved.reopenPage, u"updatesAction"_s);
+        QVERIFY(saved.reopenHidden);
+        QCOMPARE(saved.updatedTo, u"0.7.0"_s);
+    }
+
+    void aSwitchedOffUpdaterOnlyOffersIt()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        auto installer = std::make_unique<FakeInstaller>();
+        FakeInstaller *fake = installer.get();
+        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return true; });
+        QSignalSpy offered(&s.updates, &Updates::offered);
+        s.look({u"0.7.0"_s});
+        QCOMPARE(offered.size(), 1);
+        QCOMPARE(s.updates.stage(), UpdateStage::Idle);
+        QVERIFY(fake->installed.isEmpty());
+    }
+
+    void aPackageIsDownloadedByItselfAndWaitsForYou()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        s.updates.setInstallByItself(true);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->password = true;
+        FakeInstaller *fake = installer.get();
+        QList<PackageInstaller::After> finished;
+        s.updates.setInstaller(std::move(installer), [&](PackageInstaller::After a) {
+            finished << a;
+            return true;
+        });
+        QSignalSpy offered(&s.updates, &Updates::offered);
+        s.network.answers = {releases({u"0.7.0"_s})};
+        s.network.answers << sumsFor(u"0.7.0"_s, InstallKind::Debian) << FakeAnswer{.body = package};
+        s.updates.checkNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Ready; }, 5000));
+        // it's offered once it's ready, and the window shows it
+        QCOMPARE(offered.size(), 1);
+        QVERIFY(s.updates.isPending());
+        QVERIFY(!s.updates.isAutomatic());
+        QVERIFY(fake->installed.isEmpty());
+        QCOMPARE(s.updates.status(), u"Version 0.7.0 is downloaded and ready to install."_s);
+
+        // Install is the one click
+        s.updates.updateNow();
+        QCOMPARE(fake->installed.size(), 1);
+        QCOMPARE(finished, QList<PackageInstaller::After>{PackageInstaller::After::Restart});
+    }
+
+    void aDownloadYouAskedForInstallsAtOnce()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->password = true;
+        FakeInstaller *fake = installer.get();
+        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return true; });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::Debian), {.body = package}};
+        s.updates.updateNow();
+        QVERIFY(QTest::qWaitFor([&] { return !fake->installed.isEmpty(); }, 5000));
+    }
+
+    void aFailedInstallByItselfSaysSo()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        s.updates.setInstallByItself(true);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->error = u"Couldn't replace it."_s;
+        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return true; });
+        s.network.answers = {releases({u"0.7.0"_s})};
+        s.network.answers << sumsFor(u"0.7.0"_s, InstallKind::AppImage) << FakeAnswer{.body = package};
+        s.updates.checkNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
+        QCOMPARE(s.updates.installError(), u"Couldn't replace it."_s);
+        QVERIFY(!s.updates.isAutomatic());
+        // and it doesn't try again by itself
+        QVERIFY(!s.updates.isPending());
+    }
+
+    void theNewVersionSaysItWasUpdated()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        s.updates.setInstaller(std::make_unique<FakeInstaller>(),
+                               [](PackageInstaller::After) { return true; });
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
+        s.updates.updateNow();
+        QTRY_VERIFY_WITH_TIMEOUT(!s.settings.settings().updates.updatedTo.isEmpty(), 5000);
+
+        // a checker that's the new version, which says so once
+        UpdateChecker newer(&s.network, v(u"0.7.0"_s));
+        Updates next(&newer, &s.settings, &s.opener);
+        QCOMPARE(next.justUpdated(), u"0.7.0"_s);
+        QVERIFY(s.settings.settings().updates.updatedTo.isEmpty());
+        QVERIFY(!s.settings.settings().updates.reopenHidden);
+    }
+
+    void anOldVersionThatStartedAgainSaysNothing()
+    {
+        Setup s;
+        Settings saved = s.settings.settings();
+        saved.updates.updatedTo = u"0.7.0"_s;
+        s.settings.set(saved);
+        // 0.6.0 is still what runs
+        Updates again(&s.checker, &s.settings, &s.opener);
+        QVERIFY(again.justUpdated().isEmpty());
     }
 
     void theNewVersionOpensWhereYouWere()
