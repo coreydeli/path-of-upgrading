@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: MIT
 #include "app/accountcharacters.h"
+#include "app/activecharacter.h"
+#include "app/characterlist.h"
 #include "app/poeaccount.h"
+#include "app/settingsstore.h"
 #include "fakenetwork.h"
 #include "fakesecretstore.h"
+#include "services/characterstore.h"
+#include "services/pobengine.h"
 #include "services/poeauth.h"
 #include "services/poeclient.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTest>
 #include <QTimeZone>
 
@@ -26,6 +32,14 @@ const QByteArray list =
     R"({"id":"bb","name":"FakeTwo","class":"Ranger","league":"HC Fake League","level":7},)"
     R"({"id":"cc","name":"FakeGone","class":"Witch","level":3,"deleted":true}]})";
 
+// what FakeOne wears, made up
+const QByteArray wearing =
+    R"({"character":{"id":"aa","name":"FakeOne","class":"Stormweaver","level":92,"equipment":[)"
+    R"({"inventoryId":"Helm","name":"Fake Crown","typeLine":"Iron Hat","baseType":"Iron Hat","rarity":"Rare",)"
+    R"("explicitMods":["+45 to maximum Life"]},)"
+    R"({"inventoryId":"Belt","name":"Fake Sash","typeLine":"Leather Belt","baseType":"Leather Belt",)"
+    R"("rarity":"Rare","explicitMods":["+30 to maximum Life"]}]}})";
+
 // A linked account whose website answers the token address with a token and
 // the API with what's in `characters`.
 struct Linked
@@ -35,8 +49,15 @@ struct Linked
     PoeAuth auth{network, config};
     PoeAccount account{true, &store, &auth};
     PoeClient client{&network, config, &account};
-    AccountCharacters characters{&client, &account};
+    QTemporaryDir dir;
+    SettingsStore settings{dir.filePath(u"settings.conf"_s)};
+    CharacterStore store{dir.filePath(u"characters"_s)};
+    PobEngine engine;
+    ActiveCharacter active{&store, &engine};
+    CharacterList yours{&store, &active, &settings};
+    AccountCharacters characters{&client, &account, &yours};
     FakeAnswer characterAnswer{.body = list};
+    FakeAnswer oneAnswer{.body = wearing};
     int asked = 0;
 
     explicit Linked(bool linked = true)
@@ -46,7 +67,7 @@ struct Linked
         network.route = [this](const QNetworkRequest &request) -> std::optional<FakeAnswer> {
             if (request.url().host() == u"api.pathofexile.com"_s) {
                 ++asked;
-                return characterAnswer;
+                return request.url().path().count(u'/') > 2 ? oneAnswer : characterAnswer;
             }
             const QByteArray body = QJsonDocument(QJsonObject{{u"access_token"_s, u"fake-access"_s},
                                                               {u"refresh_token"_s, u"fake-refresh-2"_s},
@@ -153,6 +174,66 @@ private Q_SLOTS:
         l.characters.refresh();
         QTRY_VERIFY(!l.characters.error().isEmpty());
         QCOMPARE(l.characters.rowCount(), 2);
+    }
+
+    void importsACharacterAndSaysWhatItWears()
+    {
+        Linked l;
+        l.yours.load();
+        l.characters.refresh();
+        QTRY_VERIFY(l.characters.isLoaded());
+        QVERIFY(!l.characters.index(0).data(AccountCharacters::ImportedRole).toBool());
+        QSignalSpy imported(&l.characters, &AccountCharacters::imported);
+        l.characters.importCharacter(0);
+        QVERIFY(l.characters.isImporting());
+        QTRY_VERIFY(!l.characters.isImporting());
+        QCOMPARE(imported.size(), 1);
+        QCOMPARE(l.characters.message(), u"FakeOne now wears 2 items from the game."_s);
+        // one request for the list, one for the character
+        QCOMPARE(l.asked, 2);
+        const QString id = l.yours.linkedTo(u"aa"_s);
+        QVERIFY(!id.isEmpty());
+        QCOMPARE(imported.first().first().toString(), id);
+        QCOMPARE(l.yours.find(id)->gear.size(), 2);
+        QVERIFY(l.characters.index(0).data(AccountCharacters::ImportedRole).toBool());
+        QVERIFY(!l.characters.index(1).data(AccountCharacters::ImportedRole).toBool());
+
+        // and again updates the same one
+        l.oneAnswer.body = R"({"character":{"id":"aa","name":"FakeOne","level":93,"equipment":[]}})";
+        l.characters.importCharacter(0);
+        QTRY_VERIFY(!l.characters.isImporting());
+        QCOMPARE(l.characters.message(), u"FakeOne now wears 0 items from the game."_s);
+        QCOMPARE(l.yours.count(), 1);
+        QCOMPARE(l.yours.find(id)->gear.size(), 0);
+    }
+
+    void importingSaysWhyItFailed()
+    {
+        Linked l;
+        l.yours.load();
+        l.characters.refresh();
+        QTRY_VERIFY(l.characters.isLoaded());
+        l.oneAnswer =
+            FakeAnswer{.status = 404, .body = R"({"error":{"code":2,"message":"Resource not found"}})"};
+        l.characters.importCharacter(0);
+        QTRY_VERIFY(!l.characters.isImporting());
+        QCOMPARE(l.characters.message(), u"That character isn't on your account any more."_s);
+        QCOMPARE(l.yours.count(), 0);
+
+        l.oneAnswer = FakeAnswer{.body = R"({"character":null})"};
+        l.characters.importCharacter(0);
+        QTRY_VERIFY(!l.characters.isImporting());
+        QCOMPARE(l.characters.message(), u"FakeOne isn't on your account any more."_s);
+        QCOMPARE(l.yours.count(), 0);
+    }
+
+    void importsNothingForARowThatIsntThere()
+    {
+        Linked l;
+        l.characters.importCharacter(0);
+        l.characters.importCharacter(-1);
+        QVERIFY(!l.characters.isImporting());
+        QCOMPARE(l.network.sent.size(), 0);
     }
 
     void unlinkingEmptiesTheList()

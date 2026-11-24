@@ -10,6 +10,7 @@
 
 namespace pou {
 
+class CharacterList;
 class PoeAccount;
 class PoeClient;
 
@@ -28,6 +29,10 @@ class AccountCharacters : public QAbstractListModel
     Q_PROPERTY(QString error READ error NOTIFY changed)
     // Whether the last ask got an answer, even an empty list.
     Q_PROPERTY(bool loaded READ isLoaded NOTIFY changed)
+    // While one is being fetched to import.
+    Q_PROPERTY(bool importing READ isImporting NOTIFY changed)
+    // What the last import did, as a sentence, or why it didn't.
+    Q_PROPERTY(QString message READ message NOTIFY changed)
 
 public:
     enum Role {
@@ -36,11 +41,13 @@ public:
         LevelRole,
         ClassRole,
         LeagueRole,
-        CurrentRole, // the one last played
+        CurrentRole,  // the one last played
+        ImportedRole, // it's one of yours already, so it updates
     };
 
     // They have to outlive it.
-    AccountCharacters(PoeClient *client, PoeAccount *account, QObject *parent = nullptr);
+    AccountCharacters(PoeClient *client, PoeAccount *account, CharacterList *characters,
+                      QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = {}) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -52,21 +59,33 @@ public:
 
     bool isLoading() const { return m_loading; }
     QString error() const { return m_error; }
+    // Fetches the character in that row and puts what it wears on one of
+    // yours, new or the one linked to it already. One at a time, and only
+    // when asked.
+    Q_INVOKABLE void importCharacter(int row);
+
+    bool isImporting() const { return m_importing; }
+    QString message() const { return m_message; }
     bool isLoaded() const { return m_loaded; }
     // Nothing for a row that isn't there.
     AccountCharacter at(int row) const { return m_list.value(row); }
 
 Q_SIGNALS:
     void changed();
+    // The id of the character it went to.
+    void imported(const QString &id);
 
 private:
     void clear();
 
     PoeClient *m_client;
     PoeAccount *m_account;
+    CharacterList *m_characters;
     QList<AccountCharacter> m_list;
     bool m_loading = false;
     bool m_loaded = false;
+    bool m_importing = false;
+    QString m_message;
     QString m_error;
 };
 
