@@ -412,6 +412,13 @@ private Q_SLOTS:
             QVERIFY2(banner, qPrintable(info.id));
             QVERIFY2(banner->implicitHeight() > 0, qPrintable(info.id));
             QCOMPARE(banner->property("gauged").toBool(), true);
+            // the same banner, for a row of the trade results
+            std::unique_ptr<QQuickItem> compact = make(
+                "VerdictBanner { width: 400; compact: true; verdict: \"Upgrade\"; tone: 1; score: \"+12%\";"
+                " gearScore: \"72\"; gearGrade: \"A\" }");
+            QVERIFY2(compact, qPrintable(info.id));
+            QVERIFY2(compact->implicitHeight() > 0 && compact->implicitHeight() <= banner->implicitHeight(),
+                     qPrintable(info.id));
         }
     }
 
