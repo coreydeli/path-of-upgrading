@@ -221,6 +221,15 @@ local function importCharacter(character)
     if asked or launch.main.mode ~= "BUILD" or launch.promptMsg then
         return {ok = false, error = promptError() or asked or noBuild}
     end
+    -- Path of Building loops over each of these, and the API leaves out
+    -- the ones a character has nothing in
+    character.jewels = character.jewels or {}
+    character.equipment = character.equipment or {}
+    character.skills = character.skills or {}
+    character.passives = character.passives or {}
+    for _, key in ipairs({"hashes", "specialisations", "skill_overrides", "jewel_data", "mastery_effects", "quest_stats"}) do
+        character.passives[key] = character.passives[key] or {}
+    end
     local tab = build.importTab
     local ok, problem = pcall(function()
         tab:ImportPassiveTreeAndJewels(character)
