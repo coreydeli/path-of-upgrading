@@ -385,15 +385,27 @@ private Q_SLOTS:
         QVERIFY(labels.contains(u"Weak rolls"_s));
         QVERIFY(labels.contains(u"Your build wants"_s));
 
+        // a unique's two notes have them too
+        const Item belt =
+            item(u"Belts"_s, u"Unique"_s, u"Coil of Ash"_s, u"Rawhide Belt"_s, u"+40 to maximum Life"_s);
+        g.play(wearing({{u"Belt"_s, belt}}));
+        const auto unique = g.in(u"Belt"_s, GearList::NotesRole).value<QList<GearNote>>();
+        QCOMPARE(unique.size(), 2);
+        for (const GearNote &note : unique) {
+            QVERIFY2(!note.help.isEmpty(), qPrintable(note.label));
+            QCOMPARE(note.help, noteHelp(note.label));
+        }
+
         // and every one has its own
         QStringList all;
-        for (const QString &label : {u"Missing stats"_s, u"Not counted"_s, u"Weak rolls"_s, u"Next tier"_s,
-                                     u"Look for"_s, u"Can roll"_s, u"Your build wants"_s}) {
+        for (const QString &label :
+             {u"Missing stats"_s, u"Not counted"_s, u"Weak rolls"_s, u"Next tier"_s, u"Look for"_s,
+              u"Can roll"_s, u"Your build wants"_s, u"Unique"_s, u"Judged by"_s}) {
             QVERIFY2(!noteHelp(label).isEmpty(), qPrintable(label));
             all << noteHelp(label);
         }
         all.removeDuplicates();
-        QCOMPARE(all.size(), 7);
+        QCOMPARE(all.size(), 9);
         QCOMPARE(noteHelp(u"Something else"), QString());
     }
 
