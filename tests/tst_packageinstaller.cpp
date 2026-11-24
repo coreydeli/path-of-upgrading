@@ -176,12 +176,52 @@ private Q_SLOTS:
         QVERIFY(!error.isEmpty());
     }
 
+    void pacmanIsRunThroughPkexec()
+    {
+        QString program;
+        QStringList arguments;
+        PacmanInstaller installer(
+            [&](const QString &p, const QStringList &a, const PacmanInstaller::Finished &finished) {
+                program = p;
+                arguments = a;
+                finished(true, 0);
+            });
+        QString error = u"not called"_s;
+        installer.install(u"/x/app.pkg.tar.zst"_s, [&](const QString &e) { error = e; });
+        QVERIFY(error.isEmpty());
+        QCOMPARE(program, u"pkexec"_s);
+        QCOMPARE(arguments, (QStringList{u"pacman"_s, u"-U"_s, u"--noconfirm"_s, u"/x/app.pkg.tar.zst"_s}));
+        QCOMPARE(installer.after(), PackageInstaller::After::Restart);
+        QVERIFY(installer.asksForPassword());
+        QVERIFY(installer.fallsBackToCommand());
+    }
+
+    void pacmanSaysWhyItDidNotInstall()
+    {
+        const auto errorFor = [](bool started, int code) {
+            PacmanInstaller installer(
+                [&](const QString &, const QStringList &, const PacmanInstaller::Finished &finished) {
+                    finished(started, code);
+                });
+            QString error;
+            installer.install(u"x"_s, [&](const QString &e) { error = e; });
+            return error;
+        };
+        QVERIFY(errorFor(false, -1).contains(u"pkexec"_s));
+        QVERIFY(errorFor(true, 126).contains(u"password prompt"_s));
+        QVERIFY(errorFor(true, 127).contains(u"password prompt"_s));
+        QVERIFY(errorFor(true, 1).contains(u"code 1"_s));
+        QVERIFY(errorFor(true, 0).isEmpty());
+    }
+
     void onlySomeKindsInstallThemselves()
     {
         QVERIFY(createPackageInstaller(InstallKind::AppImage, u"/x/a.AppImage"_s));
         QVERIFY(createPackageInstaller(InstallKind::Windows, {}));
+#ifdef Q_OS_WIN
         QVERIFY(!createPackageInstaller(InstallKind::Arch, {}));
-#ifndef Q_OS_WIN
+#else
+        QVERIFY(createPackageInstaller(InstallKind::Arch, {}));
         QVERIFY(createPackageInstaller(InstallKind::Debian, {}));
         QVERIFY(createPackageInstaller(InstallKind::Fedora, {}));
 #endif
