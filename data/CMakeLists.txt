@@ -25,7 +25,7 @@ if(NOT WIN32)
     install(FILES fonts/OFL-Spectral.txt fonts/OFL-BigShoulders.txt
         fonts/OFL-AlegreyaSC.txt fonts/OFL-Inter.txt
         fonts/OFL-IBMPlexSans.txt fonts/OFL-Barlow.txt fonts/OFL-Cinzel.txt
-        fonts/OFL-JetBrainsMono.txt fonts/OFL-SpaceGrotesk.txt
+        fonts/OFL-JetBrainsMono.txt fonts/OFL-SpaceGrotesk.txt fonts/OFL-Silkscreen.txt
         DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${CMAKE_PROJECT_NAME})
 endif()
 

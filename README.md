@@ -509,7 +509,8 @@ IDs are kept in the Windows Credential Manager.
   [Barlow Semi Condensed](https://github.com/jpt/barlow),
   [IBM Plex Sans](https://github.com/IBM/plex),
   [Cinzel](https://github.com/NDISCOVER/Cinzel),
-  [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) and
+  [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono),
+  [Silkscreen](https://github.com/googlefonts/silkscreen) and
   [Space Grotesk](https://github.com/floriankarsten/space-grotesk), by their
   project authors (SIL Open Font License 1.1, in `data/fonts`), which the app
   carries. The Appearance page can set other fonts.

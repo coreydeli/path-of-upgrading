@@ -48,6 +48,7 @@ bool addBundledFonts()
         u"IBMPlexSans-Variable"_s,
         u"Inter-Variable"_s,
         u"JetBrainsMono-Variable"_s,
+        u"Silkscreen-Regular"_s,
         u"SpaceGrotesk-Variable"_s,
         u"Spectral-Bold"_s,
         u"Spectral-Italic"_s,

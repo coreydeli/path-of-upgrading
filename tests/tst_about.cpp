@@ -81,6 +81,8 @@ private Q_SLOTS:
         QVERIFY(names.contains(u"Spectral"_s));
         // Gilt brings it back for its titles
         QVERIFY(names.contains(u"Cinzel"_s));
+        // and Cinder has it for the app's name
+        QVERIFY(names.contains(u"Silkscreen"_s));
         QVERIFY(names.contains(u"Path of Building Community"_s));
     }
 
