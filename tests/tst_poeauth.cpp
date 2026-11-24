@@ -2,10 +2,12 @@
 #include "fakenetwork.h"
 #include "services/poeauth.h"
 
+#include <QEventLoop>
 #include <QHostAddress>
 #include <QSignalSpy>
 #include <QTcpSocket>
 #include <QTest>
+#include <QTimer>
 #include <QUrlQuery>
 
 using namespace Qt::Literals::StringLiterals;
@@ -38,6 +40,22 @@ void browserGoesBack(const QUrl &authorize, const QString &query)
         socket->write("GET /callback?" + query.toUtf8() + " HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
     });
     socket->connectToHost(QHostAddress::LocalHost, portOf(authorize));
+}
+
+// The page the browser got for that query.
+QByteArray browserGets(const QUrl &authorize, const QString &query)
+{
+    QTcpSocket socket;
+    QByteArray got;
+    QEventLoop loop;
+    QObject::connect(&socket, &QTcpSocket::connected, &socket,
+                     [&] { socket.write("GET /callback?" + query.toUtf8() + " HTTP/1.1\r\n\r\n"); });
+    QObject::connect(&socket, &QTcpSocket::readyRead, &socket, [&] { got += socket.readAll(); });
+    QObject::connect(&socket, &QTcpSocket::disconnected, &loop, &QEventLoop::quit);
+    QTimer::singleShot(3000, &loop, &QEventLoop::quit);
+    socket.connectToHost(QHostAddress::LocalHost, portOf(authorize));
+    loop.exec();
+    return got + socket.readAll();
 }
 
 QUrlQuery sentBody(const FakeNetwork &network, int which = 0)
@@ -147,18 +165,33 @@ private Q_SLOTS:
     void ignoresAnAnswerFromAnotherSignIn()
     {
         FakeNetwork network;
+        network.answers << FakeAnswer{.body = goodTokens};
         PoeAuth auth(network, config);
         QSignalSpy browser(&auth, &PoeAuth::browserWanted);
         QSignalSpy failed(&auth, &PoeAuth::failed);
         QSignalSpy linked(&auth, &PoeAuth::linked);
         auth.start();
-        browserGoesBack(browser.first().first().toUrl(), u"code=fake-code&state=not-ours"_s);
-        QTRY_COMPARE(failed.size(), 1);
-        QCOMPARE(failed.first().first().toString(),
-                 u"The answer didn't come from the sign in we started, so it was ignored."_s);
+        const QUrl authorize = browser.first().first().toUrl();
+
+        // another page sending the browser here, with a code or a denial
+        const QByteArray page = browserGets(authorize, u"code=fake-code&state=not-ours"_s);
+        QVERIFY(page.contains("<p>This answer wasn't for the sign in Path of Upgrading started. "
+                              "You can close this tab.</p>"));
+        QVERIFY(browserGets(authorize, u"error=access_denied&state=not-ours"_s)
+                    .contains("wasn't for the sign in"));
+        QVERIFY(browserGets(authorize, u"code=fake-code"_s).contains("wasn't for the sign in"));
+        // it neither ends the sign in nor trades the code
+        QVERIFY(auth.isWaiting());
+        QCOMPARE(failed.size(), 0);
         QCOMPARE(linked.size(), 0);
-        // the code was never traded
         QVERIFY(network.sent.isEmpty());
+
+        // and the real answer still works
+        const QByteArray ours = browserGets(authorize, u"code=fake-code&state="_s +
+                                                           queryOf(authorize).queryItemValue(u"state"_s));
+        QVERIFY(ours.contains(
+            "<p>Path of Upgrading got the answer. You can close this tab and go back to it.</p>"));
+        QTRY_COMPARE(linked.size(), 1);
     }
 
     void unreadableAnswer()
@@ -224,10 +257,11 @@ private Q_SLOTS:
         const QUrl first = browser.at(0).first().toUrl();
         const QUrl second = browser.at(1).first().toUrl();
         QVERIFY(queryOf(first).queryItemValue(u"state"_s) != queryOf(second).queryItemValue(u"state"_s));
-        // an answer to the first is no good any more
+        // an answer to the first is no good any more, and doesn't end the second
         QSignalSpy failed(&auth, &PoeAuth::failed);
-        browserGoesBack(second, u"code=fake-code&state="_s + queryOf(first).queryItemValue(u"state"_s));
-        QTRY_COMPARE(failed.size(), 1);
+        browserGets(second, u"code=fake-code&state="_s + queryOf(first).queryItemValue(u"state"_s));
+        QVERIFY(auth.isWaiting());
+        QCOMPARE(failed.size(), 0);
         QCOMPARE(linked.size(), 0);
     }
 

@@ -19,6 +19,19 @@ PoeAuth::PoeAuth(QNetworkAccessManager &network, PoeConfig config, QObject *pare
     m_timer.setSingleShot(true);
     connect(&m_timer, &QTimer::timeout, this,
             [this] { fail(u"Nothing came back from the browser in time. Try linking again."_s); });
+    m_server.setPage([this](const QUrl &url) {
+        const RedirectAnswer answer = readRedirect(url, m_state ? m_state->state : QString());
+        switch (answer.kind) {
+        case RedirectAnswer::Kind::Code:
+            return u"Path of Upgrading got the answer. You can close this tab and go back to it."_s;
+        case RedirectAnswer::Kind::WrongState:
+            return u"This answer wasn't for the sign in Path of Upgrading started. You can close this tab."_s;
+        case RedirectAnswer::Kind::Denied:
+        case RedirectAnswer::Kind::Unreadable:
+            break;
+        }
+        return u"Nothing was linked. You can close this tab."_s;
+    });
     connect(&m_server, &LoopbackServer::requested, this, &PoeAuth::answered);
 }
 
@@ -59,7 +72,8 @@ void PoeAuth::answered(const QUrl &url)
     const RedirectAnswer answer = readRedirect(url, m_state->state);
     switch (answer.kind) {
     case RedirectAnswer::Kind::WrongState:
-        fail(u"The answer didn't come from the sign in we started, so it was ignored."_s);
+        // not ours, so it can't end the one that is: another page could
+        // cancel it that way
         return;
     case RedirectAnswer::Kind::Denied:
         fail(u"You didn't allow it, so nothing was linked."_s);
