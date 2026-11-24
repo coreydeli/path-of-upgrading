@@ -83,7 +83,7 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_downloader(m_network.get(), paths.cache + u"/updates"_s)
     , m_updatesModel(&m_updates, &m_settings, m_opener.get(), &m_downloader)
     , m_characterList(&m_characters, &m_character, &m_settings)
-    , m_accountCharacters(&m_poeClient, &m_poeAccount, &m_characterList)
+    , m_accountCharacters(&m_poeClient, &m_poeAccount, &m_characterList, &m_pob)
     , m_buildImporter(&m_characterList, &m_pob, m_network.get())
     , m_gearList(&m_character, &m_settings)
     , m_upgrades(&m_character, &m_settings, &m_trade, &m_tradeData, &m_rates, &m_results)
