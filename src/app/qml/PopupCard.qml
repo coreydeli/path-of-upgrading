@@ -159,83 +159,20 @@ Item {
         spacing: Kirigami.Units.smallSpacing
 
         // the verdict across the card, with how good the item is at its right
-        Rectangle {
+        VerdictBanner {
             id: banner
-
-            readonly property color tint: Style.tone(card.report.verdictTone, card.popup.colorblind, Kirigami.Theme)
-            readonly property bool gauged: card.report.gearScore !== ""
 
             Layout.fillWidth: true
             visible: card.report.verdict !== ""
-            implicitHeight: verdict.implicitHeight + 2 * Kirigami.Units.smallSpacing
-            color: Style.tint(Kirigami.Theme.backgroundColor, tint, 0.12)
-
-            Rectangle {
-                anchors {
-                    top: parent.top
-                    bottom: parent.bottom
-                    left: parent.left
-                }
-                width: 3
-                color: banner.tint
-            }
-
-            RowLayout {
-                id: verdict
-
-                anchors {
-                    fill: parent
-                    leftMargin: 3 + Kirigami.Units.largeSpacing
-                    rightMargin: Kirigami.Units.largeSpacing
-                    topMargin: Kirigami.Units.smallSpacing
-                    bottomMargin: Kirigami.Units.smallSpacing
-                }
-                spacing: Kirigami.Units.largeSpacing
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 0
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Kirigami.Units.largeSpacing
-
-                        ToneLabel {
-                            font: Style.titleFont(Kirigami.Theme.defaultFont, 1.5)
-                            text: card.report.verdict
-                            tone: card.report.verdictTone
-                            colorblind: card.popup.colorblind
-                        }
-
-                        ToneLabel {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignRight
-                            font: Style.figureFont(Kirigami.Theme.defaultFont, 2.2)
-                            text: card.report.score
-                            tone: card.report.verdictTone
-                            colorblind: card.popup.colorblind
-                        }
-                    }
-
-                    // what the score is and what it's against: "for your build, vs Grim Crown"
-                    QQC2.Label {
-                        Layout.fillWidth: true
-                        visible: text !== ""
-                        wrapMode: Text.Wrap
-                        color: Kirigami.Theme.disabledTextColor
-                        text: [card.report.scoreLabel, card.report.versus].filter(part => part !== "").join(", ")
-                    }
-                }
-
-                ScoreGauge {
-                    Layout.alignment: Qt.AlignVCenter
-                    visible: banner.gauged
-                    score: card.report.gearScore
-                    grade: card.report.gearGrade
-                }
-            }
+            verdict: card.report.verdict
+            tone: card.report.verdictTone
+            colorblind: card.popup.colorblind
+            score: card.report.score
+            scoreLabel: card.report.scoreLabel
+            versus: card.report.versus
+            gearScore: card.report.gearScore
+            gearGrade: card.report.gearGrade
         }
-
 
         // what it costs you, which matters more than what it gives
         Notice {

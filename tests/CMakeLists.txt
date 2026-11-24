@@ -206,5 +206,6 @@ pou_use_fakepob(tst_mainwindow)
 target_compile_definitions(tst_mainwindow PRIVATE
     COLORS="${PROJECT_SOURCE_DIR}/data/color-schemes/PathOfUpgrading.colors")
 target_link_libraries(tst_mainwindow PRIVATE KF6::I18nQml)
-# the longest test by far, so it starts first and gets longer than the rest
-set_tests_properties(tst_mainwindow PROPERTIES COST 1000 TIMEOUT 1800)
+# the longest test by far, so it starts first and gets longer than the rest (an hour,
+# as it loads every page under each look)
+set_tests_properties(tst_mainwindow PROPERTIES COST 1000 TIMEOUT 3600)

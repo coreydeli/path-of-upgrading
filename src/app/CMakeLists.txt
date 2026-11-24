@@ -114,6 +114,7 @@ qt_add_qml_module(pou_app
         qml/SwitchRow.qml
         qml/TableHeader.qml
         qml/ToneLabel.qml
+        qml/VerdictBanner.qml
         qml/TonePill.qml
         qml/TradePage.qml
         qml/TradeStatus.qml
