@@ -68,6 +68,20 @@ private Q_SLOTS:
         }
     }
 
+    void everyLookNamesHowItDrawsTheScore()
+    {
+        QCOMPARE(designInfo(Design::Dossier).tile, u"diamonds"_s);
+        QCOMPARE(designInfo(Design::Material).tile, u"diamonds"_s);
+        // the new looks each have their own
+        QSet<QString> own;
+        for (Design d : {Design::Slate, Design::Pocket, Design::Edge, Design::Gilt, Design::Cinder}) {
+            const QString &tile = designInfo(d).tile;
+            QVERIFY(!tile.isEmpty());
+            QVERIFY2(tile != u"diamonds"_s && !own.contains(tile), qPrintable(tile));
+            own.insert(tile);
+        }
+    }
+
     // the files are named after it, and Dossier has the one
     void aLookWithALightPaletteHasASchemeName()
     {
