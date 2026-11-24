@@ -30,6 +30,7 @@ qt_add_library(pou_app STATIC
     ownstyle.cpp ownstyle.h
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
+    poeaccount.cpp poeaccount.h
     popuphider.cpp popuphider.h
     recommendedupgrades.cpp recommendedupgrades.h
     resistances.cpp resistances.h

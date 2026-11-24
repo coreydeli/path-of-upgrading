@@ -177,6 +177,7 @@ pou_add_app_test(tst_about fakeopener.h)
 if(NOT WIN32)
     # it turns the autostart entry off, which on Windows is in the registry
     pou_add_app_test(tst_startover fakeglobalshortcuts.h fakesecretstore.h)
+pou_add_app_test(tst_poeaccount fakenetwork.h fakeopener.h fakesecretstore.h)
 endif()
 pou_add_app_test(tst_help fakeopener.h)
 pou_add_app_test(tst_poboptions fakeopener.h)
