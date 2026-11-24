@@ -210,6 +210,10 @@ pou_add_qml_test(tst_itemchecker fakeclipboard.h fakegameinput.h fakenetwork.h i
 pou_use_fakepob(tst_itemchecker)
 pou_add_qml_test(tst_app fakegameinput.h fakenetwork.h fakeopener.h itemtexts.h maptexts.h tradefixtures.h)
 pou_use_fakepob(tst_app)
+pou_add_qml_test(tst_accountcard fakegameinput.h fakenetwork.h fakeopener.h fakeglobalshortcuts.h
+                 fakesecretstore.h)
+pou_use_fakepob(tst_accountcard)
+target_link_libraries(tst_accountcard PRIVATE KF6::I18nQml)
 pou_add_qml_test(tst_mainwindow fakegameinput.h fakenetwork.h fakeopener.h fakeglobalshortcuts.h itemtexts.h
                  tradefixtures.h updatetexts.h)
 pou_use_fakepob(tst_mainwindow)
