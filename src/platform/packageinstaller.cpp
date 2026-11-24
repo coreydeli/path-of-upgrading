@@ -125,6 +125,42 @@ void SetupInstaller::install(const QString &file, const Done &done)
     done({});
 }
 
+PacmanInstaller::PacmanInstaller(const Run &run)
+    : m_run(run)
+{
+    if (!m_run) {
+        m_run = [](const QString &program, const QStringList &arguments, const Finished &finished) {
+            auto *process = new QProcess;
+            QObject::connect(process, &QProcess::errorOccurred, process, [process, finished](auto error) {
+                if (error != QProcess::FailedToStart)
+                    return;
+                finished(false, -1);
+                process->deleteLater();
+            });
+            QObject::connect(process, &QProcess::finished, process, [process, finished](int exitCode) {
+                finished(true, exitCode);
+                process->deleteLater();
+            });
+            process->start(program, arguments);
+        };
+    }
+}
+
+void PacmanInstaller::install(const QString &file, const Done &done)
+{
+    m_run(u"pkexec"_s, {u"pacman"_s, u"-U"_s, u"--noconfirm"_s, file}, [done](bool started, int exitCode) {
+        if (!started)
+            done(u"pkexec isn't installed, so the app can't ask for your password."_s);
+        // pkexec says 126 when the prompt was dismissed and 127 when it was refused
+        else if (exitCode == 126 || exitCode == 127)
+            done(u"The password prompt was turned away."_s);
+        else if (exitCode != 0)
+            done(u"pacman couldn't install it (it stopped with code %1)."_s.arg(exitCode));
+        else
+            done({});
+    });
+}
+
 std::unique_ptr<PackageInstaller> createPackageInstaller(InstallKind kind, const QString &appImagePath)
 {
     switch (kind) {
@@ -136,9 +172,11 @@ std::unique_ptr<PackageInstaller> createPackageInstaller(InstallKind kind, const
     case InstallKind::Debian:
     case InstallKind::Fedora:
         return std::make_unique<PackageKitInstaller>();
+    // PackageKit's alpm backend isn't known to take a local package file, so
+    // Arch goes through pkexec and pacman
+    case InstallKind::Arch:
+        return std::make_unique<PacmanInstaller>();
 #endif
-    // Arch has no installer: PackageKit's alpm backend isn't known to take a
-    // local package file, so it stays on pacman's command
     default:
         return nullptr;
     }
