@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "platform/packageinstaller.h"
 
+#include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
@@ -46,8 +47,113 @@ private Q_SLOTS:
         QVERIFY(QFile::permissions(target).testFlag(QFileDevice::ExeOwner));
 #endif
         QVERIFY(!QFile::exists(target + u".new"_s));
+        // the old one is kept beside it
+        QCOMPARE(read(target + u".old"_s), QByteArray("old"));
         QVERIFY(QFile::exists(update));
         QCOMPARE(installer.after(), PackageInstaller::After::Restart);
+    }
+
+    void aSecondUpdateReplacesTheOldCopy()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "one");
+        write(dir.filePath(u"two"_s), "two");
+        write(dir.filePath(u"three"_s), "three");
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"two"_s), [](const QString &) {});
+        installer.install(dir.filePath(u"three"_s), [](const QString &) {});
+        QCOMPARE(read(target), QByteArray("three"));
+        QCOMPARE(read(target + u".old"_s), QByteArray("two"));
+    }
+
+    void aNewAppImageThatNeverConfirmsIsReplacedByTheOldOne()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "old");
+        write(dir.filePath(u"new"_s), "new");
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"new"_s), [](const QString &) {});
+
+        // the first start of the new one: nothing to put back yet
+        OldAppImage first(target);
+        QVERIFY(!first.restoreIfUnconfirmed());
+        first.begin();
+        QVERIFY(QFile::exists(first.markerPath()));
+        QCOMPARE(read(target), QByteArray("new"));
+
+        // it didn't confirm, so the next start puts the old one back
+        OldAppImage second(target);
+        QVERIFY(second.restoreIfUnconfirmed());
+        QCOMPARE(read(target), QByteArray("old"));
+        QVERIFY(!QFile::exists(second.oldPath()));
+        QVERIFY(!QFile::exists(second.markerPath()));
+        // and that one starts as usual
+        OldAppImage third(target);
+        QVERIFY(!third.restoreIfUnconfirmed());
+    }
+
+    void aNewAppImageThatConfirmsKeepsItself()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "old");
+        write(dir.filePath(u"new"_s), "new");
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"new"_s), [](const QString &) {});
+        OldAppImage first(target);
+        first.begin();
+        first.confirm();
+        QVERIFY(!QFile::exists(first.oldPath()));
+        QVERIFY(!QFile::exists(first.markerPath()));
+        OldAppImage second(target);
+        QVERIFY(!second.restoreIfUnconfirmed());
+        QCOMPARE(read(target), QByteArray("new"));
+    }
+
+    void aStartThatNeverBeganLeavesTheOldCopyAlone()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "old");
+        write(dir.filePath(u"new"_s), "new");
+        // the old version installs, then quits to restart
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"new"_s), [](const QString &) {});
+        OldAppImage running(target);
+        running.confirm();
+        QCOMPARE(read(running.oldPath()), QByteArray("old"));
+    }
+
+    void aMarkerThatCantBeWrittenMeansNothingToConfirm()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "new");
+        write(target + u".old"_s, "old");
+        // a folder where the marker goes
+        QVERIFY(QDir().mkdir(target + u".starting"_s));
+        OldAppImage hold(target);
+        hold.begin();
+        hold.confirm();
+        QVERIFY(QFile::exists(hold.oldPath()));
+    }
+
+    void anAppImageWithNothingOldLeavesNoMarker()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "current");
+        OldAppImage hold(target);
+        hold.begin();
+        QVERIFY(!QFile::exists(hold.markerPath()));
+        QVERIFY(!hold.restoreIfUnconfirmed());
+        // and no AppImage at all does nothing
+        OldAppImage none{QString()};
+        none.begin();
+        none.confirm();
+        QVERIFY(!none.restoreIfUnconfirmed());
     }
 
     void anAppImageThatIsGoneIsReported()
@@ -99,12 +205,52 @@ private Q_SLOTS:
         QVERIFY(!error.isEmpty());
     }
 
+    void pacmanIsRunThroughPkexec()
+    {
+        QString program;
+        QStringList arguments;
+        PacmanInstaller installer(
+            [&](const QString &p, const QStringList &a, const PacmanInstaller::Finished &finished) {
+                program = p;
+                arguments = a;
+                finished(true, 0);
+            });
+        QString error = u"not called"_s;
+        installer.install(u"/x/app.pkg.tar.zst"_s, [&](const QString &e) { error = e; });
+        QVERIFY(error.isEmpty());
+        QCOMPARE(program, u"pkexec"_s);
+        QCOMPARE(arguments, (QStringList{u"pacman"_s, u"-U"_s, u"--noconfirm"_s, u"/x/app.pkg.tar.zst"_s}));
+        QCOMPARE(installer.after(), PackageInstaller::After::Restart);
+        QVERIFY(installer.asksForPassword());
+        QVERIFY(installer.fallsBackToCommand());
+    }
+
+    void pacmanSaysWhyItDidNotInstall()
+    {
+        const auto errorFor = [](bool started, int code) {
+            PacmanInstaller installer(
+                [&](const QString &, const QStringList &, const PacmanInstaller::Finished &finished) {
+                    finished(started, code);
+                });
+            QString error;
+            installer.install(u"x"_s, [&](const QString &e) { error = e; });
+            return error;
+        };
+        QVERIFY(errorFor(false, -1).contains(u"pkexec"_s));
+        QVERIFY(errorFor(true, 126).contains(u"password prompt"_s));
+        QVERIFY(errorFor(true, 127).contains(u"password prompt"_s));
+        QVERIFY(errorFor(true, 1).contains(u"code 1"_s));
+        QVERIFY(errorFor(true, 0).isEmpty());
+    }
+
     void onlySomeKindsInstallThemselves()
     {
         QVERIFY(createPackageInstaller(InstallKind::AppImage, u"/x/a.AppImage"_s));
         QVERIFY(createPackageInstaller(InstallKind::Windows, {}));
+#ifdef Q_OS_WIN
         QVERIFY(!createPackageInstaller(InstallKind::Arch, {}));
-#ifndef Q_OS_WIN
+#else
+        QVERIFY(createPackageInstaller(InstallKind::Arch, {}));
         QVERIFY(createPackageInstaller(InstallKind::Debian, {}));
         QVERIFY(createPackageInstaller(InstallKind::Fedora, {}));
 #endif

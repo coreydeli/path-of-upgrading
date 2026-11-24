@@ -160,8 +160,11 @@ private Q_SLOTS:
         s.overlay.startChosen = true;
         s.updates = {.checkOnLaunch = false,
                      .includeBetas = !isBetaBuild(),
+                     .installByItself = false,
                      .skipped = u"0.7.0-beta.5"_s,
-                     .reopenPage = u"updatesAction"_s};
+                     .reopenPage = u"updatesAction"_s,
+                     .reopenHidden = true,
+                     .updatedTo = u"0.8.0"_s};
         s.setupDone = true;
 
         QTemporaryDir dir;
@@ -185,6 +188,7 @@ private Q_SLOTS:
         QCOMPARE(again.value(u"appearance/textSize"_s).toDouble(), 11.5);
         QCOMPARE(again.value(u"updates/checkOnLaunch"_s).toBool(), false);
         QCOMPARE(again.value(u"updates/skipped"_s).toString(), u"0.7.0-beta.5"_s);
+        QCOMPARE(again.value(u"updates/installByItself"_s).toBool(), false);
     }
 
     void outOfRange()
@@ -311,6 +315,7 @@ private Q_SLOTS:
             [](Settings &s) { s.updates.checkOnLaunch = false; },
             [](Settings &s) { s.updates.includeBetas = !isBetaBuild(); },
             [](Settings &s) { s.updates.skipped = u"0.7.0"_s; },
+            [](Settings &s) { s.updates.installByItself = false; },
             [](Settings &s) { s.setupDone = true; },
         };
 

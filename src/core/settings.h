@@ -79,12 +79,20 @@ struct UpdateSettings
     // Betas count as newer releases. A beta starts with this on, and a release
     // with it off, until you choose.
     bool includeBetas = isBetaBuild();
+    // Takes an update and restarts into it without asking, for the kinds of
+    // install that can. The ones that need your password offer it instead.
+    bool installByItself = true;
     // The version you chose to skip, like "0.7.0-beta.5", which isn't offered
     // again. A newer one is.
     QString skipped;
     // The page the window was on when an update restarted the app, like
     // "updatesAction", which the new version opens once.
     QString reopenPage;
+    // Whether the window was hidden when it restarted, so it stays hidden.
+    bool reopenHidden = false;
+    // The version an update has just installed, which the new start says so
+    // once.
+    QString updatedTo;
 
     friend bool operator==(const UpdateSettings &, const UpdateSettings &) = default;
 };

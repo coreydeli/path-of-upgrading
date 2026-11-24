@@ -51,8 +51,22 @@ Function .onInit
     ${GetParameters} $0
     ${GetOptions} $0 "/START" $1
     IfErrors done
-    ; the old version is quitting as this starts, and has its files open until it has
-    Sleep 1500
+    ; the old version is quitting as this starts. Windows lets a running
+    ; program's file be renamed but not opened for writing, so wait until it
+    ; can be, for at most half a minute
+    StrCpy $2 0
+    waiting:
+    IfFileExists "$INSTDIR\${PROGRAM}" 0 done
+    ClearErrors
+    FileOpen $3 "$INSTDIR\${PROGRAM}" a
+    IfErrors busy
+    FileClose $3
+    Goto done
+    busy:
+    IntOp $2 $2 + 1
+    IntCmp $2 150 done 0 done
+    Sleep 200
+    Goto waiting
     done:
 FunctionEnd
 
