@@ -2,6 +2,7 @@
 #pragma once
 
 #include "core/buildimport.h"
+#include "core/characterdata.h"
 #include "core/pobverdict.h"
 #include "services/characterstore.h"
 
@@ -83,6 +84,14 @@ public:
     // Saves the build for the character, with its gear on, see importBuild().
     // Empty when it couldn't be saved.
     std::optional<BuildImport> importBuild(const QString &id, const QString &xml, const PobBuild &build);
+
+    // The id of the character linked to that one in the game, empty when none is.
+    QString linkedTo(const QString &accountId) const;
+
+    // Puts what a character wears in the game on the one linked to it, which
+    // is made first when there isn't one, see withAccountGear(). The id of the
+    // character, or empty when it couldn't be saved.
+    QString importAccountGear(const AccountLink &link, const Equipped &gear);
 
     QString error() const { return m_error; }
 

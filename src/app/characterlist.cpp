@@ -3,6 +3,7 @@
 
 #include "app/activecharacter.h"
 #include "app/settingsstore.h"
+#include "core/accountitems.h"
 #include "core/buildprofiles.h"
 #include "core/evaluation.h"
 #include "core/gearscore.h"
@@ -240,6 +241,37 @@ std::optional<BuildImport> CharacterList::importBuild(const QString &id, const Q
     changed(id);
     succeed();
     return out;
+}
+
+QString CharacterList::linkedTo(const QString &accountId) const
+{
+    for (const QString &id : m_ids) {
+        const Character *character = m_store->find(id);
+        if (character && character->linked && character->linked->id == accountId)
+            return id;
+    }
+    return {};
+}
+
+QString CharacterList::importAccountGear(const AccountLink &link, const Equipped &gear)
+{
+    QString id = linkedTo(link.id);
+    if (id.isEmpty()) {
+        id = add(link.name);
+        if (id.isEmpty())
+            return {};
+    }
+    const Character *saved = m_store->find(id);
+    if (!saved)
+        return {};
+    const Character updated = withAccountGear(*saved, link, gear);
+    if (!m_store->save(id, updated)) {
+        fail(u"Couldn't save %1: %2"_s.arg(updated.name, m_store->errorString()));
+        return {};
+    }
+    changed(id);
+    succeed();
+    return id;
 }
 
 void CharacterList::followSettings()
