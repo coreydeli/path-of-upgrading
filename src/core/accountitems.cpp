@@ -55,11 +55,12 @@ Equipped equipmentOf(const QJsonObject &character)
     const auto take = [&gear](const QJsonValue &value) {
         const QJsonObject o = value.toObject();
         const QString slot = accountSlotOf(o);
-        if (slot.isEmpty() || gear.contains(slot))
+        // with no base there's nothing to read it as
+        const bool based =
+            !o.value(u"baseType").toString().isEmpty() || !o.value(u"typeLine").toString().isEmpty();
+        if (slot.isEmpty() || !based || gear.contains(slot))
             return;
-        Item item = accountItem(o, slot);
-        if (!item.raw.isEmpty())
-            gear.insert(slot, std::move(item));
+        gear.insert(slot, accountItem(o, slot));
     };
     for (const QJsonValue &item : character.value(u"equipment").toArray())
         take(item);
