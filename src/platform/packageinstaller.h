@@ -66,13 +66,16 @@ public:
     // confirm itself. True when it did, and the caller starts the program again.
     bool restoreIfUnconfirmed();
     // This start has begun, which stays on record until it confirms. Does
-    // nothing when there's no old file.
+    // nothing when there's no old file or the marker can't be written.
     void begin();
-    // The new one works: the old file and the marker go.
+    // The new one works: the old file and the marker go. Only the start that
+    // began does this, as the old version quits to restart and mustn't take
+    // the file it just kept.
     void confirm();
 
 private:
     QString m_appImage;
+    bool m_began = false;
 };
 
 // Runs the new setup program without asking anything, which installs it for
