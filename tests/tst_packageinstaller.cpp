@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "platform/packageinstaller.h"
 
+#include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QTest>
@@ -109,6 +110,34 @@ private Q_SLOTS:
         OldAppImage second(target);
         QVERIFY(!second.restoreIfUnconfirmed());
         QCOMPARE(read(target), QByteArray("new"));
+    }
+
+    void aStartThatNeverBeganLeavesTheOldCopyAlone()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "old");
+        write(dir.filePath(u"new"_s), "new");
+        // the old version installs, then quits to restart
+        AppImageInstaller installer(target);
+        installer.install(dir.filePath(u"new"_s), [](const QString &) {});
+        OldAppImage running(target);
+        running.confirm();
+        QCOMPARE(read(running.oldPath()), QByteArray("old"));
+    }
+
+    void aMarkerThatCantBeWrittenMeansNothingToConfirm()
+    {
+        QTemporaryDir dir;
+        const QString target = dir.filePath(u"app.AppImage"_s);
+        write(target, "new");
+        write(target + u".old"_s, "old");
+        // a folder where the marker goes
+        QVERIFY(QDir().mkdir(target + u".starting"_s));
+        OldAppImage hold(target);
+        hold.begin();
+        hold.confirm();
+        QVERIFY(QFile::exists(hold.oldPath()));
     }
 
     void anAppImageWithNothingOldLeavesNoMarker()

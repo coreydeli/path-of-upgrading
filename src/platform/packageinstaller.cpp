@@ -90,14 +90,17 @@ void OldAppImage::begin()
     if (m_appImage.isEmpty() || !QFile::exists(oldPath()))
         return;
     QFile marker(markerPath());
-    if (marker.open(QIODevice::WriteOnly))
-        marker.close();
+    if (!marker.open(QIODevice::WriteOnly))
+        return;
+    marker.close();
+    m_began = true;
 }
 
 void OldAppImage::confirm()
 {
-    if (m_appImage.isEmpty())
+    if (!m_began)
         return;
+    m_began = false;
     QFile::remove(markerPath());
     QFile::remove(oldPath());
 }

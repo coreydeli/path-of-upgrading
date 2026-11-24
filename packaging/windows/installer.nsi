@@ -51,15 +51,16 @@ Function .onInit
     ${GetParameters} $0
     ${GetOptions} $0 "/START" $1
     IfErrors done
-    ; the old version is quitting as this starts, and a running program's file
-    ; can't be renamed, so wait until it can, for at most half a minute
+    ; the old version is quitting as this starts. Windows lets a running
+    ; program's file be renamed but not opened for writing, so wait until it
+    ; can be, for at most half a minute
     StrCpy $2 0
     waiting:
     IfFileExists "$INSTDIR\${PROGRAM}" 0 done
     ClearErrors
-    Rename "$INSTDIR\${PROGRAM}" "$INSTDIR\${PROGRAM}.check"
+    FileOpen $3 "$INSTDIR\${PROGRAM}" a
     IfErrors busy
-    Rename "$INSTDIR\${PROGRAM}.check" "$INSTDIR\${PROGRAM}"
+    FileClose $3
     Goto done
     busy:
     IntOp $2 $2 + 1
