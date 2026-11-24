@@ -212,8 +212,8 @@ function(pou_add_window_test name)
 endfunction()
 
 # The costs and limits are guesses from CI's times (the rest of the window tests took up to
-# 1700 s as one program): each part starts in turn, longest first. The look parts keep the
-# longer limit, as they load every page under each look.
+# 1700 s as one program): each part starts in turn, longest first. The limits leave room for
+# a runner that's twice as slow as usual, which Fedora's sometimes is.
 pou_add_window_test(tst_mainwindow_looks)
 set_tests_properties(tst_mainwindow_looks PROPERTIES COST 700 TIMEOUT 1800)
 pou_add_window_test(tst_mainwindow_popuplooks)
