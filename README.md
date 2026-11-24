@@ -70,12 +70,14 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   from the popup or with the Results hotkey. Each says whether it is an upgrade
   for the character you play, by how much and what it changes, the way the popup
   does, with its price, what that comes to in exalts or divines, the seller and
-  how long ago it was listed.
+  how long ago it was listed. In the looks other than Dossier and Material, the
+  verdict and gear score are drawn as the look's own tile.
 - Draws the popup and the results window in the look you pick on the Appearance
   page. Dossier, the default, has cut-corner panels, and Material and Pocket have
   rounded ones. The popup's
   title takes the item's rarity color, and it has a verdict
-  banner. Each gain or loss in the popup's table has a bar under its figure,
+  banner, with the gear score drawn in the look's own shape. Each gain or loss in
+  the popup's table has a bar under its figure,
   sized against the biggest change. The popup fades in and rises a little when
   it opens, unless Decorations is Plain or the desktop has animations off.
 - Trade searches are in the betas only, where they start on. They can be
@@ -98,11 +100,13 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   upgrade first, with the stats to look for. The gear page also has your
   resistances, from your build or typed in from your character sheet, with a
   maximum for each element and a safety buffer, so an item that leaves one
-  under the cap, or closer to it than the buffer, says so.
+  under the cap, or closer to it than the buffer, says so. In the looks other than
+  Dossier and Material, the overall score and each slot's score also show in the
+  look's own tile.
 - Each gear slot's notes say what the item is missing, what it doesn't count, its weak
   rolls, the next tier up, what to look for and what the slot can roll. The stats show as
-  outlined chips, and hovering a note's label says what it means. A unique says why it has no
-  gear score and how it's judged instead.
+  outlined chips, and hovering a note's label says what it means. A unique's notes say why it has
+  no gear score and how it's judged instead, as chips too.
 - Each worn item shows its item level on the gear page. The slot panel also lists
   the item's mods under the headings the game uses, such as Implicit, Prefixes and
   Suffixes, and shows its quality. Look for and Can roll say Prefix or Suffix before
@@ -133,11 +137,15 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   General page, in the sidebar's Settings group, and it stays off. It tells you
   with a notification if the hotkeys couldn't be set up.
 - Looks on GitHub for a newer release when it starts, and about once a day while
-  it runs. When one is out, a dialog offers to update now, later or skip that
-  version. With the window hidden, a notification says so instead. Update Now
-  downloads the file for how you installed the app and checks it against the
-  release's checksums. Nothing is installed until you press Update Now. Turn the
-  check off, or include betas, on the Updates page in the sidebar's Settings group.
+  it runs. When one is out, the app either installs it by itself or shows a
+  dialog that offers to update now, later or skip that version. With "Install
+  updates for me" on, which is the default, the app downloads the new version,
+  checks it against the release's checksums, and installs it. An AppImage or a
+  Windows setup restarts the app as soon as it's in. A Debian, Fedora or Arch
+  package waits until you press Install, as its install asks for your password.
+  With the switch off, nothing is downloaded until you press Update Now. Turn the
+  check off, turn that switch off, or include betas, on the Updates page in the
+  sidebar's Settings group.
 - Has seven looks, picked under Look on the Appearance page in the sidebar's
   Settings group, or in the setup guide. Dossier, the default, is the app's own,
   with its own controls, colors and fonts, so it looks the same on every desktop.
@@ -145,7 +153,10 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   panel for reading a lot of mods quickly), Pocket (rounded, roomy cards with one
   loud color), Edge (flat and high contrast, with a colored edge), Gilt (quiet and
   premium, with thin gold lines and serif titles) and Cinder (square and bold,
-  with hard shadows and monospace labels). All of them but Dossier also have a
+  with hard shadows and monospace labels). Cinder sets the app's name in
+  Silkscreen, a pixel font. Pocket colors each stat chip by what the stat is for:
+  resistances green, damage red, defences blue and the rest gray. All of them but
+  Dossier also have a
   light version, which Light or dark sets. The colors can be the look's own or
   your desktop's. The Appearance page also picks the heading font and the text
   font. Each look has its own unless you pick another, and Material uses your
@@ -196,9 +207,13 @@ sudo pacman -U ./path-of-upgrading-*-x86_64.pkg.tar.zst
 
 pacman installs what it needs with it.
 
-The app doesn't install Arch packages itself. When a newer release is out,
-Update Now downloads the new package and shows the `sudo pacman -U` command for
-it. Run that yourself.
+When a newer release is out, the app downloads the new package by itself while
+"Install updates for me" is on, the default. The update window and the Updates
+page then offer Install, which runs `pkexec pacman -U`. pkexec asks for your
+password in your desktop's own prompt, and pacman installs the package. The app
+restarts by itself when it's in. If pkexec isn't there, or you turn away its
+prompt, or pacman fails, the window shows the `sudo pacman -U` command to run
+instead.
 
 ### Debian 13
 
@@ -212,11 +227,12 @@ It is made on Debian 13. Distros based on Debian or Ubuntu with Qt 6.8 and KDE
 Frameworks 6.13 or newer may take it too, but only Debian 13 is tested. If apt
 can't find what it depends on, build it from source instead.
 
-When a newer release is out, Update Now downloads the new package and asks
-PackageKit to install it, with your desktop's password prompt. When the install
-is done, the app restarts by itself and opens on the page you were on. If
-PackageKit isn't there or fails, the window shows the `sudo apt install`
-command to run instead.
+When a newer release is out, the app downloads the new package by itself while
+"Install updates for me" is on, the default. The update window and the Updates
+page then offer Install, which asks PackageKit to install it, with your
+desktop's password prompt. When the install is done, the app restarts by itself
+and opens on the page you were on. If PackageKit isn't there or fails, the
+window shows the `sudo apt install` command to run instead.
 
 ### Fedora
 
@@ -230,11 +246,11 @@ sudo dnf install ./path-of-upgrading-*.rpm
 
 dnf installs what it needs with it. It needs Fedora with KDE Frameworks 6.
 CentOS Stream and RHEL don't have those, so they aren't covered. There is no
-package repository yet. Update Now downloads each new file for you and asks
-PackageKit to install it, with your desktop's password prompt. When the install
-is done, the app restarts by itself and opens on the page you were on. If
-PackageKit isn't there or fails, it shows the `sudo dnf install` command to run
-instead.
+package repository yet. Each new file is downloaded for you, then the update
+window and the Updates page offer Install, which asks PackageKit to install it,
+with your desktop's password prompt. When the install is done, the app restarts
+by itself and opens on the page you were on. If PackageKit isn't there or fails,
+it shows the `sudo dnf install` command to run instead.
 
 ### AppImage
 
@@ -255,10 +271,13 @@ missing, as in a container, start it with `--appimage-extract-and-run`:
 ./PathOfUpgrading-*-x86_64.AppImage --appimage-extract-and-run
 ```
 
-The AppImage updates itself. When a newer release is out, Update Now downloads
-it, checks it, puts it in place of the file you started and restarts the app.
+The AppImage updates itself. When a newer release is out, the app downloads it and
+checks it. With "Install updates for me" on, it then puts the new file in place of
+the file you started and restarts the app. Otherwise Update Now does the same.
 The folder the AppImage is in must be writable, as the new file is written next
-to it. With "Start with your desktop" on, the autostart entry starts the
+to it. Until the new one has started up properly, the old one stays beside it as a
+file ending in `.old`. If the new one stops before then, the next start puts the
+old one back. With "Start with your desktop" on, the autostart entry starts the
 AppImage file, so if you move the file, turn the switch off and on again.
 
 ### Other Linux distros
@@ -292,8 +311,10 @@ ask for an administrator. It puts the app in
 The zip has the same program and needs no installing. Unzip it anywhere and
 open `path-of-upgrading.exe` in the `Path of Upgrading` folder.
 
-When a newer release is out, Update Now runs the new setup exe quietly. That
-installs the new version and starts it. The zip gets the setup too, so the new
+When a newer release is out, the app downloads the new setup exe. With "Install
+updates for me" on, the default, it runs the setup quietly. The setup installs the new
+version and starts it. With the switch
+off, Update Now does the same. The zip gets the setup too, so the new
 version goes into `AppData\Local\Programs\Path of Upgrading`, and the copy you
 unzipped stays as it was.
 
