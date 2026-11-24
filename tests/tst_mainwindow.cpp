@@ -4857,6 +4857,8 @@ private Q_SLOTS:
         };
         Window w;
         w.app->updates()->setInstallKind(InstallKind::Debian);
+        // this is the dialog's own Update Now, not the app taking it by itself
+        w.app->updates()->setInstallByItself(false);
         QList<PackageInstaller::After> finished;
         w.app->setUpdateInstaller(std::make_unique<Installed>(), [&](PackageInstaller::After a) {
             finished << a;
