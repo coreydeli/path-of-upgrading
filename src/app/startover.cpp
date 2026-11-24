@@ -19,7 +19,14 @@ StartOver::StartOver(bool offered, const Places &places, Autostart *autostart, S
     , m_autostart(autostart)
     , m_secrets(secrets)
     , m_shortcuts(shortcuts)
+    , m_secretNames{{.name = TradeSession::secretName(),
+                     .problem = u"Couldn't remove your session ID from the keyring: %1"_s}}
 {}
+
+void StartOver::addSecret(const QString &name, const QString &problem)
+{
+    m_secretNames << Secret{.name = name, .problem = problem};
+}
 
 void StartOver::run()
 {
@@ -33,10 +40,19 @@ void StartOver::run()
     if (!m_autostart->setEnabled(false))
         m_problems << m_autostart->errorString();
     // the files go once it answers, so nothing is saved over them in between
-    m_secrets->remove(TradeSession::secretName(), this, [this](const SecretStore::Result &result) {
-        if (result.status == SecretStore::Status::Failed)
-            m_problems << u"Couldn't remove your session ID from the keyring: %1"_s.arg(result.error);
+    removeSecret(0);
+}
+
+void StartOver::removeSecret(qsizetype index)
+{
+    if (index >= m_secretNames.size()) {
         removeFiles();
+        return;
+    }
+    m_secrets->remove(m_secretNames.at(index).name, this, [this, index](const SecretStore::Result &result) {
+        if (result.status == SecretStore::Status::Failed)
+            m_problems << m_secretNames.at(index).problem.arg(result.error);
+        removeSecret(index + 1);
     });
 }
 
