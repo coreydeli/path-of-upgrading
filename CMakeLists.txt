@@ -61,6 +61,13 @@ option(BUILD_TESTING "Build the unit tests" ON)
 # and off in a release until they've been tested more, see isBetaBuild().
 option(POU_BETA "Build a beta, which has trade searches on until you turn them off" OFF)
 
+# What the build was registered with for linking a Path of Exile account. The
+# feature is only offered when all three are set, and in a beta. The ports are
+# the loopback ports on 127.0.0.1 registered as redirects, "49082,49083,49084".
+set(POU_POE_CLIENT_ID "" CACHE STRING "The OAuth client id Path of Exile gave this app")
+set(POU_POE_CONTACT "" CACHE STRING "Who Path of Exile can reach about this app, for its User-Agent")
+set(POU_POE_REDIRECT_PORTS "" CACHE STRING "The loopback ports registered as redirects, comma separated")
+
 # The version this build says it is, as the release tag does: 0.9.0 or
 # 0.9.0-beta.4. The updater compares it with the releases on GitHub, and a
 # beta's number isn't in the project version. The release builds set it.
