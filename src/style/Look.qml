@@ -77,6 +77,11 @@ QtObject {
             tile: "ring",
             xs: 8, s: 14, m: 14, l: 14, xl: 14, button: 14, pill: true,
             line: 0.14, rule: 0.1, framed: true, chip: "pill",
+            // the chips' colors by what the stat is for
+            kinds: {
+                dark: { resistance: "#43d17a", damage: "#ff6b6b", defence: "#4aa3ff", other: "#9a9aa2" },
+                light: { resistance: "#1b7a43", damage: "#b3261e", defence: "#1a5fc8", other: "#5f5f68" }
+            },
             label: { weight: Font.DemiBold, caps: false, spacing: 0, scale: 1 },
             figure: { weight: Font.Bold, scale: 1.7 },
             title: { weight: Font.Bold, caps: false, spacing: 0, scale: 1.5 }

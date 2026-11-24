@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 // One stat in a box of its own, so a list of them reads one at a time. In
 // Dossier it's a small plate with its corners cut, square when the
 // decorations are plain, in Material an outlined chip, and in Slate a plain
-// row with a square tick and a hairline under it, in Pocket a round pill, in Edge a box with a colored edge, in Gilt a box with a gold hairline, and in Cinder a square box with
+// row with a square tick and a hairline under it, in Pocket a round pill outlined and tinted by what the stat is for, in Edge a box with a colored edge, in Gilt a box with a gold hairline, and in Cinder a square box with
 // uppercase text.
 Item {
     id: chip
@@ -17,6 +17,8 @@ Item {
     // what it may take up before its text wraps
     property real maxWidth: Infinity
 
+    // what the stat is for, where the look colors chips by it
+    readonly property color tone: Style.kindColor(StatKinds.of(text), Kirigami.Theme)
     readonly property bool tick: Style.chip === "tick"
     // room for the tick
     readonly property real lead: tick ? Kirigami.Units.smallSpacing * 3 : Style.chip === "edge" ? 3 : 0
@@ -34,9 +36,10 @@ Item {
         anchors.fill: parent
         // a wrapped chip stays a rounded box, not a tall capsule
         radius: Math.min(height / 2, Kirigami.Units.gridUnit)
-        color: "transparent"
+        color: Style.kinded ? Style.tint(Kirigami.Theme.backgroundColor, chip.tone, 0.12) : "transparent"
         border.width: 1
-        border.color: Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.7)
+        border.color: Style.kinded ? Style.tint(Kirigami.Theme.backgroundColor, chip.tone, 0.7)
+                                   : Style.tint(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.7)
     }
 
     Rectangle {
@@ -110,6 +113,7 @@ Item {
         textFormat: chip.kind === "" ? Text.PlainText : Text.StyledText
         wrapMode: Text.Wrap
         // Cinder sets them in its uppercase monospace label face
+        color: Style.kinded ? Style.tint(Kirigami.Theme.textColor, chip.tone, 0.6) : Kirigami.Theme.textColor
         font: Style.chip === "box" ? Style.labelFont(Kirigami.Theme.defaultFont, 1.1) : Kirigami.Theme.defaultFont
     }
 }
