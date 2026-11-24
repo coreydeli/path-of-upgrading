@@ -8,6 +8,7 @@
 #include "services/pobfinder.h"
 
 #include <QJsonArray>
+#include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTest>
 #include <memory>
@@ -125,6 +126,41 @@ private Q_SLOTS:
         const PobModAbout life = weighing.about.value(weighing.mods.first().id);
         QCOMPARE(statKeyOf(life.text), u"# to maximum Life"_s);
         QCOMPARE_GT(life.top, 0.0);
+    }
+
+    void importsACharacter()
+    {
+        // a made-up one: a flask in the first flask place, and a skill
+        const QJsonObject flask{{u"inventoryId"_s, u"Flask"_s},
+                                {u"x"_s, 0},
+                                {u"name"_s, QString()},
+                                {u"typeLine"_s, u"Lesser Life Flask"_s},
+                                {u"frameType"_s, 0},
+                                {u"ilvl"_s, 10},
+                                {u"properties"_s, QJsonArray()},
+                                {u"explicitMods"_s, QJsonArray()}};
+        const QJsonObject level{{u"name"_s, u"Level"_s}, {u"values"_s, QJsonArray{QJsonArray{u"10"_s, 0}}}};
+        const QJsonObject spark{{u"typeLine"_s, u"Spark"_s}, {u"properties"_s, QJsonArray{level}}};
+        const QJsonObject character{{u"name"_s, u"FakeOne"_s},
+                                    {u"class"_s, u"Sorceress"_s},
+                                    {u"level"_s, 40},
+                                    {u"equipment"_s, QJsonArray{flask}},
+                                    {u"skills"_s, QJsonArray{spark}}};
+        // with some of what the API leaves out left out
+        const std::unique_ptr<PobReply> reply(m_engine.importCharacter(character));
+        QVERIFY(finishes(reply.get()));
+        QCOMPARE(reply->errorString(), QString());
+        const QString xml = reply->answer()[u"xml"].toString();
+        QVERIFY(xml.contains(u"<PathOfBuilding2>"));
+        QVERIFY(xml.contains(u"className=\"Sorceress\""));
+        // the flask went in a slot, the first flask place being Flask 1
+        QVERIFY(xml.contains(u"Lesser Life Flask"));
+        QVERIFY(
+            QRegularExpression(
+                uR"xml(<Slot [^>]*itemId="1"[^>]*name="Flask 1"|<Slot [^>]*name="Flask 1"[^>]*itemId="1")xml"_s)
+                .match(xml)
+                .hasMatch());
+        QCOMPARE(reply->answer()[u"mainSkill"].toString(), u"Spark"_s);
     }
 
 private:
