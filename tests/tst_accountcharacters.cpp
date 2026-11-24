@@ -51,10 +51,10 @@ struct Linked
     PoeClient client{&network, config, &account};
     QTemporaryDir dir;
     SettingsStore settings{dir.filePath(u"settings.conf"_s)};
-    CharacterStore store{dir.filePath(u"characters"_s)};
+    CharacterStore saved{dir.filePath(u"characters"_s)};
     PobEngine engine;
-    ActiveCharacter active{&store, &engine};
-    CharacterList yours{&store, &active, &settings};
+    ActiveCharacter active{&saved, &engine};
+    CharacterList yours{&saved, &active, &settings};
     AccountCharacters characters{&client, &account, &yours};
     FakeAnswer characterAnswer{.body = list};
     FakeAnswer oneAnswer{.body = wearing};
