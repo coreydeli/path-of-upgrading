@@ -2,6 +2,7 @@
 #pragma once
 
 #include "core/poeoauth.h"
+#include "services/poeclient.h"
 
 #include <QDateTime>
 #include <QList>
@@ -22,7 +23,7 @@ class SecretStore;
 // token is kept in the system keyring, and the access token in memory only.
 // A link lasts 7 days from when it was made, as the website sees to that, and
 // then the player links again.
-class PoeAccount : public QObject
+class PoeAccount : public QObject, public PoeTokenSource
 {
     Q_OBJECT
     QML_ELEMENT
@@ -46,7 +47,7 @@ class PoeAccount : public QObject
 
 public:
     // The new token, or why there isn't one.
-    using TokenHandler = std::function<void(const QString &token, const QString &error)>;
+    using TokenHandler = PoeTokenSource::Handler;
     using Clock = std::function<QDateTime()>;
 
     // How long the website lets a link last.
@@ -76,7 +77,9 @@ public:
     // least, asking the website for a new one if need be. A link that has
     // run out says so and is dropped. The handler isn't called if the
     // context is gone.
-    void withToken(const QObject *context, TokenHandler handler);
+    void withToken(const QObject *context, TokenHandler handler) override;
+    // The website turned the access token down, so the next one is new.
+    void rejectToken() override;
 
     bool isOffered() const { return m_offered; }
     bool isLinked() const { return m_state == State::Linked; }
