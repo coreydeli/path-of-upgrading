@@ -174,8 +174,23 @@ Item {
             visible: row.verdict.verdict !== ""
             spacing: 0
 
+            // the new looks draw the verdict and the score in their own way
+            VerdictBanner {
+                objectName: "verdictTile"
+                Layout.fillWidth: true
+                visible: Style.tile !== "diamonds"
+                compact: true
+                verdict: row.verdict.verdict
+                tone: row.verdict.tone
+                colorblind: row.colorblind
+                score: row.verdict.score
+                gearScore: Style.plain ? "" : row.verdict.gearPoints
+                gearGrade: row.verdict.gearGrade
+            }
+
             RowLayout {
                 Layout.fillWidth: true
+                visible: Style.tile === "diamonds"
                 spacing: Kirigami.Units.largeSpacing
 
                 TonePill {

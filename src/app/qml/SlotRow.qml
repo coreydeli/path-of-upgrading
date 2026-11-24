@@ -147,10 +147,20 @@ FormCard.AbstractFormDelegate {
             QQC2.Label {
                 objectName: "gearScore"
                 Layout.alignment: Qt.AlignVCenter
-                visible: row.score !== ""
+                visible: row.score !== "" && Style.tile === "diamonds"
                 text: qsTr("Gear score %1 %2").arg(row.score).arg(row.grade)
                 color: Style.grade(row.grade, Kirigami.Theme)
                 font.weight: Font.DemiBold
+            }
+
+            // the new looks draw it in their own way
+            ScoreGauge {
+                objectName: "gearScoreTile"
+                Layout.alignment: Qt.AlignVCenter
+                visible: row.score !== "" && Style.tile !== "diamonds"
+                score: row.score
+                grade: row.grade
+                size: "small"
             }
 
             QQC2.ToolButton {
