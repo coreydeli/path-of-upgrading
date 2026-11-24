@@ -52,6 +52,7 @@ const char *probe = "import QtQuick\n"
                     "    function figure(font) { return Style.figureFont(font); }\n"
                     "    function step(grade) { return Style.gradeStep(grade); }\n"
                     "    function clear(c) { return Style.clear(c); }\n"
+                    "    function brand(font) { return Style.brandFont(font); }\n"
                     "    function bigTitle(font) { return Style.titleFont(font, 2); }\n"
                     "    function section(font) { return Style.sectionFont(font); }\n"
                     "    readonly property color text: Kirigami.Theme.textColor\n"
@@ -251,9 +252,35 @@ private Q_SLOTS:
     {
         QVERIFY(addBundledFonts());
         const QStringList families = QFontDatabase::families();
-        for (const QString &family : {u"Big Shoulders Display"_s, u"Big Shoulders Text"_s, u"Spectral"_s})
+        for (const QString &family :
+             {u"Big Shoulders Display"_s, u"Big Shoulders Text"_s, u"Spectral"_s, u"Silkscreen"_s})
             QVERIFY2(families.contains(family), qPrintable(family));
         QCOMPARE(QFontInfo(QFont(u"Big Shoulders Display"_s)).family(), u"Big Shoulders Display"_s);
+    }
+
+    // only Cinder has a face of its own for it
+    void theNameIsInPixelsInCinderAndATitleInTheRest()
+    {
+        QVERIFY(addBundledFonts());
+        QFont base;
+        base.setPointSizeF(10);
+        QCOMPARE(call(u"brand"_s, {base}).value<QFont>(), call(u"title"_s, {base}).value<QFont>());
+        m_style->setProperty("design", u"gilt"_s);
+        QCOMPARE(call(u"brand"_s, {base}).value<QFont>(), call(u"title"_s, {base}).value<QFont>());
+        m_style->setProperty("design", u"cinder"_s);
+        QCOMPARE(call(u"brand"_s, {base}).value<QFont>().family(), u"Silkscreen"_s);
+        QCOMPARE(QFontInfo(call(u"brand"_s, {base}).value<QFont>()).family(), u"Silkscreen"_s);
+    }
+
+    void cinderSetsItsLabelsInMonospaceCapitals()
+    {
+        QVERIFY(addBundledFonts());
+        m_style->setProperty("design", u"cinder"_s);
+        QFont base;
+        base.setPointSizeF(10);
+        const QFont font = call(u"label"_s, {base}).value<QFont>();
+        QCOMPARE(font.family(), u"JetBrains Mono"_s);
+        QCOMPARE(font.capitalization(), QFont::AllUppercase);
     }
 
     void clearKeepsTheColorAndLosesItsAlpha()
