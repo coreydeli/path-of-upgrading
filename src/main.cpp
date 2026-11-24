@@ -22,6 +22,7 @@
 #include <QNetworkAccessManager>
 #include <QQmlApplicationEngine>
 #include <QQmlExtensionPlugin>
+#include <QTimer>
 #include <QWindow>
 
 #ifdef Q_OS_WIN
@@ -32,6 +33,7 @@
 Q_IMPORT_QML_PLUGIN(PathOfUpgradingPlugin)
 
 using namespace Qt::Literals::StringLiterals;
+using namespace std::chrono_literals;
 
 int main(int argc, char *argv[])
 {
@@ -61,6 +63,17 @@ int main(int argc, char *argv[])
     // Started a second time, this hands over to the first and exits, before
     // anything below is set up.
     const std::unique_ptr<pou::SingleInstance> instance = pou::runOnce();
+
+    // An update that didn't get to run for a minute is put back, from the
+    // AppImage's own copy of the old version.
+    const QString appImage = qEnvironmentVariable("APPIMAGE");
+    pou::OldAppImage oldAppImage(appImage);
+    if (oldAppImage.restoreIfUnconfirmed() && pou::startAgainAfterExit())
+        return 0;
+    oldAppImage.begin();
+    // a minute of running, or a clean quit before then, says the new one works
+    QTimer::singleShot(1min, &app, [&oldAppImage] { oldAppImage.confirm(); });
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&oldAppImage] { oldAppImage.confirm(); });
 
     pou::useOwnStyle();
 
