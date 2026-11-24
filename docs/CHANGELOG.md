@@ -28,6 +28,13 @@ version that comes out.
 - Five more looks: Slate, Pocket, Edge, Gilt and Cinder, beside Dossier and Material.
   Pick one under Look on the Appearance page, or in the new "Pick a Look" step of the
   setup guide, which comes after Your Character. Dossier stays the default.
+- Cinder sets the app's name in Silkscreen, a pixel font. Pocket colors each stat
+  chip by what the stat is for: resistances green, damage red, defences blue and
+  the rest gray.
+- In the looks other than Dossier and Material, the verdict and gear score are drawn
+  in the look's own style, on the popup, the gear page and the trade results.
+- The stats in a unique's notes show as chips too, and hovering a unique note's
+  label says what it means.
 
 ### Changed
 
@@ -39,8 +46,15 @@ version that comes out.
   roll either way has no label.
 - When PackageKit installs an update for a Debian 13 or Fedora package, the app restarts
   by itself when the install is done, as the AppImage does, and the window opens on the
-  page you were on. The update window no longer offers Restart Now. Arch still shows the
-  install command.
+  page you were on. The update window no longer offers Restart Now.
+- "Install updates for me", on the Updates page, is on by default. An AppImage or
+  Windows update installs and restarts the app by itself. A Debian, Fedora or Arch
+  package downloads by itself and waits for Install, as its install asks for your
+  password. Arch asks through pkexec.
+- An AppImage update keeps the old file beside the new one, ending in `.old`, until the
+  new one has run for a minute, and the next start puts the old one back if it never
+  got that far. The Windows setup waits for the old version to close before it replaces
+  it.
 - Build Review is the first page under Gear Settings in the sidebar.
 
 ### Fixed
@@ -49,6 +63,8 @@ version that comes out.
   AppData\Local\path-of-upgrading. It used to leave it behind.
 - Items imported from Path of Building now carry their quality, so the slot panel
   shows it.
+- The Debian package's copyright file names every bundled font and who holds its
+  copyright.
 - The new version's release notes in the update window line up with the text above
   them. A scroll bar stays up while the notes are longer than the room they have.
 
