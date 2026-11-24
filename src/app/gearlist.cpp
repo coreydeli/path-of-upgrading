@@ -44,11 +44,13 @@ QList<GearNote> uniqueNotes()
     return {
         GearNote{.label = u"Unique"_s,
                  .text = u"Uniques have fixed mods, so they don't get a gear score."_s,
-                 .stats = {u"Fixed mods"_s, u"No gear score"_s}},
+                 .stats = {u"Fixed mods"_s, u"No gear score"_s},
+                 .help = noteHelp(u"Unique")},
         GearNote{.label = u"Judged by"_s,
                  .text = u"What it does for your damage and defences in Path of Building, once a build is "
                          u"loaded. Without that it gets no verdict."_s,
-                 .stats = {u"Path of Building"_s, u"Damage"_s, u"Defences"_s}},
+                 .stats = {u"Path of Building"_s, u"Damage"_s, u"Defences"_s},
+                 .help = noteHelp(u"Judged by")},
     };
 }
 
