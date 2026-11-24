@@ -139,6 +139,7 @@ set(POU_FONTS
     IBMPlexSans-Variable.ttf
     Inter-Variable.ttf
     JetBrainsMono-Variable.ttf
+    Silkscreen-Regular.ttf
     SpaceGrotesk-Variable.ttf
     Spectral-Bold.ttf
     Spectral-Italic.ttf

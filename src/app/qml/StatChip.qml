@@ -109,7 +109,7 @@ Item {
         text: chip.kind === "" ? chip.text : "<font color=\"" + Kirigami.Theme.disabledTextColor + "\">" + chip.kind + "</font> " + chip.escaped
         textFormat: chip.kind === "" ? Text.PlainText : Text.StyledText
         wrapMode: Text.Wrap
-        font.capitalization: Style.chip === "box" ? Font.AllUppercase : Font.MixedCase
-        font.letterSpacing: Style.chip === "box" ? 0.8 : 0
+        // Cinder sets them in its uppercase monospace label face
+        font: Style.chip === "box" ? Style.labelFont(Kirigami.Theme.defaultFont, 1.1) : Kirigami.Theme.defaultFont
     }
 }
