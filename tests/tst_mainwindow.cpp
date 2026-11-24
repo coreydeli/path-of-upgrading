@@ -1906,16 +1906,12 @@ private Q_SLOTS:
             w.play({{u"Belt"_s, belt}});
             QObject *slot = w.find(u"slot:Belt"_s);
             const QList<QObject *> labels = findAll(slot, u"noteLabel"_s);
-            const QList<QObject *> sentences = findAll(slot, u"noteSentence"_s);
             QCOMPARE(labels.size(), 2);
-            QCOMPARE(sentences.size(), 2);
             QCOMPARE(text(labels.at(0)), u"Unique"_s);
-            QVERIFY(isVisible(sentences.at(0)));
-            QCOMPARE(text(sentences.at(0)), u"Uniques have fixed mods, so they don't get a gear score."_s);
             QCOMPARE(text(labels.at(1)), u"Judged by"_s);
-            QVERIFY(text(sentences.at(1)).contains(u"Path of Building"_s));
-            // no chips for a sentence
-            QVERIFY(findAll(slot, u"statChip"_s).isEmpty());
+            // chips, as every other slot's notes are
+            QVERIFY(findAll(slot, u"noteSentence"_s).isEmpty());
+            QVERIFY(findAll(slot, u"statChip"_s).size() >= 2);
         }
         // the slot panel
         {
@@ -1928,7 +1924,7 @@ private Q_SLOTS:
             const QList<QObject *> labels = findAll(w.find(u"panelNotes"_s), u"noteLabel"_s);
             QCOMPARE(labels.size(), 2);
             QCOMPARE(text(labels.first()), u"Unique"_s);
-            QVERIFY(isVisible(findAll(w.find(u"panelNotes"_s), u"noteSentence"_s).first()));
+            QVERIFY(!findAll(w.find(u"panelNotes"_s), u"statChip"_s).isEmpty());
         }
     }
 
