@@ -142,6 +142,11 @@ QtObject {
         return Look.titleFont(base, scale);
     }
 
+    // the app's name, in a face of its own in the looks that have one
+    function brandFont(base: font, scale = 1): font {
+        return Look.brandFont(base, scale);
+    }
+
     // small capitals for labels, column heads and buttons
     function labelFont(base: font, scale = 1): font {
         return Look.labelFont(base, scale);

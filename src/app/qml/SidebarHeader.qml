@@ -32,7 +32,7 @@ Item {
         QQC2.Label {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
-            font: Style.titleFont(Kirigami.Theme.defaultFont, 1.15)
+            font: Style.brandFont(Kirigami.Theme.defaultFont, 1.15)
             // the name is a slab of paper
             color: Style.flat ? Kirigami.Theme.textColor : Style.ink
             topPadding: 4

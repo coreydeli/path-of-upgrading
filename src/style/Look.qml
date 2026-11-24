@@ -103,7 +103,8 @@ QtObject {
             line: 0.3, rule: 0.16, framed: true, chip: "box", shadow: 4,
             label: { family: "JetBrains Mono", weight: Font.Medium, caps: true, spacing: 0.9, scale: 0.85 },
             figure: { family: "JetBrains Mono", weight: Font.Bold, scale: 1.6 },
-            title: { weight: Font.Bold, caps: true, spacing: 0.8, scale: 1.35 }
+            title: { weight: Font.Bold, caps: true, spacing: 0.8, scale: 1.35 },
+            brand: { family: "Silkscreen", weight: Font.Normal, caps: false, spacing: 0.5, scale: 1 }
         }
     })
     readonly property var spec: looks[design] ?? looks["dossier"]
@@ -159,6 +160,17 @@ QtObject {
     // big numbers: the score, a change
     function figureFont(base: font, scale = 1): font {
         return faceOf(spec.figure, base, scale, {});
+    }
+
+    // the app's name: in the look's own face when it has one, else a title
+    function brandFont(base: font, scale = 1): font {
+        const face = spec.brand;
+        if (!face)
+            return titleFont(base, scale);
+        return faceOf(face, base, scale, {
+            capitalization: face.caps ? Font.AllUppercase : Font.MixedCase,
+            letterSpacing: face.spacing
+        });
     }
 
     // titles, in capitals in some looks: the page's, the popup's item and the like
