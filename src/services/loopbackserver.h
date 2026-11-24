@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QTcpServer>
 #include <QUrl>
+#include <functional>
 
 namespace pou {
 
@@ -25,15 +26,21 @@ public:
     void close();
     bool isListening() const { return m_server.isListening(); }
 
+    // What the page the browser ends up on says for an address that was
+    // asked for, one sentence. Without one it says the answer came.
+    using Page = std::function<QString(const QUrl &)>;
+    void setPage(const Page &page) { m_page = page; }
+
 Q_SIGNALS:
-    // The address that was asked for, with its query.
+    // The address that was asked for, with its query, once the page is sent.
     void requested(const QUrl &url);
 
 private:
     void accept();
-    void read(QTcpSocket *socket, QByteArray *pending);
+    void read(QTcpSocket *socket);
 
     QTcpServer m_server;
+    Page m_page;
 };
 
 } // namespace pou

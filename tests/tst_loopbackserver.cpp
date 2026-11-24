@@ -46,11 +46,58 @@ private Q_SLOTS:
         const QByteArray answer =
             ask(port, "GET /callback?code=abc&state=xyz HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
         QVERIFY(answer.startsWith("HTTP/1.1 200 OK"));
-        QVERIFY(answer.contains("You can close this tab"));
+        QVERIFY(answer.contains("<p>Path of Upgrading got the answer. You can close this tab.</p>"));
         QCOMPARE(spy.size(), 1);
         const QUrl url = spy.first().first().toUrl();
         QCOMPARE(url.path(), u"/callback"_s);
         QCOMPARE(url.query(), u"code=abc&state=xyz"_s);
+    }
+
+    void theCallerChoosesThePage()
+    {
+        LoopbackServer server;
+        QUrl asked;
+        server.setPage([&asked](const QUrl &url) {
+            asked = url;
+            return url.query().contains(u"bad"_s) ? u"That wasn't right."_s : u"That was right."_s;
+        });
+        QSignalSpy spy(&server, &LoopbackServer::requested);
+        const quint16 port = server.listen({0});
+
+        QVERIFY(ask(port, "GET /callback?bad=1 HTTP/1.1\r\n\r\n").contains("<p>That wasn't right.</p>"));
+        QCOMPARE(asked.query(), u"bad=1"_s);
+        QVERIFY(ask(port, "GET /callback?good=1 HTTP/1.1\r\n\r\n").contains("<p>That was right.</p>"));
+        QCOMPARE(spy.size(), 2);
+        // it isn't asked about what it doesn't take
+        asked.clear();
+        ask(port, "GET /favicon.ico HTTP/1.1\r\n\r\n");
+        QVERIFY(asked.isEmpty());
+    }
+
+    void refusesALineThatNeverEnds()
+    {
+        LoopbackServer server;
+        QSignalSpy spy(&server, &LoopbackServer::requested);
+        const quint16 port = server.listen({0});
+        QVERIFY(ask(port, "GET /callback?" + QByteArray(20000, 'a')).startsWith("HTTP/1.1 431"));
+        QCOMPARE(spy.size(), 0);
+    }
+
+    void closingWithAConnectionOpenIsFine()
+    {
+        QTcpSocket socket;
+        {
+            LoopbackServer server;
+            const quint16 port = server.listen({0});
+            socket.connectToHost(QHostAddress::LocalHost, port);
+            QVERIFY(socket.waitForConnected(3000));
+            QTest::qWait(50);
+            socket.write("GET /callback?code=");
+            socket.flush();
+            QTest::qWait(50);
+        }
+        // the server and its sockets are gone, and the client sees it
+        QTRY_COMPARE(socket.state(), QAbstractSocket::UnconnectedState);
     }
 
     void takesARequestSentInPieces()

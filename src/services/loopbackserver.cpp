@@ -54,32 +54,26 @@ void LoopbackServer::accept()
 {
     while (QTcpSocket *socket = m_server.nextPendingConnection()) {
         socket->setParent(this);
-        auto *pending = new QByteArray;
-        connect(socket, &QTcpSocket::readyRead, this, [this, socket, pending] { read(socket, pending); });
-        connect(socket, &QTcpSocket::disconnected, socket, [socket, pending] {
-            delete pending;
-            socket->deleteLater();
-        });
+        connect(socket, &QTcpSocket::readyRead, this, [this, socket] { read(socket); });
+        connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
         // a connection that never says anything is let go
         QTimer::singleShot(quietLimit, socket, [socket] { socket->disconnectFromHost(); });
     }
 }
 
-void LoopbackServer::read(QTcpSocket *socket, QByteArray *pending)
+void LoopbackServer::read(QTcpSocket *socket)
 {
     if (socket->property("answered").toBool())
         return;
-    *pending += socket->readAll();
-    const qsizetype end = pending->indexOf("\r\n");
-    if (end < 0) {
-        if (pending->size() > longestRequest)
+    if (!socket->canReadLine()) {
+        if (socket->bytesAvailable() > longestRequest)
             reply(socket, "431 Request Header Fields Too Large", {});
         return;
     }
     // only the first line matters: "GET /callback?code=... HTTP/1.1"
-    const QList<QByteArray> parts = pending->first(end).split(' ');
-    pending->clear();
-    if (parts.size() != 3 || parts[0] != "GET") {
+    const QByteArray line = socket->readLine(longestRequest + 1);
+    const QList<QByteArray> parts = line.trimmed().split(' ');
+    if (!line.endsWith('\n') || parts.size() != 3 || parts[0] != "GET") {
         reply(socket, "404 Not Found", {});
         return;
     }
@@ -88,9 +82,11 @@ void LoopbackServer::read(QTcpSocket *socket, QByteArray *pending)
         reply(socket, "404 Not Found", {});
         return;
     }
+    const QString message =
+        m_page ? m_page(url) : u"Path of Upgrading got the answer. You can close this tab."_s;
     reply(socket, "200 OK",
-          "<!doctype html><meta charset=utf-8><title>Path of Upgrading</title>"
-          "<p>Path of Upgrading got the answer. You can close this tab and go back to it.</p>");
+          "<!doctype html><meta charset=utf-8><title>Path of Upgrading</title><p>" + message.toUtf8() +
+              "</p>");
     Q_EMIT requested(url);
 }
 
