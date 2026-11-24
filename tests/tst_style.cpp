@@ -52,6 +52,7 @@ const char *probe = "import QtQuick\n"
                     "    function figure(font) { return Style.figureFont(font); }\n"
                     "    function step(grade) { return Style.gradeStep(grade); }\n"
                     "    function clear(c) { return Style.clear(c); }\n"
+                    "    function kindColor(kind) { return Style.kindColor(kind, Kirigami.Theme); }\n"
                     "    function brand(font) { return Style.brandFont(font); }\n"
                     "    function bigTitle(font) { return Style.titleFont(font, 2); }\n"
                     "    function section(font) { return Style.sectionFont(font); }\n"
@@ -114,6 +115,7 @@ private Q_SLOTS:
     void cleanup()
     {
         m_style->setProperty("plain", false);
+        m_style->setProperty("dark", true);
         m_style->setProperty("design", u"dossier"_s);
         m_style->setProperty("appColors", false);
         m_style->setProperty("headingFamily", u"Big Shoulders Display"_s);
@@ -281,6 +283,45 @@ private Q_SLOTS:
         const QFont font = call(u"label"_s, {base}).value<QFont>();
         QCOMPARE(font.family(), u"JetBrains Mono"_s);
         QCOMPARE(font.capitalization(), QFont::AllUppercase);
+    }
+
+    void pocketColorsAChipByWhatTheStatIsFor()
+    {
+        m_style->setProperty("design", u"pocket"_s);
+        QVERIFY(m_style->property("kinded").toBool());
+        m_style->setProperty("dark", true);
+        QCOMPARE(kindColor(1), hex("#43d17a"));
+        QCOMPARE(kindColor(2), hex("#ff6b6b"));
+        QCOMPARE(kindColor(3), hex("#4aa3ff"));
+        QCOMPARE(kindColor(0), hex("#9a9aa2"));
+        m_style->setProperty("dark", false);
+        QCOMPARE(kindColor(1), hex("#1b7a43"));
+        QVERIFY(kindColor(1) != kindColor(2));
+        m_style->setProperty("dark", true);
+    }
+
+    void otherLooksDontColorTheirChipsByKind()
+    {
+        for (const QString &id :
+             {u"dossier"_s, u"material"_s, u"slate"_s, u"edge"_s, u"gilt"_s, u"cinder"_s}) {
+            m_style->setProperty("design", id);
+            QVERIFY2(!m_style->property("kinded").toBool(), qPrintable(id));
+            QCOMPARE(kindColor(1), color(u"highlight"_s));
+        }
+    }
+
+    void aChipTakesTheColorOfItsKindInPocket()
+    {
+        m_style->setProperty("design", u"pocket"_s);
+        m_style->setProperty("dark", true);
+        QCOMPARE(make("StatChip { text: \"Fire Resistance 30% or more\" }")->property("tone").value<QColor>(),
+                 hex("#43d17a"));
+        QCOMPARE(make("StatChip { text: \"Maximum Life 60 or more\" }")->property("tone").value<QColor>(),
+                 hex("#4aa3ff"));
+        QCOMPARE(make("StatChip { text: \"Physical Damage\" }")->property("tone").value<QColor>(),
+                 hex("#ff6b6b"));
+        QCOMPARE(make("StatChip { text: \"Movement Speed\" }")->property("tone").value<QColor>(),
+                 hex("#9a9aa2"));
     }
 
     void clearKeepsTheColorAndLosesItsAlpha()
@@ -469,6 +510,7 @@ private:
 
     QColor rarity(const QString &name) const { return call(u"rarity"_s, {name}).value<QColor>(); }
     QColor grade(const QString &name) const { return call(u"grade"_s, {name}).value<QColor>(); }
+    QColor kindColor(int kind) const { return call(u"kindColor"_s, {kind}).value<QColor>(); }
     QColor tone(int tone, bool colorblind) const
     {
         return call(u"tone"_s, {tone, colorblind}).value<QColor>();
