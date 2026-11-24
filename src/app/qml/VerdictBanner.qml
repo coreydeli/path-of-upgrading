@@ -24,6 +24,8 @@ Item {
     // the item's gear score and grade, empty when it has none
     property string gearScore
     property string gearGrade
+    // for a row in a list, with smaller type and the gauge small
+    property bool compact: false
 
     readonly property color tint: Style.tone(tone, colorblind, Kirigami.Theme)
     readonly property bool gauged: gearScore !== ""
@@ -137,10 +139,10 @@ Item {
                             font: {
                                 const base = Kirigami.Theme.defaultFont;
                                 if (banner.kind === "edge")
-                                    return Style.labelFont(base, 1.5);
+                                    return Style.labelFont(base, banner.compact ? 1.15 : 1.5);
                                 if (banner.kind === "segments")
-                                    return Style.labelFont(base, 1.3);
-                                return Style.titleFont(base, 1.5);
+                                    return Style.labelFont(base, banner.compact ? 1 : 1.3);
+                                return Style.titleFont(base, banner.compact ? 1.1 : 1.5);
                             }
                             text: banner.verdict
                             tone: banner.tone
@@ -160,7 +162,7 @@ Item {
                 ToneLabel {
                     Layout.fillWidth: banner.kind !== "hairline"
                     horizontalAlignment: Text.AlignRight
-                    font: Style.figureFont(Kirigami.Theme.defaultFont, 2.2)
+                    font: Style.figureFont(Kirigami.Theme.defaultFont, banner.compact ? 1.3 : 2.2)
                     text: banner.score
                     tone: banner.tone
                     colorblind: banner.colorblind
@@ -183,6 +185,7 @@ Item {
             visible: banner.gauged
             score: banner.gearScore
             grade: banner.gearGrade
+            size: banner.compact ? "small" : "medium"
         }
     }
 }
