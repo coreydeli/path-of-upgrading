@@ -145,6 +145,9 @@ Q_SIGNALS:
     // A look found a release to offer, which the window shows or, with the
     // window hidden, the desktop tells you about.
     void offered();
+    // An update the app started by itself failed with the window hidden, so
+    // the desktop tells you. Not for one you started with Update Now.
+    void automaticFailed(const QString &version, const QString &why);
 
 private:
     void change(const std::function<void(UpdateSettings &)> &edit);
@@ -175,6 +178,8 @@ private:
     QString m_updatedTo;
     bool m_windowShown = true;
     bool m_automatic = false;
+    // The version being taken without you asking, until it's done or you step in
+    QString m_unasked;
 };
 
 } // namespace pou
