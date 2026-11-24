@@ -95,6 +95,28 @@ private:
     Launch m_launch;
 };
 
+// Installs an Arch package with pacman, through pkexec, which asks for your
+// password in the desktop's own prompt. Without pkexec, or when the prompt is
+// turned away or pacman fails, there's the command to run by hand.
+class PacmanInstaller : public PackageInstaller
+{
+public:
+    // Runs a program and says whether it started and how it ended.
+    using Finished = std::function<void(bool started, int exitCode)>;
+    using Run = std::function<void(const QString &program, const QStringList &arguments, const Finished &)>;
+
+    // Starts the process with QProcess, unless it's given another way.
+    explicit PacmanInstaller(const Run &run = {});
+
+    After after() const override { return After::Restart; }
+    bool asksForPassword() const override { return true; }
+    bool fallsBackToCommand() const override { return true; }
+    void install(const QString &file, const Done &done) override;
+
+private:
+    Run m_run;
+};
+
 // The one for how the program is installed, or none when it can't do it by
 // itself.
 std::unique_ptr<PackageInstaller> createPackageInstaller(InstallKind kind, const QString &appImagePath);
