@@ -35,7 +35,7 @@ FormCard.FormCardDialog {
 
     Component.onCompleted: {
         const update = standardButton(QQC2.Dialog.Ok);
-        update.text = qsTr("Update Now");
+        update.text = Qt.binding(() => app.updates.stage === UpdateStage.Ready ? qsTr("Install") : qsTr("Update Now"));
         update.icon.name = "download";
         standardButton(QQC2.Dialog.Cancel).text = qsTr("Later");
         standardButton(QQC2.Dialog.Discard).text = qsTr("Skip This Version");
@@ -47,7 +47,9 @@ FormCard.FormCardDialog {
         id: intro
 
         objectName: "updateIntro"
-        text: qsTr("Version %1 of Path of Upgrading is out. You have %2.").arg(dialog.app.updates.newVersion).arg(dialog.app.updates.version)
+        text: dialog.app.updates.stage === UpdateStage.Ready
+            ? qsTr("Version %1 of Path of Upgrading is downloaded and ready. Installing it asks for your password. You have %2.").arg(dialog.app.updates.newVersion).arg(dialog.app.updates.version)
+            : qsTr("Version %1 of Path of Upgrading is out. You have %2.").arg(dialog.app.updates.newVersion).arg(dialog.app.updates.version)
         textItem.wrapMode: Text.Wrap
     }
 

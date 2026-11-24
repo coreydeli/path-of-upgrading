@@ -4957,6 +4957,11 @@ private Q_SLOTS:
         QVERIFY(toggle(betas));
         QCOMPARE(w.settings().updates.includeBetas, betas->property("checked").toBool());
 
+        QObject *itself = w.find(u"installByItselfSwitch"_s);
+        QCOMPARE(itself->property("checked").toBool(), true);
+        QVERIFY(toggle(itself));
+        QVERIFY(!w.settings().updates.installByItself);
+
         QObject *now = w.find(u"checkNowButton"_s);
         QCOMPARE(text(now), u"Check Now"_s);
         QTRY_VERIFY_WITH_TIMEOUT(w.network->answers.isEmpty(), 5000);
