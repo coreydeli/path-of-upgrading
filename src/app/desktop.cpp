@@ -76,4 +76,11 @@ void Desktop::tellAboutUpdated(const QString &version)
                        u"You're on version %1 now."_s.arg(version));
 }
 
+void Desktop::tellAboutFailedUpdate(const QString &version, const QString &why)
+{
+    m_notifier->notify(Notifier::Event::UpdateFailed, u"The Update Didn't Work"_s,
+                       u"Path of Upgrading couldn't update to version %1. %2"_s.arg(version, why),
+                       {.text = u"Open"_s, .run = [this] { showWindow(); }});
+}
+
 } // namespace pou

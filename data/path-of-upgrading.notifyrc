@@ -18,3 +18,8 @@ Action=Popup
 Name=The app was updated
 Comment=An update was installed and the app started again
 Action=Popup
+
+[Event/updateFailed]
+Name=An update didn't work
+Comment=An update the app took by itself couldn't be installed
+Action=Popup
