@@ -78,8 +78,8 @@ void Desktop::tellAboutUpdated(const QString &version)
 
 void Desktop::tellAboutFailedUpdate(const QString &version, const QString &why)
 {
-    m_notifier->notify(Notifier::Event::UpdateFailed, u"The Update Didn't Work"_s,
-                       u"Path of Upgrading couldn't update to version %1. %2"_s.arg(version, why),
+    m_notifier->notify(Notifier::Event::UpdateFailed, u"The Update Didn't Finish"_s,
+                       u"The update to version %1 didn't finish. %2"_s.arg(version, why),
                        {.text = u"Open"_s, .run = [this] { showWindow(); }});
 }
 
