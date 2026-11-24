@@ -63,8 +63,9 @@ endfunction()
 
 # The holder from a license's "Copyright" line.
 function(pou_debian_holder file out)
-    file(STRINGS "${file}" line REGEX "^Copyright " LIMIT_COUNT 1)
-    string(REGEX REPLACE "^Copyright (\\(c\\) )?" "" line "${line}")
+    # in UTF-8, or a © ends the line
+    file(STRINGS "${file}" line REGEX "^Copyright " LIMIT_COUNT 1 ENCODING UTF-8)
+    string(REGEX REPLACE "^Copyright (\\(c\\) |© )?" "" line "${line}")
     if(line STREQUAL "")
         message(FATAL_ERROR "No copyright line in ${file}")
     endif()
@@ -75,8 +76,16 @@ endfunction()
 # machine readable format. It's made from the licenses in the source, so they
 # can't differ, and only the deb has it.
 pou_debian_holder("${PROJECT_SOURCE_DIR}/LICENSE" POU_HOLDER)
-pou_debian_holder("${PROJECT_SOURCE_DIR}/data/fonts/OFL-Spectral.txt" SPECTRAL_HOLDER)
-pou_debian_holder("${PROJECT_SOURCE_DIR}/data/fonts/OFL-BigShoulders.txt" BIG_SHOULDERS_HOLDER)
+# Every font has its license as OFL-<Name>.txt beside it, and its files start
+# with that name, so each license is a stanza and none can be left out.
+file(GLOB font_licenses "${PROJECT_SOURCE_DIR}/data/fonts/OFL-*.txt")
+set(FONT_STANZAS "")
+foreach(license IN LISTS font_licenses)
+    get_filename_component(name "${license}" NAME_WE)
+    string(REGEX REPLACE "^OFL-" "" name "${name}")
+    pou_debian_holder("${license}" holder)
+    string(APPEND FONT_STANZAS "Files: data/fonts/${name}*\nCopyright: ${holder}\nLicense: OFL-1.1\n\n")
+endforeach()
 pou_debian_license("${PROJECT_SOURCE_DIR}/LICENSE" "Permission is hereby granted" EXPAT_TEXT)
 pou_debian_license("${PROJECT_SOURCE_DIR}/data/fonts/OFL-Spectral.txt" "SIL OPEN FONT LICENSE" OFL_TEXT)
 file(CONFIGURE OUTPUT "${PROJECT_BINARY_DIR}/debian/doc/copyright" @ONLY CONTENT
@@ -89,15 +98,7 @@ Files: *
 Copyright: @POU_HOLDER@
 License: Expat
 
-Files: data/fonts/Spectral-*
-Copyright: @SPECTRAL_HOLDER@
-License: OFL-1.1
-
-Files: data/fonts/BigShoulders*
-Copyright: @BIG_SHOULDERS_HOLDER@
-License: OFL-1.1
-
-License: Expat
+@FONT_STANZAS@License: Expat
 @EXPAT_TEXT@
 
 License: OFL-1.1
