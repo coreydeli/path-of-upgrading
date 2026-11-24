@@ -35,15 +35,71 @@ void AppImageInstaller::install(const QString &file, const Done &done)
     QFile::setPermissions(staged, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner |
                                       QFileDevice::ReadGroup | QFileDevice::ExeGroup |
                                       QFileDevice::ReadOther | QFileDevice::ExeOther);
-    // replaces it in one step, so there's never half an AppImage
+    // the old one stays until the new one has run for a while
+    const OldAppImage old(m_target);
+    QFile::remove(old.oldPath());
+    QFile::remove(old.markerPath());
     std::error_code error;
+    std::filesystem::rename(m_target.toStdString(), old.oldPath().toStdString(), error);
+    if (error) {
+        QFile::remove(staged);
+        done(u"Couldn't keep the old %1: %2"_s.arg(target.fileName(),
+                                                   QString::fromStdString(error.message())));
+        return;
+    }
+    // replaces it in one step, so there's never half an AppImage
     std::filesystem::rename(staged.toStdString(), m_target.toStdString(), error);
     if (error) {
+        // back as it was
+        std::error_code ignored;
+        std::filesystem::rename(old.oldPath().toStdString(), m_target.toStdString(), ignored);
         QFile::remove(staged);
         done(u"Couldn't replace %1: %2"_s.arg(target.fileName(), QString::fromStdString(error.message())));
         return;
     }
     done({});
+}
+
+OldAppImage::OldAppImage(const QString &appImage)
+    : m_appImage(appImage)
+{}
+
+QString OldAppImage::oldPath() const
+{
+    return m_appImage + u".old"_s;
+}
+
+QString OldAppImage::markerPath() const
+{
+    return m_appImage + u".starting"_s;
+}
+
+bool OldAppImage::restoreIfUnconfirmed()
+{
+    if (m_appImage.isEmpty() || !QFile::exists(oldPath()) || !QFile::exists(markerPath()))
+        return false;
+    QFile::remove(markerPath());
+    std::error_code error;
+    // over the new one, which is the file that's running, and stays so until it quits
+    std::filesystem::rename(oldPath().toStdString(), m_appImage.toStdString(), error);
+    return !error;
+}
+
+void OldAppImage::begin()
+{
+    if (m_appImage.isEmpty() || !QFile::exists(oldPath()))
+        return;
+    QFile marker(markerPath());
+    if (marker.open(QIODevice::WriteOnly))
+        marker.close();
+}
+
+void OldAppImage::confirm()
+{
+    if (m_appImage.isEmpty())
+        return;
+    QFile::remove(markerPath());
+    QFile::remove(oldPath());
 }
 
 SetupInstaller::SetupInstaller(const Launch &launch)

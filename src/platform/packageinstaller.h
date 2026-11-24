@@ -50,6 +50,31 @@ private:
     QString m_target;
 };
 
+// The AppImage an update replaced, kept next to the new one as "<name>.old"
+// until the new one has run for a bit. A start that never gets that far leaves
+// a marker, and the next start puts the old one back.
+class OldAppImage
+{
+public:
+    // The path of the AppImage that is running.
+    explicit OldAppImage(const QString &appImage);
+
+    // The old file's name, and the marker's.
+    QString oldPath() const;
+    QString markerPath() const;
+    // Puts the old one back if the last start of the new one didn't get to
+    // confirm itself. True when it did, and the caller starts the program again.
+    bool restoreIfUnconfirmed();
+    // This start has begun, which stays on record until it confirms. Does
+    // nothing when there's no old file.
+    void begin();
+    // The new one works: the old file and the marker go.
+    void confirm();
+
+private:
+    QString m_appImage;
+};
+
 // Runs the new setup program without asking anything, which installs it for
 // you, closes the old one's files and starts the new program.
 class SetupInstaller : public PackageInstaller
