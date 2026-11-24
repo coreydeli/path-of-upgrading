@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "app/fonts.h"
 #include "app/itemreport.h"
+#include "core/designs.h"
 #include "stylefortests.h"
 
 #include <QAccessible>
@@ -315,6 +316,35 @@ private Q_SLOTS:
         QAccessibleInterface *read = QAccessible::queryAccessibleInterface(gauge.get());
         QVERIFY(read);
         QCOMPARE(read->text(QAccessible::Name), u"Gear score 72, grade A"_s);
+    }
+
+    // the QML table and the C++ one say the same
+    void everyLookDrawsTheTileItsInfoNames()
+    {
+        for (const DesignInfo &info : designs()) {
+            m_style->setProperty("design", info.id);
+            QCOMPARE(m_style->property("tile").toString(), info.tile);
+        }
+    }
+
+    void everyLooksGaugeAndBannerLoadAndHaveASize()
+    {
+        for (const DesignInfo &info : designs()) {
+            m_style->setProperty("design", info.id);
+            for (const char *size : {"small", "medium", "large"}) {
+                std::unique_ptr<QQuickItem> gauge =
+                    make(QByteArray("ScoreGauge { score: \"72\"; grade: \"A\"; size: \"") + size + "\" }");
+                QVERIFY2(gauge, qPrintable(info.id));
+                QVERIFY2(gauge->implicitWidth() > 0 && gauge->implicitHeight() > 0, qPrintable(info.id));
+            }
+            std::unique_ptr<QQuickItem> banner =
+                make("VerdictBanner { width: 400; verdict: \"Upgrade\"; tone: 1; score: \"+12%\";"
+                     " scoreLabel: \"for your build\"; versus: \"vs Grim Crown\";"
+                     " gearScore: \"72\"; gearGrade: \"A\" }");
+            QVERIFY2(banner, qPrintable(info.id));
+            QVERIFY2(banner->implicitHeight() > 0, qPrintable(info.id));
+            QCOMPARE(banner->property("gauged").toBool(), true);
+        }
     }
 
     void aPlateIsSquareWhenPlain()

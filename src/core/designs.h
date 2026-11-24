@@ -35,6 +35,9 @@ struct DesignInfo
     bool hasLight;
     // whether Kirigami's own corners are round
     bool roundCorners;
+    // how the gear score and the verdict are drawn: diamonds, strip, ring,
+    // edge, hairline or segments
+    QString tile;
     // background, panel, accent and text of the dark palette, for the pickers
     QStringList swatch;
 };

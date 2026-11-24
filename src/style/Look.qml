@@ -44,12 +44,13 @@ QtObject {
     // large for the popup and extra large for the sidebar's picked row, and
     // `button` is a button's, unless the look is a `pill`, which makes buttons,
     // chips and scroll bars fully round. `line` and `rule` say how much of the
-    // text's color the frame and the finer rules have, and `chip` is how a
-    // stat chip is drawn. The fonts are for labels (small, in `caps` or not),
+    // text's color the frame and the finer rules have, `chip` is how a stat
+    // chip is drawn and `tile` how the gear score and the verdict are. The fonts are for labels (small, in `caps` or not),
     // figures (the score) and titles, whose family is the heading font's; a
     // missing family is the text's.
     readonly property var looks: ({
         "dossier": {
+            tile: "diamonds",
             xs: 0, s: 0, m: 0, l: 0, xl: 0, button: 0, pill: false,
             line: 0.28, rule: 0.14, framed: true, chip: "plate",
             label: { family: "Big Shoulders Text", weight: Font.Bold, caps: true, spacing: 1.4, scale: 1.02 },
@@ -57,6 +58,7 @@ QtObject {
             title: { weight: Font.ExtraBold, caps: true, spacing: 0.5, scale: 1.45 }
         },
         "material": {
+            tile: "diamonds",
             xs: 4, s: 8, m: 12, l: 16, xl: 28, button: 20, pill: true,
             line: 0.2, rule: 0.12, framed: false, chip: "outline",
             label: { weight: Font.Medium, caps: false, spacing: 0.1, scale: 1 },
@@ -64,6 +66,7 @@ QtObject {
             title: { weight: Font.Normal, caps: false, spacing: 0, scale: 1.5 }
         },
         "slate": {
+            tile: "strip",
             xs: 2, s: 2, m: 2, l: 2, xl: 2, button: 2, pill: false,
             line: 0.18, rule: 0.12, framed: true, chip: "tick",
             label: { weight: Font.Medium, caps: false, spacing: 0.2, scale: 1 },
@@ -71,6 +74,7 @@ QtObject {
             title: { weight: Font.Bold, caps: false, spacing: 0.3, scale: 1.45 }
         },
         "pocket": {
+            tile: "ring",
             xs: 8, s: 14, m: 14, l: 14, xl: 14, button: 14, pill: true,
             line: 0.14, rule: 0.1, framed: true, chip: "pill",
             label: { weight: Font.DemiBold, caps: false, spacing: 0, scale: 1 },
@@ -78,6 +82,7 @@ QtObject {
             title: { weight: Font.Bold, caps: false, spacing: 0, scale: 1.5 }
         },
         "edge": {
+            tile: "edge",
             xs: 3, s: 3, m: 3, l: 3, xl: 3, button: 3, pill: false,
             line: 0.2, rule: 0.12, framed: true, chip: "edge",
             label: { family: "Barlow Semi Condensed", weight: Font.Medium, caps: true, spacing: 0.6, scale: 1 },
@@ -85,6 +90,7 @@ QtObject {
             title: { weight: Font.Bold, caps: false, spacing: 0.2, scale: 1.5 }
         },
         "gilt": {
+            tile: "hairline",
             xs: 2, s: 2, m: 4, l: 4, xl: 4, button: 6, pill: false,
             line: 0.3, rule: 0.16, framed: true, chip: "hairline",
             label: { family: "Cinzel", weight: Font.Medium, caps: false, spacing: 1.2, scale: 0.92 },
@@ -92,6 +98,7 @@ QtObject {
             title: { weight: Font.DemiBold, caps: false, spacing: 1, scale: 1.4 }
         },
         "cinder": {
+            tile: "segments",
             xs: 0, s: 0, m: 0, l: 0, xl: 0, button: 0, pill: false,
             line: 0.3, rule: 0.16, framed: true, chip: "box", shadow: 4,
             label: { family: "JetBrains Mono", weight: Font.Medium, caps: true, spacing: 0.9, scale: 0.85 },
@@ -115,6 +122,9 @@ QtObject {
     // or box, and `shadow` is the width in pixels of a hard shadow under a card, if it has one
     readonly property string chip: spec.chip
     readonly property real shadow: spec.shadow ?? 0
+    // how the score and the verdict are drawn: diamonds, strip, ring, edge,
+    // hairline or segments
+    readonly property string tile: spec.tile
 
     // the family the page titles are in, which the app sets from the settings
     property string headingFamily: "Big Shoulders Display"

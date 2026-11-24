@@ -29,6 +29,7 @@ QtObject {
     readonly property bool pill: Look.pill
     readonly property string chip: Look.chip
     readonly property real shadow: Look.shadow
+    readonly property string tile: Look.tile
     readonly property bool framed: Look.framed
     // whether the colors on the app are dark, which Material's depend on
     property bool dark: true
