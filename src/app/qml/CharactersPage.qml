@@ -28,10 +28,12 @@ ColumnsPage {
     // it and the builds you can import for it. Narrower, it's one column.
     maxColumns: wide ? 2 : 3
 
-    // for builds you've saved in Path of Building since
-    onIsCurrentPageChanged: {
-        if (!isCurrentPage)
+    // A page waiting outside the stack counts as current to Kirigami, so it
+    // has to be shown too.
+    function lookedAt(): void {
+        if (!isCurrentPage || !visible)
             return;
+        // for builds you've saved in Path of Building since
         importer.refreshBuilds();
         // the keyring is only asked once someone looks at the card
         if (account.offered) {
@@ -40,6 +42,9 @@ ColumnsPage {
                 accountCharacters.refresh();
         }
     }
+
+    onIsCurrentPageChanged: lookedAt()
+    onVisibleChanged: lookedAt()
 
     SectionHeader {
         column: charactersPage.wide ? 0 : -1
