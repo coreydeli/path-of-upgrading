@@ -20,6 +20,8 @@ QString eventId(Notifier::Event event)
         return u"updateAvailable"_s;
     case Notifier::Event::Updated:
         return u"updated"_s;
+    case Notifier::Event::UpdateFailed:
+        return u"updateFailed"_s;
     }
     Q_UNREACHABLE_RETURN({});
 }
