@@ -63,6 +63,23 @@ private Q_SLOTS:
         QCOMPARE(s.store.reads, 0);
     }
 
+    void putsTheSavedIdBackOnTheClient()
+    {
+        Signing s;
+        s.store.secrets.insert(secretName, fakeId);
+        s.session.load();
+        QVERIFY(s.settled());
+        s.client.setSignIn(nullptr);
+        QCOMPARE(s.cookie(), QByteArray());
+        s.session.useSessionId();
+        QCOMPARE(s.cookie(), "POESESSID=" + fakeId.toLatin1());
+        // with none saved it signs the client out
+        s.session.forget();
+        QVERIFY(s.settled());
+        s.session.useSessionId();
+        QCOMPARE(s.cookie(), QByteArray());
+    }
+
     void signsInWithTheSavedOne()
     {
         Signing s;

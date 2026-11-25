@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QTimer>
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -239,26 +240,47 @@ void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
     };
     connect(trade, &QObject::destroyed, this, settle);
 
-    const auto send = [this, &queue, trade, body = waiting.body, settle](const QNetworkRequest &request,
-                                                                         const QString &error) {
+    dispatch(queue, trade, waiting.request, waiting.body, false, settle);
+}
+
+void TradeClient::dispatch(Queue &queue, TradeReply *trade, const QNetworkRequest &request,
+                           const QByteArray &body, bool retried, const std::function<void()> &settle)
+{
+    const auto send = [this, &queue, trade, request, body, retried, settle](const QNetworkRequest &signedIn,
+                                                                            const QString &error) {
         if (!error.isEmpty()) {
             trade->fail(TradeReply::Error::Rejected, error);
             // from the event loop, as this can be inside pump()
             QMetaObject::invokeMethod(this, settle, Qt::QueuedConnection);
             return;
         }
-        QNetworkReply *reply = body.isEmpty() ? m_network->get(request) : m_network->post(request, body);
+        QNetworkReply *reply = body.isEmpty() ? m_network->get(signedIn) : m_network->post(signedIn, body);
         // deleting the trade reply calls the request off
         reply->setParent(trade);
-        connect(reply, &QNetworkReply::finished, trade, [this, &queue, trade, reply, settle] {
-            answered(queue, trade, reply);
-            settle();
-        });
+        connect(reply, &QNetworkReply::finished, trade,
+                [this, &queue, trade, reply, request, body, retried, settle] {
+                    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                    if (!retried && (status == 401 || status == 403) && m_signIn && m_signIn->refused()) {
+                        // once, and in its turn under the limits, so it's as if the
+                        // first never went
+                        const Clock::time_point now = Clock::now();
+                        reply->deleteLater();
+                        queue.limiter.learn(rateHeaders(*reply), now);
+                        const std::chrono::milliseconds wait = queue.limiter.wait(now);
+                        queue.limiter.sent(now + wait);
+                        QTimer::singleShot(wait, trade, [this, &queue, trade, request, body, settle] {
+                            dispatch(queue, trade, request, body, true, settle);
+                        });
+                        return;
+                    }
+                    answered(queue, trade, reply);
+                    settle();
+                });
     };
     if (m_signIn)
-        m_signIn->sign(waiting.request, trade, send);
+        m_signIn->sign(request, trade, send);
     else
-        send(waiting.request, {});
+        send(request, {});
 }
 
 void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply)

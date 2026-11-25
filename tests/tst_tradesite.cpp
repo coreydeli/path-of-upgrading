@@ -27,6 +27,36 @@ private Q_SLOTS:
         QCOMPARE(text(tradeDataUrl(u"leagues"_s)), u"https://www.pathofexile.com/api/trade2/data/leagues"_s);
     }
 
+    void apiAddressesFollowTheBase()
+    {
+        const QUrl base(u"https://api.example.invalid/trade"_s);
+        QCOMPARE(text(tradeApiUrl(base, tradeDataUrl(u"stats"_s))),
+                 u"https://api.example.invalid/trade/data/stats"_s);
+        QCOMPARE(text(tradeApiUrl(base, tradeSearchUrl(u"HC Rise of the Abyssal"_s))),
+                 u"https://api.example.invalid/trade/search/poe2/HC%20Rise%20of%20the%20Abyssal"_s);
+        QCOMPARE(text(tradeApiUrl(base, tradeFetchUrl({u"x1"_s, u"x2"_s}, u"Ab3dE9"_s))),
+                 u"https://api.example.invalid/trade/fetch/x1,x2?query=Ab3dE9&realm=poe2"_s);
+        // a slash on the end of the base doesn't double
+        QCOMPARE(text(tradeApiUrl(QUrl(u"https://api.example.invalid/trade/"_s), tradeDataUrl(u"stats"_s))),
+                 u"https://api.example.invalid/trade/data/stats"_s);
+        QCOMPARE(text(tradeApiUrl(QUrl(u"https://api.example.invalid"_s), tradeDataUrl(u"stats"_s))),
+                 u"https://api.example.invalid/data/stats"_s);
+    }
+
+    void apiAddressesAreNeverMadeForOtherPlaces()
+    {
+        const QUrl base(u"https://api.example.invalid/trade"_s);
+        // not the site's API, or not the site
+        QVERIFY(
+            tradeApiUrl(base, QUrl(u"https://www.pathofexile.com/trade2/search/poe2/Standard"_s)).isEmpty());
+        QVERIFY(tradeApiUrl(base, QUrl(u"https://elsewhere.invalid/api/trade2/data/stats"_s)).isEmpty());
+        QVERIFY(tradeApiUrl(base, QUrl(u"http://www.pathofexile.com/api/trade2/data/stats"_s)).isEmpty());
+        QVERIFY(tradeApiUrl(base, QUrl(u"https://www.pathofexile.com/api/trade2"_s)).isEmpty());
+        // nor to a base that isn't https
+        QVERIFY(tradeApiUrl(QUrl(u"http://api.example.invalid/trade"_s), tradeDataUrl(u"stats"_s)).isEmpty());
+        QVERIFY(tradeApiUrl({}, tradeDataUrl(u"stats"_s)).isEmpty());
+    }
+
     void search()
     {
         QCOMPARE(text(tradeSearchUrl(u"HC Rise of the Abyssal"_s)),

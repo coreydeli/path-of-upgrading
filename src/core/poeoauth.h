@@ -21,16 +21,26 @@ struct PoeConfig
     QString clientId;
     QString contact;      // for the User-Agent the API asks for
     QList<quint16> ports; // the loopback ports registered as redirects
+    // For searching the trade site as the account, once the API has a way to:
+    // the scope that allows it and the address its requests go to. Both are
+    // empty until Path of Exile publishes them, and nothing uses them then.
+    QString tradeScope = {};
+    QString tradeUrl = {};
 
     bool complete() const { return !clientId.isEmpty() && !contact.isEmpty() && !ports.isEmpty(); }
+    // Whether trade searches can be made as the account: registered, a scope
+    // and an https address to send them to.
+    bool tradeComplete() const;
 };
 
 // The ports from the CMake option, "49082,49083": comma separated, leaving
 // out anything that isn't a port.
 QList<quint16> parsePorts(QStringView text);
 
-// The one scope the app asks for.
+// The scope the app always asks for.
 QString poeScope();
+// All of them: that one, and the trade scope when the build has one.
+QString poeScopes(const PoeConfig &config);
 
 // The proof key for the code exchange (RFC 7636, S256).
 struct Pkce

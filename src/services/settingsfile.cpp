@@ -62,6 +62,7 @@ Settings loadSettings(const QSettings &store, bool beta)
     read(store, u"trade/divineRate"_s, trade.budget.divineRate, 0, noLimit);
     read(store, u"trade/autoRate"_s, trade.autoRate);
     read(store, u"trade/rateMinutes"_s, trade.rateMinutes, minRateMinutes, maxRateMinutes);
+    trade.signIn = tradeSignInFromId(store.value(u"trade/signIn"_s).toString());
 
     PobSettings &pob = s.pob;
     read(store, u"pob/enabled"_s, pob.enabled);
@@ -130,6 +131,7 @@ void saveSettings(QSettings &store, const Settings &s, bool beta)
     store.setValue(u"trade/divineRate"_s, trade.budget.divineRate);
     store.setValue(u"trade/autoRate"_s, trade.autoRate);
     store.setValue(u"trade/rateMinutes"_s, trade.rateMinutes);
+    store.setValue(u"trade/signIn"_s, tradeSignInId(trade.signIn));
 
     const PobSettings &pob = s.pob;
     store.setValue(u"pob/enabled"_s, pob.enabled);

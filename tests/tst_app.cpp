@@ -1128,6 +1128,48 @@ private Q_SLOTS:
         }
     }
 
+    void searchingAsTheAccountNeedsTheBuildToHaveAnAddressForIt()
+    {
+        PoeConfig registered{.clientId = u"examplepou"_s,
+                             .contact = u"example.invalid"_s,
+                             .ports = {49082},
+                             .tradeScope = u"account:made_up_trade"_s,
+                             .tradeUrl = u"https://api.example.invalid/trade"_s};
+        Settings chosen;
+        chosen.trade.signIn = TradeSignInKind::Account;
+
+        // registered, in a beta, with a scope and an address
+        Folders on;
+        on.set(chosen);
+        on.paths.poeOffered = true;
+        on.paths.poe = registered;
+        Running onApp(on);
+        QVERIFY(onApp.app.tradeSignIn()->isOffered());
+        QCOMPARE(onApp.app.tradeSignIn()->kind(), TradeSignInKind::Account);
+
+        // the same choice with nothing to search with stays on the session id
+        for (int missing = 0; missing < 3; ++missing) {
+            Folders off;
+            off.set(chosen);
+            off.paths.poeOffered = missing != 0;
+            off.paths.poe = registered;
+            if (missing == 1)
+                off.paths.poe.tradeScope.clear();
+            if (missing == 2)
+                off.paths.poe.tradeUrl.clear();
+            Running offApp(off);
+            QVERIFY(!offApp.app.tradeSignIn()->isOffered());
+            QCOMPARE(offApp.app.tradeSignIn()->kind(), TradeSignInKind::Session);
+        }
+
+        // and nothing is chosen unless the settings say
+        Folders plain;
+        plain.paths.poeOffered = true;
+        plain.paths.poe = registered;
+        Running plainApp(plain);
+        QCOMPARE(plainApp.app.tradeSignIn()->kind(), TradeSignInKind::Session);
+    }
+
     void mapsStartByTheBuild()
     {
         Folders folders;

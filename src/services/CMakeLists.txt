@@ -33,6 +33,8 @@ target_compile_definitions(pou_services PRIVATE
     POU_POE_CLIENT_ID="${POU_POE_CLIENT_ID}"
     POU_POE_CONTACT="${POU_POE_CONTACT}"
     POU_POE_REDIRECT_PORTS="${POU_POE_REDIRECT_PORTS}"
+    POU_POE_TRADE_SCOPE="${POU_POE_TRADE_SCOPE}"
+    POU_POE_TRADE_URL="${POU_POE_TRADE_URL}"
 )
 
 target_link_libraries(pou_services PUBLIC pou_core Qt6::Network)
