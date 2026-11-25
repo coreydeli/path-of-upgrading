@@ -234,13 +234,16 @@ private Q_SLOTS:
 
     void theTradePageOffersTheAccountOnlyWhenTheBuildCan()
     {
-        // an account, but no scope or address for trade searches
-        Window without(true, false, registered, true);
-        QVERIFY(without.show(u"tradeAction"_s));
-        QVERIFY(without.shown());
-        QVERIFY(isVisible(without.find(u"sessionStatus"_s)));
-        QVERIFY(!isVisible(without.find(u"signInBox"_s)));
-        QVERIFY(!isVisible(without.find(u"signInStatus"_s)));
+        // an account, but no scope or address for trade searches, closed
+        // before the next, as two windows at once trip Kirigami on Qt 6.8
+        {
+            Window without(true, false, registered, true);
+            QVERIFY(without.show(u"tradeAction"_s));
+            QVERIFY(without.shown());
+            QVERIFY(isVisible(without.find(u"sessionStatus"_s)));
+            QVERIFY(!isVisible(without.find(u"signInBox"_s)));
+            QVERIFY(!isVisible(without.find(u"signInStatus"_s)));
+        }
         // and not in a build that doesn't offer the account at all
         Window release(false, false, registeredForTrade, true);
         QVERIFY(release.show(u"tradeAction"_s));
