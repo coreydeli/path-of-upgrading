@@ -47,6 +47,11 @@ the account section stays hidden until all three are set. The wiki's Building
 from Source page says what each one is for. You won't need them for other work,
 as nobody has a client id for the app yet.
 
+Trade searches as the linked account take two more, `POU_POE_TRADE_SCOPE` and
+`POU_POE_TRADE_URL`: the scope that allows trade searches and the API address
+they go to. Grinding Gear Games has neither yet, so both stay empty, and the
+Trade page only offers the session ID until they're set.
+
 Run the tests on the private bus the README describes:
 
 ```bash
