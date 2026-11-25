@@ -24,6 +24,8 @@ add_library(pou_core STATIC
     parser.cpp parser.h
     placement.cpp placement.h
     places.cpp places.h
+    poeapi.cpp poeapi.h
+    poeoauth.cpp poeoauth.h
     pobbuild.cpp pobbuild.h
     pobeval.cpp pobeval.h
     pobguide.cpp pobguide.h

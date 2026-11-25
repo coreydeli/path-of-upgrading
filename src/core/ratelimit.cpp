@@ -67,13 +67,15 @@ void RateLimiter::sent(Clock::time_point now)
 
 void RateLimiter::learn(const RateHeaders &headers, Clock::time_point now)
 {
-    if (const QList<RateWindow> limits = rateWindows(headers.ip) + rateWindows(headers.account);
+    if (const QList<RateWindow> limits =
+            rateWindows(headers.ip) + rateWindows(headers.account) + rateWindows(headers.client);
         !limits.isEmpty())
         m_limits = limits;
     // apart, as your account's requests can come from elsewhere and your
     // address's from other accounts
     takeCounts(rateWindows(headers.ipState), now);
     takeCounts(rateWindows(headers.accountState), now);
+    takeCounts(rateWindows(headers.clientState), now);
     forgetOld(now);
 }
 

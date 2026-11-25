@@ -33,6 +33,8 @@ struct RateHeaders
     QString ipState;      // x-rate-limit-ip-state
     QString account;      // x-rate-limit-account
     QString accountState; // x-rate-limit-account-state
+    QString client;       // x-rate-limit-client, the Path of Exile API's rule for an app
+    QString clientState;  // x-rate-limit-client-state
 };
 
 // Spaces requests out to stay under the limits with one to spare in each, as
