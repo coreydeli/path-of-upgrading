@@ -93,6 +93,27 @@ public:
     After m_after = After::Restart;
 };
 
+// An AppImage that fails to install, taken by the check or by Update Now
+void failedInstall(Setup &s, bool byItself, bool windowShown)
+{
+    s.updates.setInstallKind(InstallKind::AppImage);
+    s.updates.setInstallByItself(byItself);
+    s.updates.setWindowShown(windowShown);
+    auto installer = std::make_unique<FakeInstaller>();
+    installer->error = u"Couldn't replace it."_s;
+    s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return true; });
+    s.network.answers = {releases({u"0.7.0"_s})};
+    s.network.answers << sumsFor(u"0.7.0"_s, InstallKind::AppImage) << FakeAnswer{.body = package};
+    if (byItself) {
+        s.updates.checkNow();
+    } else {
+        s.look({u"0.7.0"_s});
+        s.network.answers = {sumsFor(u"0.7.0"_s, InstallKind::AppImage), {.body = package}};
+        s.updates.updateNow();
+    }
+    QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
+}
+
 } // namespace
 
 class TestUpdatesModel : public QObject
@@ -426,6 +447,71 @@ private Q_SLOTS:
         QVERIFY(!s.updates.isAutomatic());
         // and it doesn't try again by itself
         QVERIFY(!s.updates.isPending());
+    }
+
+    void aFailedUpdateByItselfTellsTheDesktopWhenHidden()
+    {
+        Setup s;
+        QSignalSpy failed(&s.updates, &Updates::automaticFailed);
+        failedInstall(s, true, false);
+        QCOMPARE(failed.size(), 1);
+        QCOMPARE(failed.first().at(0).toString(), u"0.7.0"_s);
+        QCOMPARE(failed.first().at(1).toString(), u"Couldn't replace it."_s);
+    }
+
+    void aFailedUpdateByItselfStaysQuietWhenTheWindowIsShown()
+    {
+        Setup s;
+        QSignalSpy failed(&s.updates, &Updates::automaticFailed);
+        failedInstall(s, true, true);
+        QCOMPARE(failed.size(), 0);
+    }
+
+    void aFailedUpdateYouStartedStaysQuiet()
+    {
+        Setup s;
+        QSignalSpy failed(&s.updates, &Updates::automaticFailed);
+        failedInstall(s, false, false);
+        QCOMPARE(failed.size(), 0);
+    }
+
+    void aFailedDownloadByItselfTellsTheDesktopToo()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::AppImage);
+        s.updates.setInstallByItself(true);
+        s.updates.setWindowShown(false);
+        s.updates.setInstaller(std::make_unique<FakeInstaller>(),
+                               [](PackageInstaller::After) { return true; });
+        QSignalSpy failed(&s.updates, &Updates::automaticFailed);
+        // the file doesn't match its sum
+        s.network.answers = {releases({u"0.7.0"_s}), sumsFor(u"0.7.0"_s, InstallKind::AppImage),
+                             FakeAnswer{.body = "something else"}};
+        s.updates.checkNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Failed; }, 5000));
+        QCOMPARE(failed.size(), 1);
+        QCOMPARE(failed.first().at(0).toString(), u"0.7.0"_s);
+        QCOMPARE(failed.first().at(1).toString(), s.updates.installError());
+    }
+
+    void anInstallYouClickAfterItWaitedForYouStaysQuiet()
+    {
+        Setup s;
+        s.updates.setInstallKind(InstallKind::Debian);
+        s.updates.setInstallByItself(true);
+        s.updates.setWindowShown(false);
+        auto installer = std::make_unique<FakeInstaller>();
+        installer->password = true;
+        installer->error = u"Not allowed."_s;
+        s.updates.setInstaller(std::move(installer), [](PackageInstaller::After) { return true; });
+        QSignalSpy failed(&s.updates, &Updates::automaticFailed);
+        s.network.answers = {releases({u"0.7.0"_s}), sumsFor(u"0.7.0"_s, InstallKind::Debian),
+                             FakeAnswer{.body = package}};
+        s.updates.checkNow();
+        QVERIFY(QTest::qWaitFor([&] { return s.updates.stage() == UpdateStage::Ready; }, 5000));
+        s.updates.updateNow();
+        QCOMPARE(s.updates.stage(), UpdateStage::Failed);
+        QCOMPARE(failed.size(), 0);
     }
 
     void theNewVersionSaysItWasUpdated()
