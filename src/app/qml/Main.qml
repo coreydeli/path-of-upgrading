@@ -193,6 +193,14 @@ Kirigami.ApplicationWindow {
                 onTriggered: root.show(checkedPage)
             },
             Kirigami.Action {
+                objectName: "colorKeyAction"
+                text: qsTr("Color Key")
+                icon.name: "color-management"
+                checkable: true
+                QQC2.ActionGroup.group: pages
+                onTriggered: root.show(colorKeyPage)
+            },
+            Kirigami.Action {
                 objectName: "tradeAction"
                 text: qsTr("Trade")
                 icon.name: "taxes-finances"
@@ -379,6 +387,11 @@ Kirigami.ApplicationWindow {
         CheckedItemsPage {
             id: checkedPage
             checkedItems: root.app.checkedItems
+            options: root.app.overlayOptions
+        }
+
+        ColorKeyPage {
+            id: colorKeyPage
             options: root.app.overlayOptions
         }
 

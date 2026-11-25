@@ -68,6 +68,8 @@ qt_add_qml_module(pou_app
         qml/CharacterPanel.qml
         qml/CharactersPage.qml
         qml/CheckedItemsPage.qml
+        qml/ColorKeyPage.qml
+        qml/ColorSample.qml
         qml/EquipmentBoard.qml
         qml/EquipmentTile.qml
         qml/FontPickerDialog.qml
