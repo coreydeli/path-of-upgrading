@@ -71,6 +71,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_tradeSession(m_secrets.get(), &m_tradeClient, m_opener.get())
     , m_poeAuth(*m_network, paths.poe)
     , m_poeAccount(paths.poeOffered && paths.poe.complete(), m_secrets.get(), &m_poeAuth, m_opener.get())
+    , m_tradeSignIn(&m_tradeClient, &m_tradeSession, &m_poeAccount,
+                    paths.poe.tradeComplete() ? QUrl(paths.poe.tradeUrl) : QUrl())
     , m_poeClient(m_network.get(), paths.poe, &m_poeAccount)
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
@@ -177,9 +179,9 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     });
     // the site takes bigger searches signed in, so what it limited them to
     // before isn't kept
-    connect(&m_tradeSession, &TradeSession::idChanged, this, [this] {
-        m_finder.setSignedIn(m_tradeSession.isSaved());
-        m_upgrades.finder().setSignedIn(m_tradeSession.isSaved());
+    connect(&m_tradeSignIn, &TradeSignInChoice::changed, this, [this] {
+        m_finder.setSignedIn(m_tradeSignIn.isSignedIn());
+        m_upgrades.finder().setSignedIn(m_tradeSignIn.isSignedIn());
     });
     followTrade();
     m_updates.follow(settings.updates);
@@ -259,6 +261,7 @@ void App::followTrade()
     if (!m_tradeOffered)
         settings.trade.enabled = false;
     m_trade.setSettings(settings.trade);
+    m_tradeSignIn.choose(settings.trade.signIn);
     m_finder.setSettings(settings);
     m_checker.popup().setTradeAvailable(m_trade.unavailable().isEmpty());
     m_checker.popup().setTradeNote(m_tradeOffered ? m_trade.unavailable() : QString());
@@ -271,8 +274,10 @@ void App::followTrade()
     m_tradeData.load();
     m_trade.setLeagues(m_tradeData.leagues());
     if (m_trade.unavailable().isEmpty()) {
-        // this asks the keyring once
+        // these ask the keyring once
         m_tradeSession.load();
+        if (m_tradeSignIn.kind() == TradeSignInKind::Account)
+            m_poeAccount.load();
     }
     followRates();
 }
