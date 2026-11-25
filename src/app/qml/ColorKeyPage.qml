@@ -115,7 +115,7 @@ ColumnsPage {
     }
 
     SectionText {
-        text: qsTr("The letter and the gauge beside it share the grade's color.")
+        text: qsTr("The gauge by the score takes the grade's color too.")
     }
 
     SectionHeader {
@@ -136,7 +136,7 @@ ColumnsPage {
         ColorSample {
             objectName: "mark:fractured"
             text: qsTr("Fractured")
-            description: qsTr("In yellow or orange, under the item's name.")
+            description: qsTr("In yellow or orange, under the item's name. An item that is both is marked in red.")
             sample: qsTr("Fractured")
             tint: Kirigami.Theme.neutralTextColor
         }
@@ -238,7 +238,7 @@ ColumnsPage {
     }
 
     SectionText {
-        text: qsTr("\"Colorblind-friendly colors\" on the General page swaps green and red for blue and orange.")
+        text: qsTr("\"Colorblind-friendly colors\" on the General page uses blue, orange and amber in their place.")
     }
 
     SectionHeader {
