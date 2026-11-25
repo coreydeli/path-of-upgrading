@@ -213,14 +213,19 @@ function(pou_add_window_test name)
     target_link_libraries(${name} PRIVATE KF6::I18nQml)
 endfunction()
 
-# The costs and limits are guesses from CI's times for the one program they were in
-# (1060 s on Debian 13, 1750 s on Fedora): each part starts in turn, longest first.
+# The costs and limits are guesses from CI's times (the rest of the window tests took up to
+# 1700 s as one program): each part starts in turn, longest first. The limits leave room for
+# a runner that's twice as slow as usual, which Fedora's sometimes is.
 pou_add_window_test(tst_mainwindow_looks)
 set_tests_properties(tst_mainwindow_looks PROPERTIES COST 700 TIMEOUT 1800)
 pou_add_window_test(tst_mainwindow_popuplooks)
 set_tests_properties(tst_mainwindow_popuplooks PROPERTIES COST 600 TIMEOUT 1800)
-pou_add_window_test(tst_mainwindow)
-set_tests_properties(tst_mainwindow PROPERTIES COST 500 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_pages)
+set_tests_properties(tst_mainwindow_pages PROPERTIES COST 650 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_settings)
+set_tests_properties(tst_mainwindow_settings PROPERTIES COST 650 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_gear)
+set_tests_properties(tst_mainwindow_gear PROPERTIES COST 550 TIMEOUT 1800)
 pou_add_window_test(tst_mainwindow_guide)
 set_tests_properties(tst_mainwindow_guide PROPERTIES COST 250 TIMEOUT 1200)
 pou_add_window_test(tst_mainwindow_sidebar)
