@@ -158,7 +158,15 @@ bool TradeClient::isSessionId(QStringView text)
 void TradeClient::setSessionId(const QString &id)
 {
     const QString trimmed = id.trimmed();
-    m_sessionId = isSessionId(trimmed) ? trimmed.toLatin1() : QByteArray();
+    if (isSessionId(trimmed))
+        setSignIn(std::make_unique<SessionCookieSignIn>(trimmed.toLatin1()));
+    else
+        setSignIn(nullptr);
+}
+
+void TradeClient::setSignIn(std::unique_ptr<TradeSignIn> signIn)
+{
+    m_signIn = std::move(signIn);
 }
 
 TradeReply *TradeClient::send(Queue &queue, const QNetworkRequest &request, const QByteArray &body)
@@ -218,24 +226,9 @@ void TradeClient::pump(Queue &queue)
 
 void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
 {
-    QNetworkRequest request = waiting.request;
-    if (!m_sessionId.isEmpty()) {
-        request.setRawHeader(QByteArrayLiteral("Cookie"), QByteArrayLiteral("POESESSID=") + m_sessionId);
-        // or the network's cookie jar sends its own in place of it
-        request.setAttribute(QNetworkRequest::CookieLoadControlAttribute, QNetworkRequest::Manual);
-        // nor keeps one the site sends back, which would still go out once
-        // you've signed out
-        request.setAttribute(QNetworkRequest::CookieSaveControlAttribute, QNetworkRequest::Manual);
-        // and a redirect to another site doesn't get it
-        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                             QNetworkRequest::SameOriginRedirectPolicy);
-    }
     TradeReply *trade = waiting.trade;
-    QNetworkReply *reply =
-        waiting.body.isEmpty() ? m_network->get(request) : m_network->post(request, waiting.body);
-    // deleting the trade reply calls the request off
-    reply->setParent(trade);
-    // counted off once, when it's answered or when it's called off
+    // counted off once, when it's answered or when it's called off, which
+    // can be while the sign in is still working
     ++queue.inFlight;
     const auto counted = std::make_shared<bool>(false);
     const auto settle = [this, &queue, counted] {
@@ -244,11 +237,28 @@ void TradeClient::start(Queue &queue, const Queue::Waiting &waiting)
         --queue.inFlight;
         pump(queue);
     };
-    connect(reply, &QNetworkReply::finished, trade, [this, &queue, trade, reply, settle] {
-        answered(queue, trade, reply);
-        settle();
-    });
-    connect(reply, &QObject::destroyed, this, settle);
+    connect(trade, &QObject::destroyed, this, settle);
+
+    const auto send = [this, &queue, trade, body = waiting.body, settle](const QNetworkRequest &request,
+                                                                         const QString &error) {
+        if (!error.isEmpty()) {
+            trade->fail(TradeReply::Error::Rejected, error);
+            // from the event loop, as this can be inside pump()
+            QMetaObject::invokeMethod(this, settle, Qt::QueuedConnection);
+            return;
+        }
+        QNetworkReply *reply = body.isEmpty() ? m_network->get(request) : m_network->post(request, body);
+        // deleting the trade reply calls the request off
+        reply->setParent(trade);
+        connect(reply, &QNetworkReply::finished, trade, [this, &queue, trade, reply, settle] {
+            answered(queue, trade, reply);
+            settle();
+        });
+    };
+    if (m_signIn)
+        m_signIn->sign(waiting.request, trade, send);
+    else
+        send(waiting.request, {});
 }
 
 void TradeClient::answered(Queue &queue, TradeReply *trade, QNetworkReply *reply)

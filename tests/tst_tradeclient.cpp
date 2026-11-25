@@ -3,6 +3,7 @@
 #include "fakenetwork.h"
 #include "services/network.h"
 #include "services/tradeclient.h"
+#include "services/tradesignin.h"
 
 #include <QElapsedTimer>
 #include <QJsonArray>
@@ -10,6 +11,7 @@
 #include <QSet>
 #include <QSignalSpy>
 #include <QTest>
+#include <QTimer>
 
 using namespace Qt::Literals::StringLiterals;
 using namespace std::chrono_literals;
@@ -34,6 +36,28 @@ bool finishes(TradeReply *reply)
     QSignalSpy finished(reply, &TradeReply::finished);
     return reply->isFinished() || finished.wait();
 }
+
+// A sign in that takes a moment, as asking for a token would, and puts what it
+// signs with in a header the site never reads.
+class SlowSignIn : public TradeSignIn
+{
+public:
+    QString error;     // when it can't sign
+    int asked = 0;     // how many requests it was asked to sign
+    int delivered = 0; // and how many it signed
+
+    void sign(const QNetworkRequest &request, const QObject *context, Done done) override
+    {
+        ++asked;
+        // the context goes, and so does the call, as it does for a real one
+        QTimer::singleShot(10ms, context, [this, request, done] {
+            ++delivered;
+            QNetworkRequest signedIn = request;
+            signedIn.setRawHeader("X-Test-Sign-In", "token-one");
+            done(signedIn, error);
+        });
+    }
+};
 
 } // namespace
 
@@ -573,6 +597,78 @@ private Q_SLOTS:
             QVERIFY(!sent.request.attribute(QNetworkRequest::CookieSaveControlAttribute).isValid());
             QVERIFY(!sent.request.attribute(QNetworkRequest::RedirectPolicyAttribute).isValid());
         }
+    }
+
+    void aHandedSignInSignsEveryKindOfRequest()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        auto signIn = std::make_unique<SlowSignIn>();
+        SlowSignIn *slow = signIn.get();
+        client.setSignIn(std::move(signIn));
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+        QVERIFY(finishes(client.fetch({u"x1"_s}, u"Ab3dE9"_s)));
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        QCOMPARE(slow->delivered, 3);
+        QCOMPARE(network.sent.size(), 3);
+        for (const FakeNetwork::Sent &sent : std::as_const(network.sent))
+            QCOMPARE(sent.request.rawHeader("X-Test-Sign-In"), "token-one");
+    }
+
+    void aSignInReplacesTheSessionIdAndTheOtherWayRound()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        client.setSessionId(u"0123456789abcdef"_s);
+        client.setSignIn(std::make_unique<SlowSignIn>());
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        QVERIFY(!network.sent.last().request.hasRawHeader("Cookie"));
+        QVERIFY(network.sent.last().request.hasRawHeader("X-Test-Sign-In"));
+
+        client.setSessionId(u"0123456789abcdef"_s);
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        QVERIFY(network.sent.last().request.hasRawHeader("Cookie"));
+        QVERIFY(!network.sent.last().request.hasRawHeader("X-Test-Sign-In"));
+
+        client.setSignIn(nullptr);
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        QVERIFY(!network.sent.last().request.hasRawHeader("Cookie"));
+        QVERIFY(!network.sent.last().request.hasRawHeader("X-Test-Sign-In"));
+    }
+
+    void aSignInThatCantSignSendsNothing()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        auto signIn = std::make_unique<SlowSignIn>();
+        signIn->error = u"The account isn't linked any more."_s;
+        client.setSignIn(std::move(signIn));
+        TradeReply *reply = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(reply));
+        QCOMPARE(reply->error(), TradeReply::Error::Rejected);
+        QCOMPARE(reply->errorString(), u"The account isn't linked any more."_s);
+        QCOMPARE(network.sent.size(), 0);
+
+        // and the next one is asked, not held up behind it
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+    }
+
+    void aRequestCalledOffWhileBeingSignedIsNeverSentAndFreesItsPlace()
+    {
+        FakeNetwork network;
+        TradeClient client(&network);
+        auto signIn = std::make_unique<SlowSignIn>();
+        SlowSignIn *slow = signIn.get();
+        client.setSignIn(std::move(signIn));
+        TradeReply *first = client.data(u"stats"_s);
+        // as the site hasn't answered yet, this one waits for the first
+        TradeReply *second = client.data(u"leagues"_s);
+        QCOMPARE(slow->asked, 1);
+        delete first;
+        QVERIFY(finishes(second));
+        QCOMPARE(slow->delivered, 1);
+        QCOMPARE(network.sent.size(), 1);
+        QCOMPARE(network.sent.first().request.url(), tradeDataUrl(u"leagues"_s));
     }
 };
 
