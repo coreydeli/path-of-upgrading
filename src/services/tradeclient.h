@@ -2,6 +2,7 @@
 #pragma once
 
 #include "core/ratelimit.h"
+#include "services/tradesignin.h"
 
 #include <QByteArray>
 #include <QJsonObject>
@@ -13,6 +14,7 @@
 #include <QStringList>
 #include <QTimer>
 #include <chrono>
+#include <memory>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -112,6 +114,9 @@ public:
     // Sends requests signed in with that session id, once it's trimmed, or
     // signed out when it isn't one.
     void setSessionId(const QString &id);
+    // Signs the requests from now on with this, or sends them signed out when
+    // it's null. It also replaces a session id.
+    void setSignIn(std::unique_ptr<TradeSignIn> signIn);
 
 private:
     using Clock = RateLimiter::Clock;
@@ -142,7 +147,7 @@ private:
     void answered(Queue &queue, TradeReply *trade, QNetworkReply *reply);
 
     QNetworkAccessManager *m_network;
-    QByteArray m_sessionId;
+    std::unique_ptr<TradeSignIn> m_signIn;
     QString m_blocked;
     std::chrono::milliseconds m_rest{5000};
     int m_failures = 0; // in a row
