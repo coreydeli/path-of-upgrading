@@ -143,9 +143,11 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   checks it against the release's checksums, and installs it. An AppImage or a
   Windows setup restarts the app as soon as it's in. A Debian, Fedora or Arch
   package waits until you press Install, as its install asks for your password.
-  With the switch off, nothing is downloaded until you press Update Now. Turn the
-  check off, turn that switch off, or include betas, on the Updates page in the
-  sidebar's Settings group.
+  With the switch off, nothing is downloaded until you press Update Now. If an
+  update the app installed by itself fails while the window is hidden, a
+  notification called "The Update Didn't Finish" says why, and its Open button
+  shows the window. Turn the check off, turn that switch off, or include betas,
+  on the Updates page in the sidebar's Settings group.
 - Has seven looks, picked under Look on the Appearance page in the sidebar's
   Settings group, or in the setup guide. Dossier, the default, is the app's own,
   with its own controls, colors and fonts, so it looks the same on every desktop.
