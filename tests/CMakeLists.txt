@@ -210,12 +210,30 @@ pou_add_qml_test(tst_itemchecker fakeclipboard.h fakegameinput.h fakenetwork.h i
 pou_use_fakepob(tst_itemchecker)
 pou_add_qml_test(tst_app fakegameinput.h fakenetwork.h fakeopener.h itemtexts.h maptexts.h tradefixtures.h)
 pou_use_fakepob(tst_app)
-pou_add_qml_test(tst_mainwindow fakegameinput.h fakenetwork.h fakeopener.h fakeglobalshortcuts.h itemtexts.h
-                 tradefixtures.h updatetexts.h)
-pou_use_fakepob(tst_mainwindow)
-target_compile_definitions(tst_mainwindow PRIVATE
-    COLORS="${PROJECT_SOURCE_DIR}/data/color-schemes/PathOfUpgrading.colors")
-target_link_libraries(tst_mainwindow PRIVATE KF6::I18nQml)
-# the longest test by far, so it starts first and gets longer than the rest (an hour,
-# as it loads every page under each look)
-set_tests_properties(tst_mainwindow PROPERTIES COST 1000 TIMEOUT 3600)
+# the main window's tests, in parts that run side by side
+function(pou_add_window_test name)
+    pou_add_qml_test(${name} fakegameinput.h fakenetwork.h fakeopener.h fakeglobalshortcuts.h itemtexts.h
+                     mainwindowtest.h tradefixtures.h updatetexts.h)
+    pou_use_fakepob(${name})
+    target_compile_definitions(${name} PRIVATE
+        COLORS="${PROJECT_SOURCE_DIR}/data/color-schemes/PathOfUpgrading.colors")
+    target_link_libraries(${name} PRIVATE KF6::I18nQml)
+endfunction()
+
+# The costs and limits are guesses from CI's times (the rest of the window tests took up to
+# 1700 s as one program): each part starts in turn, longest first. The limits leave room for
+# a runner that's twice as slow as usual, which Fedora's sometimes is.
+pou_add_window_test(tst_mainwindow_looks)
+set_tests_properties(tst_mainwindow_looks PROPERTIES COST 700 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_popuplooks)
+set_tests_properties(tst_mainwindow_popuplooks PROPERTIES COST 600 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_pages)
+set_tests_properties(tst_mainwindow_pages PROPERTIES COST 650 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_settings)
+set_tests_properties(tst_mainwindow_settings PROPERTIES COST 650 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_gear)
+set_tests_properties(tst_mainwindow_gear PROPERTIES COST 550 TIMEOUT 1800)
+pou_add_window_test(tst_mainwindow_guide)
+set_tests_properties(tst_mainwindow_guide PROPERTIES COST 250 TIMEOUT 1200)
+pou_add_window_test(tst_mainwindow_sidebar)
+set_tests_properties(tst_mainwindow_sidebar PROPERTIES COST 250 TIMEOUT 1200)

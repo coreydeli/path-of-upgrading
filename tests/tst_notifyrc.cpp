@@ -31,8 +31,9 @@ private Q_SLOTS:
     void listsEveryEvent()
     {
         const KConfig rc(QStringLiteral(NOTIFYRC), KConfig::SimpleConfig);
-        for (const Notifier::Event event : {Notifier::Event::HotkeysUnavailable,
-                                            Notifier::Event::UpdateAvailable, Notifier::Event::Updated}) {
+        for (const Notifier::Event event :
+             {Notifier::Event::HotkeysUnavailable, Notifier::Event::UpdateAvailable, Notifier::Event::Updated,
+              Notifier::Event::UpdateFailed}) {
             const QString name = u"Event/"_s + eventId(event);
             QVERIFY2(rc.hasGroup(name), qPrintable(name));
             const KConfigGroup group = rc.group(name);

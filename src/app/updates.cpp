@@ -10,6 +10,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QUrl>
+#include <utility>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -195,6 +196,7 @@ void Updates::download(const Release &release, bool automatic)
     // so the window doesn't offer what's already on its way
     m_putOff = release.version.text();
     m_automatic = automatic;
+    m_unasked = automatic ? release.version.text() : QString();
     m_error.clear();
     m_command.clear();
     m_progress = -1;
@@ -210,12 +212,14 @@ void Updates::downloaded(const QString &file)
         // PackageKit or a terminal does these, which the app doesn't ask for
         m_command = manualCommand(m_kind, file);
         m_stage = UpdateStage::Manual;
+        m_unasked.clear();
         Q_EMIT changed();
         return;
     }
     if (m_automatic && m_installer->asksForPassword()) {
         // the system's prompt shouldn't come up unasked, so it waits for you
         m_automatic = false;
+        m_unasked.clear();
         m_putOff.clear();
         m_stage = UpdateStage::Ready;
         Q_EMIT changed();
@@ -228,6 +232,9 @@ void Updates::downloaded(const QString &file)
 void Updates::install()
 {
     m_automatic = false;
+    // Install on a Ready update is your click, so a failure shows in the window
+    if (m_stage == UpdateStage::Ready)
+        m_unasked.clear();
     m_stage = UpdateStage::Installing;
     Q_EMIT changed();
     m_installer->install(m_file, [this](const QString &error) {
@@ -237,6 +244,7 @@ void Updates::install()
                 m_error = error;
                 m_command = manualCommand(m_kind, m_file);
                 m_stage = UpdateStage::Manual;
+                m_unasked.clear();
                 Q_EMIT changed();
             } else {
                 fail(error);
@@ -251,8 +259,12 @@ void Updates::fail(const QString &why)
 {
     m_error = why;
     m_automatic = false;
+    const QString unasked = std::exchange(m_unasked, QString());
     m_stage = UpdateStage::Failed;
     Q_EMIT changed();
+    // the window shows it when it's open, and otherwise nobody would know
+    if (!unasked.isEmpty() && !m_windowShown)
+        Q_EMIT automaticFailed(unasked, why);
 }
 
 void Updates::finish(PackageInstaller::After after)
@@ -282,6 +294,7 @@ void Updates::dismiss()
     if (m_stage == UpdateStage::Installing)
         return;
     m_automatic = false;
+    m_unasked.clear();
     m_stage = UpdateStage::Idle;
     m_error.clear();
     m_command.clear();

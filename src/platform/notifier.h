@@ -19,6 +19,7 @@ public:
         HotkeysUnavailable, // the desktop wouldn't take the hotkeys
         UpdateAvailable,    // a newer release is out
         Updated,            // an update has been installed
+        UpdateFailed,       // an update the app took by itself didn't work
     };
 
     // A button on the notification, for desktops that can show one.
