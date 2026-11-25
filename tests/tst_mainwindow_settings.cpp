@@ -841,9 +841,13 @@ private Q_SLOTS:
 
     void saysWhenTheKeysOnlyWorkInTheGame()
     {
-        Window always;
-        QVERIFY(always.show(u"overlayAction"_s));
-        QCOMPARE(always.find(u"gameOnlyNote"_s)->property("visible").toBool(), false);
+        // one window at a time: on Debian's Qt 6.8, a second window made beside
+        // the first now and then fails on Kirigami's drawer
+        {
+            Window always;
+            QVERIFY(always.show(u"overlayAction"_s));
+            QCOMPARE(always.find(u"gameOnlyNote"_s)->property("visible").toBool(), false);
+        }
 
         auto *game = new FakeGameWatcher;
         Window w(true, false, {}, used(), true, game);
