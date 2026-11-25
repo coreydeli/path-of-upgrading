@@ -227,7 +227,6 @@ private:
     PoeAuth m_poeAuth;
     PoeAccount m_poeAccount;
     PoeClient m_poeClient;
-    AccountCharacters m_accountCharacters;
     TradeDataStore m_tradeData;
     RatesStore m_rates;
     RatesRefresher m_ratesRefresher;
@@ -239,6 +238,7 @@ private:
     UpdateDownloader m_downloader;
     Updates m_updatesModel;
     CharacterList m_characterList;
+    AccountCharacters m_accountCharacters;
     BuildImporter m_buildImporter;
     GearList m_gearList;
     RecommendedUpgrades m_upgrades;

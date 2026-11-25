@@ -24,6 +24,12 @@ QString cleanListingText(const QString &text);
 // parseItem(). Listings don't say the item class, so it's the one searched for.
 Item listingToItem(const QJsonObject &result, const QString &itemClass);
 
+// The same for an item object alone, as the site's trade results have inside
+// each listing and the game's account API has for what a character wears. A
+// mod in the explicit list that says it's fractured or desecrated is read as
+// one of those. Empty when it can't be read.
+Item itemFromTradeJson(const QJsonObject &item, const QString &itemClass);
+
 struct ListingPrice
 {
     double amount = 0;

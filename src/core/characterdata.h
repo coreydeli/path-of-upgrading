@@ -16,6 +16,17 @@
 
 namespace pou {
 
+// The character on a Path of Exile account that one of yours was imported
+// from, and the name it had in the game then.
+struct AccountLink
+{
+    QString realm; // "poe2"
+    QString id;    // the game's own, 64 hex digits
+    QString name;
+
+    friend bool operator==(const AccountLink &, const AccountLink &) = default;
+};
+
 // One of your characters, with everything kept for it between runs: what it
 // wears, how items are judged for it and its resistances.
 struct Character
@@ -43,6 +54,8 @@ struct Character
     bool chaosInoculation = false;
     // What the build's passive tree lets it do with its hands, imported with it.
     Wielding wielding;
+    // Set when it came from the game's servers, so it can be updated from them.
+    std::optional<AccountLink> linked;
 };
 
 // Gear is kept as the game's text and read again with parseItem(), so items

@@ -664,6 +664,87 @@ private Q_SLOTS:
         QVERIFY(c.list.importBuild(wren, stormweaver, parsePobBuild(stormweaver).value()));
         QCOMPARE(c.list.error(), QString());
     }
+
+    void importsAnAccountCharacterAsANewOne()
+    {
+        Characters c;
+        c.list.load();
+        const AccountLink link{.realm = u"poe2"_s, .id = u"fakeid1"_s, .name = u"FakeOne"_s};
+        Equipped gear;
+        gear.insert(u"Belt"_s,
+                    parseItem(u"Item Class: Belts\nRarity: Rare\nFake Belt\nLeather Belt"_s).value());
+
+        const QString id = c.list.importAccountGear(link, gear);
+        QVERIFY(!id.isEmpty());
+        QCOMPARE(c.list.linkedTo(u"fakeid1"_s), id);
+        QCOMPARE(c.list.linkedTo(u"other"_s), QString());
+        QCOMPARE(c.list.current(), id);
+        QCOMPARE(c.names(), QStringList{u"FakeOne"_s});
+        const Character *saved = c.inFolder(id);
+        QVERIFY(saved);
+        QCOMPARE(saved->linked, std::optional<AccountLink>(link));
+        QVERIFY(saved->gear.contains(u"Belt"_s));
+    }
+
+    void updatesTheLinkedCharacterAndKeepsItsSettings()
+    {
+        Characters c;
+        c.list.load();
+        const AccountLink link{.realm = u"poe2"_s, .id = u"fakeid1"_s, .name = u"FakeOne"_s};
+        const QString id = c.list.importAccountGear(link, {});
+        Character mine = *c.list.find(id);
+        mine.weights = {{u"# to maximum Life"_s, 7}};
+        mine.profilePicked = true;
+        mine.buildProfile = u"minions"_s;
+        mine.fromPob.insert(u"Belt"_s);
+        QVERIFY(c.store.save(id, mine));
+
+        Equipped gear;
+        gear.insert(u"Gloves"_s,
+                    parseItem(u"Item Class: Gloves\nRarity: Rare\nFake Gloves\nLeather Gloves"_s).value());
+        // renamed in the game since
+        const AccountLink renamed{.realm = u"poe2"_s, .id = u"fakeid1"_s, .name = u"FakeTwo"_s};
+        QCOMPARE(c.list.importAccountGear(renamed, gear), id);
+
+        QCOMPARE(c.list.count(), 1);
+        const Character *saved = c.inFolder(id);
+        QCOMPARE(saved->name, u"FakeTwo"_s);
+        QCOMPARE(saved->linked->name, u"FakeTwo"_s);
+        QCOMPARE(saved->gear.size(), 1);
+        QVERIFY(saved->gear.contains(u"Gloves"_s));
+        QVERIFY(saved->fromPob.isEmpty());
+        QCOMPARE(saved->weights.value(u"# to maximum Life"_s), 7.0);
+        QCOMPARE(saved->buildProfile, u"minions"_s);
+        QVERIFY(saved->profilePicked);
+    }
+
+    void aNameYouGaveItStays()
+    {
+        Characters c;
+        c.list.load();
+        const AccountLink link{.realm = u"poe2"_s, .id = u"fakeid1"_s, .name = u"FakeOne"_s};
+        const QString id = c.list.importAccountGear(link, {});
+        QVERIFY(c.list.rename(id, u"My Witch"_s));
+        const AccountLink renamed{.realm = u"poe2"_s, .id = u"fakeid1"_s, .name = u"FakeTwo"_s};
+        QCOMPARE(c.list.importAccountGear(renamed, {}), id);
+        QCOMPARE(c.inFolder(id)->name, u"My Witch"_s);
+        QCOMPARE(c.inFolder(id)->linked->name, u"FakeTwo"_s);
+    }
+
+    void anAccountImportThatCantBeSavedSaysSo()
+    {
+        Characters c;
+        c.list.load();
+        const AccountLink link{.realm = u"poe2"_s, .id = u"fakeid1"_s, .name = u"FakeOne"_s};
+        const QString id = c.list.importAccountGear(link, {});
+        // a folder where the file is
+        QVERIFY(QDir(c.folder).exists());
+        QFile file(c.folder + u"/"_s + id + u".json"_s);
+        QVERIFY(file.remove());
+        QVERIFY(QDir(c.folder).mkdir(id + u".json"_s));
+        QVERIFY(c.list.importAccountGear(link, {}).isEmpty());
+        QVERIFY(c.list.error().startsWith(u"Couldn't save FakeOne: "_s));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestCharacterList)

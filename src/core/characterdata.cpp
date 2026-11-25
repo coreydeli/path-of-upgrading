@@ -61,6 +61,11 @@ QJsonObject toJson(const Character &character)
         o.insert(u"weighed"_s, toJson(*character.weighed));
     if (character.resists)
         o.insert(u"resists"_s, toJson(*character.resists));
+    if (character.linked) {
+        o.insert(u"account"_s, QJsonObject{{u"realm"_s, character.linked->realm},
+                                           {u"id"_s, character.linked->id},
+                                           {u"name"_s, character.linked->name}});
+    }
     return o;
 }
 
@@ -100,6 +105,12 @@ std::optional<Character> characterFromJson(const QJsonObject &o)
     c.chaosInoculation = o.value(u"chaosInoculation").toBool();
     c.wielding = {.twoHandedInOne = o.value(u"twoHandedInOne").toBool(),
                   .focusWithStaff = o.value(u"focusWithStaff").toBool()};
+    // files from before this had none, and a half-written one counts as none
+    if (const QJsonObject link = o.value(u"account").toObject(); !link.value(u"id").toString().isEmpty()) {
+        c.linked = AccountLink{.realm = link.value(u"realm").toString(u"poe2"_s),
+                               .id = link.value(u"id").toString(),
+                               .name = link.value(u"name").toString()};
+    }
     return c;
 }
 
