@@ -170,6 +170,11 @@ touch.
   the tests call `QTest::failOnWarning()`.
 - The window tests load every settings page under Dossier, and under Material in
   light and dark, so a change to the look has to keep all of them loading.
+- The main window's tests are split into `tst_mainwindow_<part>` programs, one
+  for each part of the window, which CTest runs side by side. A new window test
+  goes in the program for its part. A new part gets its own
+  `tst_mainwindow_<part>.cpp`, added in `tests/CMakeLists.txt` with
+  `pou_add_window_test`. The helpers they share are in `tests/mainwindowtest.h`.
 - Tests must not touch the clipboard, open a page in the browser, map visible
   windows, send XTest input, register real global shortcuts or set off desktop
   prompts.
