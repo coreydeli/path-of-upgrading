@@ -21,6 +21,7 @@
 
 #include <KLocalizedQmlContext>
 #include <QAccessible>
+#include <QColor>
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
@@ -321,6 +322,75 @@ private Q_SLOTS:
         QCOMPARE(w.opener->opened.last(), QUrl(u"https://github.com/productiontype/Spectral"_s));
     }
 
+    // the samples are drawn by the same functions the app draws with
+    void colorKeyPage()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        QObject *action = w.window->findChild<QObject *>(u"colorKeyAction"_s);
+        QVERIFY(action);
+        QCOMPARE(action->property("text").toString(), u"Color Key"_s);
+        // right after Item History
+        QObject *checked = w.window->findChild<QObject *>(u"checkedAction"_s);
+        QCOMPARE(action->parent(), checked->parent());
+        QVERIFY(w.show(u"colorKeyAction"_s));
+        QCOMPARE(w.page()->property("title").toString(), u"Color Key"_s);
+
+        const auto tint = [&](const QString &name) {
+            QObject *row = w.find(name);
+            QObject *sample = row ? row->findChild<QObject *>(u"sample"_s) : nullptr;
+            return sample ? sample->property("color").value<QColor>() : QColor();
+        };
+        QCOMPARE(tint(u"rarity:Normal"_s), QColor(u"#c8c8c8"_s));
+        QCOMPARE(tint(u"rarity:Magic"_s), QColor(u"#8888ff"_s));
+        QCOMPARE(tint(u"rarity:Rare"_s), QColor(u"#ffff77"_s));
+        QCOMPARE(tint(u"rarity:Unique"_s), QColor(u"#af6025"_s));
+        QVERIFY(tint(u"grade:S"_s) != tint(u"grade:A"_s));
+        QVERIFY(tint(u"grade:D"_s) != tint(u"grade:B"_s));
+        QVERIFY(tint(u"mark:corrupted"_s) != tint(u"mark:fractured"_s));
+        QVERIFY(w.find(u"frameSample"_s));
+
+        // the colorblind setting changes better and worse
+        const QColor good = tint(u"tone:good"_s);
+        QVERIFY(good != tint(u"tone:bad"_s));
+        w.app->overlayOptions()->setColorblind(true);
+        QCOMPARE(tint(u"tone:good"_s), QColor(u"#3daee9"_s));
+        QCOMPARE(tint(u"tone:bad"_s), QColor(u"#f67400"_s));
+        QCOMPARE(tint(u"tone:warning"_s), QColor(u"#fdbc4b"_s));
+        QVERIFY(tint(u"tone:good"_s) != good);
+
+        // a sample says what it means, not only its color
+        QObject *magic = w.find(u"rarity:Magic"_s)->findChild<QObject *>(u"sample"_s);
+        QCOMPARE(spoken(magic), u"Magic"_s);
+        QCOMPARE(spoken(w.find(u"tone:good"_s)->findChild<QObject *>(u"sample"_s)), u"Better"_s);
+    }
+
+    // chips are colored by their stat only in Pocket
+    void colorKeyChipsFollowThePocketLook()
+    {
+        Window w(true, false, QStringLiteral(COLORS));
+        QVERIFY(w.show(u"colorKeyAction"_s));
+        QVERIFY(isVisible(w.find(u"chipsOneColor"_s)));
+        const auto hasRow = [&] {
+            return search(w.page(), [](QObject *o) { return o->objectName() == u"chipKey:resistance"_s; });
+        };
+        QVERIFY(!hasRow());
+
+        w.app->appearance()->setDesign(u"pocket"_s);
+        QTRY_VERIFY(hasRow());
+        QVERIFY(!isVisible(w.find(u"chipsOneColor"_s)));
+        QSet<QRgb> colors;
+        for (const char *kind : {"resistance", "damage", "defence", "other"}) {
+            QObject *row = w.find(u"chipKey:"_s + QString::fromLatin1(kind));
+            QVERIFY(row);
+            colors.insert(
+                row->findChild<QObject *>(u"chipSample"_s)->property("tone").value<QColor>().rgba());
+        }
+        QCOMPARE(colors.size(), 4);
+
+        w.app->appearance()->setDesign(u"dossier"_s);
+        QTRY_VERIFY(isVisible(w.find(u"chipsOneColor"_s)));
+    }
+
     void helpPage()
     {
         Window w;
@@ -475,11 +545,11 @@ private Q_SLOTS:
     void pagesHaveHeaders()
     {
         Window w;
-        const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,    u"gearScoreAction"_s,
-                                     u"weightsAction"_s,    u"ignoredAction"_s, u"checkedAction"_s,
-                                     u"pobAction"_s,        u"tradeAction"_s,   u"overlayAction"_s,
-                                     u"appearanceAction"_s, u"updatesAction"_s, u"helpAction"_s,
-                                     u"aboutAction"_s};
+        const QStringList actions = {u"charactersAction"_s, u"gearAction"_s,       u"gearScoreAction"_s,
+                                     u"weightsAction"_s,    u"ignoredAction"_s,    u"checkedAction"_s,
+                                     u"colorKeyAction"_s,   u"pobAction"_s,        u"tradeAction"_s,
+                                     u"overlayAction"_s,    u"appearanceAction"_s, u"updatesAction"_s,
+                                     u"helpAction"_s,       u"aboutAction"_s};
         for (const QString &action : actions) {
             QVERIFY2(w.show(action), qPrintable(action));
             const QString title = w.page()->property("title").toString();
