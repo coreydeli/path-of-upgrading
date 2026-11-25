@@ -22,6 +22,12 @@ QUrl tradeSearchUrl(const QString &league);
 inline constexpr int tradeFetchLimit = 10;
 QUrl tradeFetchUrl(const QStringList &listingIds, const QString &searchId);
 
+// Where a request to the site goes on the API that takes the account's token
+// instead, a plain swap of the site's "/api/trade2" for the base address. Null
+// for an address that isn't one of the site's own API, so a token can't be
+// sent anywhere it wasn't meant for.
+QUrl tradeApiUrl(const QUrl &base, const QUrl &siteUrl);
+
 // A search on the site, to open in the browser.
 QUrl tradeResultsUrl(const QString &league, const QString &searchId);
 

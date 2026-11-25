@@ -57,6 +57,19 @@ QString poeScope()
     return u"account:characters"_s;
 }
 
+QString poeScopes(const PoeConfig &config)
+{
+    const QString trade = config.tradeScope.trimmed();
+    return trade.isEmpty() ? poeScope() : poeScope() + u' ' + trade;
+}
+
+bool PoeConfig::tradeComplete() const
+{
+    const QUrl url(tradeUrl);
+    return complete() && !tradeScope.trimmed().isEmpty() && url.isValid() && url.scheme() == u"https" &&
+           !url.host().isEmpty();
+}
+
 QString pkceChallenge(const QString &verifier)
 {
     return base64Url(QCryptographicHash::hash(verifier.toLatin1(), QCryptographicHash::Sha256));
@@ -89,7 +102,7 @@ QUrl authorizeUrl(const PoeConfig &config, quint16 port, const QString &state, c
     QUrlQuery query;
     query.addQueryItem(u"client_id"_s, config.clientId);
     query.addQueryItem(u"response_type"_s, u"code"_s);
-    query.addQueryItem(u"scope"_s, poeScope());
+    query.addQueryItem(u"scope"_s, poeScopes(config));
     query.addQueryItem(u"state"_s, state);
     query.addQueryItem(u"redirect_uri"_s, redirectUrl(port).toString());
     query.addQueryItem(u"code_challenge"_s, challenge);
@@ -120,7 +133,7 @@ QByteArray codeExchangeBody(const PoeConfig &config, const QString &code, const 
                  {u"grant_type"_s, u"authorization_code"_s},
                  {u"code"_s, code},
                  {u"redirect_uri"_s, redirectUrl(port).toString()},
-                 {u"scope"_s, poeScope()},
+                 {u"scope"_s, poeScopes(config)},
                  {u"code_verifier"_s, verifier}});
 }
 

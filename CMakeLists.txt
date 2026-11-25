@@ -67,6 +67,12 @@ option(POU_BETA "Build a beta, which has trade searches on until you turn them o
 set(POU_POE_CLIENT_ID "" CACHE STRING "The OAuth client id Path of Exile gave this app")
 set(POU_POE_CONTACT "" CACHE STRING "Who Path of Exile can reach about this app, for its User-Agent")
 set(POU_POE_REDIRECT_PORTS "" CACHE STRING "The loopback ports registered as redirects, comma separated")
+# And for searching the trade site as the linked account, which Path of Exile's
+# API can't do yet: the scope it will name for that and the https address the
+# searches will go to, in place of https://www.pathofexile.com/api/trade2. Leave
+# both empty until it does.
+set(POU_POE_TRADE_SCOPE "" CACHE STRING "The OAuth scope that allows trade searches, once there is one")
+set(POU_POE_TRADE_URL "" CACHE STRING "The API address trade searches go to as the account, once there is one")
 
 # The version this build says it is, as the release tag does: 0.9.0 or
 # 0.9.0-beta.4. The updater compares it with the releases on GitHub, and a
