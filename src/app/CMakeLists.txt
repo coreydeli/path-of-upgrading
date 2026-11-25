@@ -57,6 +57,7 @@ qt_add_qml_module(pou_app
     URI PathOfUpgrading
     QML_FILES
         qml/AboutPage.qml
+        qml/AccountCard.qml
         qml/UpdateDialog.qml
         qml/UpdatesPage.qml
         qml/InstallDialog.qml
