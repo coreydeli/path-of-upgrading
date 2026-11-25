@@ -17,6 +17,7 @@ add_library(pou_services STATIC
     tradeclient.cpp tradeclient.h
     tradedatastore.cpp tradedatastore.h
     tradesearcher.cpp tradesearcher.h
+    tradesignin.cpp tradesignin.h
     updatechecker.cpp updatechecker.h
     updatedownloader.cpp updatedownloader.h
 )
