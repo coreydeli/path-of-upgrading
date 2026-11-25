@@ -1,6 +1,7 @@
 find_package(ZLIB REQUIRED) # Path of Building codes are deflated
 
 add_library(pou_core STATIC
+    accountitems.cpp accountitems.h
     autoweights.cpp autoweights.h
     budget.cpp budget.h
     buildimport.cpp buildimport.h
@@ -24,6 +25,8 @@ add_library(pou_core STATIC
     parser.cpp parser.h
     placement.cpp placement.h
     places.cpp places.h
+    poeapi.cpp poeapi.h
+    poeoauth.cpp poeoauth.h
     pobbuild.cpp pobbuild.h
     pobeval.cpp pobeval.h
     pobguide.cpp pobguide.h

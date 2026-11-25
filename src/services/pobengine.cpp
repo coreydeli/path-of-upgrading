@@ -153,14 +153,23 @@ void PobEngine::load()
         start();
 }
 
-PobReply *PobEngine::ask(const QJsonObject &request)
+PobReply *PobEngine::importCharacter(const QJsonObject &character)
+{
+    PobReply *reply = ask({{u"cmd"_s, u"importCharacter"_s}, {u"character"_s, character}}, false);
+    // the import leaves its build loaded, so the one you play goes back in
+    if (m_process && !m_xml.isEmpty())
+        sendBuild();
+    return reply;
+}
+
+PobReply *PobEngine::ask(const QJsonObject &request, bool needsBuild)
 {
     auto *reply = new PobReply(this);
     if (m_state == State::Unavailable) {
         reply->fail(m_errorString);
         return reply;
     }
-    if (m_xml.isEmpty()) {
+    if (needsBuild && m_xml.isEmpty()) {
         reply->fail(u"There's no build to judge items with."_s);
         return reply;
     }
@@ -227,7 +236,8 @@ void PobEngine::start()
 
     static const QByteArray script = bridge();
     process->write(QByteArray::number(script.size()) + '\n' + script);
-    sendBuild();
+    if (!m_xml.isEmpty())
+        sendBuild();
 }
 
 void PobEngine::sendBuild()
@@ -245,7 +255,8 @@ void PobEngine::send(QJsonObject request, PobReply *reply)
     m_sent << Sent{.id = m_lastId,
                    .items = request.value(u"items").toArray().size(),
                    .asked = reply != nullptr,
-                   .load = request.value(u"cmd").toString() == u"load",
+                   .load = request.value(u"cmd").toString() == u"load" ||
+                           request.value(u"cmd").toString() == u"importCharacter",
                    .reply = reply};
     // when it's the one it's waiting on
     if (m_sent.size() == 1)

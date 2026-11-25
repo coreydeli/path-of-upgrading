@@ -62,6 +62,13 @@ struct FakePob
         return file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).object()
                                               : QJsonObject();
     }
+    // The character it was last asked to import.
+    QJsonObject imported() const
+    {
+        QFile file(folder.filePath(u"imported.json"_s));
+        return file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).object()
+                                              : QJsonObject();
+    }
 
     int count(const QString &name) const
     {

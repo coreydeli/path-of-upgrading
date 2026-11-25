@@ -2,6 +2,7 @@
 #pragma once
 
 #include "app/about.h"
+#include "app/accountcharacters.h"
 #include "app/activecharacter.h"
 #include "app/appearance.h"
 #include "app/buildimporter.h"
@@ -18,6 +19,7 @@
 #include "app/onboarding.h"
 #include "app/overlayoptions.h"
 #include "app/poboptions.h"
+#include "app/poeaccount.h"
 #include "app/recommendedupgrades.h"
 #include "app/resistances.h"
 #include "app/resultspanel.h"
@@ -31,10 +33,14 @@
 #include "app/tradesession.h"
 #include "app/updates.h"
 #include "core/pobinstall.h"
+#include "core/poeoauth.h"
 #include "platform/autostart.h"
 #include "platform/gamewatcher.h"
 #include "services/characterstore.h"
 #include "services/pobengine.h"
+#include "services/poeauth.h"
+#include "services/poeclient.h"
+#include "services/poeconfig.h"
 #include "services/ratesrefresher.h"
 #include "services/ratesstore.h"
 #include "services/tradeclient.h"
@@ -86,6 +92,8 @@ class App : public QObject
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
     Q_PROPERTY(pou::Updates *updates READ updates CONSTANT)
+    Q_PROPERTY(pou::PoeAccount *poeAccount READ poeAccount CONSTANT)
+    Q_PROPERTY(pou::AccountCharacters *accountCharacters READ accountCharacters CONSTANT)
     Q_PROPERTY(pou::StartOver *startOver READ startOver CONSTANT)
     Q_PROPERTY(pou::Appearance *appearance READ appearance CONSTANT)
     Q_PROPERTY(pou::Onboarding *onboarding READ onboarding CONSTANT)
@@ -107,6 +115,10 @@ public:
         bool mapsOffered = isBetaBuild();
         // Whether it can wipe what it keeps and start over, which a release leaves out.
         bool startOverOffered = isBetaBuild();
+        // Whether a Path of Exile account can be linked, which a release leaves
+        // out for now. It also needs what the build was registered with.
+        bool poeOffered = isBetaBuild();
+        PoeConfig poe = builtInPoeConfig();
     };
     // The app's own, in the desktop's usual places.
     static Paths defaultPaths();
@@ -160,6 +172,8 @@ public:
     }
     Updates *updates() { return &m_updatesModel; }
     StartOver *startOver() { return &m_startOver; }
+    PoeAccount *poeAccount() { return &m_poeAccount; }
+    AccountCharacters *accountCharacters() { return &m_accountCharacters; }
 
     CharacterList *characterList() { return &m_characterList; }
     BuildImporter *buildImporter() { return &m_buildImporter; }
@@ -210,6 +224,9 @@ private:
     std::unique_ptr<QNetworkAccessManager> m_network;
     TradeClient m_tradeClient;
     TradeSession m_tradeSession;
+    PoeAuth m_poeAuth;
+    PoeAccount m_poeAccount;
+    PoeClient m_poeClient;
     TradeDataStore m_tradeData;
     RatesStore m_rates;
     RatesRefresher m_ratesRefresher;
@@ -221,6 +238,7 @@ private:
     UpdateDownloader m_downloader;
     Updates m_updatesModel;
     CharacterList m_characterList;
+    AccountCharacters m_accountCharacters;
     BuildImporter m_buildImporter;
     GearList m_gearList;
     RecommendedUpgrades m_upgrades;

@@ -135,6 +135,39 @@ private Q_SLOTS:
         QCOMPARE(s.restarts, 0);
     }
 
+    void takesOutAnotherSecretToo()
+    {
+        Setup s;
+        s.keyring.secrets.insert(u"made-up-link"_s, u"not-a-real-token"_s);
+        const auto start = s.make();
+        start->addSecret(u"made-up-link"_s, u"Couldn't remove the link: %1"_s);
+
+        start->run();
+        QVERIFY(s.finished(*start));
+
+        QVERIFY(start->problems().isEmpty());
+        QVERIFY(s.keyring.secrets.isEmpty());
+        QCOMPARE(s.keyring.removals, 2);
+        QCOMPARE(s.restarts, 1);
+    }
+
+    void saysWhichSecretWontGo()
+    {
+        Setup s;
+        s.keyring.failure = u"The keyring is locked."_s;
+        const auto start = s.make();
+        start->addSecret(u"made-up-link"_s, u"Couldn't remove the link: %1"_s);
+
+        start->run();
+        QVERIFY(s.finished(*start));
+
+        QCOMPARE(start->problems().size(), 2);
+        QVERIFY(start->problems().at(0).contains(u"session ID"_s));
+        QCOMPARE(start->problems().at(1), u"Couldn't remove the link: The keyring is locked."_s);
+        // the files still went
+        QVERIFY(!QFileInfo::exists(s.places.settings));
+    }
+
     void aLockedKeyringIsSaidAndTheRestStillGoes()
     {
         Setup s;

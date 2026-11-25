@@ -76,6 +76,15 @@ private Q_SLOTS:
         QCOMPARE(limiter.wait(start), 10250ms);
     }
 
+    void learnsAnAppsLimits()
+    {
+        RateLimiter limiter;
+        limiter.learn({.client = u"4:10:60,20:60:300"_s, .clientState = u"3:10:0,3:60:0"_s}, start);
+        QCOMPARE(limiter.limits(), (QList<RateWindow>{{4, 10, 60}, {20, 60, 300}}));
+        // three of the four are used, so one is kept spare
+        QCOMPARE(limiter.wait(start), 10250ms);
+    }
+
     void countsRequestsFromElsewhere()
     {
         // four in the last 10 seconds, from the trade site in your browser

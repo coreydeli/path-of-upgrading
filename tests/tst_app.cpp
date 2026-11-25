@@ -1090,6 +1090,44 @@ private Q_SLOTS:
         }
     }
 
+    void linkingAnAccountNeedsTheBuildAndItsRegistration()
+    {
+        const PoeConfig registered{
+            .clientId = u"examplepou"_s, .contact = u"example.invalid"_s, .ports = {49082}};
+        // nothing registered, which is how this is built
+        Folders none;
+        none.paths.poeOffered = true;
+        none.paths.poe = {};
+        Running unregistered(none);
+        QVERIFY(!unregistered.app.poeAccount()->isOffered());
+
+        // registered, and in a beta
+        Folders on;
+        on.paths.poeOffered = true;
+        on.paths.poe = registered;
+        Running onApp(on);
+        QVERIFY(onApp.app.poeAccount()->isOffered());
+
+        // registered, and not in a beta
+        Folders off;
+        off.paths.poeOffered = false;
+        off.paths.poe = registered;
+        Running offApp(off);
+        QVERIFY(!offApp.app.poeAccount()->isOffered());
+
+        // each part of the registration is needed
+        for (PoeConfig part :
+             {PoeConfig{.clientId = {}, .contact = registered.contact, .ports = registered.ports},
+              PoeConfig{.clientId = registered.clientId, .contact = {}, .ports = registered.ports},
+              PoeConfig{.clientId = registered.clientId, .contact = registered.contact, .ports = {}}}) {
+            Folders partial;
+            partial.paths.poeOffered = true;
+            partial.paths.poe = part;
+            Running partialApp(partial);
+            QVERIFY(!partialApp.app.poeAccount()->isOffered());
+        }
+    }
+
     void mapsStartByTheBuild()
     {
         Folders folders;

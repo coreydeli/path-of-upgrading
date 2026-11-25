@@ -1,5 +1,6 @@
 # The app itself: the windows in QML and what they show in C++
 qt_add_library(pou_app STATIC
+    accountcharacters.cpp accountcharacters.h
     about.cpp about.h
     activecharacter.cpp activecharacter.h
     app.cpp app.h
@@ -30,6 +31,7 @@ qt_add_library(pou_app STATIC
     ownstyle.cpp ownstyle.h
     overlayoptions.cpp overlayoptions.h
     poboptions.cpp poboptions.h
+    poeaccount.cpp poeaccount.h
     popuphider.cpp popuphider.h
     recommendedupgrades.cpp recommendedupgrades.h
     resistances.cpp resistances.h

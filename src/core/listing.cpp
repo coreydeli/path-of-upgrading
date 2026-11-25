@@ -75,19 +75,41 @@ QString propertyLine(const QJsonObject &property)
 // line in "description" next to the affixes it rolled from.
 QString modText(const QJsonValue &mod)
 {
-    if (mod.isObject())
-        return cleanListingText(mod.toObject().value(u"description").toString());
+    if (mod.isObject()) {
+        const QJsonObject o = mod.toObject();
+        // the account's own items call the line its text
+        return cleanListingText(o.contains(u"description") ? o.value(u"description").toString()
+                                                           : o.value(u"text").toString());
+    }
     return cleanListingText(mod.toString());
+}
+
+// Whether a mod in the explicit list says it's fractured or desecrated, as the
+// account's items do, in place of listing it apart.
+QStringView flagOf(const QJsonValue &mod)
+{
+    if (!mod.isObject())
+        return {};
+    const QJsonObject o = mod.toObject();
+    if (o.value(u"fractured").toBool())
+        return u"fracturedMods";
+    return o.value(u"desecrated").toBool() ? u"desecratedMods" : QStringView();
 }
 
 // The texts of one of the site's lists of mods.
 QStringList modTexts(const QJsonObject &item, QStringView field)
 {
     QStringList texts;
-    for (const QJsonValue &mod : item.value(field).toArray()) {
-        if (const QString text = modText(mod); !text.isEmpty())
-            texts << text;
-    }
+    const auto take = [&](QStringView from, const auto &wanted) {
+        for (const QJsonValue &mod : item.value(from).toArray()) {
+            if (const QString text = modText(mod); !text.isEmpty() && wanted(mod))
+                texts << text;
+        }
+    };
+    // a flagged mod belongs to its own list, wherever it came in
+    take(field, [&](const QJsonValue &mod) { return field != u"explicitMods" || flagOf(mod).isEmpty(); });
+    if (field == u"fracturedMods" || field == u"desecratedMods")
+        take(u"explicitMods", [&](const QJsonValue &mod) { return flagOf(mod) == field; });
     return texts;
 }
 
@@ -154,8 +176,11 @@ QList<ListingProperty> baseProperties(const Item &item)
 
 Item listingToItem(const QJsonObject &result, const QString &itemClass)
 {
-    const QJsonObject item = result.value(u"item").toObject();
+    return itemFromTradeJson(result.value(u"item").toObject(), itemClass);
+}
 
+Item itemFromTradeJson(const QJsonObject &item, const QString &itemClass)
+{
     QStringList header = {u"Item Class: "_s + (itemClass.isEmpty() ? u"Unknown"_s : itemClass),
                           u"Rarity: "_s + rarityOf(item)};
     if (const QString name = cleanListingText(item.value(u"name").toString()); !name.isEmpty())
