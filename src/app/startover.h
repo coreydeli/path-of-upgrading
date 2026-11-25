@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <QList>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -48,8 +49,11 @@ public:
               GlobalShortcuts *shortcuts, QObject *parent = nullptr);
 
     void setRestart(const Restart &restart) { m_restart = restart; }
+    // Another secret in the keyring to take out too, with what to say when it
+    // can't be, which has a %1 for the reason.
+    void addSecret(const QString &name, const QString &problem);
 
-    // Forgets the hotkeys, takes out the autostart entry and the session ID,
+    // Forgets the hotkeys, takes out the autostart entry and the secrets in the keyring,
     // then removes the files and starts the app again, which opens on the
     // setup guide. When something can't be removed the rest still goes, and
     // it stays open to say what.
@@ -63,6 +67,13 @@ Q_SIGNALS:
     void changed();
 
 private:
+    struct Secret
+    {
+        QString name;
+        QString problem;
+    };
+
+    void removeSecret(qsizetype index);
     void removeFiles();
 
     bool m_offered;
@@ -73,6 +84,7 @@ private:
     Restart m_restart;
     bool m_busy = false;
     QStringList m_problems;
+    QList<Secret> m_secretNames;
 };
 
 } // namespace pou

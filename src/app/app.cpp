@@ -69,6 +69,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_network(std::move(network))
     , m_tradeClient(m_network.get())
     , m_tradeSession(m_secrets.get(), &m_tradeClient, m_opener.get())
+    , m_poeAuth(*m_network, paths.poe)
+    , m_poeAccount(paths.poeOffered && paths.poe.complete(), m_secrets.get(), &m_poeAuth, m_opener.get())
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_ratesRefresher(&m_rates)
@@ -106,6 +108,9 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_appearance(&m_settings, paths.colors)
     , m_onboarding(&m_settings, &m_characterList, &m_overlayOptions)
 {
+    if (m_poeAccount.isOffered())
+        m_startOver.addSecret(PoeAccount::secretName(),
+                              u"Couldn't remove your Path of Exile link from the keyring: %1"_s);
     m_characterList.load();
     // which needs the characters
     m_onboarding.decide();
