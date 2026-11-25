@@ -2,6 +2,7 @@
 #include "core/tradesite.h"
 #include "fakenetwork.h"
 #include "services/network.h"
+#include "services/poeclient.h"
 #include "services/tradeclient.h"
 #include "services/tradesignin.h"
 
@@ -58,6 +59,26 @@ public:
         });
     }
 };
+
+// The account's tokens, a moment after they're asked for, one new one after
+// each that's rejected.
+class FakeTokens : public PoeTokenSource
+{
+public:
+    QString error; // when it can't give one
+    int asked = 0;
+    int rejected = 0;
+
+    void withToken(const QObject *context, Handler handler) override
+    {
+        ++asked;
+        const QString token = error.isEmpty() ? u"fake-token-%1"_s.arg(rejected + 1) : QString();
+        QTimer::singleShot(0, context, [handler, token, this] { handler(token, error); });
+    }
+    void rejectToken() override { ++rejected; }
+};
+
+const QUrl apiBase(u"https://api.example.invalid/trade"_s);
 
 } // namespace
 
@@ -597,6 +618,138 @@ private Q_SLOTS:
             QVERIFY(!sent.request.attribute(QNetworkRequest::CookieSaveControlAttribute).isValid());
             QVERIFY(!sent.request.attribute(QNetworkRequest::RedirectPolicyAttribute).isValid());
         }
+    }
+
+    void theAccountsTokenGoesToItsOwnAddressAndNowhereElse()
+    {
+        FakeNetwork network;
+        FakeTokens tokens;
+        TradeClient client(&network);
+        client.setSignIn(std::make_unique<BearerSignIn>(&tokens, apiBase));
+        QVERIFY(finishes(client.search(u"Standard"_s, {})));
+        QVERIFY(finishes(client.fetch({u"x1"_s}, u"Ab3dE9"_s)));
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        QCOMPARE(tokens.asked, 3);
+        QCOMPARE(network.sent.size(), 3);
+        QCOMPARE(network.sent.at(0).request.url(),
+                 QUrl(u"https://api.example.invalid/trade/search/poe2/Standard"_s));
+        QCOMPARE(network.sent.at(2).request.url(), QUrl(u"https://api.example.invalid/trade/data/leagues"_s));
+        for (const FakeNetwork::Sent &sent : std::as_const(network.sent)) {
+            QCOMPARE(sent.request.url().host(), u"api.example.invalid"_s);
+            QCOMPARE(sent.request.rawHeader("Authorization"), "Bearer fake-token-1");
+            // no cookie, from us or the jar
+            QVERIFY(!sent.request.hasRawHeader("Cookie"));
+            QCOMPARE(sent.request.attribute(QNetworkRequest::CookieLoadControlAttribute).toInt(),
+                     int(QNetworkRequest::Manual));
+            // and a redirect to another host doesn't get the token
+            QCOMPARE(sent.request.attribute(QNetworkRequest::RedirectPolicyAttribute).toInt(),
+                     int(QNetworkRequest::SameOriginRedirectPolicy));
+        }
+    }
+
+    void theBearerSignInTurnsDownWhatIsntTheSitesOwn()
+    {
+        FakeTokens tokens;
+        BearerSignIn signIn(&tokens, apiBase);
+        QObject context;
+        for (const QString &address : {u"https://elsewhere.invalid/api/trade2/data/stats"_s,
+                                       u"http://www.pathofexile.com/api/trade2/data/stats"_s,
+                                       u"https://www.pathofexile.com/oauth/token"_s}) {
+            int calls = 0;
+            QString why;
+            signIn.sign(QNetworkRequest(QUrl(address)), &context,
+                        [&](const QNetworkRequest &, const QString &e) {
+                            ++calls;
+                            why = e;
+                        });
+            // at once, and with no token asked for
+            QCOMPARE(calls, 1);
+            QVERIFY(!why.isEmpty());
+        }
+        QCOMPARE(tokens.asked, 0);
+    }
+
+    void withoutATokenNothingIsSent()
+    {
+        FakeNetwork network;
+        FakeTokens tokens;
+        tokens.error = u"Your Path of Exile link has run out."_s;
+        TradeClient client(&network);
+        client.setSignIn(std::make_unique<BearerSignIn>(&tokens, apiBase));
+        TradeReply *reply = client.search(u"Standard"_s, {});
+        QVERIFY(finishes(reply));
+        QCOMPARE(reply->error(), TradeReply::Error::Rejected);
+        QCOMPARE(reply->errorString(), u"Your Path of Exile link has run out."_s);
+        QCOMPARE(network.sent.size(), 0);
+        QCOMPARE(tokens.rejected, 0);
+    }
+
+    void aRefusedTokenIsReplacedOnceAndTheRequestTriedAgain()
+    {
+        FakeNetwork network;
+        const QJsonObject found{{u"id"_s, u"Ab3dE9"_s}, {u"total"_s, 0}, {u"result"_s, QJsonArray()}};
+        network.answers << FakeAnswer{.status = 401, .body = "{}"} << FakeAnswer{.body = json(found)};
+        FakeTokens tokens;
+        TradeClient client(&network);
+        client.setSignIn(std::make_unique<BearerSignIn>(&tokens, apiBase));
+        const QJsonObject body{{u"query"_s, QJsonObject{{u"type"_s, u"Sapphire Ring"_s}}}};
+        TradeReply *reply = client.search(u"Standard"_s, body);
+        QVERIFY(finishes(reply));
+        QCOMPARE(reply->error(), TradeReply::Error::None);
+        QCOMPARE(reply->answer(), found);
+        QCOMPARE(tokens.rejected, 1);
+        QCOMPARE(tokens.asked, 2);
+        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(network.sent.at(0).request.rawHeader("Authorization"), "Bearer fake-token-1");
+        QCOMPARE(network.sent.at(1).request.rawHeader("Authorization"), "Bearer fake-token-2");
+        // the same request, body and all
+        QCOMPARE(network.sent.at(1).request.url(), network.sent.at(0).request.url());
+        QCOMPARE(QJsonDocument::fromJson(network.sent.at(1).body).object(), body);
+    }
+
+    void aSecondRefusalIsTheAnswerAndNothingIsSentAgain()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.status = 403, .body = "{}"} << FakeAnswer{.status = 403, .body = "{}"};
+        FakeTokens tokens;
+        TradeClient client(&network);
+        // as a site that says nothing useful is given a rest
+        client.setRest(1ms);
+        client.setSignIn(std::make_unique<BearerSignIn>(&tokens, apiBase));
+        TradeReply *reply = client.data(u"stats"_s);
+        QVERIFY(finishes(reply));
+        QVERIFY(reply->error() != TradeReply::Error::None);
+        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(tokens.rejected, 1);
+        QCOMPARE(tokens.asked, 2);
+        // and the next request is a new one, with its own once
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        QCOMPARE(network.sent.size(), 3);
+    }
+
+    void onlyARefusalIsTriedAgain()
+    {
+        FakeNetwork network;
+        FakeTokens tokens;
+        TradeClient client(&network);
+        client.setRest(1ms);
+        client.setSignIn(std::make_unique<BearerSignIn>(&tokens, apiBase));
+        network.answers << FakeAnswer{.status = 400, .body = siteError(u"Unknown item base"_s)}
+                        << FakeAnswer{.status = 500, .body = "oops"};
+        QVERIFY(finishes(client.data(u"stats"_s)));
+        QVERIFY(finishes(client.data(u"leagues"_s)));
+        QCOMPARE(network.sent.size(), 2);
+        QCOMPARE(tokens.rejected, 0);
+    }
+
+    void aSessionIdIsNeverTriedAgain()
+    {
+        FakeNetwork network;
+        network.answers << FakeAnswer{.status = 403, .body = "{}"};
+        TradeClient client(&network);
+        client.setSessionId(u"0123456789abcdef"_s);
+        QVERIFY(finishes(client.data(u"stats"_s)));
+        QCOMPARE(network.sent.size(), 1);
     }
 
     void aHandedSignInSignsEveryKindOfRequest()

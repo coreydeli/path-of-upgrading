@@ -31,6 +31,7 @@
 #include "app/tradeoptions.h"
 #include "app/traderesults.h"
 #include "app/tradesession.h"
+#include "app/tradesigninchoice.h"
 #include "app/updates.h"
 #include "core/pobinstall.h"
 #include "core/poeoauth.h"
@@ -189,6 +190,7 @@ public:
     bool mapsOffered() const { return m_mapsOffered; }
     TradeOptions *tradeOptions() { return &m_tradeOptions; }
     TradeSession *tradeSession() { return &m_tradeSession; }
+    TradeSignInChoice *tradeSignIn() { return &m_tradeSignIn; }
     OverlayOptions *overlayOptions() { return &m_overlayOptions; }
     PobOptions *pobOptions() { return &m_pobOptions; }
     Appearance *appearance() { return &m_appearance; }
@@ -226,6 +228,7 @@ private:
     TradeSession m_tradeSession;
     PoeAuth m_poeAuth;
     PoeAccount m_poeAccount;
+    TradeSignInChoice m_tradeSignIn;
     PoeClient m_poeClient;
     TradeDataStore m_tradeData;
     RatesStore m_rates;

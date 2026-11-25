@@ -50,6 +50,9 @@ public:
     Q_INVOKABLE void save(const QString &text);
     // Takes it out of the keyring and signs out.
     Q_INVOKABLE void forget();
+    // Signs the trade client in with the saved id again, as when another
+    // sign in has had it.
+    void useSessionId();
     // For the button that opens the page you sign in to the website on.
     Q_INVOKABLE void openSignIn();
 

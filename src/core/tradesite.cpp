@@ -35,6 +35,22 @@ QUrl tradeDataUrl(const QString &name)
     return siteUrl(u"/api/trade2/data/"_s + encoded(name));
 }
 
+QUrl tradeApiUrl(const QUrl &base, const QUrl &siteUrl)
+{
+    const QString prefix = u"/api/trade2/"_s;
+    if (!base.isValid() || base.scheme() != u"https" || base.host().isEmpty() ||
+        siteUrl.scheme() != u"https" || siteUrl.host() != u"www.pathofexile.com" ||
+        !siteUrl.path(QUrl::FullyEncoded).startsWith(prefix))
+        return {};
+    QString path = base.path(QUrl::FullyEncoded);
+    if (path.endsWith(u'/'))
+        path.chop(1);
+    QUrl url = base;
+    url.setPath(path + u'/' + siteUrl.path(QUrl::FullyEncoded).mid(prefix.size()), QUrl::TolerantMode);
+    url.setQuery(siteUrl.query(QUrl::FullyEncoded), QUrl::TolerantMode);
+    return url;
+}
+
 QUrl tradeSearchUrl(const QString &league)
 {
     return siteUrl(u"/api/trade2/search/poe2/"_s + encoded(league));

@@ -24,6 +24,14 @@ constexpr int maxRateMinutes = 60;
 // release leaves them out, whatever the settings say.
 bool isBetaBuild();
 
+// Who the trade site is told is searching.
+enum class TradeSignInKind {
+    Session, // the session ID you saved
+    Account, // the linked Path of Exile account, where the build has that
+};
+QString tradeSignInId(TradeSignInKind kind);
+TradeSignInKind tradeSignInFromId(QStringView id);
+
 struct TradeSettings
 {
     bool enabled = true; // search the trade site at all
@@ -33,6 +41,7 @@ struct TradeSettings
     bool autoRate = true; // or poe.ninja's instead
     // How often poe.ninja's rate is asked for again while that's in use.
     int rateMinutes = 10;
+    TradeSignInKind signIn = TradeSignInKind::Session;
 
     friend bool operator==(const TradeSettings &, const TradeSettings &) = default;
 };

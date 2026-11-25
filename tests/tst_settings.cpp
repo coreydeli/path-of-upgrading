@@ -135,6 +135,7 @@ private Q_SLOTS:
         s.trade.budget = {2, 15, Currency::Exalted, 410};
         s.trade.autoRate = false;
         s.trade.rateMinutes = 25;
+        s.trade.signIn = TradeSignInKind::Account;
         s.pob.enabled = false;
         s.pob.location = u"/opt/path-of-building"_s;
         s.pob.damageWeight = 0.3;
@@ -200,6 +201,7 @@ private Q_SLOTS:
         store.setValue(u"pob/damageWeight"_s, -2);
         store.setValue(u"trade/budgetMax"_s, u"nan"_s);
         store.setValue(u"trade/status"_s, u"whenever"_s);
+        store.setValue(u"trade/signIn"_s, u"carrier pigeon"_s);
         store.setValue(u"overlay/position"_s, u"sideways"_s);
         store.setValue(u"appearance/theme"_s, u"neon"_s);
         store.setValue(u"appearance/decorations"_s, u"lots"_s);
@@ -213,6 +215,7 @@ private Q_SLOTS:
         QCOMPARE(s.pob.damageWeight, 0.0);
         QCOMPARE(s.trade.budget.max, 0.0);
         QCOMPARE(s.trade.status, ListingStatus::Available);
+        QCOMPARE(s.trade.signIn, TradeSignInKind::Session);
         QCOMPARE(s.overlay.position, PopupPosition::Cursor);
         QCOMPARE(s.appearance.colors, ColorTheme::App);
         QCOMPARE(s.appearance.decorations, Decorations::Full);

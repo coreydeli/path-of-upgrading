@@ -14,6 +14,7 @@
 #include <QStringList>
 #include <QTimer>
 #include <chrono>
+#include <functional>
 #include <memory>
 
 class QNetworkAccessManager;
@@ -144,6 +145,10 @@ private:
     // Sends what can go, and fails what would wait too long.
     void pump(Queue &queue);
     void start(Queue &queue, const Queue::Waiting &waiting);
+    // Signs the request and sends it, again once when the sign in says it
+    // was refused. The settle counts it off the queue.
+    void dispatch(Queue &queue, TradeReply *trade, const QNetworkRequest &request, const QByteArray &body,
+                  bool retried, const std::function<void()> &settle);
     void answered(Queue &queue, TradeReply *trade, QNetworkReply *reply);
 
     QNetworkAccessManager *m_network;

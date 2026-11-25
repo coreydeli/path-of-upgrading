@@ -122,6 +122,11 @@ void TradeSession::forget()
     });
 }
 
+void TradeSession::useSessionId()
+{
+    m_client->setSessionId(m_id);
+}
+
 void TradeSession::begin()
 {
     m_busy = true;

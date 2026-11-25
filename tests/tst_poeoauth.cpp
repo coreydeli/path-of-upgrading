@@ -32,6 +32,45 @@ private Q_SLOTS:
         QVERIFY(parsePorts(u"").isEmpty());
     }
 
+    void tradeScopeIsOnlyAskedForWhenTheBuildHasOne()
+    {
+        QCOMPARE(poeScopes(config), u"account:characters"_s);
+        PoeConfig withTrade = config;
+        withTrade.tradeScope = u"account:made_up_trade"_s;
+        QCOMPARE(poeScopes(withTrade), u"account:characters account:made_up_trade"_s);
+        QCOMPARE(QUrlQuery(authorizeUrl(withTrade, 49082, u"st4te"_s, u"chal"_s)).queryItemValue(u"scope"_s),
+                 u"account:characters account:made_up_trade"_s);
+        const QUrlQuery body(QString::fromUtf8(codeExchangeBody(withTrade, u"abc"_s, u"ver"_s, 49082)));
+        QCOMPARE(body.queryItemValue(u"scope"_s), u"account:characters account:made_up_trade"_s);
+        // blank is none
+        withTrade.tradeScope = u"  "_s;
+        QCOMPARE(poeScopes(withTrade), u"account:characters"_s);
+    }
+
+    void tradeNeedsAScopeAndAnHttpsAddress()
+    {
+        PoeConfig trade = config;
+        QVERIFY(!trade.tradeComplete());
+        trade.tradeScope = u"account:made_up_trade"_s;
+        QVERIFY(!trade.tradeComplete());
+        trade.tradeUrl = u"https://api.example.invalid/trade"_s;
+        QVERIFY(trade.tradeComplete());
+        // not a place the token may go in the clear
+        PoeConfig plain = trade;
+        plain.tradeUrl = u"http://api.example.invalid/trade"_s;
+        QVERIFY(!plain.tradeComplete());
+        PoeConfig noHost = trade;
+        noHost.tradeUrl = u"https:///trade"_s;
+        QVERIFY(!noHost.tradeComplete());
+        PoeConfig noScope = trade;
+        noScope.tradeScope.clear();
+        QVERIFY(!noScope.tradeComplete());
+        // and the account has to be registered
+        PoeConfig unregistered = trade;
+        unregistered.clientId.clear();
+        QVERIFY(!unregistered.tradeComplete());
+    }
+
     void needsEverything()
     {
         QVERIFY(config.complete());
