@@ -41,6 +41,8 @@ AccountCharacters::AccountCharacters(PoeClient *client, PoeAccount *account, Cha
     };
     connect(characters, &CharacterList::countChanged, this, refreshImported);
     connect(characters, &CharacterList::loaded, this, refreshImported);
+    // an import adds the character before it's linked, so its link comes after
+    connect(characters, &CharacterList::dataChanged, this, refreshImported);
 }
 
 int AccountCharacters::rowCount(const QModelIndex &parent) const

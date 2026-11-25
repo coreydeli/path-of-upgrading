@@ -16,6 +16,8 @@ ColumnsPage {
     required property App app
     readonly property CharacterList characters: app.characterList
     readonly property BuildImporter importer: app.buildImporter
+    readonly property PoeAccount account: app.poeAccount
+    readonly property AccountCharacters accountCharacters: app.accountCharacters
 
     // for the window to show the gear page
     signal gearAsked
@@ -26,11 +28,23 @@ ColumnsPage {
     // it and the builds you can import for it. Narrower, it's one column.
     maxColumns: wide ? 2 : 3
 
-    // for builds you've saved in Path of Building since
-    onIsCurrentPageChanged: {
-        if (isCurrentPage)
-            importer.refreshBuilds();
+    // A page waiting outside the stack counts as current to Kirigami, so it
+    // has to be shown too.
+    function lookedAt(): void {
+        if (!isCurrentPage || !visible)
+            return;
+        // for builds you've saved in Path of Building since
+        importer.refreshBuilds();
+        // the keyring is only asked once someone looks at the card
+        if (account.offered) {
+            account.load();
+            if (account.linked && !accountCharacters.loaded)
+                accountCharacters.refresh();
+        }
     }
+
+    onIsCurrentPageChanged: lookedAt()
+    onVisibleChanged: lookedAt()
 
     SectionHeader {
         column: charactersPage.wide ? 0 : -1
@@ -193,6 +207,29 @@ ColumnsPage {
             description: charactersPage.characters.problems.join("\n")
             textItem.wrapMode: Text.Wrap
             descriptionItem.wrapMode: Text.Wrap
+        }
+    }
+
+    SectionHeader {
+        objectName: "accountHeader"
+        visible: charactersPage.account.offered
+        column: charactersPage.wide ? 0 : -1
+        title: qsTr("Your Path of Exile account")
+    }
+
+    AccountCard {
+        visible: charactersPage.account.offered
+        account: charactersPage.account
+        characters: charactersPage.accountCharacters
+    }
+
+    // the list comes once the link is there
+    Connections {
+        target: charactersPage.account
+
+        function onLinkedChanged() {
+            if (charactersPage.account.linked)
+                charactersPage.accountCharacters.refresh();
         }
     }
 
