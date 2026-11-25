@@ -12,6 +12,8 @@ ColumnsPage {
 
     required property TradeOptions options
     required property TradeSession session
+    // which sign in the searches use, when the build can search as the account
+    required property TradeSignInChoice signIn
 
     // the steps for finding the session ID
     property bool showFindSession: false
@@ -31,6 +33,16 @@ ColumnsPage {
         {
             value: "any",
             text: qsTr("Any, even offline")
+        }
+    ]
+    readonly property var signIns: [
+        {
+            value: "session",
+            text: qsTr("Your session ID")
+        },
+        {
+            value: "account",
+            text: qsTr("Your Path of Exile account")
         }
     ]
     readonly property var currencies: [
@@ -211,6 +223,28 @@ ColumnsPage {
     }
 
     Sheet {
+        FormCard.FormComboBoxDelegate {
+            objectName: "signInBox"
+            visible: tradePage.signIn.offered
+            text: qsTr("Search with")
+            textRole: "text"
+            valueRole: "value"
+            model: tradePage.signIns
+            currentIndex: tradePage.signIn.useAccount ? 1 : 0
+            onActivated: tradePage.signIn.useAccount = currentValue === "account"
+        }
+
+        FormCard.FormTextDelegate {
+            objectName: "signInStatus"
+            visible: tradePage.signIn.offered
+            text: tradePage.signIn.status
+            textItem.wrapMode: Text.Wrap
+        }
+
+        RowRule {
+            visible: tradePage.signIn.offered
+        }
+
         FormCard.FormTextDelegate {
             objectName: "sessionStatus"
             text: tradePage.session.status
