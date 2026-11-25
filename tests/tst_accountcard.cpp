@@ -41,6 +41,13 @@ namespace {
 // made-up
 const PoeConfig registered{.clientId = u"examplepou"_s, .contact = u"example.invalid"_s, .ports = {49082}};
 
+// and with what the build needs to search the trade site as the account
+const PoeConfig registeredForTrade{.clientId = u"examplepou"_s,
+                                   .contact = u"example.invalid"_s,
+                                   .ports = {49082},
+                                   .tradeScope = u"account:made_up_trade"_s,
+                                   .tradeUrl = u"https://api.example.invalid/trade"_s};
+
 const QByteArray list =
     R"({"characters":[)"
     R"({"id":"aa","name":"FakeOne","class":"Stormweaver","league":"Standard","level":92,"current":true},)"
@@ -114,7 +121,8 @@ struct Window
     std::unique_ptr<QQuickWindow> window;
     FakeAnswer oneAnswer{.body = wearing};
 
-    explicit Window(bool offered = true, bool linked = false)
+    explicit Window(bool offered = true, bool linked = false, const PoeConfig &config = registered,
+                    bool tradeOffered = false)
     {
         network->route = [this](const QNetworkRequest &request) -> std::optional<FakeAnswer> {
             const QString host = request.url().host();
@@ -151,11 +159,11 @@ struct Window
                        .cache = dir.filePath(u"cache"_s),
                        .autostart = dir.filePath(u"autostart/made-up.desktop"_s),
                        .colors = {},
-                       .tradeOffered = false,
+                       .tradeOffered = tradeOffered,
                        .mapsOffered = false,
                        .startOverOffered = false,
                        .poeOffered = offered,
-                       .poe = registered});
+                       .poe = config});
         app->updates()->setInstallKind(InstallKind::Source);
         KLocalization::setupLocalizedContext(&qml);
         QQmlComponent main(&qml, u"PathOfUpgrading"_s, u"Main"_s);
@@ -223,6 +231,44 @@ private Q_SLOTS:
     }
 
     void init() { QTest::failOnWarning(); }
+
+    void theTradePageOffersTheAccountOnlyWhenTheBuildCan()
+    {
+        // an account, but no scope or address for trade searches
+        Window without(true, false, registered, true);
+        QVERIFY(without.show(u"tradeAction"_s));
+        QVERIFY(without.shown());
+        QVERIFY(isVisible(without.find(u"sessionStatus"_s)));
+        QVERIFY(!isVisible(without.find(u"signInBox"_s)));
+        QVERIFY(!isVisible(without.find(u"signInStatus"_s)));
+        // and not in a build that doesn't offer the account at all
+        Window release(false, false, registeredForTrade, true);
+        QVERIFY(release.show(u"tradeAction"_s));
+        QVERIFY(release.shown());
+        QVERIFY(!isVisible(release.find(u"signInBox"_s)));
+    }
+
+    void theTradePageLetsYouPickTheAccount()
+    {
+        Window w(true, true, registeredForTrade, true);
+        QVERIFY(w.show(u"tradeAction"_s));
+        QVERIFY(w.shown());
+        QObject *box = w.find(u"signInBox"_s);
+        QVERIFY(isVisible(box));
+        QCOMPARE(box->property("currentIndex").toInt(), 0);
+        QCOMPARE(w.find(u"signInStatus"_s)->property("text").toString(),
+                 u"Searches are made with your session ID."_s);
+        // the session ID is still there to fill in
+        QVERIFY(isVisible(w.find(u"sessionStatus"_s)));
+
+        box->setProperty("currentIndex", 1);
+        QVERIFY(QMetaObject::invokeMethod(box, "activated", Q_ARG(int, 1)));
+        QVERIFY(w.app->tradeSignIn()->useAccount());
+        QCOMPARE(SettingsStore(w.dir.filePath(u"settings.conf"_s)).settings().trade.signIn,
+                 TradeSignInKind::Account);
+        QTRY_COMPARE(w.find(u"signInStatus"_s)->property("text").toString(),
+                     u"Your Path of Exile account isn't linked yet. Link it on the Characters page."_s);
+    }
 
     void nothingShowsWhenItIsNotOffered()
     {
