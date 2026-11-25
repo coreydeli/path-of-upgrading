@@ -174,6 +174,11 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   squares off the cut corners, leaves out the popup's fade and rise, and shows a
   listing's gear score as text rather than in a ring. In the other looks, Plain
   leaves out the animation.
+- Has a Color Key page in the sidebar, after Item History, that says what each
+  color in the app means: the item rarities, the gear score grades, the marks
+  under an item, the frame on a picked gear slot, the stat chips, better and
+  worse, and red text. Its samples are drawn by the app's own code, so they
+  follow your look and the colorblind setting.
 - Has an About page and a Help page in the sidebar's Settings group. About shows the version
   and edition, the license, the Qt and KDE Frameworks versions, where Path of Building was
   found, links to the source, the releases and the issue tracker, and the credits. Help opens
