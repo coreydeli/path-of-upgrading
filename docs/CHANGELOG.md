@@ -39,6 +39,8 @@ version that comes out.
   notification says which version it was and why. Its Open button shows the
   window, and you can turn it off in your desktop's notification settings, as
   "An update didn't finish".
+- A Color Key page in the sidebar, after Item History, says what each color in
+  the app means. Its samples follow your look and the colorblind setting.
 
 ### Changed
 
