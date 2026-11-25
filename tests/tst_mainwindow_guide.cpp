@@ -109,11 +109,15 @@ private Q_SLOTS:
 
     void setupGuideStaysAwayFromThoseWhoUseTheApp()
     {
-        Settings settings;
-        settings.trade.league.name = u"Standard"_s;
-        Window w(true, false, {}, settings);
-        QVERIFY(!w.guide()->property("visible").toBool());
-        QVERIFY(!w.app->onboarding()->isPending());
+        // one window at a time: on Debian's Qt 6.8, a second window made beside
+        // the first now and then fails on Kirigami's drawer
+        {
+            Settings settings;
+            settings.trade.league.name = u"Standard"_s;
+            Window w(true, false, {}, settings);
+            QVERIFY(!w.guide()->property("visible").toBool());
+            QVERIFY(!w.app->onboarding()->isPending());
+        }
         // and the usual window is the same
         Window done;
         QVERIFY(!done.guide()->property("visible").toBool());
