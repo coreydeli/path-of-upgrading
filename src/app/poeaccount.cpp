@@ -286,6 +286,12 @@ void PoeAccount::answerWaiters(const QString &token, const QString &error)
     }
 }
 
+void PoeAccount::rejectToken()
+{
+    m_access.clear();
+    m_accessUntil = {};
+}
+
 void PoeAccount::withToken(const QObject *context, TokenHandler handler)
 {
     const auto later = [context](TokenHandler handler, QString token, QString error) {

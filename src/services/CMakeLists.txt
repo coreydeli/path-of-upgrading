@@ -7,6 +7,7 @@ add_library(pou_services STATIC
     network.cpp network.h
     pobengine.cpp pobengine.h
     poeauth.cpp poeauth.h
+    poeclient.cpp poeclient.h
     poeconfig.cpp poeconfig.h
     pobfinder.cpp pobfinder.h
     ratesrefresher.cpp ratesrefresher.h

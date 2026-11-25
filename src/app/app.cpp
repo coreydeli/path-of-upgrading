@@ -71,6 +71,8 @@ App::App(QQmlEngine *qml, std::unique_ptr<GameInput> input, std::unique_ptr<Glob
     , m_tradeSession(m_secrets.get(), &m_tradeClient, m_opener.get())
     , m_poeAuth(*m_network, paths.poe)
     , m_poeAccount(paths.poeOffered && paths.poe.complete(), m_secrets.get(), &m_poeAuth, m_opener.get())
+    , m_poeClient(m_network.get(), paths.poe, &m_poeAccount)
+    , m_accountCharacters(&m_poeClient, &m_poeAccount)
     , m_tradeData(&m_tradeClient, paths.cache + u"/trade"_s)
     , m_rates(m_network.get(), paths.cache + u"/rates"_s)
     , m_ratesRefresher(&m_rates)
