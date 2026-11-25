@@ -41,6 +41,12 @@ The beta releases add `-DPOU_BETA=ON` to the configure step, which turns trade
 searches on. Without it, a build has no trade at all. Add it when you're
 testing that.
 
+Linking a Path of Exile account takes three more options: `POU_POE_CLIENT_ID`,
+`POU_POE_CONTACT` and `POU_POE_REDIRECT_PORTS`. They're empty by default, and
+the account section stays hidden until all three are set. The wiki's Building
+from Source page says what each one is for. You won't need them for other work,
+as nobody has a client id for the app yet.
+
 Run the tests on the private bus the README describes:
 
 ```bash
