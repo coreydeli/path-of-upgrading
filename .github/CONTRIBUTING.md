@@ -41,6 +41,12 @@ The beta releases add `-DPOU_BETA=ON` to the configure step, which turns trade
 searches on. Without it, a build has no trade at all. Add it when you're
 testing that.
 
+Linking a Path of Exile account takes three more options: `POU_POE_CLIENT_ID`,
+`POU_POE_CONTACT` and `POU_POE_REDIRECT_PORTS`. They're empty by default, and
+the account section stays hidden until all three are set. The wiki's Building
+from Source page says what each one is for. You won't need them for other work,
+as nobody has a client id for the app yet.
+
 Run the tests on the private bus the README describes:
 
 ```bash
@@ -170,6 +176,11 @@ touch.
   the tests call `QTest::failOnWarning()`.
 - The window tests load every settings page under Dossier, and under Material in
   light and dark, so a change to the look has to keep all of them loading.
+- The main window's tests are split into `tst_mainwindow_<part>` programs, one
+  for each part of the window, which CTest runs side by side. A new window test
+  goes in the program for its part. A new part gets its own
+  `tst_mainwindow_<part>.cpp`, added in `tests/CMakeLists.txt` with
+  `pou_add_window_test`. The helpers they share are in `tests/mainwindowtest.h`.
 - Tests must not touch the clipboard, open a page in the browser, map visible
   windows, send XTest input, register real global shortcuts or set off desktop
   prompts.

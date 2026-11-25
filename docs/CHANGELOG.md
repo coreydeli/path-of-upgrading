@@ -35,6 +35,10 @@ version that comes out.
   in the look's own style, on the popup, the gear page and the trade results.
 - The stats in a unique's notes show as chips too, and hovering a unique note's
   label says what it means.
+- If an update the app installed by itself fails while the window is hidden, a
+  notification says which version it was and why. Its Open button shows the
+  window, and you can turn it off in your desktop's notification settings, as
+  "An update didn't finish".
 
 ### Changed
 

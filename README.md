@@ -52,6 +52,12 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   you saved in Path of Building's own folder. It runs Path of Building without
   its window, so your build's own numbers judge the item. The import picks the
   start profile that fits the build, until Path of Building has weighed it.
+- In a beta, can link your Path of Exile account and import a character's gear
+  from the game as a character of its own, and the character's passive tree and
+  skills become a Path of Building build when Path of Building is found. The
+  link is kept in your system keyring. Grinding Gear Games isn't registering
+  new apps yet, so no account can be linked until it does, and the account
+  section on the Characters page stays hidden until then.
 - Finds Path of Building as the Flatpak from Flathub
   (`community.pathofbuilding.PathOfBuilding`), in your data folder, from its
   installer on Windows, or in a folder you choose. When it can't be found or
@@ -143,9 +149,11 @@ The [changelog](docs/CHANGELOG.md) says what changed in each version.
   checks it against the release's checksums, and installs it. An AppImage or a
   Windows setup restarts the app as soon as it's in. A Debian, Fedora or Arch
   package waits until you press Install, as its install asks for your password.
-  With the switch off, nothing is downloaded until you press Update Now. Turn the
-  check off, turn that switch off, or include betas, on the Updates page in the
-  sidebar's Settings group.
+  With the switch off, nothing is downloaded until you press Update Now. If an
+  update the app installed by itself fails while the window is hidden, a
+  notification called "The Update Didn't Finish" says why, and its Open button
+  shows the window. Turn the check off, turn that switch off, or include betas,
+  on the Updates page in the sidebar's Settings group.
 - Has seven looks, picked under Look on the Appearance page in the sidebar's
   Settings group, or in the setup guide. Dossier, the default, is the app's own,
   with its own controls, colors and fonts, so it looks the same on every desktop.
@@ -479,10 +487,13 @@ desktop switch, or in System Settings. Removing the package doesn't remove the
 entry, so turn the switch off before you uninstall.
 
 The session ID is not in any of them. It is in the system keyring, and only a
-beta reads it.
+beta reads it. A beta that can link a Path of Exile account keeps the link in
+the keyring too, under `poe-oauth`. It holds a refresh token and when that runs
+out. The access token is kept in memory only.
 
 In a beta, Start Over on the General page removes everything above, the
-autostart entry, the session ID and the hotkeys on your desktop. It asks first.
+autostart entry, the session ID, the Path of Exile link and the hotkeys on your
+desktop. It asks first.
 
 ## Other desktops
 
