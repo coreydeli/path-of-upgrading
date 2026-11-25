@@ -45,6 +45,16 @@ Brightness brightnessFromId(QStringView id)
     return id == u"dark" ? Brightness::Dark : Brightness::Desktop;
 }
 
+QString tradeSignInId(TradeSignInKind kind)
+{
+    return kind == TradeSignInKind::Account ? u"account"_s : u"session"_s;
+}
+
+TradeSignInKind tradeSignInFromId(QStringView id)
+{
+    return id == u"account" ? TradeSignInKind::Account : TradeSignInKind::Session;
+}
+
 bool isBetaBuild()
 {
     return POU_BETA_BUILD != 0;
