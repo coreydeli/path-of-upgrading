@@ -4,6 +4,7 @@
 #include "core/poeapi.h"
 
 #include <QAbstractListModel>
+#include <QJsonObject>
 #include <QList>
 #include <QString>
 #include <QtQmlIntegration/qqmlintegration.h>
@@ -12,7 +13,9 @@ namespace pou {
 
 class CharacterList;
 class PoeAccount;
+class PobEngine;
 class PoeClient;
+struct AccountCharacter;
 
 // The characters on the linked Path of Exile account, as the Characters page
 // lists them to pick one to import. Every league is shown, as the website
@@ -46,7 +49,7 @@ public:
     };
 
     // They have to outlive it.
-    AccountCharacters(PoeClient *client, PoeAccount *account, CharacterList *characters,
+    AccountCharacters(PoeClient *client, PoeAccount *account, CharacterList *characters, PobEngine *pob,
                       QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = {}) const override;
@@ -77,10 +80,13 @@ Q_SIGNALS:
 
 private:
     void clear();
+    void finishImport(const AccountCharacter &picked, const QJsonObject &character);
+    void finishWith(const QString &message);
 
     PoeClient *m_client;
     PoeAccount *m_account;
     CharacterList *m_characters;
+    PobEngine *m_pob;
     QList<AccountCharacter> m_list;
     bool m_loading = false;
     bool m_loaded = false;

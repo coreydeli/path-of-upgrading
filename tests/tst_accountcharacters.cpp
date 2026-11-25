@@ -5,6 +5,7 @@
 #include "app/poeaccount.h"
 #include "app/settingsstore.h"
 #include "fakenetwork.h"
+#include "fakepob.h"
 #include "fakesecretstore.h"
 #include "services/characterstore.h"
 #include "services/pobengine.h"
@@ -25,6 +26,8 @@ namespace {
 
 // made-up
 const PoeConfig config{.clientId = u"examplepou"_s, .contact = u"example.invalid"_s, .ports = {0}};
+
+const QString needsPob = u" The passive tree and skills need Path of Building, see Build Review."_s;
 
 const QByteArray list =
     R"({"characters":[)"
@@ -55,7 +58,7 @@ struct Linked
     PobEngine engine;
     ActiveCharacter active{&saved, &engine};
     CharacterList yours{&saved, &active, &settings};
-    AccountCharacters characters{&client, &account, &yours};
+    AccountCharacters characters{&client, &account, &yours, &engine};
     FakeAnswer characterAnswer{.body = list};
     FakeAnswer oneAnswer{.body = wearing};
     int asked = 0;
@@ -188,7 +191,7 @@ private Q_SLOTS:
         QVERIFY(l.characters.isImporting());
         QTRY_VERIFY(!l.characters.isImporting());
         QCOMPARE(imported.size(), 1);
-        QCOMPARE(l.characters.message(), u"FakeOne now wears 2 items from the game."_s);
+        QCOMPARE(l.characters.message(), u"FakeOne now wears 2 items from the game."_s + needsPob);
         // one request for the list, one for the character
         QCOMPARE(l.asked, 2);
         const QString id = l.yours.linkedTo(u"aa"_s);
@@ -202,9 +205,54 @@ private Q_SLOTS:
         l.oneAnswer.body = R"({"character":{"id":"aa","name":"FakeOne","level":93,"equipment":[]}})";
         l.characters.importCharacter(0);
         QTRY_VERIFY(!l.characters.isImporting());
-        QCOMPARE(l.characters.message(), u"FakeOne now wears 0 items from the game."_s);
+        QCOMPARE(l.characters.message(), u"FakeOne now wears 0 items from the game."_s + needsPob);
         QCOMPARE(l.yours.count(), 1);
         QCOMPARE(l.yours.find(id)->gear.size(), 0);
+    }
+
+    void importsThePassiveTreeAndSkillsThroughPathOfBuilding()
+    {
+        FakePob pob;
+        Linked l;
+        l.engine.setInstall(pob.install());
+        l.yours.load();
+        l.characters.refresh();
+        QTRY_VERIFY(l.characters.isLoaded());
+        QSignalSpy imported(&l.characters, &AccountCharacters::imported);
+        l.characters.importCharacter(0);
+        QTRY_VERIFY(!l.characters.isImporting());
+        QCOMPARE(l.characters.message(), u"FakeOne now wears 2 items from the game."
+                                         " Its passive tree and skills are in a Path of Building build."_s);
+        QCOMPARE(imported.size(), 1);
+        const QString id = l.yours.linkedTo(u"aa"_s);
+        // the character it was sent is the one the website gave
+        QCOMPARE(pob.imported().value(u"name").toString(), u"FakeOne"_s);
+        // the build is kept with the character, and the gear is still the game's
+        const std::optional<QString> xml = l.saved.pobBuild(id);
+        QVERIFY(xml);
+        QVERIFY(xml->contains(u"Stormweaver"));
+        const Character *kept = l.yours.find(id);
+        QCOMPARE(kept->gear.size(), 2);
+        QVERIFY(kept->fromPob.isEmpty());
+        QCOMPARE(l.yours.index(0).data(CharacterList::NameRole).toString(), u"FakeOne"_s);
+    }
+
+    void saysWhatPathOfBuildingCouldntDo()
+    {
+        FakePob pob;
+        Linked l;
+        l.engine.setInstall(pob.install({u"--fail-import"_s}));
+        l.yours.load();
+        l.characters.refresh();
+        QTRY_VERIFY(l.characters.isLoaded());
+        l.characters.importCharacter(0);
+        QTRY_VERIFY(!l.characters.isImporting());
+        // the gear is there all the same
+        QCOMPARE(l.characters.message(), u"FakeOne now wears 2 items from the game."
+                                         " Path of Building couldn't import the rest: "
+                                         "The fake couldn't import the character."_s);
+        QCOMPARE(l.yours.find(l.yours.linkedTo(u"aa"_s))->gear.size(), 2);
+        QVERIFY(!l.saved.pobBuild(l.yours.linkedTo(u"aa"_s)));
     }
 
     void importingSaysWhyItFailed()
