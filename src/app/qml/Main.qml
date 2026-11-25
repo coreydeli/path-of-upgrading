@@ -404,6 +404,7 @@ Kirigami.ApplicationWindow {
             id: tradePage
             options: root.app.tradeOptions
             session: root.app.tradeSession
+            signIn: root.app.tradeSignIn
         }
 
         OverlayPage {

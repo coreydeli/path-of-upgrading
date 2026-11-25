@@ -90,6 +90,7 @@ class App : public QObject
     Q_PROPERTY(bool tradeOffered READ tradeOffered CONSTANT)
     Q_PROPERTY(pou::TradeOptions *tradeOptions READ tradeOptions CONSTANT)
     Q_PROPERTY(pou::TradeSession *tradeSession READ tradeSession CONSTANT)
+    Q_PROPERTY(pou::TradeSignInChoice *tradeSignIn READ tradeSignIn CONSTANT)
     Q_PROPERTY(pou::OverlayOptions *overlayOptions READ overlayOptions CONSTANT)
     Q_PROPERTY(pou::PobOptions *pobOptions READ pobOptions CONSTANT)
     Q_PROPERTY(pou::Updates *updates READ updates CONSTANT)

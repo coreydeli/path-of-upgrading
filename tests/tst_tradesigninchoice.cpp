@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "app/poeaccount.h"
+#include "app/settingsstore.h"
 #include "app/tradesession.h"
 #include "app/tradesigninchoice.h"
 #include "core/poeoauth.h"
@@ -12,6 +13,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTest>
 
 using namespace Qt::Literals::StringLiterals;
@@ -44,6 +46,8 @@ QByteArray newTokens()
 // The keyring, the network and everything that signs in, between them.
 struct Choosing
 {
+    QTemporaryDir dir;
+    SettingsStore settings{dir.filePath(u"settings.conf"_s)};
     FakeSecretStore store;
     FakeNetwork network;
     TradeClient client{&network};
@@ -55,7 +59,7 @@ struct Choosing
 
     explicit Choosing(bool offered, const QUrl &base = apiBase)
         : account(offered, &store, &auth)
-        , choice(&client, &session, &account, base)
+        , choice(&settings, &client, &session, &account, base)
     {}
 
     bool settled() const
@@ -186,6 +190,41 @@ private Q_SLOTS:
         // the same again changes nothing
         c.choice.choose(TradeSignInKind::Account);
         QCOMPARE(c.changed.size(), before + 1);
+    }
+
+    void theChoiceIsSavedAndThenFollowed()
+    {
+        Choosing c(true);
+        QVERIFY(c.choice.isOffered());
+        QVERIFY(!c.choice.useAccount());
+        c.choice.setUseAccount(true);
+        QCOMPARE(c.settings.settings().trade.signIn, TradeSignInKind::Account);
+        // the app follows the settings, as this does
+        c.choice.choose(c.settings.settings().trade.signIn);
+        QVERIFY(c.choice.useAccount());
+        c.choice.setUseAccount(false);
+        QCOMPARE(c.settings.settings().trade.signIn, TradeSignInKind::Session);
+    }
+
+    void theStatusSaysWhichIsInUseAndWhetherItIsReady()
+    {
+        Choosing c(true);
+        QCOMPARE(c.choice.status(), u"Searches are made with your session ID."_s);
+        c.choice.choose(TradeSignInKind::Account);
+        QCOMPARE(c.choice.status(),
+                 u"Your Path of Exile account isn't linked yet. Link it on the Characters page."_s);
+        c.store.secrets.insert(PoeAccount::secretName(), savedLink());
+        c.account.load();
+        QVERIFY(c.settled());
+        QCOMPARE(c.choice.status(), u"Searches are made as your linked Path of Exile account."_s);
+    }
+
+    void aBuildWithoutTheAccountSavesNothing()
+    {
+        Choosing c(false);
+        c.choice.setUseAccount(true);
+        QCOMPARE(c.settings.settings().trade.signIn, TradeSignInKind::Session);
+        QVERIFY(!c.choice.useAccount());
     }
 
     void withoutAnAccountOrAnAddressItStaysOnTheSession()
