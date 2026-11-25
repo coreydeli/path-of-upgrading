@@ -210,6 +210,23 @@ private Q_SLOTS:
         QCOMPARE(sent.text, u"You're on version 0.8.0 now."_s);
     }
 
+    void saysAnUpdateByItselfFailed()
+    {
+        Setup s;
+        s.desktop.setWindow(&s.window);
+        s.desktop.tellAboutFailedUpdate(u"0.8.0"_s, u"Couldn't replace it."_s);
+        QCOMPARE(s.notifier.sent.size(), 1);
+        const FakeNotifier::Sent &sent = s.notifier.sent.first();
+        QCOMPARE(sent.event, Notifier::Event::UpdateFailed);
+        QCOMPARE(sent.title, u"The Update Didn't Finish"_s);
+        QCOMPARE(sent.text, u"The update to version 0.8.0 didn't finish. Couldn't replace it."_s);
+        QCOMPARE(sent.action, u"Open"_s);
+        // and its button shows the window
+        QVERIFY(!s.window.isVisible());
+        s.notifier.actions.first()();
+        QVERIFY(s.window.isVisible());
+    }
+
     void leavesTheUpdateToTheWindowWhenItIsOpen()
     {
         Setup s;
